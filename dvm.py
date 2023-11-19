@@ -4,7 +4,7 @@ import time
 import emoji
 from utils.definitions import EventDefinitions, DVMConfig, RequiredJobToWatch, JobToWatch, LOCAL_TASKS
 from utils.admin_utils import admin_make_database_updates
-from utils.ai_utils import GoogleTranslate
+from utils.ai_utils import extract_text_from_pdf, google_translate
 from utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
 from utils.database_utils import update_sql_table, get_from_sql_table, \
     create_sql_table, get_or_add_user, update_user_balance
@@ -38,6 +38,7 @@ def dvm(config):
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
     dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_GENERIC,
+                                  EventDefinitions.KIND_NIP90_EXTRACT_TEXT,
                                   EventDefinitions.KIND_NIP90_TRANSLATE_TEXT,
                                   ]).since(Timestamp.now()))
     client.subscribe([dm_zap_filter, dvm_filter])
@@ -60,13 +61,12 @@ def dvm(config):
         user = get_or_add_user(event.pubkey().to_hex())
         is_whitelisted = user[2]
         is_blacklisted = user[3]
-        if is_whitelisted:
-            task_supported, task, duration = check_task_is_supported(event, client=client, get_duration=False,
-                                                                     config=dvm_config)
-            print(task)
-        else:
-            task_supported, task, duration = check_task_is_supported(event, client=client, get_duration=True,
-                                                                     config=dvm_config)
+
+        task_supported, task, duration = check_task_is_supported(event, client=client,
+                                                                 get_duration=(not is_whitelisted),
+                                                                 config=dvm_config)
+        print(task)
+
         if is_blacklisted:
             send_job_status_reaction(event, "error", client=client, config=dvm_config)
             print("[Nostr] Request by blacklisted user, skipped")
@@ -231,7 +231,9 @@ def dvm(config):
                 options = dict(opts)
 
                 if task == "translation":
-                    result = GoogleTranslate(options["text"], options["translation_lang"])
+                    result = google_translate(options["text"], options["translation_lang"])
+                elif task == "pdf-to-text":
+                    result = extract_text_from_pdf(options["url"])
                 # TODO ADD FURTHER LOCAL TASKS HERE
 
                 check_and_return_event(result, str(job_event.as_json()),

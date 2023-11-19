@@ -62,4 +62,29 @@ def create_requestform_from_nostr_event(event, is_bot=False, client=None, dvmcon
                                   text.replace('\U0001f919', "").replace("=", "equals").
                                   replace(";", ","))
 
+
+
+
+    elif task == "pdf-to-text":
+        input_type = "url"
+        input_content = ""
+        url = ""
+        for tag in event.tags():
+            if tag.as_vec()[0] == 'i':
+                input_type = tag.as_vec()[2]
+                input_content = tag.as_vec()[1]
+
+        if input_type == "url":
+            url = input_content
+        elif input_type == "event":
+            evt = get_event_by_id(input_content, config=dvmconfig)
+            url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
+        elif input_type == "job":
+            evt = get_referenced_event_by_id(input_content, [EventDefinitions.KIND_NIP90_RESULT_GENERATE_IMAGE],
+                                             client, config=dvmconfig)
+
+            url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
+
+        request_form["optStr"] = 'url=' + url
+
     return request_form

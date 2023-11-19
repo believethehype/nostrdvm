@@ -3,8 +3,8 @@ import time
 
 from nostr_sdk import Keys, EventBuilder, PublicKey
 
-from utils.database_utils import get_from_sql_table, list_db, clear_db, delete_from_sql_table, update_sql_table, \
-    get_or_add_user, update_user_metadata
+from utils.database_utils import get_from_sql_table, list_db, delete_from_sql_table, update_sql_table, \
+    get_or_add_user, clean_db
 from utils.nip89_utils import nip89_announce_tasks
 from utils.nostr_utils import send_event
 
@@ -14,7 +14,7 @@ def admin_make_database_updates(config=None, client=None):
     dvmconfig = config
 
     rebroadcast_nip89 = False
-    cleardb = False
+    cleandb = False
     listdatabase = False
     deleteuser = False
     whitelistuser = False
@@ -57,8 +57,8 @@ def admin_make_database_updates(config=None, client=None):
     if deleteuser:
         delete_from_sql_table(publickey)
 
-    if cleardb:
-        clear_db()
+    if cleandb:
+        clean_db()
 
     if listdatabase:
         list_db()
