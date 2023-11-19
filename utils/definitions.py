@@ -3,9 +3,6 @@ from dataclasses import dataclass
 from nostr_sdk import Event
 NEW_USER_BALANCE = 250
 
-LOCAL_TASKS = ["pdf-to-text", "translation"]
-# Tasks performed by the DVM and not send to nova-server (can change later)
-
 RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
                   "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.f7z.io"]
 class EventDefinitions:
@@ -54,8 +51,6 @@ class DVMConfig:
     SHOWRESULTBEFOREPAYMENT: bool = True  # if this is true show results even when not paid right after autoprocess
     NEW_USER_BALANCE: int = 250  # Free credits for new users
 
-    COSTPERUNIT_TRANSLATION: int = 20
-    COSTPERUNIT_TEXT_EXTRACTION: int = 20
 
     NIP89s: list = []
 

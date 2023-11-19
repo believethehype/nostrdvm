@@ -2,15 +2,16 @@ from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter,
     init_logger, LogLevel
 import time
 import emoji
-from utils.definitions import EventDefinitions, DVMConfig, RequiredJobToWatch, JobToWatch, LOCAL_TASKS
+
+from tasks.textextractionPDF import TextExtractionPDF
+from tasks.translation import Translation
+from utils.definitions import EventDefinitions, DVMConfig, RequiredJobToWatch, JobToWatch
 from utils.admin_utils import admin_make_database_updates
-from utils.ai_utils import extract_text_from_pdf, google_translate
 from utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
 from utils.database_utils import update_sql_table, get_from_sql_table, \
     create_sql_table, get_or_add_user, update_user_balance
 from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event
 from utils.output_utils import post_process_result
-from utils.requestform_utils import create_requestform_from_nostr_event
 from utils.zap_utils import check_bolt11_ln_bits_is_paid, parse_bolt11_invoice, \
     check_for_zapplepay, decrypt_private_zap_message, create_bolt11_ln_bits
 
@@ -50,14 +51,14 @@ def dvm(config):
         def handle(self, relay_url, nostr_event):
             if EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= nostr_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC:
                 print(f"[Nostr] Received new NIP90 Job Request from {relay_url}: {nostr_event.as_json()}")
-                handle_nip90_job_event(nostr_event)
+                handle_nip90_job_event(nostr_event, dvm_config)
             elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
                 handle_zap(nostr_event)
 
         def handle_msg(self, relay_url, msg):
             return
 
-    def handle_nip90_job_event(event):
+    def handle_nip90_job_event(event, dvm_config):
         user = get_or_add_user(event.pubkey().to_hex())
         is_whitelisted = user[2]
         is_blacklisted = user[3]
@@ -153,8 +154,7 @@ def dvm(config):
                                 job_event = get_event_by_id(tag.as_vec()[1], config=dvm_config)
 
                         task_supported, task, duration = check_task_is_supported(job_event, client=client,
-                                                                                 get_duration=False,
-                                                                                 config=dvm_config)
+                                                                                 get_duration=False, config=dvm_config)
                         if job_event is not None and task_supported:
                             if amount <= invoice_amount:
                                 print("[Nostr] Payment-request fulfilled...")
@@ -201,45 +201,240 @@ def dvm(config):
             print(f"Error during content decryption: {e}")
 
     def do_work(job_event, is_from_bot=False):
-        if ((
-                EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= job_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC)
+        if ((EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= job_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC)
                 or job_event.kind() == EventDefinitions.KIND_DM):
 
-            #We're building a request form here because we want to send larger tasks to a processing server later
-            request_form = create_requestform_from_nostr_event(job_event, is_from_bot, client, dvm_config)
             task = get_task(job_event, client=client, dvmconfig=dvm_config)
-            # TASKS that take time or need GPU are moved to a backend server in the future
-            if task not in LOCAL_TASKS:
-                if task.startswith("unknown"):
-                    print("Task not (yet) supported")
-                    return
+            result = ""
+            try:
+                if task == Translation.TASK:
+                    request_form = Translation.create_requestform_from_nostr_event(job_event,client,dvm_config)
+                    options = setOptions(request_form)
+                    result = Translation.process(options)
+
+                elif task == TextExtractionPDF.TASK:
+                    request_form = TextExtractionPDF.create_requestform_from_nostr_event(job_event, client, dvm_config)
+                    options = setOptions(request_form)
+                    result = TextExtractionPDF.process(options)
+
+                #TODO Add more tasks here
+
+                check_and_return_event(result, str(job_event.as_json()), dvm_key=dvm_config.PRIVATE_KEY)
+
+            except Exception as e:
+                respond_to_error(e, job_event.as_json(), is_from_bot, dvm_config.PRIVATE_KEY)
+
+
+    def setOptions(request_form):
+        print("Setting options...")
+        opts = []
+        if request_form.get("optStr"):
+            for k, v in [option.split("=") for option in request_form["optStr"].split(";")]:
+                t = (k, v)
+                opts.append(t)
+                print(k + "=" + v)
+        print("...done.")
+        return dict(opts)
+
+    def check_event_has_not_unifinished_job_input(nevent, append, client, dvmconfig):
+        task_supported, task, duration = check_task_is_supported(nevent, client, False, config=dvmconfig)
+        if not task_supported:
+            return False
+
+        for tag in nevent.tags():
+            if tag.as_vec()[0] == 'i':
+                if len(tag.as_vec()) < 3:
+                    print("Job Event missing/malformed i tag, skipping..")
+                    return False
                 else:
-                    print("[Nostr] Scheduling " + task + " Job event: " + job_event.as_json())
-                print("We will employ a backend server here in the future")
+                    input = tag.as_vec()[1]
+                    input_type = tag.as_vec()[2]
+                    if input_type == "job":
+                        evt = get_referenced_event_by_id(input, EventDefinitions.ANY_RESULT, client, config=dvmconfig)
+                        if evt is None:
+                            if append:
+                                job = RequiredJobToWatch(event=nevent, timestamp=Timestamp.now().as_secs())
+                                jobs_on_hold_list.append(job)
+                                send_job_status_reaction(nevent, "chain-scheduled", True, 0, client=client,
+                                                         config=dvmconfig)
 
+                            return False
+        else:
+            return True
+
+    def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None, content=None, config=None,
+                                 key=None):
+        dvmconfig = config
+        altdesc = "This is a reaction to a NIP90 DVM AI task. "
+        task = get_task(original_event, client=client, dvmconfig=dvmconfig)
+        if status == "processing":
+            altdesc = "NIP90 DVM AI task " + task + " started processing. "
+            reaction = altdesc + emoji.emojize(":thumbs_up:")
+        elif status == "success":
+            altdesc = "NIP90 DVM AI task " + task + " finished successfully. "
+            reaction = altdesc + emoji.emojize(":call_me_hand:")
+        elif status == "chain-scheduled":
+            altdesc = "NIP90 DVM AI task " + task + " Chain Task scheduled"
+            reaction = altdesc + emoji.emojize(":thumbs_up:")
+        elif status == "error":
+            altdesc = "NIP90 DVM AI task " + task + " had an error. "
+            if content is None:
+                reaction = altdesc + emoji.emojize(":thumbs_down:")
             else:
-                print("[Nostr] Scheduling local " + task + " Job event: " + job_event.as_json())
-                result = ""
-                print("Setting options...")
-                opts = []
-                if request_form.get("optStr"):
-                    for k, v in [option.split("=") for option in request_form["optStr"].split(";")]:
-                        t = (k, v)
-                        opts.append(t)
-                        print(k + "=" + v)
-                print("...done.")
-                options = dict(opts)
+                reaction = altdesc + emoji.emojize(":thumbs_down:") + content
 
-                if task == "translation":
-                    result = google_translate(options["text"], options["translation_lang"])
-                elif task == "pdf-to-text":
-                    result = extract_text_from_pdf(options["url"])
-                # TODO ADD FURTHER LOCAL TASKS HERE
+        elif status == "payment-required":
 
-                check_and_return_event(result, str(job_event.as_json()),
-                                       dvm_key=dvm_config.PRIVATE_KEY)
+            altdesc = "NIP90 DVM AI task " + task + " requires payment of min " + str(amount) + " Sats. "
+            reaction = altdesc + emoji.emojize(":orange_heart:")
 
+        elif status == "payment-rejected":
+            altdesc = "NIP90 DVM AI task " + task + " payment is below required amount of " + str(amount) + " Sats. "
+            reaction = altdesc + emoji.emojize(":thumbs_down:")
+        elif status == "user-blocked-from-service":
+
+            altdesc = "NIP90 DVM AI task " + task + " can't be performed. User has been blocked from Service. "
+            reaction = altdesc + emoji.emojize(":thumbs_down:")
+        else:
+            reaction = emoji.emojize(":thumbs_down:")
+
+        etag = Tag.parse(["e", original_event.id().to_hex()])
+        ptag = Tag.parse(["p", original_event.pubkey().to_hex()])
+        alttag = Tag.parse(["alt", altdesc])
+        statustag = Tag.parse(["status", status])
+        tags = [etag, ptag, alttag, statustag]
+
+        if status == "success" or status == "error":  #
+            for x in job_list:
+                if x.event_id == original_event.id():
+                    is_paid = x.is_paid
+                    amount = x.amount
+                    break
+
+        bolt11 = ""
+        payment_hash = ""
+        expires = original_event.created_at().as_secs() + (60 * 60 * 24)
+        if status == "payment-required" or (status == "processing" and not is_paid):
+            if dvmconfig.LNBITS_INVOICE_KEY != "":
+                try:
+                    bolt11, payment_hash = create_bolt11_ln_bits(amount, dvmconfig)
+                except Exception as e:
+                    print(e)
+
+        if not any(x.event_id == original_event.id().to_hex() for x in job_list):
+            job_list.append(
+                JobToWatch(event_id=original_event.id().to_hex(), timestamp=original_event.created_at().as_secs(),
+                           amount=amount,
+                           is_paid=is_paid,
+                           status=status, result="", is_processed=False, bolt11=bolt11, payment_hash=payment_hash,
+                           expires=expires, from_bot=False))
+            print(str(job_list))
+        if status == "payment-required" or status == "payment-rejected" or (status == "processing" and not is_paid) or (
+                status == "success" and not is_paid):
+
+            if dvmconfig.LNBITS_INVOICE_KEY != "":
+                amount_tag = Tag.parse(["amount", str(amount * 1000), bolt11])
+            else:
+                amount_tag = Tag.parse(["amount", str(amount * 1000)])  # to millisats
+            tags.append(amount_tag)
+        if key is not None:
+            keys = Keys.from_sk_str(key)
+        else:
+            keys = Keys.from_sk_str(dvmconfig.PRIVATE_KEY)
+        event = EventBuilder(EventDefinitions.KIND_FEEDBACK, reaction, tags).to_event(keys)
+
+        send_event(event, key=keys)
+        print(
+            "[Nostr] Sent Kind " + str(EventDefinitions.KIND_FEEDBACK) + " Reaction: " + status + " " + event.as_json())
+        return event.as_json()
+
+    def check_and_return_event(data, original_event_str: str, dvm_key=""):
+        original_event = Event.from_json(original_event_str)
+        keys = Keys.from_sk_str(dvm_key)
+
+        for x in job_list:
+            if x.event_id == original_event.id().to_hex():
+                is_paid = x.is_paid
+                amount = x.amount
+                x.result = data
+                x.is_processed = True
+                if dvm_config.SHOWRESULTBEFOREPAYMENT and not is_paid:
+                    send_nostr_reply_event(data, original_event_str, key=keys)
+                    send_job_status_reaction(original_event, "success", amount,
+                                             config=dvm_config)  # or payment-required, or both?
+                elif not dvm_config.SHOWRESULTBEFOREPAYMENT and not is_paid:
+                    send_job_status_reaction(original_event, "success", amount,
+                                             config=dvm_config)  # or payment-required, or both?
+
+                if dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
+                    job_list.remove(x)
+                elif not dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
+                    job_list.remove(x)
+                    send_nostr_reply_event(data, original_event_str, key=keys)
+                break
+
+        post_processed_content = post_process_result(data, original_event)
+        send_nostr_reply_event(post_processed_content, original_event_str, key=keys)
+
+    def send_nostr_reply_event(content, original_event_as_str, key=None):
+        originalevent = Event.from_json(original_event_as_str)
+        requesttag = Tag.parse(["request", original_event_as_str.replace("\\", "")])
+        etag = Tag.parse(["e", originalevent.id().to_hex()])
+        ptag = Tag.parse(["p", originalevent.pubkey().to_hex()])
+        alttag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
+            originalevent.kind()) + ". The task was: " + originalevent.content()])
+        statustag = Tag.parse(["status", "success"])
+        replytags = [requesttag, etag, ptag, alttag, statustag]
+        for tag in originalevent.tags():
+            if tag.as_vec()[0] == "i":
+                icontent = tag.as_vec()[1]
+                ikind = tag.as_vec()[2]
+                itag = Tag.parse(["i", icontent, ikind])
+                replytags.append(itag)
+
+        if key is None:
+            key = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+
+        response_kind = originalevent.kind() + 1000
+        event = EventBuilder(response_kind, str(content), replytags).to_event(key)
+        send_event(event, key=key)
+        print("[Nostr] " + str(response_kind) + " Job Response event sent: " + event.as_json())
+        return event.as_json()
     client.handle_notifications(NotificationHandler())
+
+    def respond_to_error(content, originaleventstr, is_from_bot=False, dvm_key=None):
+        print("ERROR")
+        if dvm_key is None:
+            keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+        else:
+            keys = Keys.from_sk_str(dvm_key)
+
+        original_event = Event.from_json(originaleventstr)
+        sender = ""
+        task = ""
+        if not is_from_bot:
+            send_job_status_reaction(original_event, "error", content=content, key=dvm_key)
+            # TODO Send Zap back
+        else:
+            for tag in original_event.tags():
+                if tag.as_vec()[0] == "p":
+                    sender = tag.as_vec()[1]
+                elif tag.as_vec()[0] == "i":
+                    task = tag.as_vec()[1]
+
+            user = get_from_sql_table(sender)
+            is_whitelisted = user[2]
+            if not is_whitelisted:
+                amount = int(user[1]) + get_amount_per_task(task)
+                update_sql_table(sender, amount, user[2], user[3], user[4], user[5], user[6],
+                                 Timestamp.now().as_secs())
+                message = "There was the following error : " + content + ". Credits have been reimbursed"
+            else:
+                # User didn't pay, so no reimbursement
+                message = "There was the following error : " + content
+
+            evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(sender), message, None).to_event(keys)
+            send_event(evt, key=keys)
 
     while True:
         for job in job_list:
@@ -269,204 +464,16 @@ def dvm(config):
         time.sleep(1.0)
 
 
-def check_event_has_not_unifinished_job_input(nevent, append, client, dvmconfig):
-    task_supported, task, duration = check_task_is_supported(nevent, client, False, config=dvmconfig)
-    if not task_supported:
-        return False
-
-    for tag in nevent.tags():
-        if tag.as_vec()[0] == 'i':
-            if len(tag.as_vec()) < 3:
-                print("Job Event missing/malformed i tag, skipping..")
-                return False
-            else:
-                input = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
-                if input_type == "job":
-                    evt = get_referenced_event_by_id(input, EventDefinitions.ANY_RESULT, client, config=dvmconfig)
-                    if evt is None:
-                        if append:
-                            job = RequiredJobToWatch(event=nevent, timestamp=Timestamp.now().as_secs())
-                            jobs_on_hold_list.append(job)
-                            send_job_status_reaction(nevent, "chain-scheduled", True, 0, client=client,
-                                                     config=dvmconfig)
-
-                        return False
-    else:
-        return True
 
 
-def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None, content=None, config=None,
-                             key=None):
-    dvmconfig = config
-    altdesc = "This is a reaction to a NIP90 DVM AI task. "
-    task = get_task(original_event, client=client, dvmconfig=dvmconfig)
-    if status == "processing":
-        altdesc = "NIP90 DVM AI task " + task + " started processing. "
-        reaction = altdesc + emoji.emojize(":thumbs_up:")
-    elif status == "success":
-        altdesc = "NIP90 DVM AI task " + task + " finished successfully. "
-        reaction = altdesc + emoji.emojize(":call_me_hand:")
-    elif status == "chain-scheduled":
-        altdesc = "NIP90 DVM AI task " + task + " Chain Task scheduled"
-        reaction = altdesc + emoji.emojize(":thumbs_up:")
-    elif status == "error":
-        altdesc = "NIP90 DVM AI task " + task + " had an error. "
-        if content is None:
-            reaction = altdesc + emoji.emojize(":thumbs_down:")
-        else:
-            reaction = altdesc + emoji.emojize(":thumbs_down:") + content
-
-    elif status == "payment-required":
-
-        altdesc = "NIP90 DVM AI task " + task + " requires payment of min " + str(amount) + " Sats. "
-        reaction = altdesc + emoji.emojize(":orange_heart:")
-
-    elif status == "payment-rejected":
-        altdesc = "NIP90 DVM AI task " + task + " payment is below required amount of " + str(amount) + " Sats. "
-        reaction = altdesc + emoji.emojize(":thumbs_down:")
-    elif status == "user-blocked-from-service":
-
-        altdesc = "NIP90 DVM AI task " + task + " can't be performed. User has been blocked from Service. "
-        reaction = altdesc + emoji.emojize(":thumbs_down:")
-    else:
-        reaction = emoji.emojize(":thumbs_down:")
-
-    etag = Tag.parse(["e", original_event.id().to_hex()])
-    ptag = Tag.parse(["p", original_event.pubkey().to_hex()])
-    alttag = Tag.parse(["alt", altdesc])
-    statustag = Tag.parse(["status", status])
-    tags = [etag, ptag, alttag, statustag]
-
-    if status == "success" or status == "error":  #
-        for x in job_list:
-            if x.event_id == original_event.id():
-                is_paid = x.is_paid
-                amount = x.amount
-                break
-
-    bolt11 = ""
-    payment_hash = ""
-    expires = original_event.created_at().as_secs() + (60 * 60 * 24)
-    if status == "payment-required" or (status == "processing" and not is_paid):
-        if dvmconfig.LNBITS_INVOICE_KEY != "":
-            try:
-                bolt11, payment_hash = create_bolt11_ln_bits(amount, dvmconfig)
-            except Exception as e:
-                print(e)
-
-    if not any(x.event_id == original_event.id().to_hex() for x in job_list):
-        job_list.append(
-            JobToWatch(event_id=original_event.id().to_hex(), timestamp=original_event.created_at().as_secs(),
-                       amount=amount,
-                       is_paid=is_paid,
-                       status=status, result="", is_processed=False, bolt11=bolt11, payment_hash=payment_hash,
-                       expires=expires, from_bot=False))
-        print(str(job_list))
-    if status == "payment-required" or status == "payment-rejected" or (status == "processing" and not is_paid) or (
-            status == "success" and not is_paid):
-
-        if dvmconfig.LNBITS_INVOICE_KEY != "":
-            amount_tag = Tag.parse(["amount", str(amount * 1000), bolt11])
-        else:
-            amount_tag = Tag.parse(["amount", str(amount * 1000)])  # to millisats
-        tags.append(amount_tag)
-    if key is not None:
-        keys = Keys.from_sk_str(key)
-    else:
-        keys = Keys.from_sk_str(dvmconfig.PRIVATE_KEY)
-    event = EventBuilder(EventDefinitions.KIND_FEEDBACK, reaction, tags).to_event(keys)
-
-    send_event(event, key=keys)
-    print("[Nostr] Sent Kind " + str(EventDefinitions.KIND_FEEDBACK) + " Reaction: " + status + " " + event.as_json())
-    return event.as_json()
 
 
-def send_nostr_reply_event(content, original_event_as_str, key=None):
-    originalevent = Event.from_json(original_event_as_str)
-    requesttag = Tag.parse(["request", original_event_as_str.replace("\\", "")])
-    etag = Tag.parse(["e", originalevent.id().to_hex()])
-    ptag = Tag.parse(["p", originalevent.pubkey().to_hex()])
-    alttag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
-        originalevent.kind()) + ". The task was: " + originalevent.content()])
-    statustag = Tag.parse(["status", "success"])
-    replytags = [requesttag, etag, ptag, alttag, statustag]
-    for tag in originalevent.tags():
-        if tag.as_vec()[0] == "i":
-            icontent = tag.as_vec()[1]
-            ikind = tag.as_vec()[2]
-            itag = Tag.parse(["i", icontent, ikind])
-            replytags.append(itag)
-
-    if key is None:
-        key = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
-
-    response_kind = originalevent.kind() + 1000
-    event = EventBuilder(response_kind, str(content), replytags).to_event(key)
-    send_event(event, key=key)
-    print("[Nostr] " + str(response_kind) + " Job Response event sent: " + event.as_json())
-    return event.as_json()
 
 
-def respond_to_error(content, originaleventstr, is_from_bot=False, dvm_key=None):
-    print("ERROR")
-    if dvm_key is None:
-        keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
-    else:
-        keys = Keys.from_sk_str(dvm_key)
-
-    original_event = Event.from_json(originaleventstr)
-    sender = ""
-    task = ""
-    if not is_from_bot:
-        send_job_status_reaction(original_event, "error", content=content, key=dvm_key)
-        # TODO Send Zap back
-    else:
-        for tag in original_event.tags():
-            if tag.as_vec()[0] == "p":
-                sender = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "i":
-                task = tag.as_vec()[1]
-
-        user = get_from_sql_table(sender)
-        is_whitelisted = user[2]
-        if not is_whitelisted:
-            amount = int(user[1]) + get_amount_per_task(task)
-            update_sql_table(sender, amount, user[2], user[3], user[4], user[5], user[6],
-                             Timestamp.now().as_secs())
-            message = "There was the following error : " + content + ". Credits have been reimbursed"
-        else:
-            # User didn't pay, so no reimbursement
-            message = "There was the following error : " + content
-
-        evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(sender), message, None).to_event(keys)
-        send_event(evt, key=keys)
 
 
-def check_and_return_event(data, original_event_str: str, dvm_key=""):
-    original_event = Event.from_json(original_event_str)
-    keys = Keys.from_sk_str(dvm_key)
 
-    for x in job_list:
-        if x.event_id == original_event.id().to_hex():
-            is_paid = x.is_paid
-            amount = x.amount
-            x.result = data
-            x.is_processed = True
-            if dvm_config.SHOWRESULTBEFOREPAYMENT and not is_paid:
-                send_nostr_reply_event(data, original_event_str, key=keys)
-                send_job_status_reaction(original_event, "success", amount,
-                                         config=dvm_config)  # or payment-required, or both?
-            elif not dvm_config.SHOWRESULTBEFOREPAYMENT and not is_paid:
-                send_job_status_reaction(original_event, "success", amount,
-                                         config=dvm_config)  # or payment-required, or both?
 
-            if dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
-                job_list.remove(x)
-            elif not dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
-                job_list.remove(x)
-                send_nostr_reply_event(data, original_event_str, key=keys)
-            break
 
-    post_processed_content = post_process_result(data, original_event)
-    send_nostr_reply_event(post_processed_content, original_event_str, key=keys)
+
+
