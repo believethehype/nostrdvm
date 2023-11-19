@@ -1,3 +1,5 @@
+import os
+
 
 #We can add multiple Tasks here and call them in the do_work function.
 
@@ -5,7 +7,7 @@
 #the according event type in the beginning of dvm.py and
 
 
-def GoogleTranslate(text, translation_lang):
+def google_translate(text, translation_lang):
     from translatepy.translators.google import GoogleTranslate
     gtranslate = GoogleTranslate()
     length = len(text)
@@ -36,3 +38,21 @@ def GoogleTranslate(text, translation_lang):
 
 
     return translated_text
+
+def extract_text_from_pdf(url):
+    from pypdf import PdfReader
+    from pathlib import Path
+    import requests
+    file_path = Path('temp.pdf')
+    response = requests.get(url)
+    file_path.write_bytes(response.content)
+    reader = PdfReader(file_path)
+    number_of_pages = len(reader.pages)
+    text = ""
+    for page_num in range(number_of_pages):
+        page = reader.pages[page_num]
+        text = text + page.extract_text()
+
+    os.remove('temp.pdf')
+    return text
+

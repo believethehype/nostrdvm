@@ -19,6 +19,30 @@ def get_task(event, client, dvmconfig):
         else:
             return "unknown job: " + event.as_json()
 
+    elif event.kind() == EventDefinitions.KIND_NIP90_EXTRACT_TEXT:
+        for tag in event.tags():
+            if tag.as_vec()[0] == "i":
+                if tag.as_vec()[2] == "url":
+                    file_type = check_url_is_readable(tag.as_vec()[1])
+                    if file_type == "pdf":
+                        return "pdf-to-text"
+                    else:
+                        return "unknown job"
+                elif tag.as_vec()[2] == "event":
+                     evt = get_event_by_id(tag.as_vec()[1],config=dvmconfig)
+                     if evt is not None:
+                         if evt.kind() == 1063:
+                            for tag in evt.tags():
+                                if tag.as_vec()[0] == 'url':
+                                    file_type = check_url_is_readable(tag.as_vec()[1])
+                                    if file_type == "pdf":
+                                        return "pdf-to-text"
+                                    else:
+                                        return "unknown job"
+                         else:
+                             return "unknown type"
+
+
     elif event.kind() == EventDefinitions.KIND_NIP90_TRANSLATE_TEXT:
         return "translation"
 
@@ -58,6 +82,8 @@ def check_task_is_supported(event, client, get_duration = False, config=None):
         print("No output set")
     if task not in dvmconfig.SUPPORTED_TASKS:  # The Tasks this DVM supports (can be extended)
         return False, task, duration
+
+
     elif task == "translation" and (
             input_type != "event" and input_type != "job" and input_type != "text"):  # The input types per task
         return False, task, duration
@@ -88,12 +114,15 @@ def check_url_is_readable(url):
             ".mp3") or content_type == 'audio/ogg' or str(url).endswith(".ogg"):
         return "audio"
     elif content_type == 'image/png' or str(url).endswith(".png") or content_type == 'image/jpg' or str(url).endswith(
-            ".jpg") or content_type == 'image/jpeg' or str(url).endswith(".jpeg") or str(url).endswith(".pdf") or content_type == 'image/png' or str(
+            ".jpg") or content_type == 'image/jpeg' or str(url).endswith(".jpeg") or content_type == 'image/png' or str(
             url).endswith(".png"):
         return "image"
     elif content_type == 'video/mp4' or str(url).endswith(".mp4") or content_type == 'video/avi' or str(url).endswith(
             ".avi") or content_type == 'video/mov' or str(url).endswith(".mov"):
         return "video"
+    elif (str(url)).endswith(".pdf"):
+        return "pdf"
+
     # Otherwise we will not offer to do the job.
     return None
 
@@ -101,6 +130,9 @@ def get_amount_per_task(task, duration = 0, config=None):
     dvmconfig = config
     if task == "translation":
         amount = dvmconfig.COSTPERUNIT_TRANSLATION
+    elif task == "pdf-to-text":
+        amount = dvmconfig.COSTPERUNIT_TEXT_EXTRACTION
+
     else:
         print("[Nostr] Task " + task + " is currently not supported by this instance, skipping")
         return None

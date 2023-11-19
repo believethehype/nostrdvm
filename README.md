@@ -1,6 +1,6 @@
 # Nostr Data Vending Machine Python Implementation
 
-This example DVM implementation in Python currently supports simple translations using Google translate.
+This example DVM implementation in Python currently supports simple translations using Google translate, as well as extraction of text from links with pdf files.
 
 At a later stage, additional example tasks will be added, as well as the integration into a larger Machine Learning backend 
 

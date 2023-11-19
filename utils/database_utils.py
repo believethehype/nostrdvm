@@ -101,7 +101,7 @@ def delete_from_sql_table(npub):
         print(e)
 
 
-def clear_db():
+def clean_db():
     try:
         con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
         cur = con.cursor()
