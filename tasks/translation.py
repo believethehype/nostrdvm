@@ -8,8 +8,8 @@ from utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
 
 
 class Translation(DVMTaskInterface):
-    TASK: str = "translation"
     KIND: int = EventDefinitions.KIND_NIP90_TRANSLATE_TEXT
+    TASK: str = "translation"
     COST: int = 0
 
     def __init__(self, name, pk):
@@ -34,11 +34,9 @@ class Translation(DVMTaskInterface):
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex()}
 
-        #default values
         input_type = "event"
         text = ""
         translation_lang = "en"
-
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -46,7 +44,7 @@ class Translation(DVMTaskInterface):
 
             elif tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
-                if param == "language":  # check for paramtype
+                if param == "language":  # check for param type
                     translation_lang = str(tag.as_vec()[2]).split('-')[0]
 
         if input_type == "event":
@@ -88,20 +86,20 @@ class Translation(DVMTaskInterface):
         translated_text = ""
         if length > 4999:
             while step + 5000 < length:
-                textpart = options["text"][step:step + 5000]
+                text_part = options["text"][step:step + 5000]
                 step = step + 5000
                 try:
-                    translated_text_part = str(gtranslate.translate(textpart, options["translation_lang"]))
+                    translated_text_part = str(gtranslate.translate(text_part, options["translation_lang"]))
                     print("Translated Text part:\n\n " + translated_text_part)
-                except:
-                    translated_text_part = "An error occured"
+                except Exception as e:
+                    raise Exception(e)
 
                 translated_text = translated_text + translated_text_part
 
         if step < length:
-            textpart = options["text"][step:length]
+            text_part = options["text"][step:length]
             try:
-                translated_text_part = str(gtranslate.translate(textpart, options["translation_lang"]))
+                translated_text_part = str(gtranslate.translate(text_part, options["translation_lang"]))
                 print("Translated Text part:\n\n " + translated_text_part)
             except Exception as e:
                 raise Exception(e)

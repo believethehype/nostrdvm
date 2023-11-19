@@ -9,8 +9,8 @@ from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id
 
 
 class TextExtractionPDF(DVMTaskInterface):
-    TASK: str = "pdf-to-text"
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
+    TASK: str = "pdf-to-text"
     COST: int = 20
 
     def __init__(self, name, pk):
@@ -25,12 +25,10 @@ class TextExtractionPDF(DVMTaskInterface):
         nip89.content = "{\"name\":\"" + self.NAME + "\",\"image\":\"https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg\",\"about\":\"I extract Text from pdf documents\",\"nip90Params\":{}}"
         return nip89
 
-
     def is_input_supported(self, input_type, input_content):
         if input_type != "url":
             return False
         return True
-
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex()}
@@ -58,7 +56,6 @@ class TextExtractionPDF(DVMTaskInterface):
 
         request_form["optStr"] = 'url=' + url
         return request_form
-
 
     def process(self, request_form):
         options = DVMTaskInterface.setOptions(request_form)
