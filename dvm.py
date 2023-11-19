@@ -30,7 +30,7 @@ def dvm(config):
     pk = keys.public_key()
 
     print(f"Nostr DVM public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    print(f"Supported DVM tasks: {dvm_config.SUPPORTED_TASKS}")
+    print('Supported DVM tasks: ' + ', '.join(p.TASK for p in dvm_config.SUPPORTED_TASKS))
 
     client = Client(keys)
     for relay in dvm_config.RELAY_LIST:
@@ -38,10 +38,12 @@ def dvm(config):
     client.connect()
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
-    dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_GENERIC,
-                                  EventDefinitions.KIND_NIP90_EXTRACT_TEXT,
-                                  EventDefinitions.KIND_NIP90_TRANSLATE_TEXT,
-                                  ]).since(Timestamp.now()))
+
+    kinds = [EventDefinitions.KIND_NIP90_GENERIC]
+    for dvm in dvm_config.SUPPORTED_TASKS:
+        if dvm.KIND not in kinds:
+            kinds.append(dvm.KIND)
+    dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
     client.subscribe([dm_zap_filter, dvm_filter])
 
     create_sql_table()
@@ -53,7 +55,7 @@ def dvm(config):
                 print(f"[Nostr] Received new NIP90 Job Request from {relay_url}: {nostr_event.as_json()}")
                 handle_nip90_job_event(nostr_event, dvm_config)
             elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
-                handle_zap(nostr_event)
+                handle_zap(nostr_event, dvm_config)
 
         def handle_msg(self, relay_url, msg):
             return
@@ -75,12 +77,17 @@ def dvm(config):
         elif task_supported:
             print("Received new Task: " + task)
             print(duration)
-            amount = get_amount_per_task(task, duration, config=dvm_config)
+            amount = get_amount_per_task(task, dvm_config, duration)
             if amount is None:
                 return
 
-            if is_whitelisted:
-                print("[Nostr] Whitelisted for task " + task + ". Starting processing..")
+            task_is_free = False
+            for dvm in dvm_config.SUPPORTED_TASKS:
+                if dvm.TASK == task and dvm.COST == 0:
+                    task_is_free = True
+
+            if is_whitelisted or task_is_free:
+                print("[Nostr] Free or Whitelisted for task " + task + ". Starting processing..")
                 send_job_status_reaction(event, "processing", True, 0, client=client, config=dvm_config)
                 do_work(event, is_from_bot=False)
             # otherwise send payment request
@@ -94,9 +101,9 @@ def dvm(config):
                 if bid > 0:
                     bid_offer = int(bid / 1000)
                     if bid_offer >= amount:
-                            send_job_status_reaction(event, "payment-required", False,
-                                                     amount,  # bid_offer
-                                                     client=client, config=dvm_config)
+                        send_job_status_reaction(event, "payment-required", False,
+                                                 amount,  # bid_offer
+                                                 client=client, config=dvm_config)
 
                 else:  # If there is no bid, just request server rate from user
                     print("[Nostr] Requesting payment for Event: " + event.id().to_hex())
@@ -105,7 +112,7 @@ def dvm(config):
         else:
             print("Task not supported on this DVM, skipping..")
 
-    def handle_zap(event):
+    def handle_zap(event, dvm_config):
         zapped_event = None
         invoice_amount = 0
         anon = False
@@ -205,38 +212,17 @@ def dvm(config):
                 or job_event.kind() == EventDefinitions.KIND_DM):
 
             task = get_task(job_event, client=client, dvmconfig=dvm_config)
-            result = ""
-            try:
-                if task == Translation.TASK:
-                    request_form = Translation.create_requestform_from_nostr_event(job_event,client,dvm_config)
-                    options = setOptions(request_form)
-                    result = Translation.process(options)
+            for dvm in dvm_config.SUPPORTED_TASKS:
+                try:
+                    if task == dvm.TASK:
+                        request_form = dvm.create_request_form_from_nostr_event(job_event, client, dvm_config)
+                        result = dvm.process(request_form)
+                        check_and_return_event(result, str(job_event.as_json()), dvm_key=dvm_config.PRIVATE_KEY)
 
-                elif task == TextExtractionPDF.TASK:
-                    request_form = TextExtractionPDF.create_requestform_from_nostr_event(job_event, client, dvm_config)
-                    options = setOptions(request_form)
-                    result = TextExtractionPDF.process(options)
+                except Exception as e:
+                    respond_to_error(e, job_event.as_json(), is_from_bot, dvm_config.PRIVATE_KEY)
 
-                #TODO Add more tasks here
-
-                check_and_return_event(result, str(job_event.as_json()), dvm_key=dvm_config.PRIVATE_KEY)
-
-            except Exception as e:
-                respond_to_error(e, job_event.as_json(), is_from_bot, dvm_config.PRIVATE_KEY)
-
-
-    def setOptions(request_form):
-        print("Setting options...")
-        opts = []
-        if request_form.get("optStr"):
-            for k, v in [option.split("=") for option in request_form["optStr"].split(";")]:
-                t = (k, v)
-                opts.append(t)
-                print(k + "=" + v)
-        print("...done.")
-        return dict(opts)
-
-    def check_event_has_not_unifinished_job_input(nevent, append, client, dvmconfig):
+    def check_event_has_not_unfinished_job_input(nevent, append, client, dvmconfig):
         task_supported, task, duration = check_task_is_supported(nevent, client, False, config=dvmconfig)
         if not task_supported:
             return False
@@ -400,6 +386,7 @@ def dvm(config):
         send_event(event, key=key)
         print("[Nostr] " + str(response_kind) + " Job Response event sent: " + event.as_json())
         return event.as_json()
+
     client.handle_notifications(NotificationHandler())
 
     def respond_to_error(content, originaleventstr, is_from_bot=False, dvm_key=None):
@@ -425,7 +412,7 @@ def dvm(config):
             user = get_from_sql_table(sender)
             is_whitelisted = user[2]
             if not is_whitelisted:
-                amount = int(user[1]) + get_amount_per_task(task)
+                amount = int(user[1]) + get_amount_per_task(task, dvm_config)
                 update_sql_table(sender, amount, user[2], user[3], user[4], user[5], user[6],
                                  Timestamp.now().as_secs())
                 message = "There was the following error : " + content + ". Credits have been reimbursed"
@@ -454,7 +441,7 @@ def dvm(config):
                 job_list.remove(job)
 
         for job in jobs_on_hold_list:
-            if check_event_has_not_unifinished_job_input(job.event, False, client=client, dvmconfig=dvm_config):
+            if check_event_has_not_unfinished_job_input(job.event, False, client=client, dvmconfig=dvm_config):
                 handle_nip90_job_event(job.event)
                 jobs_on_hold_list.remove(job)
 
@@ -462,18 +449,3 @@ def dvm(config):
                 jobs_on_hold_list.remove(job)
 
         time.sleep(1.0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

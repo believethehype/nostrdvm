@@ -1,10 +1,14 @@
 from dataclasses import dataclass
 
 from nostr_sdk import Event
-NEW_USER_BALANCE = 250
+
+NEW_USER_BALANCE: int = 250  # Free credits for new users
 
 RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
-                  "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.f7z.io"]
+              "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+              "wss://relay.f7z.io"]
+
+
 class EventDefinitions:
     KIND_DM: int = 4
     KIND_ZAP: int = 9735
@@ -41,20 +45,17 @@ class DVMConfig:
     PRIVATE_KEY: str
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
-                  "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.f7z.io"]
+                  "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                  "wss://relay.f7z.io"]
     RELAY_TIMEOUT = 5
     LNBITS_INVOICE_KEY = ''
     LNBITS_URL = 'https://lnbits.com'
     REQUIRES_NIP05: bool = False
 
-
     SHOWRESULTBEFOREPAYMENT: bool = True  # if this is true show results even when not paid right after autoprocess
-    NEW_USER_BALANCE: int = 250  # Free credits for new users
 
 
     NIP89s: list = []
-
-
 
 
 @dataclass
@@ -70,6 +71,7 @@ class JobToWatch:
     payment_hash: str
     expires: int
     from_bot: bool
+
 
 @dataclass
 class RequiredJobToWatch:
