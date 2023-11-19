@@ -82,18 +82,17 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
 
     task = get_task(event, client=client, dvmconfig=dvm_config)
 
-    if task not in dvm_config.SUPPORTED_TASKS:  # The Tasks this DVM supports (can be extended)
-        return False, task, duration
-
     if input_type == 'url' and check_url_is_readable(input_value) is None:
         print("url not readable")
         return False, task, duration
 
-    if task == Translation.TASK:
-        return Translation.is_input_supported(input_type, event.content()), task, duration
+    if task not in (x.TASK for x in dvm_config.SUPPORTED_TASKS):
+        return False, task, duration
 
-    elif task == TextExtractionPDF.TASK:
-        return TextExtractionPDF.is_input_supported(input_type, event.content()), task, duration
+    for dvm in dvm_config.SUPPORTED_TASKS:
+        if dvm.TASK == task:
+            if not dvm.is_input_supported(input_type, event.content()):
+                return False, task, duration
 
     return True, task, duration
 
@@ -101,7 +100,6 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
 def check_url_is_readable(url):
     if not str(url).startswith("http"):
         return None
-
     # If link is comaptible with one of these file formats, move on.
     req = requests.get(url)
     content_type = req.headers['content-type']
@@ -122,13 +120,12 @@ def check_url_is_readable(url):
     return None
 
 
-def get_amount_per_task(task, duration=0, config=None):
-    if task == Translation.TASK:
-        amount = Translation.COST
-    elif task == TextExtractionPDF.TASK:
-        amount = TextExtractionPDF.COST
-
+def get_amount_per_task(task, dvm_config, duration=1):
+    print(dvm_config.SUPPORTED_TASKS)
+    for dvm in dvm_config.SUPPORTED_TASKS:
+        if dvm.TASK == task:
+            amount = dvm.COST * duration
+            return amount
     else:
         print("[Nostr] Task " + task + " is currently not supported by this instance, skipping")
         return None
-    return amount
