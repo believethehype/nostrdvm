@@ -100,7 +100,7 @@ class Translation(DVMTaskInterface):
             text_part = options["text"][step:length]
             try:
                 translated_text_part = str(gtranslate.translate(text_part, options["translation_lang"]))
-                print("Translated Text part:\n\n " + translated_text_part)
+                print("Translated Text part:\n " + translated_text_part)
             except Exception as e:
                 raise Exception(e)
 

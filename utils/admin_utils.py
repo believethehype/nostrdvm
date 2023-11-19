@@ -30,25 +30,24 @@ def admin_make_database_updates(config=None, client=None):
 
     if whitelistuser:
         user = get_or_add_user(publickey)
-        update_sql_table(user[0], user[1], True, False, user[4], user[5], user[6], user[7])
+        update_sql_table(user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
         user = get_from_sql_table(publickey)
-        print(str(user[6]) + " is whitelisted: " + str(user[2]))
+        print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
 
     if unwhitelistuser:
         user = get_from_sql_table(publickey)
-        update_sql_table(user[0], user[1], False, False, user[4], user[5], user[6], user[7])
+        update_sql_table(user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive)
 
     if blacklistuser:
         user = get_from_sql_table(publickey)
-        update_sql_table(user[0], user[1], False, True, user[4], user[5], user[6], user[7])
+        update_sql_table(user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
 
     if addbalance:
         user = get_from_sql_table(publickey)
-        update_sql_table(user[0], (int(user[1]) + additional_balance), user[2], user[3], user[4], user[5], user[6],
-                         user[7])
+        update_sql_table(user[0], (int(user.balance) + additional_balance), user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16, user.name, user.lastactive)
         time.sleep(1.0)
         message = str(additional_balance) + " Sats have been added to your balance. Your new balance is " + str(
-            (int(user[1]) + additional_balance)) + " Sats."
+            (int(user.balance) + additional_balance)) + " Sats."
         keys = Keys.from_sk_str(config.PRIVATE_KEY)
         evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(publickey), message,
                                                     None).to_event(keys)

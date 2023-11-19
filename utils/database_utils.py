@@ -4,6 +4,7 @@ import sqlite3
 import time
 
 from _sqlite3 import Error
+from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
 
@@ -12,6 +13,19 @@ from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Metadata, Filter
 from utils import env
 from utils.definitions import NEW_USER_BALANCE
 from utils.nostr_utils import send_event
+
+@dataclass
+class User:
+    npub: str
+    balance: int
+    iswhitelisted: bool
+    isblacklisted: bool
+    name: str
+    nip05: str
+    lud16: str
+    lastactive: int
+
+
 
 def create_sql_table():
     try:
@@ -84,7 +98,17 @@ def get_from_sql_table(npub):
         cur.execute("SELECT * FROM users WHERE npub=?", (npub,))
         row = cur.fetchone()
         con.close()
-        return row
+        user = User
+        user.npub = row[0]
+        user.balance = row[1]
+        user.iswhitelisted = row[2]
+        user.isblacklisted = row[3]
+        user.nip05 = row[4]
+        user.lud16 = row[5]
+        user.name = row[6]
+        user.lastactive = row[7]
+
+        return user
 
     except Error as e:
         print(e)
@@ -138,21 +162,19 @@ def update_user_balance(sender, sats, config=None):
     else:
         user = get_from_sql_table(sender)
         print(str(sats))
-        nip05 =user[4]
-        lud16 = user[5]
-        name =  user[6]
 
-        if nip05 is None:
-            nip05 = ""
-        if lud16 is None:
-            lud16 = ""
-        if name is None:
-            name = ""
 
-        new_balance = int(user[1]) + int(sats)
-        update_sql_table(sender, new_balance, user[2], user[3], nip05, lud16, name,
+        if user.nip05 is None:
+            user.nip05 = ""
+        if user.lud16 is None:
+            user.lud16 = ""
+        if user.name is None:
+            user.name = ""
+
+        new_balance = int(user.balance) + int(sats)
+        update_sql_table(sender, new_balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16, user.name,
                          Timestamp.now().as_secs())
-        print("UPDATE USER BALANCE: " + str(name) + " Zap amount: " + str(sats) + " Sats.")
+        print("UPDATE USER BALANCE: " + str(user.name) + " Zap amount: " + str(sats) + " Sats.")
 
 
         if config is not None:
@@ -180,9 +202,6 @@ def get_or_add_user(sender):
 
 def update_user_metadata(sender, client):
     user = get_from_sql_table(sender)
-    name = user[6]
-    lud16 = user[5]
-    nip05 = user[4]
     try:
         profile_filter = Filter().kind(0).author(sender).limit(1)
         events = client.get_events_of([profile_filter], timedelta(seconds=3))
@@ -191,12 +210,13 @@ def update_user_metadata(sender, client):
             metadata = Metadata.from_json(ev.content())
             name = metadata.get_display_name()
             if str(name) == "" or name is None:
-                name = metadata.get_name()
-                nip05 = metadata.get_nip05()
-                lud16 = metadata.get_lud16()
+                user.name = metadata.get_name()
+                user.nip05 = metadata.get_nip05()
+                user.lud16 = metadata.get_lud16()
     except:
         print("Couldn't get meta information")
-    update_sql_table(user[0], user[1], user[2], user[3], nip05, lud16,
-                     name, Timestamp.now().as_secs())
-    user = get_from_sql_table(user[0])
+    update_sql_table(user.npub, user.balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
+                     user.name, Timestamp.now().as_secs())
+    user = get_from_sql_table(user.npub)
     return user
+

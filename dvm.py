@@ -3,8 +3,6 @@ from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter,
 import time
 import emoji
 
-from tasks.textextractionPDF import TextExtractionPDF
-from tasks.translation import Translation
 from utils.definitions import EventDefinitions, DVMConfig, RequiredJobToWatch, JobToWatch
 from utils.admin_utils import admin_make_database_updates
 from utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
@@ -62,15 +60,12 @@ def dvm(config):
 
     def handle_nip90_job_event(event, dvm_config):
         user = get_or_add_user(event.pubkey().to_hex())
-        is_whitelisted = user[2]
-        is_blacklisted = user[3]
-
         task_supported, task, duration = check_task_is_supported(event, client=client,
-                                                                 get_duration=(not is_whitelisted),
+                                                                 get_duration=(not user.iswhitelisted),
                                                                  config=dvm_config)
         print(task)
 
-        if is_blacklisted:
+        if user.isblacklisted:
             send_job_status_reaction(event, "error", client=client, config=dvm_config)
             print("[Nostr] Request by blacklisted user, skipped")
 
@@ -86,7 +81,7 @@ def dvm(config):
                 if dvm.TASK == task and dvm.COST == 0:
                     task_is_free = True
 
-            if is_whitelisted or task_is_free:
+            if user.iswhitelisted or task_is_free:
                 print("[Nostr] Free or Whitelisted for task " + task + ". Starting processing..")
                 send_job_status_reaction(event, "processing", True, 0, client=client, config=dvm_config)
                 do_work(event, is_from_bot=False)
@@ -151,7 +146,7 @@ def dvm(config):
                 if zapped_event.kind() == EventDefinitions.KIND_FEEDBACK:  # if a reaction by us got zapped
                     if not dvm_config.IS_BOT:
                         print("Zap received for NIP90 task: " + str(invoice_amount) + " Sats from " + str(
-                            user[6]))
+                            user.name))
                         amount = 0
                         job_event = None
                         for tag in zapped_event.tags():
@@ -195,13 +190,13 @@ def dvm(config):
                     print("Someone zapped the result of an exisiting Task. Nice")
                 elif not anon and not dvm_config.PASSIVE_MODE:
                     print("Note Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
-                        user[6]))
+                        user.name))
                     update_user_balance(sender, invoice_amount, config=dvm_config)
 
                     # a regular note
             elif not anon and not dvm_config.PASSIVE_MODE:
                 print("Profile Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
-                    user[6]))
+                    user.name))
                 update_user_balance(sender, invoice_amount, config=dvm_config)
 
         except Exception as e:
@@ -410,10 +405,9 @@ def dvm(config):
                     task = tag.as_vec()[1]
 
             user = get_from_sql_table(sender)
-            is_whitelisted = user[2]
-            if not is_whitelisted:
-                amount = int(user[1]) + get_amount_per_task(task, dvm_config)
-                update_sql_table(sender, amount, user[2], user[3], user[4], user[5], user[6],
+            if not user.iswhitelisted:
+                amount = int(user.balance) + get_amount_per_task(task, dvm_config)
+                update_sql_table(sender, amount, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16, user.name,
                                  Timestamp.now().as_secs())
                 message = "There was the following error : " + content + ". Credits have been reimbursed"
             else:
