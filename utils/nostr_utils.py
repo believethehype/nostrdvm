@@ -28,6 +28,7 @@ def get_event_by_id(event_id, client=None, config=None):
     else:
         return None
 
+
 def get_referenced_event_by_id(event_id, kinds=None, client=None, config=None):
     if kinds is None:
         kinds = []
@@ -55,7 +56,8 @@ def get_referenced_event_by_id(event_id, kinds=None, client=None, config=None):
     else:
         return None
 
-def send_event(event, client=None, key=None, config=None):
+
+def send_event(event, client=None, key=None):
     relays = []
     is_new_client = False
 
@@ -64,21 +66,16 @@ def send_event(event, client=None, key=None, config=None):
             relays = tag.as_vec()[1].split(',')
 
     if client is None:
-        print(key.secret_key().to_hex())
-
         opts = Options().wait_for_send(False).send_timeout(timedelta(seconds=5)).skip_disconnected_relays(True)
         client = Client.with_opts(key, opts)
         for relay in RELAY_LIST:
             client.add_relay(relay)
-
         client.connect()
         is_new_client = True
 
     for relay in relays:
         if relay not in RELAY_LIST:
             client.add_relay(relay)
-    client.connect()
-
 
     event_id = client.send_event(event)
 
