@@ -53,7 +53,6 @@ def check_bolt11_ln_bits_is_paid(payment_hash, config):
         obj = json.loads(res.text)
         return obj["paid"]
     except Exception as e:
-        #print("Exception checking invoice is paid:" + e)
         return None
 
 
