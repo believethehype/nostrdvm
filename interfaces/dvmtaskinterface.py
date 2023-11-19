@@ -1,6 +1,6 @@
 class DVMTaskInterface:
-    TASK: str
     KIND: int
+    TASK: str
     COST: int
 
     def NIP89_announcement(self):
