@@ -67,20 +67,18 @@ def run_nostr_dvm_with_local_config():
     dvm_config.LNBITS_INVOICE_KEY = os.getenv(env.LNBITS_INVOICE_KEY)
     dvm_config.LNBITS_URL = os.getenv(env.LNBITS_HOST)
 
-    unstableartist = ImageGenerationSDXL("Unstable Diffusion", dvm_config, "unstable")
-    d_tag = os.getenv(env.TASK_IMAGEGENERATION_NIP89_DTAG)
-    content = "{\"name\":\"" + unstableartist.NAME + ("\",\"image\":\"https://image.nostr.build"
-                                                      "/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg"
-                                                      "\",\"about\":\"I draw images based on a prompt with a Model called unstable diffusion.\",\"nip90Params\":{}}")
-    dvm_config.NIP89s.append(unstableartist.NIP89_announcement(d_tag, content))
+    #unstableartist = ImageGenerationSDXL("Unstable Diffusion", dvm_config, "unstable")
+    #d_tag = os.getenv(env.TASK_IMAGEGENERATION_NIP89_DTAG)
+    #content = "{\"name\":\"" + unstableartist.NAME + ("\",\"image\":\"https://image.nostr.build"
+    #                                                  "/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg"
+    #                                                  "\",\"about\":\"I draw images based on a prompt with a Model called unstable diffusion.\",\"nip90Params\":{}}")
+    #dvm_config.NIP89s.append(unstableartist.NIP89_announcement(d_tag, content))
 
+    # Spawn another Instance of text-to-image but use a different model and lora this time.
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = "73b262d31edc6ea1316dffcc7daa772651d661e6475761b7b78291482c1bf5cb"
     dvm_config.LNBITS_INVOICE_KEY = os.getenv(env.LNBITS_INVOICE_KEY)
     dvm_config.LNBITS_URL = os.getenv(env.LNBITS_HOST)
-
-    # Spawn another Instance of text-to-image but use a different model and lora this time.
-
     sketcher = ImageGenerationSDXL("Sketcher", dvm_config, "mohawk", "timburton")
     d_tag = os.getenv(env.TASK_IMAGEGENERATION_NIP89_DTAG2)
     content = "{\"name\":\"" + sketcher.NAME + ("\",\"image\":\"https://image.nostr.build"

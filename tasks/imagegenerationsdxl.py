@@ -21,7 +21,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
     NAME: str
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
-    COST: int = 50
+    COST: int = 5
     PK: str
 
     def __init__(self, name, dvm_config, default_model=None, default_lora=None):
