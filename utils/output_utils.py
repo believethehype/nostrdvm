@@ -1,10 +1,15 @@
 import json
 import datetime as datetime
+import os
 from types import NoneType
+import requests
+from pyupload.uploader import CatboxUploader
 
 import pandas
 
-
+'''
+Post process results to either given output format or a Nostr readable plain text.
+'''
 def post_process_result(anno, original_event):
     print("post-processing...")
     if isinstance(anno, pandas.DataFrame):  # if input is an anno we parse it to required output format
@@ -84,7 +89,52 @@ def post_process_result(anno, original_event):
         return result
 
 
+'''
+Convenience function to replace words like Noster with Nostr
+'''
 def replace_broken_words(text):
     result = (text.replace("Noster", "Nostr").replace("Nostra", "Nostr").replace("no stir", "Nostr").
               replace("Nostro", "Nostr").replace("Impub", "npub").replace("sets", "Sats"))
     return result
+
+
+'''
+Function to upload to Nostr.build and if it fails to Nostrfiles.dev
+Larger files than these hosters allow and fallback is catbox currently.
+Will probably need to switch to another system in the future.
+'''
+def uploadMediaToHoster(filepath):
+    print("Uploading image: " + filepath)
+    try:
+        files = {'file': open(filepath, 'rb')}
+        file_stats = os.stat(filepath)
+        sizeinmb = file_stats.st_size / (1024*1024)
+        print("Filesize of Uploaded media: " + str(sizeinmb) + " Mb.")
+        if sizeinmb > 25:
+            uploader = CatboxUploader(filepath)
+            result = uploader.execute()
+            return result
+        else:
+            url = 'https://nostr.build/api/v2/upload/files'
+            response = requests.post(url, files=files)
+            json_object = json.loads(response.text)
+            result = json_object["data"][0]["url"]
+            return result
+    except:
+        try:
+            file = {'file': open(filepath, 'rb')}
+            url = 'https://nostrfiles.dev/upload_image'
+            response = requests.post(url, files=file)
+            json_object = json.loads(response.text)
+            print(json_object["url"])
+            return json_object["url"]
+            # fallback filehoster
+        except:
+
+            try:
+                uploader = CatboxUploader(filepath)
+                result = uploader.execute()
+                print(result)
+                return result
+            except:
+                return "Upload not possible, all hosters didn't work"

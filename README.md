@@ -1,4 +1,4 @@
-# Nostr AI Data Vending Machine
+# NostrAI Data Vending Machine
 
 This example DVM implementation in Python currently supports simple translations using Google translate, as well as extraction of text from links with pdf files.
 

@@ -1,10 +1,10 @@
 import requests
-
-from tasks.textextractionPDF import TextExtractionPDF
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import get_event_by_id
 
+from tasks.textextractionpdf import TextExtractionPDF
 from tasks.translation import Translation
+from tasks.imagegenerationsdxl import ImageGenerationSDXL
 
 
 def get_task(event, client, dvmconfig):
@@ -35,9 +35,9 @@ def get_task(event, client, dvmconfig):
                     evt = get_event_by_id(tag.as_vec()[1], config=dvmconfig)
                     if evt is not None:
                         if evt.kind() == 1063:
-                            for tag in evt.tags():
-                                if tag.as_vec()[0] == 'url':
-                                    file_type = check_url_is_readable(tag.as_vec()[1])
+                            for tg in evt.tags():
+                                if tg.as_vec()[0] == 'url':
+                                    file_type = check_url_is_readable(tg.as_vec()[1])
                                     if file_type == "pdf":
                                         return "pdf-to-text"
                                     else:
@@ -45,9 +45,10 @@ def get_task(event, client, dvmconfig):
                         else:
                             return "unknown type"
 
-
     elif event.kind() == EventDefinitions.KIND_NIP90_TRANSLATE_TEXT:
         return Translation.TASK
+    elif event.kind() == EventDefinitions.KIND_NIP90_GENERATE_IMAGE:
+        return ImageGenerationSDXL.TASK
 
     else:
         return "unknown type"
@@ -121,7 +122,6 @@ def check_url_is_readable(url):
 
 
 def get_amount_per_task(task, dvm_config, duration=1):
-    print(dvm_config.SUPPORTED_TASKS)
     for dvm in dvm_config.SUPPORTED_TASKS:
         if dvm.TASK == task:
             amount = dvm.COST * duration
