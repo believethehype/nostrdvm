@@ -29,7 +29,7 @@ in the module that is calling the server
 
 def send_request_to_nova_server(request_form, address):
     print("Sending job to NOVA-Server")
-    url = ('http://' + address + '/' + str(request_form["mode"]).lower())
+    url = ('http://' + address + '/process')
     headers = {'Content-type': 'application/x-www-form-urlencoded'}
     response = requests.post(url, headers=headers, data=request_form)
     return response.content

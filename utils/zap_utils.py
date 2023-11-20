@@ -33,6 +33,7 @@ def parse_bolt11_invoice(invoice):
 
     return int(number)
 
+
 def create_bolt11_ln_bits(sats, config):
     url = config.LNBITS_URL + "/api/v1/payments"
     data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM"}
@@ -44,6 +45,7 @@ def create_bolt11_ln_bits(sats, config):
     except Exception as e:
         print(e)
         return None
+
 
 def check_bolt11_ln_bits_is_paid(payment_hash, config):
     url = config.LNBITS_URL + "/api/v1/payments/" + payment_hash
@@ -92,4 +94,3 @@ def decrypt_private_zap_message(msg, privkey, pubkey):
         return decoded
     except Exception as ex:
         return str(ex)
-

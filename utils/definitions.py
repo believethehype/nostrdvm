@@ -1,6 +1,9 @@
+import os
 from dataclasses import dataclass
 
 from nostr_sdk import Event
+
+from utils import env
 
 NEW_USER_BALANCE: int = 250  # Free credits for new users
 
@@ -42,7 +45,7 @@ class EventDefinitions:
 
 class DVMConfig:
     SUPPORTED_TASKS = []
-    PRIVATE_KEY: str
+    PRIVATE_KEY: str = os.getenv(env.NOSTR_PRIVATE_KEY)
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
                   "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
