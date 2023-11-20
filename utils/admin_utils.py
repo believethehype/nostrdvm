@@ -20,8 +20,7 @@ def admin_make_database_updates(config=None, client=None):
     whitelistuser = False
     unwhitelistuser = False
     blacklistuser = False
-    addbalance = False
-    additional_balance = 50
+
 
     # publickey = PublicKey.from_bech32("npub1...").to_hex()
     # use this if you have the npub
@@ -41,17 +40,6 @@ def admin_make_database_updates(config=None, client=None):
     if blacklistuser:
         user = get_from_sql_table(publickey)
         update_sql_table(user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
-
-    if addbalance:
-        user = get_from_sql_table(publickey)
-        update_sql_table(user[0], (int(user.balance) + additional_balance), user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16, user.name, user.lastactive)
-        time.sleep(1.0)
-        message = str(additional_balance) + " Sats have been added to your balance. Your new balance is " + str(
-            (int(user.balance) + additional_balance)) + " Sats."
-        keys = Keys.from_sk_str(config.PRIVATE_KEY)
-        evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(publickey), message,
-                                                    None).to_event(keys)
-        send_event(evt, key=keys)
 
     if deleteuser:
         delete_from_sql_table(publickey)

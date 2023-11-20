@@ -1,11 +1,19 @@
+from utils.nip89_utils import NIP89Announcement
+
+
 class DVMTaskInterface:
     KIND: int
     TASK: str
     COST: int
+    PK: str
 
     def NIP89_announcement(self, d_tag, content):
-        """Define the NIP89 Announcement"""
-        pass
+        nip89 = NIP89Announcement()
+        nip89.kind = self.KIND
+        nip89.pk = self.PK
+        nip89.dtag = d_tag
+        nip89.content = content
+        return nip89
 
     def is_input_supported(self, input_type, input_content) -> bool:
         """Check if input is supported for current Task."""

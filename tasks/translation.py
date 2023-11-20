@@ -1,5 +1,7 @@
 import os
+from threading import Thread
 
+from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.definitions import EventDefinitions
 from utils.nip89_utils import NIP89Announcement
@@ -15,21 +17,20 @@ Outputs: Text containing the Translation in the desired language.
 
 
 class Translation(DVMTaskInterface):
+    NAME: str
     KIND: int = EventDefinitions.KIND_NIP90_TRANSLATE_TEXT
     TASK: str = "translation"
     COST: int = 0
+    PK: str
 
-    def __init__(self, name, pk):
+    def __init__(self, name, dvm_config):
         self.NAME = name
-        self.PK = pk
+        dvm_config.SUPPORTED_TASKS = [self]
+        self.PK = dvm_config.PRIVATE_KEY
 
-    def NIP89_announcement(self, d_tag, content):
-        nip89 = NIP89Announcement()
-        nip89.kind = self.KIND
-        nip89.pk = self.PK
-        nip89.dtag = d_tag
-        nip89.content = content
-        return nip89
+        dvm = DVM
+        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config])
+        nostr_dvm_thread.start()
 
     def is_input_supported(self, input_type, input_content):
         if input_type != "event" and input_type != "job" and input_type != "text":

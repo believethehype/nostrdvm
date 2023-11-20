@@ -1,6 +1,8 @@
 import os
 import re
+from threading import Thread
 
+from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.definitions import EventDefinitions
 from utils.nip89_utils import NIP89Announcement
@@ -13,21 +15,23 @@ Accepted Inputs: Url to pdf file, Event containing an URL to a PDF file
 Outputs: Text containing the extracted contents of the PDF file
 """
 class TextExtractionPDF(DVMTaskInterface):
+    NAME: str
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
     COST: int = 20
+    PK: str
 
-    def __init__(self, name, pk):
+
+    def __init__(self, name, dvm_config):
         self.NAME = name
-        self.PK = pk
+        dvm_config.SUPPORTED_TASKS = [self]
+        self.PK = dvm_config.PRIVATE_KEY
 
-    def NIP89_announcement(self, d_tag, content):
-        nip89 = NIP89Announcement()
-        nip89.kind = self.KIND
-        nip89.pk = self.PK
-        nip89.dtag = d_tag
-        nip89.content = content
-        return nip89
+        dvm = DVM
+        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config])
+        nostr_dvm_thread.start()
+
+
 
     def is_input_supported(self, input_type, input_content):
         if input_type != "url" and input_type != "event":

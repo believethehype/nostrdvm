@@ -1,6 +1,9 @@
 import os
 from multiprocessing.pool import ThreadPool
+from threading import Thread
+
 from backends.nova_server import check_nova_server_status, send_request_to_nova_server
+from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.definitions import EventDefinitions
 from utils.nip89_utils import NIP89Announcement
@@ -15,21 +18,23 @@ Outputs: An url to an Image
 
 
 class ImageGenerationSDXL(DVMTaskInterface):
+    NAME: str
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
-    COST: int = 0
+    COST: int = 50
+    PK: str
 
-    def __init__(self, name, pk):
+    def __init__(self, name, dvm_config, default_model=None, default_lora=None):
         self.NAME = name
-        self.PK = pk
+        dvm_config.SUPPORTED_TASKS = [self]
+        self.PK = dvm_config.PRIVATE_KEY
+        self.default_model = default_model
+        self.default_lora = default_lora
 
-    def NIP89_announcement(self, d_tag, content):
-        nip89 = NIP89Announcement()
-        nip89.kind = self.KIND
-        nip89.pk = self.PK
-        nip89.dtag = d_tag
-        nip89.content = content
-        return nip89
+        dvm = DVM
+        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config])
+        nostr_dvm_thread.start()
+
 
     def is_input_supported(self, input_type, input_content):
         if input_type != "text":
@@ -38,19 +43,24 @@ class ImageGenerationSDXL(DVMTaskInterface):
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_"+ self.NAME.replace(" ", "")}
-        request_form["mode"] = "PROCESS"
         request_form["trainerFilePath"] = 'modules\\stablediffusionxl\\stablediffusionxl.trainer'
 
         prompt = ""
         negative_prompt = ""
-        #model = "stabilityai/stable-diffusion-xl-base-1.0"
-        model = "unstable"
+        if self.default_model is None:
+            model = "stabilityai/stable-diffusion-xl-base-1.0"
+        else:
+            model = self.default_model
+
         # models: juggernautXL, dynavisionXL, colossusProjectXL, newrealityXL, unstable
         ratio_width = "1"
         ratio_height = "1"
         width = ""
         height = ""
-        lora = ""
+        if self.default_lora == None:
+            lora = ""
+        else:
+            lora = self.default_lora
         lora_weight = ""
         strength = ""
         guidance_scale = ""

@@ -2,10 +2,6 @@ import requests
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import get_event_by_id
 
-from tasks.textextractionpdf import TextExtractionPDF
-from tasks.translation import Translation
-from tasks.imagegenerationsdxl import ImageGenerationSDXL
-
 
 def get_task(event, client, dvmconfig):
     if event.kind() == EventDefinitions.KIND_NIP90_GENERIC:  # use this for events that have no id yet
@@ -28,7 +24,7 @@ def get_task(event, client, dvmconfig):
                 if tag.as_vec()[2] == "url":
                     file_type = check_url_is_readable(tag.as_vec()[1])
                     if file_type == "pdf":
-                        return TextExtractionPDF.TASK
+                        return "pdf-to-text"
                     else:
                         return "unknown job"
                 elif tag.as_vec()[2] == "event":
@@ -46,9 +42,9 @@ def get_task(event, client, dvmconfig):
                             return "unknown type"
 
     elif event.kind() == EventDefinitions.KIND_NIP90_TRANSLATE_TEXT:
-        return Translation.TASK
+        return "translation"
     elif event.kind() == EventDefinitions.KIND_NIP90_GENERATE_IMAGE:
-        return ImageGenerationSDXL.TASK
+        return "text-to-image"
 
     else:
         return "unknown type"
@@ -59,6 +55,8 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
     input_value = ""
     input_type = ""
     duration = 1
+
+
 
     for tag in event.tags():
         if tag.as_vec()[0] == 'i':
@@ -82,6 +80,10 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
                 return False, "", 0
 
     task = get_task(event, client=client, dvmconfig=dvm_config)
+    for dvm in dvm_config.SUPPORTED_TASKS:
+        if dvm.TASK == task:
+            if not dvm.is_input_supported(input_type, event.content()):
+                return False, task, duration
 
     if input_type == 'url' and check_url_is_readable(input_value) is None:
         print("url not readable")
@@ -90,10 +92,7 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
     if task not in (x.TASK for x in dvm_config.SUPPORTED_TASKS):
         return False, task, duration
 
-    for dvm in dvm_config.SUPPORTED_TASKS:
-        if dvm.TASK == task:
-            if not dvm.is_input_supported(input_type, event.content()):
-                return False, task, duration
+
 
     return True, task, duration
 
@@ -107,9 +106,9 @@ def check_url_is_readable(url):
     if content_type == 'audio/x-wav' or str(url).endswith(".wav") or content_type == 'audio/mpeg' or str(url).endswith(
             ".mp3") or content_type == 'audio/ogg' or str(url).endswith(".ogg"):
         return "audio"
-    elif content_type == 'image/png' or str(url).endswith(".png") or content_type == 'image/jpg' or str(url).endswith(
-            ".jpg") or content_type == 'image/jpeg' or str(url).endswith(".jpeg") or content_type == 'image/png' or str(
-        url).endswith(".png"):
+    elif (content_type == 'image/png' or str(url).endswith(".png") or content_type == 'image/jpg' or str(url).endswith(
+            ".jpg") or content_type == 'image/jpeg' or str(url).endswith(".jpeg") or content_type == 'image/png' or
+          str(url).endswith(".png")):
         return "image"
     elif content_type == 'video/mp4' or str(url).endswith(".mp4") or content_type == 'video/avi' or str(url).endswith(
             ".avi") or content_type == 'video/mov' or str(url).endswith(".mov"):
