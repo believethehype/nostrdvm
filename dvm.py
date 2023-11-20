@@ -22,13 +22,14 @@ jobs_on_hold_list = []
 dvm_config = DVMConfig()
 
 
-def dvm(config):
+def DVM(config):
     dvm_config = config
     keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
     pk = keys.public_key()
 
     print(f"Nostr DVM public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    print('Supported DVM tasks: ' + ', '.join(p.TASK for p in dvm_config.SUPPORTED_TASKS))
+    print('Supported DVM tasks: ' + ', '.join(p.NAME + ":" + p.TASK for p in dvm_config.SUPPORTED_TASKS))
+
 
     client = Client(keys)
     for relay in dvm_config.RELAY_LIST:
@@ -207,6 +208,7 @@ def dvm(config):
                 or job_event.kind() == EventDefinitions.KIND_DM):
 
             task = get_task(job_event, client=client, dvmconfig=dvm_config)
+            result = ""
             for dvm in dvm_config.SUPPORTED_TASKS:
                 try:
                     if task == dvm.TASK:
@@ -215,7 +217,11 @@ def dvm(config):
                         check_and_return_event(result, str(job_event.as_json()), dvm_key=dvm_config.PRIVATE_KEY)
 
                 except Exception as e:
+                    print(e)
                     respond_to_error(e, job_event.as_json(), is_from_bot, dvm_config.PRIVATE_KEY)
+                    return
+
+
 
     def check_event_has_not_unfinished_job_input(nevent, append, client, dvmconfig):
         task_supported, task, duration = check_task_is_supported(nevent, client, False, config=dvmconfig)
@@ -246,44 +252,43 @@ def dvm(config):
     def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None, content=None, config=None,
                                  key=None):
         dvmconfig = config
-        altdesc = "This is a reaction to a NIP90 DVM AI task. "
+        alt_description = "This is a reaction to a NIP90 DVM AI task. "
         task = get_task(original_event, client=client, dvmconfig=dvmconfig)
         if status == "processing":
-            altdesc = "NIP90 DVM AI task " + task + " started processing. "
-            reaction = altdesc + emoji.emojize(":thumbs_up:")
+            alt_description = "NIP90 DVM AI task " + task + " started processing. "
+            reaction = alt_description + emoji.emojize(":thumbs_up:")
         elif status == "success":
-            altdesc = "NIP90 DVM AI task " + task + " finished successfully. "
-            reaction = altdesc + emoji.emojize(":call_me_hand:")
+            alt_description = "NIP90 DVM AI task " + task + " finished successfully. "
+            reaction = alt_description + emoji.emojize(":call_me_hand:")
         elif status == "chain-scheduled":
-            altdesc = "NIP90 DVM AI task " + task + " Chain Task scheduled"
-            reaction = altdesc + emoji.emojize(":thumbs_up:")
+            alt_description = "NIP90 DVM AI task " + task + " Chain Task scheduled"
+            reaction = alt_description + emoji.emojize(":thumbs_up:")
         elif status == "error":
-            altdesc = "NIP90 DVM AI task " + task + " had an error. "
+            alt_description = "NIP90 DVM AI task " + task + " had an error. "
             if content is None:
-                reaction = altdesc + emoji.emojize(":thumbs_down:")
+                reaction = alt_description + emoji.emojize(":thumbs_down:")
             else:
-                reaction = altdesc + emoji.emojize(":thumbs_down:") + content
+                reaction = alt_description + emoji.emojize(":thumbs_down:") + content
 
         elif status == "payment-required":
 
-            altdesc = "NIP90 DVM AI task " + task + " requires payment of min " + str(amount) + " Sats. "
-            reaction = altdesc + emoji.emojize(":orange_heart:")
+            alt_description = "NIP90 DVM AI task " + task + " requires payment of min " + str(amount) + " Sats. "
+            reaction = alt_description + emoji.emojize(":orange_heart:")
 
         elif status == "payment-rejected":
-            altdesc = "NIP90 DVM AI task " + task + " payment is below required amount of " + str(amount) + " Sats. "
-            reaction = altdesc + emoji.emojize(":thumbs_down:")
+            alt_description = "NIP90 DVM AI task " + task + " payment is below required amount of " + str(amount) + " Sats. "
+            reaction = alt_description + emoji.emojize(":thumbs_down:")
         elif status == "user-blocked-from-service":
-
-            altdesc = "NIP90 DVM AI task " + task + " can't be performed. User has been blocked from Service. "
-            reaction = altdesc + emoji.emojize(":thumbs_down:")
+            alt_description = "NIP90 DVM AI task " + task + " can't be performed. User has been blocked from Service. "
+            reaction = alt_description + emoji.emojize(":thumbs_down:")
         else:
             reaction = emoji.emojize(":thumbs_down:")
 
-        etag = Tag.parse(["e", original_event.id().to_hex()])
-        ptag = Tag.parse(["p", original_event.pubkey().to_hex()])
-        alttag = Tag.parse(["alt", altdesc])
-        statustag = Tag.parse(["status", status])
-        tags = [etag, ptag, alttag, statustag]
+        e_tag = Tag.parse(["e", original_event.id().to_hex()])
+        p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
+        alt_tag = Tag.parse(["alt", alt_description])
+        status_tag = Tag.parse(["status", status])
+        tags = [e_tag, p_tag, alt_tag, status_tag]
 
         if status == "success" or status == "error":  #
             for x in job_list:
@@ -354,8 +359,13 @@ def dvm(config):
                     send_nostr_reply_event(data, original_event_str, key=keys)
                 break
 
-        post_processed_content = post_process_result(data, original_event)
-        send_nostr_reply_event(post_processed_content, original_event_str, key=keys)
+
+        try:
+            post_processed_content = post_process_result(data, original_event)
+            send_nostr_reply_event(post_processed_content, original_event_str, key=keys)
+        except Exception as e:
+            respond_to_error(e, original_event_str, False, dvm_config.PRIVATE_KEY)
+
 
     def send_nostr_reply_event(content, original_event_as_str, key=None):
         originalevent = Event.from_json(original_event_as_str)
@@ -395,7 +405,7 @@ def dvm(config):
         sender = ""
         task = ""
         if not is_from_bot:
-            send_job_status_reaction(original_event, "error", content=content, key=dvm_key)
+            send_job_status_reaction(original_event, "error", content=str(content), key=dvm_key)
             # TODO Send Zap back
         else:
             for tag in original_event.tags():
@@ -407,7 +417,8 @@ def dvm(config):
             user = get_from_sql_table(sender)
             if not user.iswhitelisted:
                 amount = int(user.balance) + get_amount_per_task(task, dvm_config)
-                update_sql_table(sender, amount, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16, user.name,
+                update_sql_table(sender, amount, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
+                                 user.name,
                                  Timestamp.now().as_secs())
                 message = "There was the following error : " + content + ". Credits have been reimbursed"
             else:

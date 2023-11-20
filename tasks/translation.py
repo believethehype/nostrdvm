@@ -1,10 +1,17 @@
 import os
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
-from utils import env
 from utils.definitions import EventDefinitions
 from utils.nip89_utils import NIP89Announcement
 from utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
+
+
+"""
+This File contains a Module to call Google Translate Services locally on the DVM Machine
+
+Accepted Inputs: Text, Events, Jobs (Text Extraction, Summary, Translation)
+Outputs: Text containing the Translation in the desired language.
+"""
 
 
 class Translation(DVMTaskInterface):
@@ -16,12 +23,12 @@ class Translation(DVMTaskInterface):
         self.NAME = name
         self.PK = pk
 
-    def NIP89_announcement(self):
+    def NIP89_announcement(self, d_tag, content):
         nip89 = NIP89Announcement()
         nip89.kind = self.KIND
         nip89.pk = self.PK
-        nip89.dtag = os.getenv(env.TASK_TRANSLATION_NIP89_DTAG)
-        nip89.content = "{\"name\":\"" + self.NAME + "\",\"image\":\"https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg\",\"about\":\"I translate text from given text/event/job, currently using Google Translation Services into language defined in param.  \",\"nip90Params\":{\"language\":{\"required\":true,\"values\":[\"af\",\"am\",\"ar\",\"az\",\"be\",\"bg\",\"bn\",\"bs\",\"ca\",\"ceb\",\"co\",\"cs\",\"cy\",\"da\",\"de\",\"el\",\"eo\",\"es\",\"et\",\"eu\",\"fa\",\"fi\",\"fr\",\"fy\",\"ga\",\"gd\",\"gl\",\"gu\",\"ha\",\"haw\",\"hi\",\"hmn\",\"hr\",\"ht\",\"hu\",\"hy\",\"id\",\"ig\",\"is\",\"it\",\"he\",\"ja\",\"jv\",\"ka\",\"kk\",\"km\",\"kn\",\"ko\",\"ku\",\"ky\",\"la\",\"lb\",\"lo\",\"lt\",\"lv\",\"mg\",\"mi\",\"mk\",\"ml\",\"mn\",\"mr\",\"ms\",\"mt\",\"my\",\"ne\",\"nl\",\"no\",\"ny\",\"or\",\"pa\",\"pl\",\"ps\",\"pt\",\"ro\",\"ru\",\"sd\",\"si\",\"sk\",\"sl\",\"sm\",\"sn\",\"so\",\"sq\",\"sr\",\"st\",\"su\",\"sv\",\"sw\",\"ta\",\"te\",\"tg\",\"th\",\"tl\",\"tr\",\"ug\",\"uk\",\"ur\",\"uz\",\"vi\",\"xh\",\"yi\",\"yo\",\"zh\",\"zu\"]}}}"
+        nip89.dtag = d_tag
+        nip89.content = content
         return nip89
 
     def is_input_supported(self, input_type, input_content):
@@ -65,7 +72,8 @@ class Translation(DVMTaskInterface):
                 if tag.as_vec()[0] == 'i':
                     evt = get_referenced_event_by_id(tag.as_vec()[1],
                                                      [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                      EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT],
+                                                      EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                      EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
                                                      client,
                                                      config=dvm_config)
                     text = evt.content()
@@ -77,8 +85,9 @@ class Translation(DVMTaskInterface):
         return request_form
 
     def process(self, request_form):
-        options = DVMTaskInterface.setOptions(request_form)
         from translatepy.translators.google import GoogleTranslate
+
+        options = DVMTaskInterface.setOptions(request_form)
         gtranslate = GoogleTranslate()
         length = len(options["text"])
 

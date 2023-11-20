@@ -3,7 +3,7 @@ class DVMTaskInterface:
     TASK: str
     COST: int
 
-    def NIP89_announcement(self):
+    def NIP89_announcement(self, d_tag, content):
         """Define the NIP89 Announcement"""
         pass
 
