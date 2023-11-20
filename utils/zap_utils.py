@@ -43,7 +43,7 @@ def create_bolt11_ln_bits(sats, config):
         obj = json.loads(res.text)
         return obj["payment_request"], obj["payment_hash"]
     except Exception as e:
-        print(e)
+        print("LNBITS: " + str(e))
         return None
 
 

@@ -10,6 +10,8 @@ import pandas
 '''
 Post process results to either given output format or a Nostr readable plain text.
 '''
+
+
 def post_process_result(anno, original_event):
     print("post-processing...")
     if isinstance(anno, pandas.DataFrame):  # if input is an anno we parse it to required output format
@@ -85,13 +87,15 @@ def post_process_result(anno, original_event):
     elif isinstance(anno, NoneType):
         return "An error occurred"
     else:
-        result = replace_broken_words(anno) #TODO
+        result = replace_broken_words(anno)  # TODO
         return result
 
 
 '''
 Convenience function to replace words like Noster with Nostr
 '''
+
+
 def replace_broken_words(text):
     result = (text.replace("Noster", "Nostr").replace("Nostra", "Nostr").replace("no stir", "Nostr").
               replace("Nostro", "Nostr").replace("Impub", "npub").replace("sets", "Sats"))
@@ -103,12 +107,14 @@ Function to upload to Nostr.build and if it fails to Nostrfiles.dev
 Larger files than these hosters allow and fallback is catbox currently.
 Will probably need to switch to another system in the future.
 '''
+
+
 def uploadMediaToHoster(filepath):
     print("Uploading image: " + filepath)
     try:
         files = {'file': open(filepath, 'rb')}
         file_stats = os.stat(filepath)
-        sizeinmb = file_stats.st_size / (1024*1024)
+        sizeinmb = file_stats.st_size / (1024 * 1024)
         print("Filesize of Uploaded media: " + str(sizeinmb) + " Mb.")
         if sizeinmb > 25:
             uploader = CatboxUploader(filepath)
