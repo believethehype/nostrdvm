@@ -4,7 +4,9 @@ from threading import Thread
 
 from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
+from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions
+from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import get_event_by_id
 
 """
@@ -22,14 +24,14 @@ class TextExtractionPDF(DVMTaskInterface):
     COST: int = 20
     PK: str
 
-    def __init__(self, name, dvm_config):
+    def __init__(self, name, dvm_config: DVMConfig, admin_config: AdminConfig = None):
         self.NAME = name
         dvm_config.SUPPORTED_TASKS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
         self.PK = dvm_config.PRIVATE_KEY
 
         dvm = DVM
-        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config])
+        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config, admin_config])
         nostr_dvm_thread.start()
 
     def is_input_supported(self, input_type, input_content):
