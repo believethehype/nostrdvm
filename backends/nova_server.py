@@ -11,8 +11,9 @@ from utils.output_utils import uploadMediaToHoster
 
 """
 This file contains basic calling functions for ML tasks that are outsourced to nova-server 
-(https://github.com/hcmlab/nova-server). nova-server is an Open-Source backend that enables running models locally, by
-accepting a request form. Modules are deployed in in separate virtual environments so dependencies won't conflict. 
+(https://github.com/hcmlab/nova-server). nova-server is an Open-Source backend that enables running models locally
+ based on preefined modules (nova-server-modules), by accepting a request form.
+ Modules are deployed in in separate virtual environments so dependencies won't conflict. 
 
 Setup nova-server:
 https://hcmlab.github.io/nova-server/docbuild/html/tutorials/introduction.html
@@ -20,7 +21,7 @@ https://hcmlab.github.io/nova-server/docbuild/html/tutorials/introduction.html
 """
 
 """
-send_request_to_nova_server(request_form)
+send_request_to_nova_server(request_form, address)
 Function to send a request_form to the server, containing all the information we parsed from the Nostr event and added
 in the module that is calling the server
 
@@ -36,7 +37,7 @@ def send_request_to_nova_server(request_form, address):
 
 
 """
-check_nova_server_status(request_form)
+check_nova_server_status(request_form, address)
 Function that requests the status of the current process with the jobID (we use the Nostr event as jobID).
 When the Job is successfully finished we grab the result and depending on the type return the output
 We throw an exception on error

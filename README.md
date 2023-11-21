@@ -13,9 +13,6 @@ A tutorial on how to add additional tasks, as well as the larger server backend 
 
 Known Issues:
 - After refactoring DVMs work independent from each other for the most part.
-  - They currently still share a joblist and might act weird together (TODO rework joblist) 
-
-  - Probably therefore jobs might sometimes not start (need investigation)
   - Some functions might work easier than they did before (need some refactoring)
 - Bot currently not implemented
 - Some basic functionality is still missing, e.g. handling various mediasources
