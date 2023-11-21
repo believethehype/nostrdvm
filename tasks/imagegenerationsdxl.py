@@ -6,7 +6,6 @@ from backends.nova_server import check_nova_server_status, send_request_to_nova_
 from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.definitions import EventDefinitions
-from utils.nip89_utils import NIP89Announcement
 
 
 """
@@ -27,6 +26,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
     def __init__(self, name, dvm_config, default_model=None, default_lora=None):
         self.NAME = name
         dvm_config.SUPPORTED_TASKS = [self]
+        dvm_config.DB = "db/" + self.NAME + ".db"
         self.PK = dvm_config.PRIVATE_KEY
         self.default_model = default_model
         self.default_lora = default_lora

@@ -5,7 +5,6 @@ from threading import Thread
 from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.definitions import EventDefinitions
-from utils.nip89_utils import NIP89Announcement
 from utils.nostr_utils import get_event_by_id
 
 """
@@ -14,6 +13,8 @@ This File contains a Module to extract Text from a PDF file locally on the DVM M
 Accepted Inputs: Url to pdf file, Event containing an URL to a PDF file
 Outputs: Text containing the extracted contents of the PDF file
 """
+
+
 class TextExtractionPDF(DVMTaskInterface):
     NAME: str
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
@@ -21,17 +22,15 @@ class TextExtractionPDF(DVMTaskInterface):
     COST: int = 20
     PK: str
 
-
     def __init__(self, name, dvm_config):
         self.NAME = name
         dvm_config.SUPPORTED_TASKS = [self]
+        dvm_config.DB = "db/" + self.NAME + ".db"
         self.PK = dvm_config.PRIVATE_KEY
 
         dvm = DVM
         nostr_dvm_thread = Thread(target=dvm, args=[dvm_config])
         nostr_dvm_thread.start()
-
-
 
     def is_input_supported(self, input_type, input_content):
         if input_type != "url" and input_type != "event":
