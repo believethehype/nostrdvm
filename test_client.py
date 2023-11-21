@@ -7,6 +7,7 @@ from threading import Thread
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt
 
+from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import send_event
 from utils.definitions import EventDefinitions, RELAY_LIST
 
@@ -36,7 +37,8 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     for relay in relay_list:
         client.add_relay(relay)
     client.connect()
-    send_event(event, client, keys)
+    config = DVMConfig
+    send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
@@ -62,7 +64,8 @@ def nostr_client_test_image(prompt):
     for relay in relay_list:
         client.add_relay(relay)
     client.connect()
-    send_event(event, client, keys)
+    config = DVMConfig
+    send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 def nostr_client():

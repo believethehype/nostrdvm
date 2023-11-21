@@ -56,7 +56,7 @@ class TextExtractionPDF(DVMTaskInterface):
             url = input_content
         # if event contains url to pdf, we checked for a pdf link before
         elif input_type == "event":
-            evt = get_event_by_id(input_content, config=dvm_config)
+            evt = get_event_by_id(input_content, client=client, config=dvm_config)
             url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
 
         request_form["optStr"] = 'url=' + url

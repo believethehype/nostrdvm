@@ -58,7 +58,7 @@ class Translation(DVMTaskInterface):
         if input_type == "event":
             for tag in event.tags():
                 if tag.as_vec()[0] == 'i':
-                    evt = get_event_by_id(tag.as_vec()[1], config=dvm_config)
+                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
                     text = evt.content()
                     break
 
@@ -71,12 +71,11 @@ class Translation(DVMTaskInterface):
         elif input_type == "job":
             for tag in event.tags():
                 if tag.as_vec()[0] == 'i':
-                    evt = get_referenced_event_by_id(tag.as_vec()[1],
-                                                     [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                      EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
-                                                      EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
-                                                     client,
-                                                     config=dvm_config)
+                    evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
+                                                     kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                            EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                            EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
+                                                     dvm_config=dvm_config)
                     text = evt.content()
                     break
 

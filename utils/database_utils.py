@@ -155,7 +155,7 @@ def list_db(db):
         print(e)
 
 
-def update_user_balance(db, sender, sats, config=None):
+def update_user_balance(db, sender, sats, client, config):
     user = get_from_sql_table(db, sender)
     if user is None:
         add_to_sql_table(db, sender, (int(sats) + NEW_USER_BALANCE), False, False,
@@ -186,7 +186,7 @@ def update_user_balance(db, sender, sats, config=None):
 
             evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(sender), message,
                                                         None).to_event(keys)
-            send_event(evt, key=keys)
+            send_event(evt, client=client, dvm_config=config)
 
 
 def get_or_add_user(db, sender):

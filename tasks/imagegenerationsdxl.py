@@ -21,7 +21,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
     NAME: str = ""
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
-    COST: int = 5
+    COST: int = 50
     PK: str
 
     def __init__(self, name, dvm_config: DVMConfig, admin_config: AdminConfig = None, default_model=None, default_lora=None):
@@ -102,8 +102,6 @@ class ImageGenerationSDXL(DVMTaskInterface):
                         if len(split) > 1:
                             width = split[0]
                             height = split[1]
-                            print(width)
-                            print(height)
                 elif tag.as_vec()[1] == "model":
                     model = tag.as_vec()[2]
 
