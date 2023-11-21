@@ -73,4 +73,4 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
         list_db(db)
 
     if rebroadcast_nip89:
-        nip89_announce_tasks(dvmconfig)
+        nip89_announce_tasks(dvmconfig, client=client)

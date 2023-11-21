@@ -4,10 +4,11 @@ import json
 import requests
 from Crypto.Cipher import AES
 from bech32 import bech32_decode, convertbits
-from nostr_sdk import PublicKey, nostr_sdk
+from nostr_sdk import nostr_sdk, PublicKey, SecretKey
+from utils.dvmconfig import DVMConfig
 
 
-def parse_bolt11_invoice(invoice):
+def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
     def get_index_of_first_letter(ip):
         index = 0
         for c in ip:
@@ -17,7 +18,7 @@ def parse_bolt11_invoice(invoice):
                 index = index + 1
         return len(ip)
 
-    remaining_invoice = invoice[4:]
+    remaining_invoice = bolt11_invoice[4:]
     index = get_index_of_first_letter(remaining_invoice)
     identifier = remaining_invoice[index]
     number_string = remaining_invoice[:index]
@@ -34,9 +35,9 @@ def parse_bolt11_invoice(invoice):
     return int(number)
 
 
-def create_bolt11_ln_bits(sats, config):
+def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
     url = config.LNBITS_URL + "/api/v1/payments"
-    data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM"}
+    data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM " + config.NIP89.name}
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
         res = requests.post(url, json=data, headers=headers)
@@ -44,35 +45,35 @@ def create_bolt11_ln_bits(sats, config):
         return obj["payment_request"], obj["payment_hash"]
     except Exception as e:
         print("LNBITS: " + str(e))
-        return None
+        return None, None
 
 
-def check_bolt11_ln_bits_is_paid(payment_hash, config):
+def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
     url = config.LNBITS_URL + "/api/v1/payments/" + payment_hash
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
         res = requests.get(url, headers=headers)
         obj = json.loads(res.text)
-        return obj["paid"]
+        return obj["paid"] #TODO cast
     except Exception as e:
         return None
 
 
 # DECRYPT ZAPS
-def check_for_zapplepay(sender, content):
+def check_for_zapplepay(pubkey_hex: str, content: str):
     try:
         # Special case Zapplepay
-        if sender == PublicKey.from_bech32("npub1wxl6njlcgygduct7jkgzrvyvd9fylj4pqvll6p32h59wyetm5fxqjchcan").to_hex():
+        if pubkey_hex == PublicKey.from_bech32("npub1wxl6njlcgygduct7jkgzrvyvd9fylj4pqvll6p32h59wyetm5fxqjchcan").to_hex():
             real_sender_bech32 = content.replace("From: nostr:", "")
-            sender = PublicKey.from_bech32(real_sender_bech32).to_hex()
-        return sender
+            pubkey_hex = PublicKey.from_bech32(real_sender_bech32).to_hex()
+        return pubkey_hex
 
     except Exception as e:
         print(e)
-        return sender
+        return pubkey_hex
 
 
-def decrypt_private_zap_message(msg, privkey, pubkey):
+def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey):
     shared_secret = nostr_sdk.generate_shared_key(privkey, pubkey)
     if len(shared_secret) != 16 and len(shared_secret) != 32:
         return "invalid shared secret size"

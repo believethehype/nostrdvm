@@ -11,6 +11,7 @@ class DVMConfig:
     RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
                   "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
                   "wss://relay.f7z.io"]
+
     RELAY_TIMEOUT = 5
     LNBITS_INVOICE_KEY = ''
     LNBITS_URL = 'https://lnbits.com'

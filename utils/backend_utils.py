@@ -28,7 +28,7 @@ def get_task(event, client, dvmconfig):
                     else:
                         return "unknown job"
                 elif tag.as_vec()[2] == "event":
-                    evt = get_event_by_id(tag.as_vec()[1], config=dvmconfig)
+                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvmconfig)
                     if evt is not None:
                         if evt.kind() == 1063:
                             for tg in evt.tags():
@@ -65,7 +65,7 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
                 input_value = tag.as_vec()[1]
                 input_type = tag.as_vec()[2]
                 if input_type == "event":
-                    evt = get_event_by_id(input_value, config=dvm_config)
+                    evt = get_event_by_id(input_value, client=client, config=dvm_config)
                     if evt is None:
                         print("Event not found")
                         return False, "", 0

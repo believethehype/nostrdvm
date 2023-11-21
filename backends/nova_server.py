@@ -7,7 +7,7 @@ import pandas as pd
 import requests
 import PIL.Image as Image
 
-from utils.output_utils import uploadMediaToHoster
+from utils.output_utils import upload_media_to_hoster
 
 """
 This file contains basic calling functions for ML tasks that are outsourced to nova-server 
@@ -78,7 +78,7 @@ def check_nova_server_status(jobID, address):
             if content_type == "image/jpeg":
                 image = Image.open(io.BytesIO(response.content))
                 image.save("./outputs/image.jpg")
-                result = uploadMediaToHoster("./outputs/image.jpg")
+                result = upload_media_to_hoster("./outputs/image.jpg")
                 os.remove("./outputs/image.jpg")
             elif content_type == 'text/plain; charset=utf-8':
                 result = response.content.decode('utf-8')
@@ -95,8 +95,9 @@ def check_nova_server_status(jobID, address):
                             print(result)
                             with open("response.zip", "wb") as f:
                                 f.write(response.content)
-                        except:
-                            zf.extractall()
+                        except Exception as e:
+                            #zf.extractall()
+                            print(e)
 
             return result
         except Exception as e:
