@@ -300,7 +300,7 @@ class DVM:
             response_kind = originalevent.kind() + 1000
             event = EventBuilder(response_kind, str(content), replytags).to_event(key)
             send_event(event, key=key)
-            print("[" + self.dvm_config.NIP89.name + "]  " + str(response_kind) + " Job Response event sent: " + event.as_json())
+            print("[" + self.dvm_config.NIP89.name + "]" + str(response_kind) + " Job Response event sent: " + event.as_json())
             return event.as_json()
 
         def respond_to_error(content, originaleventstr, is_from_bot=False, dvm_key=None):
