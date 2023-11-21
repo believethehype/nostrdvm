@@ -18,7 +18,7 @@ Outputs: Text containing the extracted contents of the PDF file
 
 
 class TextExtractionPDF(DVMTaskInterface):
-    NAME: str
+    NAME: str = ""
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
     COST: int = 20

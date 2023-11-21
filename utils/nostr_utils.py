@@ -19,6 +19,8 @@ def get_event_by_id(event_id, client=None, config=None):
         id_filter = Filter().author(split[1]).custom_tag(Alphabet.D, [split[2]])
         events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     else:
+        if str(event_id).startswith('note'):
+            event_id = EventId.from_bech32(event_id).to_hex()
         id_filter = Filter().id(event_id).limit(1)
         events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if is_new_client:

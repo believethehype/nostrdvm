@@ -18,7 +18,7 @@ Outputs: An url to an Image
 
 
 class ImageGenerationSDXL(DVMTaskInterface):
-    NAME: str
+    NAME: str = ""
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
     COST: int = 5
@@ -109,6 +109,16 @@ class ImageGenerationSDXL(DVMTaskInterface):
 
         prompt = prompt.replace(";", ",")
         request_form['data'] = '[{"id":"input_prompt","type":"input","src":"request:text","data":"' + prompt + '","active":"True"},{"id":"negative_prompt","type":"input","src":"request:text","data":"' + negative_prompt + '","active":"True"},{"id":"output_image","type":"output","src":"request:image","active":"True"}]'
+        request_form['options'] = ('[{"model":" + ' + model
+                                   + '","ratio":"' + str(ratio_width) + ':' + str(ratio_height)
+                                   + '","width":"' + str(width) + ':' + str(height)
+                                   + '","strength":"' + str(strength)
+                                   + '","guidance_scale":"' + str(guidance_scale)
+                                   + '","lora":"' + str(lora)
+                                   + '","lora_weight":"' + str(lora_weight)
+                                   + '"}]')
+
+
         request_form["optStr"] = ('model=' + model + ';ratio=' + str(ratio_width) + '-' + str(ratio_height) + ';size=' +
                                   str(width) + '-' + str(height) + ';strength=' + str(strength) + ';guidance_scale=' +
                                   str(guidance_scale) + ';lora=' + lora + ';lora_weight=' + lora_weight)

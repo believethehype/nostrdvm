@@ -58,9 +58,7 @@ def add_sql_table_column(db):
 
 def add_to_sql_table(db, npub, sats, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive):
     try:
-        print("ADD: " + str(db))
         con = sqlite3.connect(db)
-        print("Connected")
         cur = con.cursor()
         data = (npub, sats, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive)
         cur.execute("INSERT or IGNORE INTO users VALUES(?, ?, ?, ?, ?, ?, ?, ?)", data)
@@ -94,15 +92,12 @@ def update_sql_table(db, npub, sats, iswhitelisted, isblacklisted, nip05, lud16,
 def get_from_sql_table(db, npub):
     try:
         con = sqlite3.connect(db)
-        print("Connecting to DB")
         cur = con.cursor()
         cur.execute("SELECT * FROM users WHERE npub=?", (npub,))
         row = cur.fetchone()
         con.close()
-        print(row)
         if row is None:
             user = None
-            print("returning None")
             return user
         else:
             user = User
