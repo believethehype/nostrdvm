@@ -64,8 +64,8 @@ class DVM:
             keys = self.keys
 
             def handle(self, relay_url, nostr_event):
-                print(f"[Nostr] Received new NIP90 Job Request from {relay_url}: {nostr_event.as_json()}")
                 if EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= nostr_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC:
+                    print("[" + self.dvm_config.NIP89.name + "] " + f"Received new NIP90 Job Request from {relay_url}: {nostr_event.as_json()}")
                     handle_nip90_job_event(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
                     handle_zap(nostr_event)
@@ -74,9 +74,7 @@ class DVM:
                 return
 
         def handle_nip90_job_event(nip90_event):
-            print(str(self.dvm_config.DB))
             user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex())
-            print("got user")
             task_supported, task, duration = check_task_is_supported(nip90_event, client=self.client,
                                                                      get_duration=(not user.iswhitelisted),
                                                                      config=self.dvm_config)
@@ -84,7 +82,7 @@ class DVM:
 
             if user.isblacklisted:
                 send_job_status_reaction(nip90_event, "error", client=self.client, config=self.dvm_config)
-                print("[Nostr] Request by blacklisted user, skipped")
+                print("[" + self.dvm_config.NIP89.name + "] Request by blacklisted user, skipped")
 
             elif task_supported:
                 print("Received new Task: " + task)
@@ -98,7 +96,7 @@ class DVM:
                         task_is_free = True
 
                 if user.iswhitelisted or task_is_free:
-                    print("[Nostr] Free or Whitelisted for task " + task + ". Starting processing..")
+                    print("[" + self.dvm_config.NIP89.name + "] Free or Whitelisted for task " + task + ". Starting processing..")
                     send_job_status_reaction(nip90_event, "processing", True, 0, client=self.client,
                                              config=self.dvm_config)
                     do_work(nip90_event, is_from_bot=False)
@@ -109,7 +107,7 @@ class DVM:
                         if tag.as_vec()[0] == 'bid':
                             bid = int(tag.as_vec()[1])
 
-                    print("[Nostr][Payment required] New Nostr " + task + " Job event: " + nip90_event.as_json())
+                    print("[" + self.dvm_config.NIP89.name + "] Payment required: New Nostr " + task + " Job event: " + nip90_event.as_json())
                     if bid > 0:
                         bid_offer = int(bid / 1000)
                         if bid_offer >= amount:
@@ -118,7 +116,7 @@ class DVM:
                                                      client=self.client, config=self.dvm_config)
 
                     else:  # If there is no bid, just request server rate from user
-                        print("[Nostr] Requesting payment for Event: " + nip90_event.id().to_hex())
+                        print("[" + self.dvm_config.NIP89.name + "]  Requesting payment for Event: " + nip90_event.id().to_hex())
                         send_job_status_reaction(nip90_event, "payment-required",
                                                  False, amount, client=self.client, config=self.dvm_config)
             else:
@@ -177,7 +175,7 @@ class DVM:
                                                                                  config=self.dvm_config)
                         if job_event is not None and task_supported:
                             if amount <= invoice_amount:
-                                print("[Nostr] Payment-request fulfilled...")
+                                print("[" + self.dvm_config.NIP89.name + "]  Payment-request fulfilled...")
                                 send_job_status_reaction(job_event, "processing", client=self.client,
                                                          config=self.dvm_config)
                                 indices = [i for i, x in enumerate(self.job_list) if
@@ -204,7 +202,7 @@ class DVM:
                                 send_job_status_reaction(job_event, "payment-rejected",
                                                          False, invoice_amount, client=self.client,
                                                          config=self.dvm_config)
-                                print("[Nostr] Invoice was not paid sufficiently")
+                                print("[" + self.dvm_config.NIP89.name + "] Invoice was not paid sufficiently")
 
                     elif zapped_event.kind() in EventDefinitions.ANY_RESULT:
                         print("Someone zapped the result of an exisiting Task. Nice")
@@ -302,7 +300,7 @@ class DVM:
             response_kind = originalevent.kind() + 1000
             event = EventBuilder(response_kind, str(content), replytags).to_event(key)
             send_event(event, key=key)
-            print("[Nostr] " + str(response_kind) + " Job Response event sent: " + event.as_json())
+            print("[" + self.dvm_config.NIP89.name + "]  " + str(response_kind) + " Job Response event sent: " + event.as_json())
             return event.as_json()
 
         def respond_to_error(content, originaleventstr, is_from_bot=False, dvm_key=None):
@@ -411,7 +409,7 @@ class DVM:
                                status=status, result="", is_processed=False, bolt11=bolt11,
                                payment_hash=payment_hash,
                                expires=expires, from_bot=False))
-                print(str(self.job_list))
+                #print(str(self.job_list))
             if status == "payment-required" or status == "payment-rejected" or (
                     status == "processing" and not is_paid) or (
                     status == "success" and not is_paid):
@@ -428,8 +426,7 @@ class DVM:
             event = EventBuilder(EventDefinitions.KIND_FEEDBACK, reaction, tags).to_event(keys)
 
             send_event(event, key=keys)
-            print(
-                "[Nostr] Sent Kind " + str(
+            print("[" + self.dvm_config.NIP89.name + "]" + ": Sent Kind " + str(
                     EventDefinitions.KIND_FEEDBACK) + " Reaction: " + status + " " + event.as_json())
             return event.as_json()
 

@@ -55,9 +55,7 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
     input_value = ""
     input_type = ""
     duration = 1
-
-
-
+    task = get_task(event, client=client, dvmconfig=dvm_config)
     for tag in event.tags():
         if tag.as_vec()[0] == 'i':
             if len(tag.as_vec()) < 3:
@@ -71,28 +69,27 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
                     if evt is None:
                         print("Event not found")
                         return False, "", 0
+                elif input_type == 'url' and check_url_is_readable(input_value) is None:
+                    print("Url not readable / supported")
+                    return False, task, duration
 
         elif tag.as_vec()[0] == 'output':
             output = tag.as_vec()[1]
-            if not (
-                    output == "text/plain" or output == "text/json" or output == "json" or output == "image/png" or "image/jpg" or output == ""):
+            if not (output == "text/plain"
+                    or output == "text/json" or output == "json"
+                    or output == "image/png" or "image/jpg"
+                    or output == "image/png;format=url" or output == "image/jpg;format=url"
+                    or output == ""):
                 print("Output format not supported, skipping..")
                 return False, "", 0
 
-    task = get_task(event, client=client, dvmconfig=dvm_config)
     for dvm in dvm_config.SUPPORTED_TASKS:
         if dvm.TASK == task:
             if not dvm.is_input_supported(input_type, event.content()):
                 return False, task, duration
 
-    if input_type == 'url' and check_url_is_readable(input_value) is None:
-        print("url not readable")
-        return False, task, duration
-
     if task not in (x.TASK for x in dvm_config.SUPPORTED_TASKS):
         return False, task, duration
-
-
 
     return True, task, duration
 
@@ -121,7 +118,7 @@ def check_url_is_readable(url):
 
 
 def get_amount_per_task(task, dvm_config, duration=1):
-    for dvm in dvm_config.SUPPORTED_TASKS:
+    for dvm in dvm_config.SUPPORTED_TASKS: #this is currently just one
         if dvm.TASK == task:
             amount = dvm.COST * duration
             return amount

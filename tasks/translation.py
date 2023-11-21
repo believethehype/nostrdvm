@@ -16,7 +16,7 @@ Outputs: Text containing the Translation in the desired language.
 
 
 class Translation(DVMTaskInterface):
-    NAME: str
+    NAME: str = ""
     KIND: int = EventDefinitions.KIND_NIP90_TRANSLATE_TEXT
     TASK: str = "translation"
     COST: int = 0
