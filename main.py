@@ -30,10 +30,10 @@ def run_nostr_dvm_with_local_config():
 
     pdfextactor = TextExtractionPDF("PDF Extractor", dvm_config)
     d_tag = os.getenv(env.TASK_TEXTEXTRACTION_NIP89_DTAG)
-    content = "{\"name\":\"" + pdfextactor.NAME + ("\",\"image\":\"https://image.nostr.build"
-                                                   "/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669"
-                                                   ".jpg\",\"about\":\"I extract Text from pdf documents\","
-                                                   "\"nip90Params\":{}}")
+    content = ("{\"name\":\"" + pdfextactor.NAME + "\","
+                "\"image\":\"https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg\","
+                "\"about\":\"I extract Text from pdf documents\","
+                "\"nip90Params\":{}}")
     dvm_config.NIP89 = pdfextactor.NIP89_announcement(d_tag, content)
 
     # Spawn DVM2 Kind 5002 Text Translation
@@ -44,11 +44,10 @@ def run_nostr_dvm_with_local_config():
 
     translator = Translation("Translator", dvm_config)
     d_tag = os.getenv(env.TASK_TRANSLATION_NIP89_DTAG)
-    content = "{\"name\":\"" + translator.NAME + ("\",\"image\":\"https://image.nostr.build"
-                                                  "/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669"
-                                                  ".jpg\",\"about\":\"I translate text from given text/event/job, "
-                                                  "currently using Google Translation Services into language defined "
-                                                  "in param.  \",\"nip90Params\":{\"language\":{\"required\":true,"
+    content = ("{\"name\":\"" + translator.NAME + "\","
+                "\"image\":\"https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg\","
+                "\"about\":\"I translate text from given text/event/job, ""currently using Google Translation Services into language defined in params.\","
+                "\"nip90Params\":{\"language\":{\"required\":true,"
                                                   "\"values\":[\"af\",\"am\",\"ar\",\"az\",\"be\",\"bg\",\"bn\","
                                                   "\"bs\",\"ca\",\"ceb\",\"co\",\"cs\",\"cy\",\"da\",\"de\",\"el\","
                                                   "\"eo\",\"es\",\"et\",\"eu\",\"fa\",\"fi\",\"fr\",\"fy\",\"ga\","
@@ -72,9 +71,10 @@ def run_nostr_dvm_with_local_config():
     dvm_config.LNBITS_URL = os.getenv(env.LNBITS_HOST)
     unstableartist = ImageGenerationSDXL("Unstable Diffusion", dvm_config, "unstable")
     d_tag = os.getenv(env.TASK_IMAGEGENERATION_NIP89_DTAG)
-    content = "{\"name\":\"" + unstableartist.NAME + ("\",\"image\":\"https://image.nostr.build"
-                                                      "/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg"
-                                                      "\",\"about\":\"I draw images based on a prompt with a Model called unstable diffusion.\",\"nip90Params\":{}}")
+    content = ("{\"name\":\"" + unstableartist.NAME + "\","
+               "\"image\":\"https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg\","
+               "\"about\":\"I draw images based on a prompt with a Model called unstable diffusion.\","
+               "\"nip90Params\":{}}")
     dvm_config.NIP89 = unstableartist.NIP89_announcement(d_tag, content)
 
 
@@ -86,9 +86,11 @@ def run_nostr_dvm_with_local_config():
     #We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     sketcher = ImageGenerationSDXL("Sketcher", dvm_config, admin_config, default_model="mohawk", default_lora="timburton")
     d_tag = os.getenv(env.TASK_IMAGEGENERATION_NIP89_DTAG2)
-    content = "{\"name\":\"" + sketcher.NAME + ("\",\"image\":\"https://image.nostr.build"
-                                                "/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg"
-                                                "\",\"about\":\"I draw images based on a prompt in kind of Tim Burton style\",\"nip90Params\":{}}")
+    content = ("{\"name\":\"" + unstableartist.NAME + "\","
+               "\"image\":\"https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg\","
+               "\"about\":\"I draw images based on a prompt with a Model called unstable diffusion.\","
+               "\"nip90Params\":{}}")
+
     dvm_config.NIP89 = sketcher.NIP89_announcement(d_tag, content)
 
 
