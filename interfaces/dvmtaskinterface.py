@@ -2,6 +2,7 @@ from utils.nip89_utils import NIP89Announcement
 
 
 class DVMTaskInterface:
+    NAME: str
     KIND: int
     TASK: str
     COST: int
@@ -9,6 +10,7 @@ class DVMTaskInterface:
 
     def NIP89_announcement(self, d_tag, content):
         nip89 = NIP89Announcement()
+        nip89.name = self.NAME
         nip89.kind = self.KIND
         nip89.pk = self.PK
         nip89.dtag = d_tag

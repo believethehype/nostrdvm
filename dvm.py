@@ -5,7 +5,7 @@ import emoji
 
 from utils.definitions import EventDefinitions, RequiredJobToWatch, JobToWatch
 from utils.dvmconfig import DVMConfig
-from utils.admin_utils import admin_make_database_updates
+from utils.admin_utils import admin_make_database_updates, AdminConfig
 from utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
 from utils.database_utils import update_sql_table, get_from_sql_table, \
     create_sql_table, get_or_add_user, update_user_balance
@@ -23,14 +23,16 @@ if use_logger:
 
 class DVM:
     dvm_config: DVMConfig
+    admin_config: AdminConfig
     keys: Keys
     client: Client
     job_list: list
     jobs_on_hold_list: list
 
-    def __init__(self, config):
-        self.dvm_config = config
-        self.keys = Keys.from_sk_str(config.PRIVATE_KEY)
+    def __init__(self, dvmconfig, adminconfig = None):
+        self.dvm_config = dvmconfig
+        self.admin_config = adminconfig
+        self.keys = Keys.from_sk_str(dvmconfig.PRIVATE_KEY)
         self.client = Client(self.keys)
         self.job_list = []
         self.jobs_on_hold_list = []
@@ -54,7 +56,7 @@ class DVM:
         self.client.subscribe([dm_zap_filter, dvm_filter])
 
         create_sql_table(self.dvm_config.DB)
-        admin_make_database_updates(config=self.dvm_config, client=self.client)
+        admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
 
         class NotificationHandler(HandleNotification):
             client = self.client

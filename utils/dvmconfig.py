@@ -1,6 +1,7 @@
 import os
 
 from utils import env
+from utils.nip89_utils import NIP89Announcement
 
 
 class DVMConfig:
@@ -13,10 +14,11 @@ class DVMConfig:
     RELAY_TIMEOUT = 5
     LNBITS_INVOICE_KEY = ''
     LNBITS_URL = 'https://lnbits.com'
-    REQUIRES_NIP05: bool = False
     DB: str
+    NIP89: NIP89Announcement
 
+    REQUIRES_NIP05: bool = False
     SHOWRESULTBEFOREPAYMENT: bool = True  # if this is true show results even when not paid right after autoprocess
 
 
-    NIP89s: list = []
+

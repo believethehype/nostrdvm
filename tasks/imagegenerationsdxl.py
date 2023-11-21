@@ -5,8 +5,9 @@ from threading import Thread
 from backends.nova_server import check_nova_server_status, send_request_to_nova_server
 from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
+from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions
-
+from utils.dvmconfig import DVMConfig
 
 """
 This File contains a Module to transform Text input on NOVA-Server and receive results back. 
@@ -23,7 +24,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
     COST: int = 5
     PK: str
 
-    def __init__(self, name, dvm_config, default_model=None, default_lora=None):
+    def __init__(self, name, dvm_config: DVMConfig, admin_config: AdminConfig = None, default_model=None, default_lora=None):
         self.NAME = name
         dvm_config.SUPPORTED_TASKS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
@@ -32,7 +33,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
         self.default_lora = default_lora
 
         dvm = DVM
-        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config])
+        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config, admin_config])
         nostr_dvm_thread.start()
 
 
