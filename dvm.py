@@ -3,7 +3,8 @@ from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter,
 import time
 import emoji
 
-from utils.definitions import EventDefinitions, DVMConfig, RequiredJobToWatch, JobToWatch
+from utils.definitions import EventDefinitions, RequiredJobToWatch, JobToWatch
+from utils.dvmconfig import DVMConfig
 from utils.admin_utils import admin_make_database_updates
 from utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
 from utils.database_utils import update_sql_table, get_from_sql_table, \
@@ -17,19 +18,22 @@ use_logger = False
 if use_logger:
     init_logger(LogLevel.DEBUG)
 
-job_list = []
-jobs_on_hold_list = []
+
 
 
 class DVM:
     dvm_config: DVMConfig
     keys: Keys
     client: Client
+    job_list: list
+    jobs_on_hold_list: list
 
     def __init__(self, config):
         self.dvm_config = config
         self.keys = Keys.from_sk_str(config.PRIVATE_KEY)
         self.client = Client(self.keys)
+        self.job_list = []
+        self.jobs_on_hold_list = []
 
         pk = self.keys.public_key()
 
@@ -49,7 +53,7 @@ class DVM:
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
         self.client.subscribe([dm_zap_filter, dvm_filter])
 
-        create_sql_table()
+        create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(config=self.dvm_config, client=self.client)
 
         class NotificationHandler(HandleNotification):
@@ -68,7 +72,9 @@ class DVM:
                 return
 
         def handle_nip90_job_event(nip90_event):
-            user = get_or_add_user(nip90_event.pubkey().to_hex())
+            print(str(self.dvm_config.DB))
+            user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex())
+            print("got user")
             task_supported, task, duration = check_task_is_supported(nip90_event, client=self.client,
                                                                      get_duration=(not user.iswhitelisted),
                                                                      config=self.dvm_config)
@@ -149,7 +155,7 @@ class DVM:
                                 else:
                                     anon = True
                                     print("Anonymous Zap received. Unlucky, I don't know from whom, and never will")
-                user = get_or_add_user(sender)
+                user = get_or_add_user(self.dvm_config.DB, sender)
                 print(str(user))
 
                 if zapped_event is not None:
@@ -172,20 +178,20 @@ class DVM:
                                 print("[Nostr] Payment-request fulfilled...")
                                 send_job_status_reaction(job_event, "processing", client=self.client,
                                                          config=self.dvm_config)
-                                indices = [i for i, x in enumerate(job_list) if
+                                indices = [i for i, x in enumerate(self.job_list) if
                                            x.event_id == job_event.id().to_hex()]
                                 index = -1
                                 if len(indices) > 0:
                                     index = indices[0]
                                 if index > -1:
-                                    if job_list[index].is_processed:  # If payment-required appears a processing
-                                        job_list[index].is_paid = True
-                                        check_and_return_event(job_list[index].result,
+                                    if self.job_list[index].is_processed:  # If payment-required appears a processing
+                                        self.job_list[index].is_paid = True
+                                        check_and_return_event(self.job_list[index].result,
                                                                str(job_event.as_json()),
                                                                dvm_key=self.dvm_config.PRIVATE_KEY)
-                                    elif not (job_list[index]).is_processed:
+                                    elif not (self.job_list[index]).is_processed:
                                         # If payment-required appears before processing
-                                        job_list.pop(index)
+                                        self.job_list.pop(index)
                                         print("Starting work...")
                                         do_work(job_event, is_from_bot=False)
                                 else:
@@ -203,13 +209,13 @@ class DVM:
                     elif not anon:
                         print("Note Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
                             user.name))
-                        update_user_balance(sender, invoice_amount, config=self.dvm_config)
+                        update_user_balance(self.dvm_config.DB, sender, invoice_amount, config=self.dvm_config)
 
                         # a regular note
                 elif not anon:
                     print("Profile Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
                         user.name))
-                    update_user_balance(sender, invoice_amount, config=self.dvm_config)
+                    update_user_balance(self.dvm_config.DB, sender, invoice_amount, config=self.dvm_config)
 
             except Exception as e:
                 print(f"Error during content decryption: {e}")
@@ -233,7 +239,7 @@ class DVM:
                             if evt is None:
                                 if append:
                                     job = RequiredJobToWatch(event=nevent, timestamp=Timestamp.now().as_secs())
-                                    jobs_on_hold_list.append(job)
+                                    self.jobs_on_hold_list.append(job)
                                     send_job_status_reaction(nevent, "chain-scheduled", True, 0, client=client,
                                                              config=dvmconfig)
 
@@ -245,7 +251,7 @@ class DVM:
             original_event = Event.from_json(original_event_str)
             keys = Keys.from_sk_str(dvm_key)
 
-            for x in job_list:
+            for x in self.job_list:
                 if x.event_id == original_event.id().to_hex():
                     is_paid = x.is_paid
                     amount = x.amount
@@ -260,9 +266,9 @@ class DVM:
                                                  config=self.dvm_config)  # or payment-required, or both?
 
                     if self.dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
-                        job_list.remove(x)
+                        self.job_list.remove(x)
                     elif not self.dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
-                        job_list.remove(x)
+                        self.job_list.remove(x)
                         send_nostr_reply_event(data, original_event_str, key=keys)
                     break
 
@@ -317,10 +323,10 @@ class DVM:
                     elif tag.as_vec()[0] == "i":
                         task = tag.as_vec()[1]
 
-                user = get_from_sql_table(sender)
+                user = get_from_sql_table(self.dvm_config.DB, sender)
                 if not user.iswhitelisted:
                     amount = int(user.balance) + get_amount_per_task(task, self.dvm_config)
-                    update_sql_table(sender, amount, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
+                    update_sql_table(self.dvm_config.DB, sender, amount, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
                                      user.name,
                                      Timestamp.now().as_secs())
                     message = "There was the following error : " + content + ". Credits have been reimbursed"
@@ -378,7 +384,7 @@ class DVM:
             tags = [e_tag, p_tag, alt_tag, status_tag]
 
             if status == "success" or status == "error":  #
-                for x in job_list:
+                for x in self.job_list:
                     if x.event_id == original_event.id():
                         is_paid = x.is_paid
                         amount = x.amount
@@ -394,8 +400,8 @@ class DVM:
                     except Exception as e:
                         print(e)
 
-            if not any(x.event_id == original_event.id().to_hex() for x in job_list):
-                job_list.append(
+            if not any(x.event_id == original_event.id().to_hex() for x in self.job_list):
+                self.job_list.append(
                     JobToWatch(event_id=original_event.id().to_hex(),
                                timestamp=original_event.created_at().as_secs(),
                                amount=amount,
@@ -403,7 +409,7 @@ class DVM:
                                status=status, result="", is_processed=False, bolt11=bolt11,
                                payment_hash=payment_hash,
                                expires=expires, from_bot=False))
-                print(str(job_list))
+                print(str(self.job_list))
             if status == "payment-required" or status == "payment-rejected" or (
                     status == "processing" and not is_paid) or (
                     status == "success" and not is_paid):
@@ -448,7 +454,7 @@ class DVM:
 
         self.client.handle_notifications(NotificationHandler())
         while True:
-            for job in job_list:
+            for job in self.job_list:
                 if job.bolt11 != "" and job.payment_hash != "" and not job.is_paid:
                     if str(check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)) == "True":
                         job.is_paid = True
@@ -462,26 +468,26 @@ class DVM:
                             do_work(event, is_from_bot=False)
                     elif check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config) is None:  # invoice expired
                         try:
-                            job_list.remove(job)
+                            self.job_list.remove(job)
                         except:
                             continue
 
                 if Timestamp.now().as_secs() > job.expires:
                     try:
-                        job_list.remove(job)
+                        self.job_list.remove(job)
                     except:
                         continue
 
-            for job in jobs_on_hold_list:
+            for job in self.jobs_on_hold_list:
                 if check_event_has_not_unfinished_job_input(job.event, False, client=self.client,
                                                             dvmconfig=self.dvm_config):
                     handle_nip90_job_event(nip90_event=job.event)
                     try:
-                        jobs_on_hold_list.remove(job)
+                        self.jobs_on_hold_list.remove(job)
                     except:
                         continue
 
                 if Timestamp.now().as_secs() > job.timestamp + 60 * 20:  # remove jobs to look for after 20 minutes..
-                    jobs_on_hold_list.remove(job)
+                    self.jobs_on_hold_list.remove(job)
 
             time.sleep(2.0)

@@ -8,10 +8,13 @@ from utils.database_utils import get_from_sql_table, list_db, delete_from_sql_ta
 from utils.nip89_utils import nip89_announce_tasks
 from utils.nostr_utils import send_event
 
+class AdminConfig:
+    REBROADCASTNIP89: bool = False
 
 def admin_make_database_updates(config=None, client=None):
     # This is called on start of Server, Admin function to manually whitelist/blacklist/add balance/delete users
     dvmconfig = config
+    db = config.DB
 
     rebroadcast_nip89 = False
     cleandb = False
@@ -28,27 +31,27 @@ def admin_make_database_updates(config=None, client=None):
     #use this if you have hex
 
     if whitelistuser:
-        user = get_or_add_user(publickey)
-        update_sql_table(user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
-        user = get_from_sql_table(publickey)
+        user = get_or_add_user(db, publickey)
+        update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
+        user = get_from_sql_table(db, publickey)
         print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
 
     if unwhitelistuser:
-        user = get_from_sql_table(publickey)
-        update_sql_table(user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive)
+        user = get_from_sql_table(db, publickey)
+        update_sql_table(db, user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive)
 
     if blacklistuser:
-        user = get_from_sql_table(publickey)
-        update_sql_table(user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
+        user = get_from_sql_table(db, publickey)
+        update_sql_table(db, user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
 
     if deleteuser:
-        delete_from_sql_table(publickey)
+        delete_from_sql_table(db, publickey)
 
     if cleandb:
-        clean_db()
+        clean_db(db)
 
     if listdatabase:
-        list_db()
+        list_db(db)
 
     if rebroadcast_nip89:
         nip89_announce_tasks(dvmconfig)

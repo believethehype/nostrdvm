@@ -1,12 +1,9 @@
-import os
 from threading import Thread
 
 from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.definitions import EventDefinitions
-from utils.nip89_utils import NIP89Announcement
 from utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
-
 
 """
 This File contains a Module to call Google Translate Services locally on the DVM Machine
@@ -26,6 +23,7 @@ class Translation(DVMTaskInterface):
     def __init__(self, name, dvm_config):
         self.NAME = name
         dvm_config.SUPPORTED_TASKS = [self]
+        dvm_config.DB = "db/" + self.NAME + ".db"
         self.PK = dvm_config.PRIVATE_KEY
 
         dvm = DVM
