@@ -74,18 +74,17 @@ class DVM:
                 return
 
         def handle_nip90_job_event(nip90_event):
-            user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex())
+            user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex(), client=self.client)
             task_supported, task, duration = check_task_is_supported(nip90_event, client=self.client,
                                                                      get_duration=(not user.iswhitelisted),
                                                                      config=self.dvm_config)
-            print(task)
 
             if user.isblacklisted:
                 send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
                 print("[" + self.dvm_config.NIP89.name + "] Request by blacklisted user, skipped")
 
             elif task_supported:
-                print("Received new Task: " + task)
+                print("Received new Task: " + task + " from " + user.name)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
                     return
@@ -155,7 +154,7 @@ class DVM:
                                 else:
                                     anon = True
                                     print("Anonymous Zap received. Unlucky, I don't know from whom, and never will")
-                user = get_or_add_user(self.dvm_config.DB, sender)
+                user = get_or_add_user(self.dvm_config.DB, sender, client=self.client)
                 print(str(user))
 
                 if zapped_event is not None:

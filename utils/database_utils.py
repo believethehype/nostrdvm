@@ -189,20 +189,29 @@ def update_user_balance(db, sender, sats, client, config):
             send_event(evt, client=client, dvm_config=config)
 
 
-def get_or_add_user(db, sender):
-    user = get_from_sql_table(db, sender)
+def get_or_add_user(db, npub, client):
+    user = get_from_sql_table(db, npub)
     if user is None:
-        print("Adding User")
-        add_to_sql_table(db, sender, NEW_USER_BALANCE, False, False, None,
-                         None, None, Timestamp.now().as_secs())
-        user = get_from_sql_table(db, sender)
+
+        name, nip05, lud16 = fetch_user_metadata(npub, client)
+        print("Adding User: " + name + " (" + npub +")")
+        add_to_sql_table(db, npub, NEW_USER_BALANCE, False, False, nip05,
+                         lud16, name, Timestamp.now().as_secs())
+        user = get_from_sql_table(db, npub)
         print(user)
+    else:
+        # update Name, Nip05 and lud16 lnaddress
+        user.name, user.nip05, user.lud16 = fetch_user_metadata(npub, client)
+        update_sql_table(db, user.npub, user.balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
+                         user.name, Timestamp.now().as_secs())
 
     return user
 
 
-def update_user_metadata(db, sender, client):
-    user = get_from_sql_table(db, sender)
+def fetch_user_metadata(sender, client) -> (str, str, str):
+    name = ""
+    nip05 = ""
+    lud16 = ""
     try:
         profile_filter = Filter().kind(0).author(sender).limit(1)
         events = client.get_events_of([profile_filter], timedelta(seconds=3))
@@ -211,12 +220,12 @@ def update_user_metadata(db, sender, client):
             metadata = Metadata.from_json(ev.content())
             name = metadata.get_display_name()
             if str(name) == "" or name is None:
-                user.name = metadata.get_name()
-                user.nip05 = metadata.get_nip05()
-                user.lud16 = metadata.get_lud16()
+                name = metadata.get_name()
+                nip05 = metadata.get_nip05()
+                lud16 = metadata.get_lud16()
+
     except:
         print("Couldn't get meta information")
-    update_sql_table(db, user.npub, user.balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
-                     user.name, Timestamp.now().as_secs())
-    user = get_from_sql_table(db, user.npub)
-    return user
+
+    return name, nip05, lud16
+
