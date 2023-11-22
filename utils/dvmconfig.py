@@ -19,7 +19,7 @@ class DVMConfig:
     NIP89: NIP89Announcement
 
     REQUIRES_NIP05: bool = False
-    SHOWRESULTBEFOREPAYMENT: bool = True  # if this is true show results even when not paid right after autoprocess
+    SHOW_RESULT_BEFORE_PAYMENT: bool = True  # if this is true show results even when not paid right after autoprocess
 
 
 

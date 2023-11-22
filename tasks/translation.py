@@ -1,3 +1,4 @@
+import json
 from threading import Thread
 
 from dvm import DVM
@@ -12,6 +13,7 @@ This File contains a Module to call Google Translate Services locally on the DVM
 
 Accepted Inputs: Text, Events, Jobs (Text Extraction, Summary, Translation)
 Outputs: Text containing the Translation in the desired language.
+Params:  -language The target language
 """
 
 
@@ -79,15 +81,18 @@ class Translation(DVMTaskInterface):
                     text = evt.content()
                     break
 
-        request_form["optStr"] = ('translation_lang=' + translation_lang + ';text=' +
-                                  text.replace('\U0001f919', "").replace("=", "equals").
-                                  replace(";", ","))
+        options = {
+            "text": text,
+            "language": translation_lang
+        }
+        request_form['options'] = json.dumps(options)
+
         return request_form
 
     def process(self, request_form):
         from translatepy.translators.google import GoogleTranslate
 
-        options = DVMTaskInterface.setOptions(request_form)
+        options = DVMTaskInterface.set_options(request_form)
         gtranslate = GoogleTranslate()
         length = len(options["text"])
 
@@ -98,7 +103,7 @@ class Translation(DVMTaskInterface):
                 text_part = options["text"][step:step + 5000]
                 step = step + 5000
                 try:
-                    translated_text_part = str(gtranslate.translate(text_part, options["translation_lang"]))
+                    translated_text_part = str(gtranslate.translate(text_part, options["language"]))
                     print("Translated Text part:\n\n " + translated_text_part)
                 except Exception as e:
                     raise Exception(e)
@@ -108,7 +113,7 @@ class Translation(DVMTaskInterface):
         if step < length:
             text_part = options["text"][step:length]
             try:
-                translated_text_part = str(gtranslate.translate(text_part, options["translation_lang"]))
+                translated_text_part = str(gtranslate.translate(text_part, options["language"]))
                 print("Translated Text part:\n " + translated_text_part)
             except Exception as e:
                 raise Exception(e)
