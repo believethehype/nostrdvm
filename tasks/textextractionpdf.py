@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from threading import Thread
@@ -14,6 +15,7 @@ This File contains a Module to extract Text from a PDF file locally on the DVM M
 
 Accepted Inputs: Url to pdf file, Event containing an URL to a PDF file
 Outputs: Text containing the extracted contents of the PDF file
+Params:  None
 """
 
 
@@ -21,7 +23,7 @@ class TextExtractionPDF(DVMTaskInterface):
     NAME: str = ""
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
-    COST: int = 20
+    COST: int = 0
     PK: str
 
     def __init__(self, name, dvm_config: DVMConfig, admin_config: AdminConfig = None):
@@ -59,7 +61,10 @@ class TextExtractionPDF(DVMTaskInterface):
             evt = get_event_by_id(input_content, client=client, config=dvm_config)
             url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
 
-        request_form["optStr"] = 'url=' + url
+        options = {
+            "url": url,
+        }
+        request_form['options'] = json.dumps(options)
         return request_form
 
     def process(self, request_form):
@@ -67,7 +72,7 @@ class TextExtractionPDF(DVMTaskInterface):
         from pathlib import Path
         import requests
 
-        options = DVMTaskInterface.setOptions(request_form)
+        options = DVMTaskInterface.set_options(request_form)
 
         try:
             file_path = Path('temp.pdf')

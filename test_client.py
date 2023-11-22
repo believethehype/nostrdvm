@@ -9,7 +9,7 @@ from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotificatio
 
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import send_event
-from utils.definitions import EventDefinitions, RELAY_LIST
+from utils.definitions import EventDefinitions
 
 import utils.env as env
 
@@ -74,7 +74,8 @@ def nostr_client():
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
     client = Client(keys)
-    for relay in RELAY_LIST:
+    dvmconfig = DVMConfig()
+    for relay in dvmconfig.RELAY_LIST:
         client.add_relay(relay)
     client.connect()
 
@@ -85,7 +86,7 @@ def nostr_client():
                                   EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
     client.subscribe([dm_zap_filter, dvm_filter])
 
-    # nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
+    #nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
     #nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     #nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 

@@ -198,7 +198,6 @@ def get_or_add_user(db, npub, client):
         add_to_sql_table(db, npub, NEW_USER_BALANCE, False, False, nip05,
                          lud16, name, Timestamp.now().as_secs())
         user = get_from_sql_table(db, npub)
-        print(user)
     else:
         # update Name, Nip05 and lud16 lnaddress
         user.name, user.nip05, user.lud16 = fetch_user_metadata(npub, client)

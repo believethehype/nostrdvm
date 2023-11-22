@@ -1,3 +1,5 @@
+import json
+
 from utils.nip89_utils import NIP89Announcement
 
 
@@ -30,13 +32,19 @@ class DVMTaskInterface:
         pass
 
     @staticmethod
-    def setOptions(request_form):
+    def set_options(request_form):
         print("Setting options...")
         opts = []
-        if request_form.get("optStr"):
+        if request_form.get("options"):
+            opts = json.loads(request_form["options"])
+            print(opts)
+
+        # old format, deprecated, will remove
+        elif request_form.get("optStr"):
+            opts = []
             for k, v in [option.split("=") for option in request_form["optStr"].split(";")]:
                 t = (k, v)
                 opts.append(t)
-                print(k + "=" + v)
         print("...done.")
+
         return dict(opts)

@@ -33,7 +33,7 @@ def send_request_to_nova_server(request_form, address):
     url = ('http://' + address + '/process')
     headers = {'Content-type': 'application/x-www-form-urlencoded'}
     response = requests.post(url, headers=headers, data=request_form)
-    return response.content
+    return response.text
 
 
 """
@@ -58,9 +58,9 @@ def check_nova_server_status(jobID, address):
         response_status = requests.post(url_status, headers=headers, data=data)
         response_log = requests.post(url_log, headers=headers, data=data)
         status = int(json.loads(response_status.text)['status'])
-
-        log = str(response_log.content)[length:]
-        length = len(str(response_log.content))
+        log_content = str(json.loads(response_log.text)['message']).replace("ERROR", "").replace("INFO", "")
+        log = log_content[length:]
+        length = len(log_content)
         if log != "":
             print(log + " Status: " + str(status))
         # WAITING = 0, RUNNING = 1, FINISHED = 2, ERROR = 3
@@ -74,7 +74,7 @@ def check_nova_server_status(jobID, address):
             data = {"jobID": jobID}
             response = requests.post(url_fetch, headers=headers, data=data)
             content_type = response.headers['content-type']
-            print(content_type)
+            print("Content-type: " + str(content_type))
             if content_type == "image/jpeg":
                 image = Image.open(io.BytesIO(response.content))
                 image.save("./outputs/image.jpg")

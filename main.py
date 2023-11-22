@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from threading import Thread
 
 import dotenv
 import utils.env as env
@@ -14,7 +15,7 @@ def run_nostr_dvm_with_local_config():
     #Generate a optional Admin Config, in this case, whenever we give our DVMS this config, they will (re)broadcast
     # their NIP89 announcement
     admin_config = AdminConfig()
-    admin_config.REBROADCASTNIP89 = True
+    admin_config.REBROADCASTNIP89 = False
 
     # Spawn the DVMs
     # Add  NIP89 events for each DVM
@@ -86,12 +87,14 @@ def run_nostr_dvm_with_local_config():
     #We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     sketcher = ImageGenerationSDXL("Sketcher", dvm_config, admin_config, default_model="mohawk", default_lora="timburton")
     d_tag = os.getenv(env.TASK_IMAGEGENERATION_NIP89_DTAG2)
-    content = ("{\"name\":\"" + unstableartist.NAME + "\","
+    content = ("{\"name\":\"" + sketcher.NAME + "\","
                "\"image\":\"https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg\","
                "\"about\":\"I draw images based on a prompt with a Model called unstable diffusion.\","
                "\"nip90Params\":{}}")
 
     dvm_config.NIP89 = sketcher.NIP89_announcement(d_tag, content)
+
+
 
 
 if __name__ == '__main__':

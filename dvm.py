@@ -84,7 +84,7 @@ class DVM:
                 print("[" + self.dvm_config.NIP89.name + "] Request by blacklisted user, skipped")
 
             elif task_supported:
-                print("Received new Task: " + task + " from " + user.name)
+                print("[" + self.dvm_config.NIP89.name + "] Received new Task: " + task + " from " + user.name)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
                     return
@@ -95,11 +95,11 @@ class DVM:
                         task_is_free = True
 
                 if user.iswhitelisted or task_is_free:
-                    print("[" + self.dvm_config.NIP89.name + "] Free or Whitelisted for task " + task + ". Starting processing..")
+                    print("[" + self.dvm_config.NIP89.name + "] Free task or Whitelisted for task " + task + ". Starting processing..")
                     send_job_status_reaction(nip90_event, "processing", True, 0, client=self.client,
                                              dvm_config=self.dvm_config)
                     do_work(nip90_event, is_from_bot=False)
-                # otherwise send payment request
+
                 else:
                     bid = 0
                     for tag in nip90_event.tags():
@@ -254,17 +254,17 @@ class DVM:
                     amount = x.amount
                     x.result = data
                     x.is_processed = True
-                    if self.dvm_config.SHOWRESULTBEFOREPAYMENT and not is_paid:
+                    if self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and not is_paid:
                         send_nostr_reply_event(data, original_event_str,)
                         send_job_status_reaction(original_event, "success", amount,
                                                  dvm_config=self.dvm_config)  # or payment-required, or both?
-                    elif not self.dvm_config.SHOWRESULTBEFOREPAYMENT and not is_paid:
+                    elif not self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and not is_paid:
                         send_job_status_reaction(original_event, "success", amount,
                                                  dvm_config=self.dvm_config)  # or payment-required, or both?
 
-                    if self.dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
+                    if self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and is_paid:
                         self.job_list.remove(x)
-                    elif not self.dvm_config.SHOWRESULTBEFOREPAYMENT and is_paid:
+                    elif not self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and is_paid:
                         self.job_list.remove(x)
                         send_nostr_reply_event(data, original_event_str)
                     break
@@ -296,7 +296,7 @@ class DVM:
             response_kind = original_event.kind() + 1000
             reply_event = EventBuilder(response_kind, str(content), reply_tags).to_event(key)
             send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
-            print("[" + self.dvm_config.NIP89.name + "]" + str(response_kind) + " Job Response event sent: " + reply_event.as_json())
+            print("[" + self.dvm_config.NIP89.name + "] " + str(response_kind) + " Job Response event sent: " + reply_event.as_json())
             return reply_event.as_json()
 
         def respond_to_error(content: str, original_event_as_str: str, is_from_bot=False):
