@@ -26,19 +26,18 @@ class ImageGenerationSDXL(DVMTaskInterface):
     TASK: str = "text-to-image"
     COST: int = 50
     PK: str
+    DVM = DVM
 
-    def __init__(self, name, dvm_config: DVMConfig, admin_config: AdminConfig = None, default_model=None,
-                 default_lora=None):
+    def __init__(self, name, dvm_config: DVMConfig, nip89d_tag: str, nip89info: str, admin_config: AdminConfig = None, options=None):
         self.NAME = name
+        self.PK = dvm_config.PRIVATE_KEY
+
         dvm_config.SUPPORTED_TASKS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
-        self.PK = dvm_config.PRIVATE_KEY
-        self.default_model = default_model
-        self.default_lora = default_lora
-
-        dvm = DVM
-        nostr_dvm_thread = Thread(target=dvm, args=[dvm_config, admin_config])
-        nostr_dvm_thread.start()
+        dvm_config.NIP89 = self.NIP89_announcement(nip89d_tag, nip89info)
+        self.dvm_config = dvm_config
+        self.admin_config = admin_config
+        self.options = options
 
     def is_input_supported(self, input_type, input_content):
         if input_type != "text":
@@ -51,19 +50,19 @@ class ImageGenerationSDXL(DVMTaskInterface):
 
         prompt = ""
         negative_prompt = ""
-        if self.default_model is None:
-            model = "stabilityai/stable-diffusion-xl-base-1.0"
+        if self.options.get("default_model"):
+            model = self.options['default_model']
         else:
-            model = self.default_model
+            model = "stabilityai/stable-diffusion-xl-base-1.0"
 
         ratio_width = "1"
         ratio_height = "1"
         width = ""
         height = ""
-        if self.default_lora == None:
-            lora = ""
+        if self.options.get("default_lora"):
+            lora = self.options['default_lora']
         else:
-            lora = self.default_lora
+            lora = ""
         lora_weight = ""
         strength = ""
         guidance_scale = ""
@@ -149,12 +148,12 @@ class ImageGenerationSDXL(DVMTaskInterface):
     def process(self, request_form):
         try:
             # Call the process route of NOVA-Server with our request form.
-            response = send_request_to_nova_server(request_form, os.environ["NOVA_SERVER"])
+            response = send_request_to_nova_server(request_form, self.options['nova_server'])
             if bool(json.loads(response)['success']):
                 print("Job " + request_form['jobID'] + " sent to nova-server")
 
             pool = ThreadPool(processes=1)
-            thread = pool.apply_async(check_nova_server_status, (request_form['jobID'], os.environ["NOVA_SERVER"]))
+            thread = pool.apply_async(check_nova_server_status, (request_form['jobID'], self.options['nova_server']))
             print("Wait for results of NOVA-Server...")
             result = thread.get()
             return str(result)

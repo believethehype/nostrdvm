@@ -10,7 +10,7 @@ from utils.nip89_utils import nip89_announce_tasks
 from utils.nostr_utils import send_event
 
 class AdminConfig:
-    REBROADCASTNIP89: bool = False
+    REBROADCAST_NIP89: bool = False
     WHITELISTUSER: bool = False
     UNWHITELISTUSER: bool = False
     BLACKLISTUSER: bool = False
@@ -34,7 +34,7 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
 
     db = dvmconfig.DB
 
-    rebroadcast_nip89 = adminconfig.REBROADCASTNIP89
+    rebroadcast_nip89 = adminconfig.REBROADCAST_NIP89
     cleandb = adminconfig.ClEANDB
     listdatabase = adminconfig.LISTDATABASE
     deleteuser = adminconfig.DELETEUSER

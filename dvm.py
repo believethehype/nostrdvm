@@ -1,5 +1,7 @@
+import json
+
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel
+    init_logger, LogLevel, nip04_decrypt
 
 import time
 
@@ -39,21 +41,23 @@ class DVM:
 
         pk = self.keys.public_key()
 
-        print("Nostr DVM public key: " + str(pk.to_bech32()) + "Hex: " + str(pk.to_hex()) + " Supported DVM tasks: " +
+        print("Nostr DVM public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Supported DVM tasks: " +
               ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_TASKS) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
             self.client.add_relay(relay)
         self.client.connect()
 
-        dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
+        zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
+        bot_dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).authors(self.dvm_config.DM_ALLOWED).since(Timestamp.now())
+        #TODO only from allowed account
 
         kinds = [EventDefinitions.KIND_NIP90_GENERIC]
         for dvm in self.dvm_config.SUPPORTED_TASKS:
             if dvm.KIND not in kinds:
                 kinds.append(dvm.KIND)
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
-        self.client.subscribe([dm_zap_filter, dvm_filter])
+        self.client.subscribe([dvm_filter, zap_filter, bot_dm_filter])
 
         create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
@@ -69,6 +73,8 @@ class DVM:
                     handle_nip90_job_event(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
                     handle_zap(nostr_event)
+                elif nostr_event.kind() == EventDefinitions.KIND_DM:
+                    handle_dm(nostr_event)
 
             def handle_msg(self, relay_url, msg):
                 return
@@ -84,7 +90,7 @@ class DVM:
                 print("[" + self.dvm_config.NIP89.name + "] Request by blacklisted user, skipped")
 
             elif task_supported:
-                print("[" + self.dvm_config.NIP89.name + "] Received new Task: " + task + " from " + user.name)
+                print("[" + self.dvm_config.NIP89.name + "] Received new Request: " + task + " from " + user.name)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
                     return
@@ -218,6 +224,23 @@ class DVM:
             except Exception as e:
                 print(f"Error during content decryption: {e}")
 
+        def handle_dm(dm_event):
+            decrypted_text = nip04_decrypt(self.keys.secret_key(), dm_event.pubkey(), dm_event.content())
+            ob = json.loads(decrypted_text)
+
+            #TODO SOME PARSING, OPTIONS, ZAP HANDLING
+
+            # One key might host multiple dvms, so we check current task
+            if ob['task'] == self.dvm_config.SUPPORTED_TASKS[0].TASK:
+                j_tag = Tag.parse(["j", self.dvm_config.SUPPORTED_TASKS[0].TASK])
+                i_tag = Tag.parse(["i", ob['input'], "text"])
+                tags = [j_tag, i_tag]
+                tags.append(Tag.parse(["y", dm_event.pubkey().to_hex()]))
+                tags.append(Tag.parse(["z", ob['sender']]))
+                job_event = EventBuilder(EventDefinitions.KIND_DM, "", tags).to_event(self.keys)
+
+                do_work(job_event, is_from_bot=True)
+
         def check_event_has_not_unfinished_job_input(nevent, append, client, dvmconfig):
             task_supported, task, duration = check_task_is_supported(nevent, client, False, config=dvmconfig)
             if not task_supported:
@@ -245,7 +268,7 @@ class DVM:
             else:
                 return True
 
-        def check_and_return_event(data, original_event_str: str):
+        def check_and_return_event(data, original_event_str: str, is_from_bot: bool):
             original_event = Event.from_json(original_event_str)
 
             for x in self.job_list:
@@ -271,7 +294,22 @@ class DVM:
 
             try:
                 post_processed_content = post_process_result(data, original_event)
-                send_nostr_reply_event(post_processed_content, original_event_str)
+                if is_from_bot:
+                    for tag in original_event.tags():
+                        if tag.as_vec()[0] == "y":  # TODO we temporally use internal tags to move information
+                            receiver_key = PublicKey.from_hex(tag.as_vec()[1])
+                        elif tag.as_vec()[0] == "z":
+                            original_sender = tag.as_vec()[1]
+
+                    params = {
+                        "result": post_processed_content,
+                        "sender": original_sender
+                    }
+                    message = json.dumps(params)
+                    response_event = EventBuilder.new_encrypted_direct_msg(self.keys, receiver_key, message, None).to_event(self.keys)
+                    send_event(response_event, client=self.client, dvm_config=self.dvm_config)
+                else:
+                    send_nostr_reply_event(post_processed_content, original_event_str)
             except Exception as e:
                 respond_to_error(str(e), original_event_str, False)
 
@@ -401,11 +439,11 @@ class DVM:
                             request_form = dvm.create_request_form_from_nostr_event(job_event, self.client,
                                                                                     self.dvm_config)
                             result = dvm.process(request_form)
-                            check_and_return_event(result, str(job_event.as_json()))
+                            check_and_return_event(result, str(job_event.as_json()), is_from_bot=is_from_bot)
 
                     except Exception as e:
                         print(e)
-                        respond_to_error(str(e), job_event.as_json(), is_from_bot)
+                        respond_to_error(str(e), job_event.as_json(), is_from_bot=is_from_bot)
                         return
 
         self.client.handle_notifications(NotificationHandler())
@@ -447,3 +485,4 @@ class DVM:
                     self.jobs_on_hold_list.remove(job)
 
             time.sleep(1.0)
+

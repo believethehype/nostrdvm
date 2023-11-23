@@ -3,11 +3,7 @@ from dataclasses import dataclass
 
 from nostr_sdk import Event
 
-from utils import env
-
 NEW_USER_BALANCE: int = 250  # Free credits for new users
-
-
 
 
 class EventDefinitions:
@@ -39,8 +35,6 @@ class EventDefinitions:
                   KIND_NIP90_RESULT_RECOMMEND_USERS,
                   KIND_NIP90_RESULT_CONVERT_VIDEO,
                   KIND_NIP90_RESULT_GENERIC]
-
-
 
 
 @dataclass

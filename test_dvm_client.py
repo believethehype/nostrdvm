@@ -11,12 +11,10 @@ from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import send_event
 from utils.definitions import EventDefinitions
 
-import utils.env as env
-
 
 # TODO HINT: Best use this path with a previously whitelisted privkey, as zapping events is not implemented in the lib/code
 def nostr_client_test_translation(input, kind, lang, sats, satsmax):
-    keys = Keys.from_sk_str(os.getenv(env.NOSTR_TEST_CLIENT_PRIVATE_KEY))
+    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
     if kind == "text":
         iTag = Tag.parse(["i", input, "text"])
     elif kind == "event":
@@ -43,7 +41,7 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
 
 
 def nostr_client_test_image(prompt):
-    keys = Keys.from_sk_str(os.getenv(env.NOSTR_TEST_CLIENT_PRIVATE_KEY))
+    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
 
     iTag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
@@ -69,7 +67,7 @@ def nostr_client_test_image(prompt):
     return event.as_json()
 
 def nostr_client():
-    keys = Keys.from_sk_str(os.getenv(env.NOSTR_TEST_CLIENT_PRIVATE_KEY))
+    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
