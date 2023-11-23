@@ -12,7 +12,7 @@ from utils.dvmconfig import DVMConfig
 
 def run_nostr_dvm_with_local_config():
     # We extract the Publickey from our bot, so the DVMs know who they should listen and react to.
-    bot_publickey = Keys.from_sk_str(os.getenv("BOT_PRIVATE_KEY")).public_key().to_hex()
+    bot_publickey = Keys.from_sk_str(os.getenv("BOT_PRIVATE_KEY")).public_key()
 
     # Spawn some DVMs in the playground and run them
     # You can add arbitrary DVMs there and instantiate them here
