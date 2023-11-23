@@ -62,7 +62,7 @@ def check_nova_server_status(jobID, address):
         log = log_content[length:]
         length = len(log_content)
         if log != "":
-            print(log + " Status: " + str(status))
+            print(log)
         # WAITING = 0, RUNNING = 1, FINISHED = 2, ERROR = 3
         time.sleep(1.0)
 

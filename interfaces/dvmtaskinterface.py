@@ -1,6 +1,10 @@
 import json
+from threading import Thread
 
+from utils.admin_utils import AdminConfig
+from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Announcement
+from dvm import DVM
 
 
 class DVMTaskInterface:
@@ -9,6 +13,9 @@ class DVMTaskInterface:
     TASK: str
     COST: int
     PK: str
+    DVM = DVM
+    dvm_config: DVMConfig
+    admin_config: AdminConfig
 
     def NIP89_announcement(self, d_tag, content):
         nip89 = NIP89Announcement()
@@ -18,6 +25,10 @@ class DVMTaskInterface:
         nip89.dtag = d_tag
         nip89.content = content
         return nip89
+
+    def run(self):
+        nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
+        nostr_dvm_thread.start()
 
     def is_input_supported(self, input_type, input_content) -> bool:
         """Check if input is supported for current Task."""

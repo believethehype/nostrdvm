@@ -220,8 +220,8 @@ def fetch_user_metadata(sender, client) -> (str, str, str):
             name = metadata.get_display_name()
             if str(name) == "" or name is None:
                 name = metadata.get_name()
-                nip05 = metadata.get_nip05()
-                lud16 = metadata.get_lud16()
+            nip05 = metadata.get_nip05()
+            lud16 = metadata.get_lud16()
 
     except:
         print("Couldn't get meta information")
