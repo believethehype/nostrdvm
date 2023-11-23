@@ -212,7 +212,8 @@ def fetch_user_metadata(sender, client) -> (str, str, str):
     nip05 = ""
     lud16 = ""
     try:
-        profile_filter = Filter().kind(0).author(sender).limit(1)
+        pk = PublicKey.from_hex(sender)
+        profile_filter = Filter().kind(0).author(pk).limit(1)
         events = client.get_events_of([profile_filter], timedelta(seconds=3))
         if len(events) > 0:
             ev = events[0]

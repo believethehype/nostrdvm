@@ -1,15 +1,19 @@
 from datetime import timedelta
-from nostr_sdk import Keys, Filter, Client, Alphabet, EventId, Options, Event
+from nostr_sdk import Keys, Filter, Client, Alphabet, EventId, Options, Event, PublicKey
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
     split = event_id.split(":")
     if len(split) == 3:
-        id_filter = Filter().author(split[1]).custom_tag(Alphabet.D, [split[2]])
+        pk = PublicKey.from_hex(split[1])
+        id_filter = Filter().author(pk).custom_tag(Alphabet.D, [split[2]])
         events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     else:
         if str(event_id).startswith('note'):
-            event_id = EventId.from_bech32(event_id).to_hex()
+            event_id = EventId.from_bech32(event_id)
+        else:
+            event_id = EventId.from_hex(event_id)
+
         id_filter = Filter().id(event_id).limit(1)
         events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
