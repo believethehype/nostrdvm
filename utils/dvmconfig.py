@@ -4,14 +4,14 @@ from utils.nip89_utils import NIP89Announcement
 
 
 class DVMConfig:
-    SUPPORTED_TASKS = []
+    SUPPORTED_DVMS= []
     PRIVATE_KEY: str = os.getenv("NOSTR_PRIVATE_KEY")
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
                   "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
                   "wss://relay.f7z.io"]
 
-    RELAY_TIMEOUT = 5
+    RELAY_TIMEOUT = 3
     LNBITS_INVOICE_KEY = ''
     LNBITS_URL = 'https://lnbits.com'
     DB: str

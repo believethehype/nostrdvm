@@ -41,7 +41,7 @@ def run_nostr_dvm_with_local_config():
     bot_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     bot_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     # Finally we add some of the DVMs we created before to the Bot and start it.
-    bot_config.SUPPORTED_TASKS = [sketcher, unstable_artist, translator]
+    bot_config.SUPPORTED_DVMS = [sketcher, unstable_artist, translator]
 
     bot = Bot
     nostr_dvm_thread = Thread(target=bot, args=[bot_config])

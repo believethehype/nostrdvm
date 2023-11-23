@@ -1,11 +1,13 @@
 import json
 import time
+from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey, Event
+from nostr_sdk import Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey, \
+    Event, Options
 
 from utils.admin_utils import admin_make_database_updates
-from utils.database_utils import get_or_add_user, update_user_balance
+from utils.database_utils import get_or_add_user, update_user_balance, create_sql_table
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import send_event, get_event_by_id
 from utils.zap_utils import parse_amount_from_bolt11_invoice, check_for_zapplepay, decrypt_private_zap_message
@@ -18,14 +20,19 @@ class Bot:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
-        self.client = Client(self.keys)
+        wait_for_send = True
+        skip_disconnected_relays = True
+        opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+                .skip_disconnected_relays(skip_disconnected_relays))
+
+        self.client = Client.with_opts(self.keys, opts)
         self.job_list = []
 
         pk = self.keys.public_key()
         self.dvm_config.DB = "db/bot.db"
 
         print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Supported DVM tasks: " +
-              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_TASKS) + "\n")
+              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
             self.client.add_relay(relay)
@@ -35,6 +42,7 @@ class Bot:
             Timestamp.now())
         self.client.subscribe([dm_zap_filter])
 
+        create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
 
         class NotificationHandler(HandleNotification):
@@ -55,7 +63,6 @@ class Bot:
                 return
 
         def handle_dm(nostr_event):
-            sender = nostr_event.pubkey().to_hex()
             try:
                 decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), nostr_event.content())
                 # TODO more advanced logic, more parsing, just very basic test functions for now
@@ -63,11 +70,11 @@ class Bot:
                     index = int(decrypted_text.split(' ')[0]) - 1
                     i_tag = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
 
-                    keys = Keys.from_sk_str(self.dvm_config.SUPPORTED_TASKS[index].PK)
+                    keys = Keys.from_sk_str(self.dvm_config.SUPPORTED_DVMS[index].PK)
                     params = {
                         "sender": nostr_event.pubkey().to_hex(),
                         "input": i_tag,
-                        "task": self.dvm_config.SUPPORTED_TASKS[index].TASK
+                        "task": self.dvm_config.SUPPORTED_DVMS[index].TASK
                     }
                     message = json.dumps(params)
                     evt = EventBuilder.new_encrypted_direct_msg(self.keys, keys.public_key(),
@@ -77,20 +84,20 @@ class Bot:
                 elif decrypted_text.startswith('{"result":'):
 
                     dvm_result = json.loads(decrypted_text)
+                    # user = get_or_add_user(db=self.dvm_config.DB, npub=dvm_result["sender"], client=self.client)
+                    # print("BOT received and forwarded to " + user.name + ": " + str(decrypted_text))
+                    reply_event = EventBuilder.new_encrypted_direct_msg(self.keys,
+                                                                        PublicKey.from_hex(dvm_result["sender"]),
+                                                                        dvm_result["result"],
+                                                                        None).to_event(self.keys)
+                    send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
-                    job_event = EventBuilder.new_encrypted_direct_msg(self.keys,
-                                                                      PublicKey.from_hex(dvm_result["sender"]),
-                                                                      dvm_result["result"],
-                                                                      None).to_event(self.keys)
-                    send_event(job_event, client=self.client, dvm_config=dvm_config)
-                    user = get_or_add_user(db=self.dvm_config.DB, npub=dvm_result["sender"], client=self.client)
-                    print("BOT received and forwarded to " + user.name + ": " + str(decrypted_text))
 
 
                 else:
                     message = "DVMs that I support:\n\n"
                     index = 1
-                    for p in self.dvm_config.SUPPORTED_TASKS:
+                    for p in self.dvm_config.SUPPORTED_DVMS:
                         message += str(index) + " " + p.NAME + " " + p.TASK + "\n"
                         index += 1
 
@@ -136,7 +143,6 @@ class Bot:
                                     anon = True
                                     print("Anonymous Zap received. Unlucky, I don't know from whom, and never will")
                 user = get_or_add_user(self.dvm_config.DB, sender, client=self.client)
-                print(str(user.name))
 
                 if zapped_event is not None:
                     if not anon:
