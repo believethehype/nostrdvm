@@ -83,12 +83,12 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
                 print("Output format not supported, skipping..")
                 return False, "", 0
 
-    for dvm in dvm_config.SUPPORTED_TASKS:
+    for dvm in dvm_config.SUPPORTED_DVMS:
         if dvm.TASK == task:
             if not dvm.is_input_supported(input_type, event.content()):
                 return False, task, duration
 
-    if task not in (x.TASK for x in dvm_config.SUPPORTED_TASKS):
+    if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS):
         return False, task, duration
 
     return True, task, duration
@@ -118,7 +118,7 @@ def check_url_is_readable(url):
 
 
 def get_amount_per_task(task, dvm_config, duration=1):
-    for dvm in dvm_config.SUPPORTED_TASKS: #this is currently just one
+    for dvm in dvm_config.SUPPORTED_DVMS: #this is currently just one
         if dvm.TASK == task:
             amount = dvm.COST * duration
             return amount
