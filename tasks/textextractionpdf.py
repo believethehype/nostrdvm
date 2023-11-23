@@ -31,7 +31,7 @@ class TextExtractionPDF(DVMTaskInterface):
         self.NAME = name
         self.PK = dvm_config.PRIVATE_KEY
 
-        dvm_config.SUPPORTED_TASKS = [self]
+        dvm_config.SUPPORTED_DVMS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
         dvm_config.NIP89 = self.NIP89_announcement(nip89d_tag, nip89info)
         self.dvm_config = dvm_config

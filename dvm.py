@@ -1,7 +1,8 @@
 import json
+from datetime import timedelta
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, nip04_decrypt
+    init_logger, LogLevel, nip04_decrypt, EventId, Options
 
 import time
 
@@ -35,14 +36,20 @@ class DVM:
         self.dvm_config = dvmconfig
         self.admin_config = adminconfig
         self.keys = Keys.from_sk_str(dvmconfig.PRIVATE_KEY)
-        self.client = Client(self.keys)
+        wait_for_send = True
+        skip_disconnected_relays = True
+        opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+                .skip_disconnected_relays(skip_disconnected_relays))
+
+        self.client = Client.with_opts(self.keys, opts)
+
         self.job_list = []
         self.jobs_on_hold_list = []
 
         pk = self.keys.public_key()
 
         print("Nostr DVM public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Supported DVM tasks: " +
-              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_TASKS) + "\n")
+              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
             self.client.add_relay(relay)
@@ -50,10 +57,9 @@ class DVM:
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         bot_dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).authors(self.dvm_config.DM_ALLOWED).since(Timestamp.now())
-        #TODO only from allowed account
 
         kinds = [EventDefinitions.KIND_NIP90_GENERIC]
-        for dvm in self.dvm_config.SUPPORTED_TASKS:
+        for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
                 kinds.append(dvm.KIND)
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
@@ -96,7 +102,7 @@ class DVM:
                     return
 
                 task_is_free = False
-                for dvm in self.dvm_config.SUPPORTED_TASKS:
+                for dvm in self.dvm_config.SUPPORTED_DVMS:
                     if dvm.TASK == task and dvm.COST == 0:
                         task_is_free = True
 
@@ -161,7 +167,7 @@ class DVM:
                                     anon = True
                                     print("Anonymous Zap received. Unlucky, I don't know from whom, and never will")
                 user = get_or_add_user(self.dvm_config.DB, sender, client=self.client)
-                print(str(user))
+
 
                 if zapped_event is not None:
                     if zapped_event.kind() == EventDefinitions.KIND_FEEDBACK:  # if a reaction by us got zapped
@@ -228,12 +234,19 @@ class DVM:
             decrypted_text = nip04_decrypt(self.keys.secret_key(), dm_event.pubkey(), dm_event.content())
             ob = json.loads(decrypted_text)
 
-            #TODO SOME PARSING, OPTIONS, ZAP HANDLING
+            # One key might host multiple DVMs, so we check current task
+            if ob['task'] == self.dvm_config.SUPPORTED_DVMS[0].TASK:
+                input_type = "text"
+                print(decrypted_text)
+                if str(ob['input']).startswith("http"):
+                    input_type = "url"
+                #elif str(ob['input']).startswith("nostr:nevent"):
+                #    ob['input'] = str(ob['input']).replace("nostr:", "")
+                #    ob['input'] = EventId.from_bech32(ob['input']).to_hex()
+                #    input_type = "event"
 
-            # One key might host multiple dvms, so we check current task
-            if ob['task'] == self.dvm_config.SUPPORTED_TASKS[0].TASK:
-                j_tag = Tag.parse(["j", self.dvm_config.SUPPORTED_TASKS[0].TASK])
-                i_tag = Tag.parse(["i", ob['input'], "text"])
+                j_tag = Tag.parse(["j", self.dvm_config.SUPPORTED_DVMS[0].TASK])
+                i_tag = Tag.parse(["i", ob['input'], input_type])
                 tags = [j_tag, i_tag]
                 tags.append(Tag.parse(["y", dm_event.pubkey().to_hex()]))
                 tags.append(Tag.parse(["z", ob['sender']]))
@@ -294,7 +307,9 @@ class DVM:
 
             try:
                 post_processed_content = post_process_result(data, original_event)
+
                 if is_from_bot:
+                    # Reply to Bot
                     for tag in original_event.tags():
                         if tag.as_vec()[0] == "y":  # TODO we temporally use internal tags to move information
                             receiver_key = PublicKey.from_hex(tag.as_vec()[1])
@@ -306,9 +321,11 @@ class DVM:
                         "sender": original_sender
                     }
                     message = json.dumps(params)
+                    print(message)
                     response_event = EventBuilder.new_encrypted_direct_msg(self.keys, receiver_key, message, None).to_event(self.keys)
                     send_event(response_event, client=self.client, dvm_config=self.dvm_config)
                 else:
+                    #Regular DVM reply
                     send_nostr_reply_event(post_processed_content, original_event_str)
             except Exception as e:
                 respond_to_error(str(e), original_event_str, False)
@@ -427,13 +444,11 @@ class DVM:
             return event.as_json()
 
         def do_work(job_event, is_from_bot=False):
-            if ((
-                    EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= job_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC)
+            if ((EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= job_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC)
                     or job_event.kind() == EventDefinitions.KIND_DM):
 
                 task = get_task(job_event, client=self.client, dvmconfig=self.dvm_config)
-                result = ""
-                for dvm in self.dvm_config.SUPPORTED_TASKS:
+                for dvm in self.dvm_config.SUPPORTED_DVMS:
                     try:
                         if task == dvm.TASK:
                             request_form = dvm.create_request_form_from_nostr_event(job_event, self.client,
