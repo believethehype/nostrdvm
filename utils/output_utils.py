@@ -30,7 +30,8 @@ def post_process_result(anno, original_event):
                                 for i in str(each_row).split('\n'):
                                     result = result + i + "\n"
                         result = replace_broken_words(
-                            str(result).replace("\"", "").replace('[', "").replace(']', "").lstrip(None))
+                            str(result).replace("\"", "").replace('[', "").replace(']',
+                                                                                   "").lstrip(None))
                         return result
 
                     elif output_format == "text/vtt":
@@ -47,7 +48,8 @@ def post_process_result(anno, original_event):
                             result = result + str(convertstart) + " --> " + str(
                                 convertend) + "\n" + cleared_name + "\n\n"
                         result = replace_broken_words(
-                            str(result).replace("\"", "").replace('[', "").replace(']', "").lstrip(None))
+                            str(result).replace("\"", "").replace('[', "").replace(']',
+                                                                                   "").lstrip(None))
                         return result
 
                     elif output_format == "text/json" or output_format == "json":

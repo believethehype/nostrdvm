@@ -1,5 +1,5 @@
 from datetime import timedelta
-from nostr_sdk import Keys, Filter, Client, Alphabet, EventId, Options, Event, PublicKey
+from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:

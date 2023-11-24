@@ -3,16 +3,15 @@ import time
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey, \
-    Event, Options
+from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
+                       Options)
 
 from utils.admin_utils import admin_make_database_updates
 from utils.backend_utils import get_amount_per_task
 from utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table, User
 from utils.definitions import EventDefinitions
-from utils.nostr_utils import send_event, get_event_by_id
-from utils.zap_utils import parse_amount_from_bolt11_invoice, check_for_zapplepay, decrypt_private_zap_message, \
-    parse_zap_event_tags
+from utils.nostr_utils import send_event
+from utils.zap_utils import parse_zap_event_tags
 
 
 class Bot:
@@ -67,27 +66,26 @@ class Bot:
                 decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), nostr_event.content())
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
 
-
                 # We do a selection of tasks now, maybe change this later, Idk.
                 if decrypted_text[0].isdigit():
                     index = int(decrypted_text.split(' ')[0]) - 1
                     task = self.dvm_config.SUPPORTED_DVMS[index].TASK
                     print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) + ", Balance: "
-                          + str(user.balance)+ " Sats) Task: " + str(task))
+                          + str(user.balance) + " Sats) Task: " + str(task))
 
                     duration = 1
                     required_amount = get_amount_per_task(self.dvm_config.SUPPORTED_DVMS[index].TASK,
                                                           self.dvm_config, duration)
 
-
                     if user.isblacklisted:
                         # For some reason an admin might blacklist npubs, e.g. for abusing the service
                         evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
-                                                                    "Your are currently blocked from all services.",
-                                                                    None).to_event(self.keys)
+                                                                    "Your are currently blocked from all "
+                                                                    "services.",None).to_event(self.keys)
                         send_event(evt, client=self.client, dvm_config=dvm_config)
 
                     elif user.iswhitelisted or user.balance >= required_amount or required_amount == 0:
+
                         if not user.iswhitelisted:
 
                             balance = max(user.balance - required_amount, 0)
@@ -95,7 +93,7 @@ class Bot:
                                              iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
                                              nip05=user.nip05, lud16=user.lud16, name=user.name,
                                              lastactive=Timestamp.now().as_secs())
-
+                            time.sleep(2.0)
                             evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
                                                                         "Your Job is now scheduled. New balance is " +
                                                                         str(balance)
@@ -103,6 +101,7 @@ class Bot:
                                                                           "processing.",
                                                                         nostr_event.id()).to_event(self.keys)
                         else:
+                            time.sleep(2.0)
                             evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
                                                                         "Your Job is now scheduled. As you are "
                                                                         "whitelisted, your balance remains at"
@@ -112,7 +111,6 @@ class Bot:
                                                                         nostr_event.id()).to_event(self.keys)
 
                         print("[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
-                        time.sleep(2.0)
                         send_event(evt, client=self.client, dvm_config=dvm_config)
 
                         i_tag = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
@@ -137,13 +135,11 @@ class Bot:
                                                                     str(int(required_amount - user.balance))
                                                                     + " Sats, then try again.",
                                                                     nostr_event.id()).to_event(self.keys)
-                        time.sleep(2.0)
                         send_event(evt, client=self.client, dvm_config=dvm_config)
 
 
                 # TODO if we receive the result from one of the dvms, need some better management, maybe check for keys
                 elif decrypted_text.startswith('{"result":'):
-
 
                     dvm_result = json.loads(decrypted_text)
                     user_npub_hex = dvm_result["sender"]
@@ -154,7 +150,7 @@ class Bot:
                                                                         PublicKey.from_hex(user.npub),
                                                                         dvm_result["result"],
                                                                         None).to_event(self.keys)
-                    time.sleep(2.0)
+
                     send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
                 else:
@@ -165,22 +161,20 @@ class Bot:
                         message += str(index) + " " + p.NAME + " " + p.TASK + " " + str(p.COST) + " Sats" + "\n"
                         index += 1
 
+                    time.sleep(1.0)
                     evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
                                                                 message + "\nSelect an Index and provide an input ("
                                                                           "e.g. 1 A purple ostrich)",
-                                                                None).to_event(self.keys)
-                                                                #nostr_event.id()).to_event(self.keys)
-                    time.sleep(3)
+                                                                nostr_event.id()).to_event(self.keys)
+
                     send_event(evt, client=self.client, dvm_config=dvm_config)
 
             except Exception as e:
-                pass
-                # TODO we still receive (broken content) events after fetching the metadata, but we don't listen to them.
-                # probably in client.get_events_of in fetch_user_metadata
+
                 print("Error in bot " + str(e))
+
         def handle_zap(zap_event):
             print("[" + self.NAME + "] Zap received")
-
             try:
                 invoice_amount, zapped_event, sender, anon = parse_zap_event_tags(zap_event,
                                                                                   self.keys, self.NAME,
@@ -190,14 +184,16 @@ class Bot:
 
                 if zapped_event is not None:
                     if not anon:
-                        print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
+                        print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
+                            invoice_amount) + " Sats from " + str(
                             user.name))
                         update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                                             config=self.dvm_config)
 
                         # a regular note
                 elif not anon:
-                    print("[" + self.NAME + "] Profile Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
+                    print("[" + self.NAME + "] Profile Zap received for Bot balance: " + str(
+                        invoice_amount) + " Sats from " + str(
                         user.name))
                     update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                                         config=self.dvm_config)
@@ -213,4 +209,3 @@ class Bot:
         bot = Bot
         nostr_dvm_thread = Thread(target=bot, args=[self.dvm_config])
         nostr_dvm_thread.start()
-
