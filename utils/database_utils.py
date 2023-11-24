@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
 
-from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Client, Options
+from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter
 from utils.nostr_utils import send_event
 
 
@@ -195,11 +195,6 @@ def get_or_add_user(db, npub, client, config):
 
     return user
 
-
-class DvmConfig:
-    pass
-
-
 def fetch_user_metadata(npub, client):
     name = ""
     nip05 = ""
@@ -208,8 +203,6 @@ def fetch_user_metadata(npub, client):
     print(f"\nGetting profile metadata for {pk.to_bech32()}...")
     profile_filter = Filter().kind(0).author(pk).limit(1)
     events = client.get_events_of([profile_filter], timedelta(seconds=5))
-    #TODO, it seems our client is still subscribed after that
-
     if len(events) > 0:
         latest_entry = events[0]
         latest_time = 0
