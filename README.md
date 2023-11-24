@@ -3,7 +3,7 @@
 This framework provides a way to easily build and/or run `Nostr NIP90 DVMs in Python`.
 
 This project is currently under development and additional tasks and features are added along the way. 
-This means the project is in alpha status, interfaces might still change/break.
+This means the project is in alpha status, interfaces might still change/break at this stage.
 
 
 ## To get started:
