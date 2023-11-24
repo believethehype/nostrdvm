@@ -5,62 +5,72 @@ from nostr_sdk import Keys, EventBuilder, PublicKey
 
 from utils.database_utils import get_from_sql_table, list_db, delete_from_sql_table, update_sql_table, \
     get_or_add_user, clean_db
+from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import nip89_announce_tasks
 from utils.nostr_utils import send_event
 
+class AdminConfig:
+    REBROADCAST_NIP89: bool = False
+    WHITELISTUSER: bool = False
+    UNWHITELISTUSER: bool = False
+    BLACKLISTUSER: bool = False
+    DELETEUSER: bool = False
+    LISTDATABASE: bool = False
+    ClEANDB: bool = False
+    USERNPUB: str = ""
 
-def admin_make_database_updates(config=None, client=None):
+def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None, client=None):
     # This is called on start of Server, Admin function to manually whitelist/blacklist/add balance/delete users
-    dvmconfig = config
+    if adminconfig is None or dvmconfig is None:
+        return
 
-    rebroadcast_nip89 = False
-    cleandb = False
-    listdatabase = False
-    deleteuser = False
-    whitelistuser = False
-    unwhitelistuser = False
-    blacklistuser = False
-    addbalance = False
-    additional_balance = 50
+    if not isinstance(adminconfig, AdminConfig):
+        return
 
-    # publickey = PublicKey.from_bech32("npub1...").to_hex()
-    # use this if you have the npub
-    publickey = "asd123"
-    #use this if you have hex
+    if ((adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
+            and adminconfig.USERNPUB == ""):
+        return
+
+
+    db = dvmconfig.DB
+
+    rebroadcast_nip89 = adminconfig.REBROADCAST_NIP89
+    cleandb = adminconfig.ClEANDB
+    listdatabase = adminconfig.LISTDATABASE
+    deleteuser = adminconfig.DELETEUSER
+    whitelistuser = adminconfig.WHITELISTUSER
+    unwhitelistuser = adminconfig.UNWHITELISTUSER
+    blacklistuser = adminconfig.BLACKLISTUSER
+
+    if adminconfig.USERNPUB != "":
+        if str(adminconfig.USERNPUB).startswith("npub"):
+            publickey = PublicKey.from_bech32(adminconfig.USERNPUB).to_hex()
+        else:
+            publickey = adminconfig.USERNPUB
+
 
     if whitelistuser:
-        user = get_or_add_user(publickey)
-        update_sql_table(user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
-        user = get_from_sql_table(publickey)
+        user = get_or_add_user(db, publickey, client=client, config=dvmconfig)
+        update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
+        user = get_from_sql_table(db, publickey)
         print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
 
     if unwhitelistuser:
-        user = get_from_sql_table(publickey)
-        update_sql_table(user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive)
+        user = get_from_sql_table(db, publickey)
+        update_sql_table(db, user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive)
 
     if blacklistuser:
-        user = get_from_sql_table(publickey)
-        update_sql_table(user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
-
-    if addbalance:
-        user = get_from_sql_table(publickey)
-        update_sql_table(user[0], (int(user.balance) + additional_balance), user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16, user.name, user.lastactive)
-        time.sleep(1.0)
-        message = str(additional_balance) + " Sats have been added to your balance. Your new balance is " + str(
-            (int(user.balance) + additional_balance)) + " Sats."
-        keys = Keys.from_sk_str(config.PRIVATE_KEY)
-        evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(publickey), message,
-                                                    None).to_event(keys)
-        send_event(evt, key=keys)
+        user = get_from_sql_table(db, publickey)
+        update_sql_table(db, user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
 
     if deleteuser:
-        delete_from_sql_table(publickey)
+        delete_from_sql_table(db, publickey)
 
     if cleandb:
-        clean_db()
+        clean_db(db)
 
     if listdatabase:
-        list_db()
+        list_db(db)
 
     if rebroadcast_nip89:
-        nip89_announce_tasks(dvmconfig)
+        nip89_announce_tasks(dvmconfig, client=client)
