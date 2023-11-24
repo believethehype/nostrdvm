@@ -240,10 +240,6 @@ class DVM:
                 print(decrypted_text)
                 if str(ob['input']).startswith("http"):
                     input_type = "url"
-                #elif str(ob['input']).startswith("nostr:nevent"):
-                #    ob['input'] = str(ob['input']).replace("nostr:", "")
-                #    ob['input'] = EventId.from_bech32(ob['input']).to_hex()
-                #    input_type = "event"
 
                 j_tag = Tag.parse(["j", self.dvm_config.SUPPORTED_DVMS[0].TASK])
                 i_tag = Tag.parse(["i", ob['input'], input_type])
@@ -370,12 +366,11 @@ class DVM:
                     elif tag.as_vec()[0] == "i":
                         task = tag.as_vec()[1]
 
-                user = get_from_sql_table(self.dvm_config.DB, sender)
+                user = get_or_add_user(self.dvm_config.DB, sender, self.client)
                 if not user.iswhitelisted:
                     amount = int(user.balance) + get_amount_per_task(task, self.dvm_config)
-                    update_sql_table(self.dvm_config.DB, sender, amount, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
-                                     user.name,
-                                     Timestamp.now().as_secs())
+                    update_sql_table(self.dvm_config.DB, sender, amount, user.iswhitelisted, user.isblacklisted,
+                                     user.nip05, user.lud16, user.name, Timestamp.now().as_secs())
                     message = "There was the following error : " + content + ". Credits have been reimbursed"
                 else:
                     # User didn't pay, so no reimbursement

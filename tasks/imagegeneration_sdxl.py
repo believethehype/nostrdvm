@@ -1,7 +1,5 @@
 import json
-import os
 from multiprocessing.pool import ThreadPool
-from threading import Thread
 
 from backends.nova_server import check_nova_server_status, send_request_to_nova_server
 from dvm import DVM
@@ -9,6 +7,7 @@ from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
+from utils.nip89_utils import NIP89Config
 
 """
 This File contains a Module to transform Text input on NOVA-Server and receive results back. 
@@ -28,13 +27,13 @@ class ImageGenerationSDXL(DVMTaskInterface):
     PK: str
     DVM = DVM
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89d_tag: str, nip89info: str, admin_config: AdminConfig = None, options=None):
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None, options=None):
         self.NAME = name
         self.PK = dvm_config.PRIVATE_KEY
 
         dvm_config.SUPPORTED_DVMS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
-        dvm_config.NIP89 = self.NIP89_announcement(nip89d_tag, nip89info)
+        dvm_config.NIP89 = self.NIP89_announcement(nip89config)
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.options = options
@@ -94,7 +93,6 @@ class ImageGenerationSDXL(DVMTaskInterface):
                         ratio_height = split[1]
                     # if size is set it will overwrite ratio.
                 elif tag.as_vec()[1] == "size":
-
                     if len(tag.as_vec()) > 3:
                         width = (tag.as_vec()[2])
                         height = (tag.as_vec()[3])
@@ -150,7 +148,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
             # Call the process route of NOVA-Server with our request form.
             response = send_request_to_nova_server(request_form, self.options['nova_server'])
             if bool(json.loads(response)['success']):
-                print("Job " + request_form['jobID'] + " sent to nova-server")
+                print("Job " + request_form['jobID'] + " sent to NOVA-server")
 
             pool = ThreadPool(processes=1)
             thread = pool.apply_async(check_nova_server_status, (request_form['jobID'], self.options['nova_server']))

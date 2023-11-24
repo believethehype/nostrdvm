@@ -71,7 +71,7 @@ def check_nova_server_status(jobID, address):
             result = ""
             url_fetch = 'http://' + address + '/fetch_result'
             print("Fetching Results from NOVA-Server...")
-            data = {"jobID": jobID}
+            data = {"jobID": jobID, "delete_after_download": True}
             response = requests.post(url_fetch, headers=headers, data=data)
             content_type = response.headers['content-type']
             print("Content-type: " + str(content_type))
