@@ -1,19 +1,28 @@
-# NostrAI Data Vending Machine
+# NostrAI: Nostr NIP90 Data Vending Machine Framework
 
-This example DVM implementation in Python currently supports simple translations using Google translate, as well as extraction of text from links with pdf files.
+This framework provides a way to easily build and/or run `Nostr NIP90 DVMs in Python`.
 
-At a later stage, additional example tasks will be added, as well as the integration into a larger Machine Learning backend 
+This project is currently under development and additional tasks and features are added along the way. 
+This means the project is in alpha status, interfaces might still change/break.
 
 
-Place .env file (based on .env_example) in main folder, install requirements.txt (python 3.10) run main.py. Optionally supports LNbits to create invoices instead of lnaddresses.
+## To get started:
+(Tested on Python 3.10)
 
-Use vendata.io to create a nip89 announcement of your dvm and save the dtag in your .env config.
+Create a new venv by running `"python -m venv venv"`
+  - Place .env file (based on .env_example) in main folder.
+  - Set your own private hex keys, create NIP89 dtags on vendata.io, 
+  - Install requirements.txt
+  - Run python main.py.
 
-A tutorial on how to add additional tasks, as well as the larger server backend will be added soon. 
+In `playground.py` some DVMs are already prepared. Feel free to play along with the existing ones.
+You can also add new tasks by using the interface, just like the existing tasks in the `tasks` folder.
 
-Known Issues:
-- After refactoring DVMs work independent from each other for the most part.
-  - Some functions might work easier than they did before (need some refactoring)
-- Bot currently not implemented
-- Some basic functionality is still missing, e.g. handling various mediasources
-- Interface might still change a lot and brick things.
+A `bot` is running by default that lists and communicates with the `DVMs` added to it, 
+so your DVMs can be controled via any regular client as well. 
+
+The Framework optionally supports `LNbits` to create invoices instead of using a `lightning address`. If LNBits is not used, 
+make sure your nostr accounts have a valid lightning address.
+
+
+A tutorial on how to add additional tasks, as well as the larger server backend will be added at a later stage. 

@@ -8,6 +8,7 @@ from tasks.translation import Translation
 from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config
+
 """
 This File is a playground to create DVMs. It shows some examples of DVMs that make use of the modules in the tasks folder
 These DVMs should be considered examples and will be extended in the future. env variables are used to not commit keys,
@@ -32,6 +33,8 @@ task, for example an address or an API key.
 # their NIP89 announcement
 admin_config = AdminConfig()
 admin_config.REBROADCAST_NIP89 = False
+# Set rebroadcast to true once you have set your NIP89 descriptions and d tags. You only need to rebroadcast once you
+# want to update your NIP89 descriptions
 
 
 def build_pdf_extractor(name, dm_allowed_keys):
@@ -67,11 +70,11 @@ def build_translator(name, dm_allowed_keys):
         "language": {
             "required": False,
             "values": ["en", "az", "be", "bg", "bn", "bs", "ca", "ceb", "co", "cs", "cy", "da", "de", "el", "eo", "es",
-                       "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl","gu", "ha", "haw", "hi", "hmn", "hr", "ht",
-                       "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk","km", "kn", "ko", "ku", "ky",
+                       "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "hi", "hmn", "hr", "ht",
+                       "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky",
                        "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl",
                        "no", "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl", "sm", "sn", "so",
-                       "sq", "sr", "st", "su", "sv", "sw", "ta", "te","tg", "th", "tl", "tr", "ug", "uk", "ur", "uz",
+                       "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tl", "tr", "ug", "uk", "ur", "uz",
                        "vi", "xh", "yi", "yo", "zh", "zu"]
         }
     }
@@ -158,12 +161,15 @@ def build_sketcher(name, dm_allowed_keys):
     return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
+
 def build_dalle(name, dm_allowed_keys):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY3")
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     dvm_config.DM_ALLOWED = dm_allowed_keys
+    profit_in_sats = 10
+    dvm_config.COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
 
     nip90params = {
         "size": {
@@ -186,4 +192,24 @@ def build_dalle(name, dm_allowed_keys):
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                               admin_config=admin_config)
+                                admin_config=admin_config)
+
+
+# Little Gimmick:
+# For Dalle where we have to pay 4cent per image, we fetch current sat price in fiat
+# and update cost at each start
+def get_price_per_sat(currency):
+    import requests
+
+    url = "https://api.coinstats.app/public/v1/coins"
+    params = {"skip": 0, "limit": 1, "currency": currency}
+    try:
+        response = requests.get(url, params=params)
+        response_json = response.json()
+
+        bitcoin_price = response_json["coins"][0]["price"]
+        price_currency_per_sat = bitcoin_price / 100000000.0
+    except:
+        price_currency_per_sat = 0.0004
+
+    return price_currency_per_sat

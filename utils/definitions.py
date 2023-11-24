@@ -2,10 +2,6 @@ import os
 from dataclasses import dataclass
 
 from nostr_sdk import Event
-
-NEW_USER_BALANCE: int = 250  # Free credits for new users
-
-
 class EventDefinitions:
     KIND_DM: int = 4
     KIND_ZAP: int = 9735

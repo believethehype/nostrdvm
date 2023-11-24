@@ -4,8 +4,9 @@ import json
 import requests
 from Crypto.Cipher import AES
 from bech32 import bech32_decode, convertbits
-from nostr_sdk import nostr_sdk, PublicKey, SecretKey
+from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event
 from utils.dvmconfig import DVMConfig
+from utils.nostr_utils import get_event_by_id
 
 
 def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
@@ -33,6 +34,42 @@ def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
         number = number * 100000000 * 0.000000000001
 
     return int(number)
+
+
+def parse_zap_event_tags(zap_event, keys, name, client, config):
+    zapped_event = None
+    invoice_amount = 0
+    anon = False
+    sender = zap_event.pubkey()
+
+    for tag in zap_event.tags():
+        if tag.as_vec()[0] == 'bolt11':
+            invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
+        elif tag.as_vec()[0] == 'e':
+            zapped_event = get_event_by_id(tag.as_vec()[1], client=client, config=config)
+        elif tag.as_vec()[0] == 'description':
+            zap_request_event = Event.from_json(tag.as_vec()[1])
+            sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
+                                         zap_request_event.content())
+            for z_tag in zap_request_event.tags():
+                if z_tag.as_vec()[0] == 'anon':
+                    if len(z_tag.as_vec()) > 1:
+                        print("[" + name + "] Private Zap received.")
+                        decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
+                                                                        keys.secret_key(),
+                                                                        zap_request_event.pubkey())
+                        decrypted_private_event = Event.from_json(decrypted_content)
+                        if decrypted_private_event.kind() == 9733:
+                            sender = decrypted_private_event.pubkey().to_hex()
+                            message = decrypted_private_event.content()
+                            if message != "":
+                                print("Zap Message: " + message)
+                    else:
+                        anon = True
+                        print(
+                            "[" + name + "] Anonymous Zap received. Unlucky, I don't know from whom, and never will")
+
+    return invoice_amount, zapped_event, sender, anon
 
 
 def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
