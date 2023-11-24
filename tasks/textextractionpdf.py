@@ -21,22 +21,13 @@ Params:  None
 
 
 class TextExtractionPDF(DVMTaskInterface):
-    NAME: str = ""
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
     COST: int = 0
-    PK: str
-    DVM = DVM
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None):
-        self.NAME = name
-        self.PK = dvm_config.PRIVATE_KEY
-
-        dvm_config.SUPPORTED_DVMS = [self]
-        dvm_config.DB = "db/" + self.NAME + ".db"
-        dvm_config.NIP89 = self.NIP89_announcement(nip89config)
-        self.dvm_config = dvm_config
-        self.admin_config = admin_config
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None, options=None):
+        self.init(name, dvm_config, admin_config, nip89config)
+        self.options = options
 
 
     def is_input_supported(self, input_type, input_content):

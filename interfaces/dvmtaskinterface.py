@@ -26,6 +26,19 @@ class DVMTaskInterface:
         nip89.content = nip89config.CONTENT
         return nip89
 
+    def init(self, name, dvm_config, admin_config, nip89config):
+        self.NAME = name
+        self.PK = dvm_config.PRIVATE_KEY
+        if dvm_config.COST is not None:
+            self.COST = dvm_config.COST
+
+        dvm_config.SUPPORTED_DVMS = [self]
+        dvm_config.DB = "db/" + self.NAME + ".db"
+        dvm_config.NIP89 = self.NIP89_announcement(nip89config)
+        self.dvm_config = dvm_config
+        self.admin_config = admin_config
+
+
     def run(self):
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
         nostr_dvm_thread.start()

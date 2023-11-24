@@ -8,9 +8,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
 
-from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Metadata, Filter, Options, Client
-
-from utils.definitions import NEW_USER_BALANCE
+from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Client, Options
 from utils.nostr_utils import send_event
 
 
@@ -66,7 +64,7 @@ def add_to_sql_table(db, npub, sats, iswhitelisted, isblacklisted, nip05, lud16,
         con.commit()
         con.close()
     except Error as e:
-        print(e)
+        print("Error when Adding to DB: " + str(e))
 
 
 def update_sql_table(db, npub, balance, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive):
@@ -87,7 +85,7 @@ def update_sql_table(db, npub, balance, iswhitelisted, isblacklisted, nip05, lud
         con.commit()
         con.close()
     except Error as e:
-        print(e)
+        print("Error Updating DB: " + str(e))
 
 
 def get_from_sql_table(db, npub):
@@ -113,7 +111,7 @@ def get_from_sql_table(db, npub):
             return user
 
     except Error as e:
-        print(e)
+        print("Error Getting from DB: " + str(e))
 
 
 def delete_from_sql_table(db, npub):
@@ -155,72 +153,70 @@ def list_db(db):
         print(e)
 
 
-def update_user_balance(db, sender, sats, client, config):
-    user = get_from_sql_table(db, sender)
+def update_user_balance(db, npub, additional_sats, client, config):
+    user = get_from_sql_table(db, npub)
     if user is None:
-        add_to_sql_table(db, sender, (int(sats) + NEW_USER_BALANCE), False, False,
-                         "", "", "", Timestamp.now().as_secs())
-        print("NEW USER: " + sender + " Zap amount: " + str(sats) + " Sats.")
+        name, nip05, lud16 = fetch_user_metadata(npub, client)
+        add_to_sql_table(db, npub, (int(additional_sats) + config.NEW_USER_BALANCE), False, False,
+                         nip05, lud16, name, Timestamp.now().as_secs())
+        print("Adding User: " + npub + " (" + npub + ")")
     else:
-        user = get_from_sql_table(db, sender)
-        print(str(sats))
-
-        if user.nip05 is None:
-            user.nip05 = ""
-        if user.lud16 is None:
-            user.lud16 = ""
-        if user.name is None:
-            user.name = ""
-
-        new_balance = int(user.balance) + int(sats)
-        update_sql_table(db, sender, new_balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
+        user = get_from_sql_table(db, npub)
+        new_balance = int(user.balance) + int(additional_sats)
+        update_sql_table(db, npub, new_balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
                          user.name,
                          Timestamp.now().as_secs())
-        print("UPDATE USER BALANCE: " + str(user.name) + " Zap amount: " + str(sats) + " Sats.")
+        print("Updated user balance for: " + str(user.name) +
+              " Zap amount: " + str(additional_sats) + " Sats. New balance: " + str(new_balance) +" Sats")
 
         if config is not None:
             keys = Keys.from_sk_str(config.PRIVATE_KEY)
             time.sleep(1.0)
 
-            message = ("Added " + str(sats) + " Sats to balance. New balance is " + str(new_balance) + " Sats. ")
+            message = ("Added " + str(additional_sats) + " Sats to balance. New balance is " + str(new_balance) + " Sats.")
 
-            evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(sender), message,
+            evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(npub), message,
                                                         None).to_event(keys)
             send_event(evt, client=client, dvm_config=config)
 
 
-def get_or_add_user(db, npub, client):
+def get_or_add_user(db, npub, client, config):
     user = get_from_sql_table(db, npub)
     if user is None:
-        name, nip05, lud16 = fetch_user_metadata(npub, client)
-        print("Adding User: " + npub + " (" + npub + ")")
-        add_to_sql_table(db, npub, NEW_USER_BALANCE, False, False, nip05,
-                         lud16, name, Timestamp.now().as_secs())
-        user = get_from_sql_table(db, npub)
-        return user
+        try:
+            name, nip05, lud16 = fetch_user_metadata(npub, client)
+            print("Adding User: " + npub + " (" + npub + ")")
+            add_to_sql_table(db, npub, config.NEW_USER_BALANCE, False, False, nip05,
+                             lud16, name, Timestamp.now().as_secs())
+            user = get_from_sql_table(db, npub)
+            return user
+        except Exception as e:
+            print("Error Adding User to DB: " + str(e))
 
     return user
+
+
+class DvmConfig:
+    pass
 
 
 def fetch_user_metadata(npub, client):
     name = ""
     nip05 = ""
     lud16 = ""
-
-    # Get metadata
     pk = PublicKey.from_hex(npub)
     print(f"\nGetting profile metadata for {pk.to_bech32()}...")
-    filter = Filter().kind(0).author(pk).limit(1)
-    events = client.get_events_of([filter], timedelta(seconds=3))
+    profile_filter = Filter().kind(0).author(pk).limit(1)
+    events = client.get_events_of([profile_filter], timedelta(seconds=5))
+    #TODO, it seems our client is still subscribed after that
+
     if len(events) > 0:
         latest_entry = events[0]
-        newest = 0
+        latest_time = 0
         for entry in events:
-            if entry.created_at().as_secs() > newest:
-                newest = entry.created_at().as_secs()
+            if entry.created_at().as_secs() > latest_time:
+                latest_time = entry.created_at().as_secs()
                 latest_entry = entry
-
-        print(latest_entry.content())
         profile = json.loads(latest_entry.content())
         if profile.get("name"):
             name = profile['name']
@@ -228,32 +224,4 @@ def fetch_user_metadata(npub, client):
             nip05 = profile['nip05']
         if profile.get("lud16"):
             lud16 = profile['lud16']
-
-    return name, nip05, lud16
-
-
-def fetch_user_metadata2(sender, client) -> (str, str, str):
-    name = ""
-    nip05 = ""
-    lud16 = ""
-    try:
-        pk = PublicKey.from_hex(sender)
-        print(f"\nGetting profile metadata for {pk.to_bech32()}...")
-        profile_filter = Filter().kind(0).author(pk).limit(1)
-        events = client.get_events_of([profile_filter], timedelta(seconds=1))
-        if len(events) > 0:
-            ev = events[0]
-            metadata = Metadata.from_json(ev.content())
-            name = metadata.get_display_name()
-            if str(name) == "" or name is None:
-                name = metadata.get_name()
-            nip05 = metadata.get_nip05()
-            lud16 = metadata.get_lud16()
-        else:
-            print("Profile not found")
-            return name, nip05, lud16
-
-    except:
-        print("Couldn't get meta information")
-
     return name, nip05, lud16

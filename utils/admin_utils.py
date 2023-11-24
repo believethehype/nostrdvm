@@ -50,7 +50,7 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
 
 
     if whitelistuser:
-        user = get_or_add_user(db, publickey, client=client)
+        user = get_or_add_user(db, publickey, client=client, config=dvmconfig)
         update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
         user = get_from_sql_table(db, publickey)
         print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))

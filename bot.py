@@ -1,6 +1,7 @@
 import json
 import time
 from datetime import timedelta
+from threading import Thread
 
 from nostr_sdk import Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey, \
     Event, Options
@@ -10,7 +11,8 @@ from utils.backend_utils import get_amount_per_task
 from utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table, User
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import send_event, get_event_by_id
-from utils.zap_utils import parse_amount_from_bolt11_invoice, check_for_zapplepay, decrypt_private_zap_message
+from utils.zap_utils import parse_amount_from_bolt11_invoice, check_for_zapplepay, decrypt_private_zap_message, \
+    parse_zap_event_tags
 
 
 class Bot:
@@ -28,7 +30,8 @@ class Bot:
 
         pk = self.keys.public_key()
 
-        print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME + " Supported DVM tasks: " +
+        print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME +
+              " Supported DVM tasks: " +
               ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
@@ -36,8 +39,7 @@ class Bot:
         self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
-        dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(
-            Timestamp.now())
+        dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
 
         self.client.subscribe([zap_filter, dm_filter])
 
@@ -50,7 +52,7 @@ class Bot:
             keys = self.keys
 
             def handle(self, relay_url, nostr_event):
-                if EventDefinitions.KIND_DM:
+                if nostr_event.kind() == EventDefinitions.KIND_DM:
                     handle_dm(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
                     handle_zap(nostr_event)
@@ -63,24 +65,20 @@ class Bot:
 
             try:
                 decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), nostr_event.content())
-                user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client)
+                user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
 
-                # user = User
-                # user.npub = sender
-                # user.balance = 250
-                # user.iswhitelisted = False
-                # user.isblacklisted = False
-                # user.name = "Test"
-                # user.nip05 = "Test@test"
-                # user.lud16 = "Test@test"
 
                 # We do a selection of tasks now, maybe change this later, Idk.
                 if decrypted_text[0].isdigit():
                     index = int(decrypted_text.split(' ')[0]) - 1
                     task = self.dvm_config.SUPPORTED_DVMS[index].TASK
-                    print("["+ self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) + ", Balance: "+ str(user.balance)+ " Sats) Task: " + str(task))
+                    print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) + ", Balance: "
+                          + str(user.balance)+ " Sats) Task: " + str(task))
 
-                    required_amount = self.dvm_config.SUPPORTED_DVMS[index].COST
+                    duration = 1
+                    required_amount = get_amount_per_task(self.dvm_config.SUPPORTED_DVMS[index].TASK,
+                                                          self.dvm_config, duration)
+
 
                     if user.isblacklisted:
                         # For some reason an admin might blacklist npubs, e.g. for abusing the service
@@ -135,8 +133,8 @@ class Bot:
                         print("payment-required")
                         time.sleep(2.0)
                         evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
-                                                                    "Balance required, please zap me with at least " + str(
-                                                                        int(required_amount - user.balance))
+                                                                    "Balance required, please zap me with at least " +
+                                                                    str(int(required_amount - user.balance))
                                                                     + " Sats, then try again.",
                                                                     nostr_event.id()).to_event(self.keys)
                         time.sleep(2.0)
@@ -149,7 +147,8 @@ class Bot:
 
                     dvm_result = json.loads(decrypted_text)
                     user_npub_hex = dvm_result["sender"]
-                    user = get_or_add_user(db=self.dvm_config.DB, npub=user_npub_hex, client=self.client)
+                    user = get_or_add_user(db=self.dvm_config.DB, npub=user_npub_hex,
+                                           client=self.client, config=self.dvm_config)
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     reply_event = EventBuilder.new_encrypted_direct_msg(self.keys,
                                                                         PublicKey.from_hex(user.npub),
@@ -159,7 +158,7 @@ class Bot:
                     send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
                 else:
-                    print("Message from " + user.name + ": " + decrypted_text)
+                    print("[" + self.NAME + "] Message from " + user.name + ": " + decrypted_text)
                     message = "DVMs that I support:\n\n"
                     index = 1
                     for p in self.dvm_config.SUPPORTED_DVMS:
@@ -173,61 +172,45 @@ class Bot:
                                                                 #nostr_event.id()).to_event(self.keys)
                     time.sleep(3)
                     send_event(evt, client=self.client, dvm_config=dvm_config)
-            except Exception as e:
-                print(e)
 
+            except Exception as e:
+                pass
+                # TODO we still receive (broken content) events after fetching the metadata, but we don't listen to them.
+                # probably in client.get_events_of in fetch_user_metadata
+                print("Error in bot " + str(e))
         def handle_zap(zap_event):
-            zapped_event = None
-            invoice_amount = 0
-            anon = False
-            sender = zap_event.pubkey()
-            print("Zap received")
+            print("[" + self.NAME + "] Zap received")
 
             try:
-                for tag in zap_event.tags():
-                    if tag.as_vec()[0] == 'bolt11':
-                        invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
-                    elif tag.as_vec()[0] == 'e':
-                        zapped_event = get_event_by_id(tag.as_vec()[1], client=self.client, config=self.dvm_config)
-                    elif tag.as_vec()[0] == 'description':
-                        zap_request_event = Event.from_json(tag.as_vec()[1])
-                        sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
-                                                     zap_request_event.content())
-                        for z_tag in zap_request_event.tags():
-                            if z_tag.as_vec()[0] == 'anon':
-                                if len(z_tag.as_vec()) > 1:
-                                    print("Private Zap received.")
-                                    decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
-                                                                                    self.keys.secret_key(),
-                                                                                    zap_request_event.pubkey())
-                                    decrypted_private_event = Event.from_json(decrypted_content)
-                                    if decrypted_private_event.kind() == 9733:
-                                        sender = decrypted_private_event.pubkey().to_hex()
-                                        message = decrypted_private_event.content()
-                                        if message != "":
-                                            print("Zap Message: " + message)
-                                else:
-                                    anon = True
-                                    print("Anonymous Zap received. Unlucky, I don't know from whom, and never will")
-                user = get_or_add_user(self.dvm_config.DB, sender, client=self.client)
+                invoice_amount, zapped_event, sender, anon = parse_zap_event_tags(zap_event,
+                                                                                  self.keys, self.NAME,
+                                                                                  self.client, self.dvm_config)
+
+                user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
 
                 if zapped_event is not None:
                     if not anon:
-                        print("Note Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
+                        print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
                             user.name))
                         update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                                             config=self.dvm_config)
 
                         # a regular note
                 elif not anon:
-                    print("Profile Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
+                    print("[" + self.NAME + "] Profile Zap received for Bot balance: " + str(invoice_amount) + " Sats from " + str(
                         user.name))
                     update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                                         config=self.dvm_config)
 
             except Exception as e:
-                print(f"Error during content decryption: {e}")
+                print("[" + self.NAME + "] Error during content decryption:" + str(e))
 
         self.client.handle_notifications(NotificationHandler())
         while True:
             time.sleep(1.0)
+
+    def run(self):
+        bot = Bot
+        nostr_dvm_thread = Thread(target=bot, args=[self.dvm_config])
+        nostr_dvm_thread.start()
+
