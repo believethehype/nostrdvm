@@ -1,5 +1,5 @@
 # DATABASE LOGIC
-import os
+import json
 import sqlite3
 import time
 
@@ -8,11 +8,9 @@ from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
 
-from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Metadata, Filter
-
-from utils import env
-from utils.definitions import NEW_USER_BALANCE
+from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Client, Options
 from utils.nostr_utils import send_event
+
 
 @dataclass
 class User:
@@ -26,10 +24,9 @@ class User:
     lastactive: int
 
 
-
-def create_sql_table():
+def create_sql_table(db):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute(""" CREATE TABLE IF NOT EXISTS users (
                                             npub text PRIMARY KEY,
@@ -48,9 +45,9 @@ def create_sql_table():
         print(e)
 
 
-def add_sql_table_column():
+def add_sql_table_column(db):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute(""" ALTER TABLE users ADD COLUMN lastactive 'integer' """)
         con.close()
@@ -58,23 +55,23 @@ def add_sql_table_column():
         print(e)
 
 
-def add_to_sql_table(npub, sats, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive):
+def add_to_sql_table(db, npub, sats, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
         data = (npub, sats, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive)
         cur.execute("INSERT or IGNORE INTO users VALUES(?, ?, ?, ?, ?, ?, ?, ?)", data)
         con.commit()
         con.close()
     except Error as e:
-        print(e)
+        print("Error when Adding to DB: " + str(e))
 
 
-def update_sql_table(npub, sats, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive):
+def update_sql_table(db, npub, balance, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
-        data = (sats, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive, npub)
+        data = (balance, iswhitelisted, isblacklisted, nip05, lud16, name, lastactive, npub)
 
         cur.execute(""" UPDATE users
                   SET sats = ? ,
@@ -88,35 +85,38 @@ def update_sql_table(npub, sats, iswhitelisted, isblacklisted, nip05, lud16, nam
         con.commit()
         con.close()
     except Error as e:
-        print(e)
+        print("Error Updating DB: " + str(e))
 
 
-def get_from_sql_table(npub):
+def get_from_sql_table(db, npub):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute("SELECT * FROM users WHERE npub=?", (npub,))
         row = cur.fetchone()
         con.close()
-        user = User
-        user.npub = row[0]
-        user.balance = row[1]
-        user.iswhitelisted = row[2]
-        user.isblacklisted = row[3]
-        user.nip05 = row[4]
-        user.lud16 = row[5]
-        user.name = row[6]
-        user.lastactive = row[7]
+        if row is None:
+            return None
+        else:
+            user = User
+            user.npub = row[0]
+            user.balance = row[1]
+            user.iswhitelisted = row[2]
+            user.isblacklisted = row[3]
+            user.nip05 = row[4]
+            user.lud16 = row[5]
+            user.name = row[6]
+            user.lastactive = row[7]
 
-        return user
+            return user
 
     except Error as e:
-        print(e)
+        print("Error Getting from DB: " + str(e))
 
 
-def delete_from_sql_table(npub):
+def delete_from_sql_table(db, npub):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute("DELETE FROM users WHERE npub=?", (npub,))
         con.commit()
@@ -125,24 +125,24 @@ def delete_from_sql_table(npub):
         print(e)
 
 
-def clean_db():
+def clean_db(db):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute("SELECT * FROM users WHERE npub IS NULL OR npub = '' ")
         rows = cur.fetchall()
         for row in rows:
             print(row)
-            delete_from_sql_table(row[0])
+            delete_from_sql_table(db, row[0])
         con.close()
         return rows
     except Error as e:
         print(e)
 
 
-def list_db():
+def list_db(db):
     try:
-        con = sqlite3.connect(os.getenv(env.USER_DB_PATH))
+        con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute("SELECT * FROM users ORDER BY sats DESC")
         rows = cur.fetchall()
@@ -153,70 +153,75 @@ def list_db():
         print(e)
 
 
-def update_user_balance(sender, sats, config=None):
-    user = get_from_sql_table(sender)
+def update_user_balance(db, npub, additional_sats, client, config):
+    user = get_from_sql_table(db, npub)
     if user is None:
-        add_to_sql_table(sender, (int(sats) + NEW_USER_BALANCE), False, False,
-                         "", "", "", Timestamp.now().as_secs())
-        print("NEW USER: " + sender + " Zap amount: " + str(sats) + " Sats.")
+        name, nip05, lud16 = fetch_user_metadata(npub, client)
+        add_to_sql_table(db, npub, (int(additional_sats) + config.NEW_USER_BALANCE), False, False,
+                         nip05, lud16, name, Timestamp.now().as_secs())
+        print("Adding User: " + npub + " (" + npub + ")")
     else:
-        user = get_from_sql_table(sender)
-        print(str(sats))
-
-
-        if user.nip05 is None:
-            user.nip05 = ""
-        if user.lud16 is None:
-            user.lud16 = ""
-        if user.name is None:
-            user.name = ""
-
-        new_balance = int(user.balance) + int(sats)
-        update_sql_table(sender, new_balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16, user.name,
+        user = get_from_sql_table(db, npub)
+        new_balance = int(user.balance) + int(additional_sats)
+        update_sql_table(db, npub, new_balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
+                         user.name,
                          Timestamp.now().as_secs())
-        print("UPDATE USER BALANCE: " + str(user.name) + " Zap amount: " + str(sats) + " Sats.")
-
+        print("Updated user balance for: " + str(user.name) +
+              " Zap amount: " + str(additional_sats) + " Sats. New balance: " + str(new_balance) +" Sats")
 
         if config is not None:
             keys = Keys.from_sk_str(config.PRIVATE_KEY)
             time.sleep(1.0)
 
-            message = ("Added "+ str(sats) + " Sats to balance. New balance is " + str(new_balance) + " Sats. " )
+            message = ("Added " + str(additional_sats) + " Sats to balance. New balance is " + str(new_balance) + " Sats.")
 
-
-            evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(sender), message,
+            evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(npub), message,
                                                         None).to_event(keys)
-            send_event(evt, key=keys)
+            send_event(evt, client=client, dvm_config=config)
 
 
-def get_or_add_user(sender):
-    user = get_from_sql_table(sender)
-
+def get_or_add_user(db, npub, client, config):
+    user = get_from_sql_table(db, npub)
     if user is None:
-        add_to_sql_table(sender, NEW_USER_BALANCE, False, False, None,
-                         None, None, Timestamp.now().as_secs())
-        user = get_from_sql_table(sender)
-        print(user)
+        try:
+            name, nip05, lud16 = fetch_user_metadata(npub, client)
+            print("Adding User: " + npub + " (" + npub + ")")
+            add_to_sql_table(db, npub, config.NEW_USER_BALANCE, False, False, nip05,
+                             lud16, name, Timestamp.now().as_secs())
+            user = get_from_sql_table(db, npub)
+            return user
+        except Exception as e:
+            print("Error Adding User to DB: " + str(e))
 
     return user
 
-def update_user_metadata(sender, client):
-    user = get_from_sql_table(sender)
-    try:
-        profile_filter = Filter().kind(0).author(sender).limit(1)
-        events = client.get_events_of([profile_filter], timedelta(seconds=3))
-        if len(events) > 0:
-            ev = events[0]
-            metadata = Metadata.from_json(ev.content())
-            name = metadata.get_display_name()
-            if str(name) == "" or name is None:
-                user.name = metadata.get_name()
-                user.nip05 = metadata.get_nip05()
-                user.lud16 = metadata.get_lud16()
-    except:
-        print("Couldn't get meta information")
-    update_sql_table(user.npub, user.balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
-                     user.name, Timestamp.now().as_secs())
-    user = get_from_sql_table(user.npub)
-    return user
 
+class DvmConfig:
+    pass
+
+
+def fetch_user_metadata(npub, client):
+    name = ""
+    nip05 = ""
+    lud16 = ""
+    pk = PublicKey.from_hex(npub)
+    print(f"\nGetting profile metadata for {pk.to_bech32()}...")
+    profile_filter = Filter().kind(0).author(pk).limit(1)
+    events = client.get_events_of([profile_filter], timedelta(seconds=5))
+    #TODO, it seems our client is still subscribed after that
+
+    if len(events) > 0:
+        latest_entry = events[0]
+        latest_time = 0
+        for entry in events:
+            if entry.created_at().as_secs() > latest_time:
+                latest_time = entry.created_at().as_secs()
+                latest_entry = entry
+        profile = json.loads(latest_entry.content())
+        if profile.get("name"):
+            name = profile['name']
+        if profile.get("nip05"):
+            nip05 = profile['nip05']
+        if profile.get("lud16"):
+            lud16 = profile['lud16']
+    return name, nip05, lud16

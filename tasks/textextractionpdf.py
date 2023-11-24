@@ -1,32 +1,37 @@
+import json
 import os
 import re
+from threading import Thread
 
+from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
-from utils import env
+from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions
-from utils.nip89_utils import NIP89Announcement
-from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id
+from utils.dvmconfig import DVMConfig
+from utils.nip89_utils import NIP89Config
+from utils.nostr_utils import get_event_by_id
+
+"""
+This File contains a Module to extract Text from a PDF file locally on the DVM Machine
+
+Accepted Inputs: Url to pdf file, Event containing an URL to a PDF file
+Outputs: Text containing the extracted contents of the PDF file
+Params:  None
+"""
 
 
 class TextExtractionPDF(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
-    COST: int = 20
+    COST: int = 0
 
-    def __init__(self, name, pk):
-        self.NAME = name
-        self.PK = pk
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None, options=None):
+        self.init(name, dvm_config, admin_config, nip89config)
+        self.options = options
 
-    def NIP89_announcement(self):
-        nip89 = NIP89Announcement()
-        nip89.kind = self.KIND
-        nip89.pk = self.PK
-        nip89.dtag = os.getenv(env.TASK_TEXTEXTRACTION_NIP89_DTAG)
-        nip89.content = "{\"name\":\"" + self.NAME + "\",\"image\":\"https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg\",\"about\":\"I extract Text from pdf documents\",\"nip90Params\":{}}"
-        return nip89
 
     def is_input_supported(self, input_type, input_content):
-        if input_type != "url":
+        if input_type != "url" and input_type != "event":
             return False
         return True
 
@@ -45,23 +50,24 @@ class TextExtractionPDF(DVMTaskInterface):
 
         if input_type == "url":
             url = input_content
+        # if event contains url to pdf, we checked for a pdf link before
         elif input_type == "event":
-            evt = get_event_by_id(input_content, config=dvm_config)
-            url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
-        elif input_type == "job":
-            evt = get_referenced_event_by_id(input_content, [EventDefinitions.KIND_NIP90_RESULT_GENERATE_IMAGE],
-                                             client, config=dvm_config)
-
+            evt = get_event_by_id(input_content, client=client, config=dvm_config)
             url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
 
-        request_form["optStr"] = 'url=' + url
+        options = {
+            "url": url,
+        }
+        request_form['options'] = json.dumps(options)
         return request_form
 
     def process(self, request_form):
-        options = DVMTaskInterface.setOptions(request_form)
         from pypdf import PdfReader
         from pathlib import Path
         import requests
+
+        options = DVMTaskInterface.set_options(request_form)
+
         try:
             file_path = Path('temp.pdf')
             response = requests.get(options["url"])
