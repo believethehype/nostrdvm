@@ -11,9 +11,9 @@ from utils.output_utils import upload_media_to_hoster
 
 """
 This file contains basic calling functions for ML tasks that are outsourced to nova-server 
-(https://github.com/hcmlab/nova-server). nova-server is an Open-Source backend that enables running models locally
- based on preefined modules (nova-server-modules), by accepting a request form.
- Modules are deployed in in separate virtual environments so dependencies won't conflict. 
+(https://pypi.org/project/hcai-nova-server/). nova-server is an Open-Source backend that enables running models locally
+based on preefined modules (nova-server-modules), by accepting a request form.
+Modules are deployed in in separate virtual environments so dependencies won't conflict. 
 
 Setup nova-server:
 https://hcmlab.github.io/nova-server/docbuild/html/tutorials/introduction.html
