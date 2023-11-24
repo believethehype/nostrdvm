@@ -6,6 +6,7 @@ from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
+from utils.nip89_utils import NIP89Config
 from utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
 
 """
@@ -25,13 +26,13 @@ class Translation(DVMTaskInterface):
     PK: str
     DVM = DVM
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89d_tag: str, nip89info: str, admin_config: AdminConfig = None):
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None):
         self.NAME = name
         self.PK = dvm_config.PRIVATE_KEY
 
         dvm_config.SUPPORTED_DVMS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
-        dvm_config.NIP89 = self.NIP89_announcement(nip89d_tag, nip89info)
+        dvm_config.NIP89 = self.NIP89_announcement(nip89config)
         self.dvm_config = dvm_config
         self.admin_config = admin_config
 

@@ -11,6 +11,11 @@ class NIP89Announcement:
     content: str
 
 
+class NIP89Config:
+    DTAG: str
+    CONTENT: str
+
+
 def nip89_announce_tasks(dvm_config, client):
     k_tag = Tag.parse(["k", str(dvm_config.NIP89.kind)])
     d_tag = Tag.parse(["d", dvm_config.NIP89.dtag])
