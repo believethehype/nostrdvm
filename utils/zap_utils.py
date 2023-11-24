@@ -100,7 +100,8 @@ def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
 def check_for_zapplepay(pubkey_hex: str, content: str):
     try:
         # Special case Zapplepay
-        if pubkey_hex == PublicKey.from_bech32("npub1wxl6njlcgygduct7jkgzrvyvd9fylj4pqvll6p32h59wyetm5fxqjchcan").to_hex():
+        if (pubkey_hex == PublicKey.from_bech32("npub1wxl6njlcgygduct7jkgzrvyvd9fylj4pqvll6p32h59wyetm5fxqjchcan")
+                .to_hex()):
             real_sender_bech32 = content.replace("From: nostr:", "")
             pubkey_hex = PublicKey.from_bech32(real_sender_bech32).to_hex()
         return pubkey_hex

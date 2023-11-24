@@ -1,5 +1,4 @@
 from nostr_sdk import Tag, Keys, EventBuilder
-
 from utils.nostr_utils import send_event
 
 
