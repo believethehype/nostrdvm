@@ -234,7 +234,9 @@ class Bot:
 
                                 # else we create a zap
                                 else:
-                                    bolt11 = zap("ai@bitcoinfixesthis.org", amount, "Zap", ptag, etag, self.keys, self.dvm_config)
+                                    user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
+                                                           client=self.client, config=self.dvm_config)
+                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config)
                                     if bolt11 == None:
                                         print("Receiver has no Lightning address")
                                         return
@@ -242,7 +244,7 @@ class Bot:
                                     payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
                                     self.job_list[self.job_list.index(entry)]['is_paid'] = True
                                     print("[" + self.NAME + "] payment_hash: " + payment_hash +
-                                          " Forwarding payment of " + amount + " Sats to DVM")
+                                          " Forwarding payment of " + str(amount) + " Sats to DVM")
                                 except Exception as e:
                                     print(e)
 
