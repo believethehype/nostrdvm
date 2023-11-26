@@ -35,7 +35,7 @@ class EventDefinitions:
 
 @dataclass
 class JobToWatch:
-    event_id: str
+    event: str
     timestamp: int
     is_paid: bool
     amount: int
@@ -45,8 +45,6 @@ class JobToWatch:
     bolt11: str
     payment_hash: str
     expires: int
-    from_bot: bool
-
 
 @dataclass
 class RequiredJobToWatch:

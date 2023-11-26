@@ -17,7 +17,7 @@ Post process results to either given output format or a Nostr readable plain tex
 def post_process_result(anno, original_event):
     print("Post-processing...")
     if isinstance(anno, pandas.DataFrame):  # if input is an anno we parse it to required output format
-        for tag in original_event.tags():
+        for tag in original_event.tags:
             print(tag.as_vec()[0])
             if tag.as_vec()[0] == "output":
                 output_format = tag.as_vec()[1]
