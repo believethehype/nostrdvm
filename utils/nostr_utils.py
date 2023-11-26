@@ -1,5 +1,6 @@
+import json
 from datetime import timedelta
-from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey
+from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
@@ -57,3 +58,41 @@ def send_event(event: Event, client: Client, dvm_config) -> EventId:
             client.remove_relay(relay)
 
     return event_id
+
+
+def check_and_decrypt_tags(event, dvm_config):
+    tags = []
+    is_encrypted = False
+    p = ""
+    for tag in event.tags():
+        if tag.as_vec()[0] == 'encrypted':
+            is_encrypted = True
+        elif tag.as_vec()[0] == 'p':
+            p = tag.as_vec()[1]
+
+    if is_encrypted:
+        if p != Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
+            print("[" + dvm_config.NIP89.name + "] Task encrypted and not addressed to this DVM, "
+                                                     "skipping..")
+            return None, None
+
+        elif p == Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
+            encrypted_tag = Tag.parse(["encrypted"])
+            p_tag = Tag.parse(["p", p])
+
+            tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                                     event.pubkey(), event.content())
+            params = json.loads(tags_str)
+
+            for element in params:
+                tags.append(Tag.parse(element))
+
+            # Keep the encrypted tag
+            tags.append(p_tag)
+            tags.append(encrypted_tag)
+
+        return tags, p
+
+    else:
+        return event.tags, p
+

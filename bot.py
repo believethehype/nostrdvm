@@ -236,7 +236,7 @@ class Bot:
                                 else:
                                     user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
                                                            client=self.client, config=self.dvm_config)
-                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config)
+                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config, "private")
                                     if bolt11 == None:
                                         print("Receiver has no Lightning address")
                                         return
@@ -288,7 +288,7 @@ class Bot:
         def handle_zap(zap_event):
             print("[" + self.NAME + "] Zap received")
             try:
-                invoice_amount, zapped_event, sender, anon = parse_zap_event_tags(zap_event,
+                invoice_amount, zapped_event, sender, message, anon = parse_zap_event_tags(zap_event,
                                                                                   self.keys, self.NAME,
                                                                                   self.client, self.dvm_config)
 
