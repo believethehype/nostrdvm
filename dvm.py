@@ -14,7 +14,7 @@ from utils.backend_utils import get_amount_per_task, check_task_is_supported, ge
 from utils.database_utils import create_sql_table, get_or_add_user, update_user_balance, update_sql_table
 from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
 from utils.output_utils import post_process_result, build_status_reaction
-from utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags
+from utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, redeem_cashu
 
 use_logger = False
 if use_logger:
@@ -92,11 +92,15 @@ class DVM:
             if p_tag_str is None:
                 return
             nip90_event.tags = tags
+            cashu = ""
+            for tag in tags:
+                if tag.as_vec()[0] == "cashu":
+                    cashu = tag.as_vec()[0]
 
             user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex(), client=self.client,
                                    config=self.dvm_config)
 
-            task_supported, task, duration = check_task_is_supported(nip90_event, client=self.client,
+            task_supported, task, duration = check_task_is_supported(nip90_event, tags, client=self.client,
                                                                      get_duration=(not user.iswhitelisted),
                                                                      config=self.dvm_config)
 
@@ -115,8 +119,12 @@ class DVM:
                     if dvm.TASK == task and dvm.COST == 0:
                         task_is_free = True
 
+                cashu_redeemed = False
+                if cashu != "":
+                    cashu_redeemed = redeem_cashu(cashu, self.dvm_config)
+
                 # if user is whitelisted or task is free, just do the job
-                if user.iswhitelisted or task_is_free:
+                if user.iswhitelisted or task_is_free or cashu_redeemed:
                     print(
                         "[" + self.dvm_config.NIP89.name + "] Free task or Whitelisted for task " + task +
                         ". Starting processing..")
@@ -199,7 +207,7 @@ class DVM:
 
                                 # if a reaction by us got zapped
 
-                        task_supported, task, duration = check_task_is_supported(job_event,
+                        task_supported, task, duration = check_task_is_supported(job_event, tags,
                                                                                  client=self.client,
                                                                                  get_duration=False,
                                                                                  config=self.dvm_config)
@@ -255,7 +263,7 @@ class DVM:
                 print("[" + self.dvm_config.NIP89.name + "] Error during content decryption: " + str(e))
 
         def check_event_has_not_unfinished_job_input(nevent, append, client, dvmconfig):
-            task_supported, task, duration = check_task_is_supported(nevent, client, False,
+            task_supported, task, duration = check_task_is_supported(nevent, nevent.tags, client, False,
                                                                      config=dvmconfig)
             if not task_supported:
                 return False
