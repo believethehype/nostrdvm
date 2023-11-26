@@ -157,23 +157,23 @@ class DVM:
 
                     do_work(nip90_event)
                 # if task is directed to us via p tag and user has balance, do the job and update balance
-                elif p == Keys.from_sk_str(self.dvm_config.PRIVATE_KEY).public_key().to_hex():
-                    if user.balance > amount:
-                        balance = max(user.balance - amount, 0)
-                        update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
-                                         iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
-                                         nip05=user.nip05, lud16=user.lud16, name=user.name,
-                                         lastactive=Timestamp.now().as_secs())
+                elif p == Keys.from_sk_str(self.dvm_config.PRIVATE_KEY).public_key().to_hex() and user.balance >= amount:
 
-                        print(
-                            "[" + self.dvm_config.NIP89.name + "] Using user's balance for task: " + task +
+                    balance = max(user.balance - amount, 0)
+                    update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
+                                     iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
+                                     nip05=user.nip05, lud16=user.lud16, name=user.name,
+                                     lastactive=Timestamp.now().as_secs())
 
-                            ". Starting processing.. New balance is: " + str(balance))
+                    print(
+                        "[" + self.dvm_config.NIP89.name + "] Using user's balance for task: " + task +
 
-                        send_job_status_reaction(nip90_event, "processing", True, 0,
-                                                 client=self.client, dvm_config=self.dvm_config)
+                        ". Starting processing.. New balance is: " + str(balance))
 
-                        do_work(nip90_event)
+                    send_job_status_reaction(nip90_event, "processing", True, 0,
+                                             client=self.client, dvm_config=self.dvm_config)
+
+                    do_work(nip90_event)
 
                 #else send a payment required event to user
                 else:
