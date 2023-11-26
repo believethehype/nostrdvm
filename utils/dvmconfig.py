@@ -14,6 +14,7 @@ class DVMConfig:
 
     RELAY_TIMEOUT = 3
     LNBITS_INVOICE_KEY = ''
+    LNBITS_ADMIN_KEY = ''  # In order to pay invoices, e.g. from the bot to DVMs, or reimburse users.
     LNBITS_URL = 'https://lnbits.com'
     DB: str
     NEW_USER_BALANCE: int = 250  # Free credits for new users

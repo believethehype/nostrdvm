@@ -3,8 +3,8 @@ import json
 
 import requests
 from Crypto.Cipher import AES
-from bech32 import bech32_decode, convertbits
-from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event
+from bech32 import bech32_decode, convertbits, bech32_encode
+from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import get_event_by_id
 
@@ -91,9 +91,21 @@ def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
     try:
         res = requests.get(url, headers=headers)
         obj = json.loads(res.text)
-        return obj["paid"] #TODO cast
+        return obj["paid"]
     except Exception as e:
         return None
+
+def pay_bolt11_ln_bits(bolt11: str, config: DVMConfig):
+    url = config.LNBITS_URL + "/api/v1/payments"
+    data = {'out': True, 'bolt11': bolt11}
+    headers = {'X-API-Key': config.LNBITS_ADMIN_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
+    try:
+        res = requests.post(url, json=data, headers=headers)
+        obj = json.loads(res.text)
+        return obj["payment_hash"]
+    except Exception as e:
+        print("LNBITS: " + str(e))
+        return None, None
 
 
 # DECRYPT ZAPS
@@ -133,3 +145,18 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
         return decoded
     except Exception as ex:
         return str(ex)
+
+
+def zap_request(lud16, recipientPubkey, amount_in_sats, keys, dvm_config):
+    amount_tag = Tag.parse(['amount', str(amount_in_sats*1000)])
+    relays_tag = Tag.parse(['relays', dvm_config.RELAY_LIST])
+    p_tag = Tag.parse(['p', recipientPubkey])
+
+
+    #_, encrypted_msg = bech32_encode(parts[0])
+
+    lnurl_tag = Tag.parse(['lnurl', recipientPubkey])
+
+
+    zaprequest = EventBuilder(9734, "",
+                                [amount_tag, relays_tag, p_tag,lnurl_tag ]).to_event(keys)
