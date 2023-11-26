@@ -56,7 +56,7 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
     input_type = ""
     duration = 1
     task = get_task(event, client=client, dvmconfig=dvm_config)
-    for tag in event.tags():
+    for tag in event.tags:
         if tag.as_vec()[0] == 'i':
             if len(tag.as_vec()) < 3:
                 print("Job Event missing/malformed i tag, skipping..")

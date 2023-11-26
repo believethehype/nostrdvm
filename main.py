@@ -22,6 +22,7 @@ def run_nostr_dvm_with_local_config():
     bot_config = DVMConfig()
     bot_config.PRIVATE_KEY = os.getenv("BOT_PRIVATE_KEY")
     bot_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    bot_config.LNBITS_ADMIN_KEY = os.getenv("LNBITS_ADMIN_KEY")  # The bot will forward zaps for us, use responsibly
     bot_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
     # Spawn some DVMs in the playground and run them
