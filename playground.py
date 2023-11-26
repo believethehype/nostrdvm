@@ -95,8 +95,8 @@ def build_translator(name, dm_allowed_keys):
 def build_unstable_diffusion(name, dm_allowed_keys):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
-    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    dvm_config.LNBITS_INVOICE_KEY = "" #This one will not use Lnbits to create invoices, but rely on zaps
+    dvm_config.LNBITS_URL = ""
     dvm_config.DM_ALLOWED = dm_allowed_keys
 
     # A module might have options it can be initialized with, here we set a default model, and the nova-server

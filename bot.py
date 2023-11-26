@@ -11,7 +11,7 @@ from utils.backend_utils import get_amount_per_task
 from utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table, User
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import send_event
-from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits
+from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap
 
 
 class Bot:
@@ -219,26 +219,33 @@ class Bot:
 
 
                 elif status == "payment-required" or status == "partial":
+                    amount = 0
                     for tag in nostr_event.tags():
                         if tag.as_vec()[0] == "amount":
                             amount_msats = int(tag.as_vec()[1])
-                            amount = str(amount_msats / 1000)
+                            amount = int(amount_msats / 1000)
 
-                            if len(tag.as_vec()) > 2:
-                                bolt11 = tag.as_vec()[2]
-                                entry = next((x for x in self.job_list if x['event_id'] == etag), None)
-                                if entry is not None and entry['is_paid'] is False and entry['dvm_key'] == ptag:
+                            entry = next((x for x in self.job_list if x['event_id'] == etag), None)
+                            if entry is not None and entry['is_paid'] is False and entry['dvm_key'] == ptag:
 
-                                    try:
-                                        payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
-                                        self.job_list[self.job_list.index(entry)]['is_paid'] = True
-                                        print("[" + self.NAME + "] payment_hash: " + payment_hash +
-                                              " Forwarding payment of " + amount + " Sats to DVM")
-                                    except Exception as e:
-                                        print(e)
-                            else:
-                                print("not implemented: request bolt11 invoice")
-                                # TODO request zap invoice
+                                #if we get a bolt11, we pay and move on
+                                if len(tag.as_vec()) > 2:
+                                    bolt11 = tag.as_vec()[2]
+
+                                # else we create a zap
+                                else:
+                                    bolt11 = zap("ai@bitcoinfixesthis.org", amount, "Zap", ptag, etag, self.keys, self.dvm_config)
+                                    if bolt11 == None:
+                                        print("Receiver has no Lightning address")
+                                        return
+                                try:
+                                    payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
+                                    self.job_list[self.job_list.index(entry)]['is_paid'] = True
+                                    print("[" + self.NAME + "] payment_hash: " + payment_hash +
+                                          " Forwarding payment of " + amount + " Sats to DVM")
+                                except Exception as e:
+                                    print(e)
+
 
             except Exception as e:
                 print(e)

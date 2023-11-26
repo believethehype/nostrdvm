@@ -1,5 +1,6 @@
 # LIGHTNING FUNCTIONS
 import json
+import urllib.parse
 
 import requests
 from Crypto.Cipher import AES
@@ -7,6 +8,7 @@ from bech32 import bech32_decode, convertbits, bech32_encode
 from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import get_event_by_id
+import lnurl
 
 
 def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
@@ -95,6 +97,7 @@ def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
     except Exception as e:
         return None
 
+
 def pay_bolt11_ln_bits(bolt11: str, config: DVMConfig):
     url = config.LNBITS_URL + "/api/v1/payments"
     data = {'out': True, 'bolt11': bolt11}
@@ -147,16 +150,32 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
         return str(ex)
 
 
-def zap_request(lud16, recipientPubkey, amount_in_sats, keys, dvm_config):
-    amount_tag = Tag.parse(['amount', str(amount_in_sats*1000)])
-    relays_tag = Tag.parse(['relays', dvm_config.RELAY_LIST])
-    p_tag = Tag.parse(['p', recipientPubkey])
+def zap(lud16: str, amount: int, zap_type, content, recipient_pubkey, zapped_event, keys, dvm_config):
+    if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
+        url = lnurl.decode(lud16)
+    elif '@' in lud16: #LNaddress
+        url = 'https://' + str(lud16).split('@')[1] + '/.well-known/lnurlp/' + str(lud16).split('@')[0]
+    else:  # No lud16 set or format invalid
+        return None
+    try:
+        response = requests.get(url)
+        ob = json.loads(response.content)
+        callback = ob["callback"]
+        encoded_lnurl = lnurl.encode(url)
+        amount_tag = Tag.parse(['amount', str(amount * 1000)])
+        relays_tag = Tag.parse(['relays', str(dvm_config.RELAY_LIST)])
+        p_tag = Tag.parse(['p', recipient_pubkey])
+        e_tag = Tag.parse(['e', zapped_event])
+        lnurl_tag = Tag.parse(['lnurl', encoded_lnurl])
 
+        zap_request = EventBuilder(9734, content,
+                                   [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]).to_event(keys).as_json()
 
-    #_, encrypted_msg = bech32_encode(parts[0])
+        response = requests.get(callback + "?amount=" + str(int(amount) * 1000) + "&nostr=" + urllib.parse.quote_plus(
+                zap_request) + "&lnurl=" + encoded_lnurl)
+        ob = json.loads(response.content)
+        return ob["pr"]
 
-    lnurl_tag = Tag.parse(['lnurl', recipientPubkey])
-
-
-    zaprequest = EventBuilder(9734, "",
-                                [amount_tag, relays_tag, p_tag,lnurl_tag ]).to_event(keys)
+    except Exception as e:
+        print(e)
+        return None
