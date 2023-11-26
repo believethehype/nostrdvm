@@ -150,7 +150,7 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
         return str(ex)
 
 
-def zap(lud16: str, amount: int, zap_type, content, recipient_pubkey, zapped_event, keys, dvm_config):
+def zap(lud16: str, amount: int, content, recipient_pubkey, zapped_event, keys, dvm_config):
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
         url = lnurl.decode(lud16)
     elif '@' in lud16: #LNaddress
