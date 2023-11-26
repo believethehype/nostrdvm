@@ -84,11 +84,11 @@ def nostr_client():
                                   EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
     client.subscribe([dm_zap_filter, dvm_filter])
 
-    nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
+    #nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
     #nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     #nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
-    #nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+    nostr_client_test_image("a beautiful purple ostrich watching the sunset")
     class NotificationHandler(HandleNotification):
         def handle(self, relay_url, event):
             print(f"Received new event from {relay_url}: {event.as_json()}")

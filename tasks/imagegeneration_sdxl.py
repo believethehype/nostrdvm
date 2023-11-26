@@ -55,7 +55,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
         lora_weight = ""
         strength = ""
         guidance_scale = ""
-        for tag in event.tags():
+        for tag in event.tags:
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":
