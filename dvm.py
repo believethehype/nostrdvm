@@ -53,15 +53,15 @@ class DVM:
         self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
-        bot_dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).authors(self.dvm_config.DM_ALLOWED).since(
-            Timestamp.now())
+        #bot_dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).authors(self.dvm_config.DM_ALLOWED).since(
+        #    Timestamp.now())
 
         kinds = [EventDefinitions.KIND_NIP90_GENERIC]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
                 kinds.append(dvm.KIND)
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
-        self.client.subscribe([dvm_filter, zap_filter, bot_dm_filter])
+        self.client.subscribe([dvm_filter, zap_filter])
 
         create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
@@ -158,7 +158,6 @@ class DVM:
                     do_work(nip90_event)
                 # if task is directed to us via p tag and user has balance, do the job and update balance
                 elif p == Keys.from_sk_str(self.dvm_config.PRIVATE_KEY).public_key().to_hex() and user.balance >= amount:
-
                     balance = max(user.balance - amount, 0)
                     update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
@@ -261,14 +260,14 @@ class DVM:
                         print("[" + self.dvm_config.NIP89.name + "] "
                                                                  "Someone zapped the result of an exisiting Task. Nice")
                     elif not anon:
-                        print("[" + self.dvm_config.NIP89.name + "] Note Zap received for Bot balance: " +
+                        print("[" + self.dvm_config.NIP89.name + "] Note Zap received for DVM balance: " +
                               str(invoice_amount) + " Sats from " + str(user.name))
                         update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                                             config=self.dvm_config)
 
                         # a regular note
                 elif not anon:
-                    print("[" + self.dvm_config.NIP89.name + "] Profile Zap received for Bot balance: " +
+                    print("[" + self.dvm_config.NIP89.name + "] Profile Zap received for DVM balance: " +
                           str(invoice_amount) + " Sats from " + str(user.name))
                     update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                                         config=self.dvm_config)

@@ -1,14 +1,17 @@
 # LIGHTNING FUNCTIONS
 import json
+import os
 import urllib.parse
 
 import requests
 from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
-from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag
+from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import get_event_by_id
 import lnurl
+from hashlib import sha256
 
 
 def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
@@ -50,26 +53,26 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
         elif tag.as_vec()[0] == 'e':
             zapped_event = get_event_by_id(tag.as_vec()[1], client=client, config=config)
         elif tag.as_vec()[0] == 'description':
-            zap_request_event = Event.from_json(tag.as_vec()[1])
-            sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
-                                         zap_request_event.content())
-            for z_tag in zap_request_event.tags():
-                if z_tag.as_vec()[0] == 'anon':
-                    if len(z_tag.as_vec()) > 1:
-                        print("[" + name + "] Private Zap received.")
-                        decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
-                                                                        keys.secret_key(),
-                                                                        zap_request_event.pubkey())
-                        decrypted_private_event = Event.from_json(decrypted_content)
-                        if decrypted_private_event.kind() == 9733:
-                            sender = decrypted_private_event.pubkey().to_hex()
-                            message = decrypted_private_event.content()
-                            if message != "":
-                                print("Zap Message: " + message)
-                    else:
-                        anon = True
-                        print(
-                            "[" + name + "] Anonymous Zap received. Unlucky, I don't know from whom, and never will")
+                zap_request_event = Event.from_json(tag.as_vec()[1])
+                sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
+                                             zap_request_event.content())
+                for z_tag in zap_request_event.tags():
+                    if z_tag.as_vec()[0] == 'anon':
+                        if len(z_tag.as_vec()) > 1:
+                            print("[" + name + "] Private Zap received.")
+                            decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
+                                                                            keys.secret_key(),
+                                                                            zap_request_event.pubkey())
+                            decrypted_private_event = Event.from_json(decrypted_content)
+                            if decrypted_private_event.kind() == 9733:
+                                sender = decrypted_private_event.pubkey().to_hex()
+                                message = decrypted_private_event.content()
+                                if message != "":
+                                    print("Zap Message: " + message)
+                        else:
+                            anon = True
+                            print(
+                                "[" + name + "] Anonymous Zap received. Unlucky, I don't know from whom, and never will")
 
     return invoice_amount, zapped_event, sender, anon
 
@@ -126,6 +129,26 @@ def check_for_zapplepay(pubkey_hex: str, content: str):
         return pubkey_hex
 
 
+def enrypt_private_zap_message(message, privatekey, publickey):
+    # Generate a random IV
+    shared_secret = nostr_sdk.generate_shared_key(privatekey, publickey)
+    iv = os.urandom(16)
+
+    # Encrypt the message
+    cipher = AES.new(bytearray(shared_secret), AES.MODE_CBC, bytearray(iv))
+    utf8message = message.encode('utf-8')
+    padded_message = pad(utf8message, AES.block_size)
+    encrypted_msg = cipher.encrypt(padded_message)
+
+    encrypted_msg_bech32 = bech32_encode("pzap", convertbits(encrypted_msg, 8, 5, True))
+    iv_bech32 = bech32_encode("iv", convertbits(iv, 8, 5, True))
+
+    print("Encrypted Message:", encrypted_msg_bech32)
+    print("IV:", iv_bech32)
+
+    return encrypted_msg_bech32 + "_" + iv_bech32
+
+
 def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey):
     shared_secret = nostr_sdk.generate_shared_key(privkey, pubkey)
     if len(shared_secret) != 16 and len(shared_secret) != 32:
@@ -150,10 +173,10 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
         return str(ex)
 
 
-def zap(lud16: str, amount: int, content, recipient_pubkey, zapped_event, keys, dvm_config):
+def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config, zaptype="public"):
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
         url = lnurl.decode(lud16)
-    elif '@' in lud16: #LNaddress
+    elif '@' in lud16:  # LNaddress
         url = 'https://' + str(lud16).split('@')[1] + '/.well-known/lnurlp/' + str(lud16).split('@')[0]
     else:  # No lud16 set or format invalid
         return None
@@ -164,15 +187,28 @@ def zap(lud16: str, amount: int, content, recipient_pubkey, zapped_event, keys, 
         encoded_lnurl = lnurl.encode(url)
         amount_tag = Tag.parse(['amount', str(amount * 1000)])
         relays_tag = Tag.parse(['relays', str(dvm_config.RELAY_LIST)])
-        p_tag = Tag.parse(['p', recipient_pubkey])
-        e_tag = Tag.parse(['e', zapped_event])
+        p_tag = Tag.parse(['p', zapped_event.pubkey().to_hex()])
+        e_tag = Tag.parse(['e', zapped_event.id().to_hex()])
         lnurl_tag = Tag.parse(['lnurl', encoded_lnurl])
+        tags = [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]
+
+        if zaptype == "private":
+            key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(zapped_event.created_at().as_secs())
+            encryption_key = sha256(key_str.encode('utf-8')).hexdigest()
+
+            zap_request = EventBuilder(9733, content,
+                                       [p_tag, e_tag]).to_event(keys).as_json()
+            keys = Keys.from_sk_str(encryption_key)
+            encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.pubkey())
+            anon_tag = Tag.parse(['anon', encrypted_content])
+            tags.append(anon_tag)
+            content = ""
 
         zap_request = EventBuilder(9734, content,
-                                   [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]).to_event(keys).as_json()
+                                   tags).to_event(keys).as_json()
 
         response = requests.get(callback + "?amount=" + str(int(amount) * 1000) + "&nostr=" + urllib.parse.quote_plus(
-                zap_request) + "&lnurl=" + encoded_lnurl)
+            zap_request) + "&lnurl=" + encoded_lnurl)
         ob = json.loads(response.content)
         return ob["pr"]
 
