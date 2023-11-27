@@ -81,7 +81,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
     i_tag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
     paramTag1 = Tag.parse(["param", "size", "1024x1024"])
-    tTag = Tag.parse(["t", "bitcoin"])
+    pTag = Tag.parse(["p", receiver_keys.public_key().to_hex()])
 
     bid = str(50 * 1000)
     bid_tag = Tag.parse(['bid', bid, bid])
@@ -89,17 +89,17 @@ def nostr_client_test_image_private(prompt, cashutoken):
     alt_tag = Tag.parse(["alt", "Super secret test"])
     cashu_tag = Tag.parse(["cashu", cashutoken])
 
-    encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), tTag, bid_tag.as_vec(),
-                                          relays_tag.as_vec(), alt_tag.as_vec(), cashu_tag.as_vec()])
+    encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), bid_tag.as_vec(),
+                                          relays_tag.as_vec(), alt_tag.as_vec(), pTag.as_vec(), cashu_tag.as_vec()])
 
 
     encrypted_params = nip04_encrypt(keys.secret_key(), receiver_keys.public_key(),
                                      encrypted_params_string)
 
-    p_tag = Tag.parse(['p', keys.public_key().to_hex()])
+
     encrypted_tag = Tag.parse(['encrypted'])
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params,
-                                [p_tag, encrypted_tag]).to_event(keys)
+                                [pTag, encrypted_tag]).to_event(keys)
     client = Client(keys)
     for relay in relay_list:
         client.add_relay(relay)
@@ -130,9 +130,10 @@ def nostr_client():
     #nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     #nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
-    nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+    #nostr_client_test_image("a beautiful purple ostrich watching the sunset")
 
-   #nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
+    cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6MSwiQyI6IjAzMjBjMjBkNWZkNTYwODlmYjZjYTllNDFkYjVlM2MzYTAwMTdjNTUzYmY5MzNkZTgwNTg3NDg1YTk5Yjk2Y2E3OSIsInNlY3JldCI6IktrcnVtakdSeDlHTExxZHBQU3J4WUxaZnJjWmFHekdmZ3Q4T2pZN0c4NHM9In0seyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6MiwiQyI6IjAyNjYyMjQzNWUxMzBmM2E0ZWE2NGUyMmI4NGQyYWRhNzM2MjE4MTE3YzZjOWIyMmFkYjAwZTFjMzhmZDBiOTNjNCIsInNlY3JldCI6Ikw4dU1BbnBsQm1pdDA4cDZjQk0vcXhpVDFmejlpbnA3V3RzZEJTV284aEk9In0seyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6NCwiQyI6IjAzMTAxNWM0ZmZhN2U1NzhkNjA0MjFhY2Q2OWEzMTY5NGI4YmRlYTI2YjIwZjgxOWYxOWZhOTNjN2QwZTBiMTdlOCIsInNlY3JldCI6ImRVZ2E2VFo2emRhclozN015NXg2MFdHMzMraitDZnEyOWkzWExjVStDMFE9In0seyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6MTYsIkMiOiIwMzU0YmYxODdjOTgxZjdmNDk5MGExMDVlMmI2MjIxZDNmYTQ2ZWNlMmNjNWE0ZmI2Mzc3NTdjZDJjM2VhZTkzMGMiLCJzZWNyZXQiOiIyeUJJeEo4dkNGVnUvK1VWSzdwSXFjekkrbkZISngyNXF2ZGhWNDByNzZnPSJ9LHsiaWQiOiJYV0MwL0V0YXFTOEMiLCJhbW91bnQiOjMyLCJDIjoiMDJlYTNmMmFhZGI5MTA4MzljZDA5YTlmMTQ1YTZkY2Q4OGZmZDFmM2M5MjZhMzM5MGFmZjczYjM4ZjY0YjQ5NTU2Iiwic2VjcmV0IjoiQU1mU2FxUWFTN0l5WVdEbUpUaVM4NW9ReFNva0p6SzVJL1R6OUJ5UlFLdz0ifV0sIm1pbnQiOiJodHRwczovL2xuYml0cy5iaXRjb2luZml4ZXN0aGlzLm9yZy9jYXNodS9hcGkvdjEvOXVDcDIyUllWVXE4WjI0bzVCMlZ2VyJ9XX0="
+    nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
     class NotificationHandler(HandleNotification):
         def handle(self, relay_url, event):
             print(f"Received new event from {relay_url}: {event.as_json()}")

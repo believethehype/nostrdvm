@@ -96,9 +96,9 @@ class DVM:
             p_tag_str = ""
             for tag in nip90_event.tags():
                 if tag.as_vec()[0] == "cashu":
-                    cashu = tag.as_vec()[0]
+                    cashu = tag.as_vec()[1]
                 elif tag.as_vec()[0] == "p":
-                    p_tag_str = tag.as_vec()[0]
+                    p_tag_str = tag.as_vec()[1]
 
             task_supported, task, duration = check_task_is_supported(nip90_event, client=self.client,
                                                                      get_duration=(not user.iswhitelisted),
@@ -121,8 +121,7 @@ class DVM:
 
                 cashu_redeemed = False
                 if cashu != "":
-                    cashu_redeemed = redeem_cashu(cashu, self.dvm_config)
-
+                    cashu_redeemed = redeem_cashu(cashu, self.dvm_config, self.client)
                 # if user is whitelisted or task is free, just do the job
                 if user.iswhitelisted or task_is_free or cashu_redeemed:
                     print(
