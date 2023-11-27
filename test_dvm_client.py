@@ -90,7 +90,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
     cashu_tag = Tag.parse(["cashu", cashutoken])
 
     encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), bid_tag.as_vec(),
-                                          relays_tag.as_vec(), alt_tag.as_vec(), pTag.as_vec(), cashu_tag.as_vec()])
+                                          relays_tag.as_vec(), alt_tag.as_vec(), cashu_tag.as_vec()])
 
 
     encrypted_params = nip04_encrypt(keys.secret_key(), receiver_keys.public_key(),
