@@ -206,15 +206,18 @@ def fetch_user_metadata(npub, client):
     if len(events) > 0:
         latest_entry = events[0]
         latest_time = 0
-        for entry in events:
-            if entry.created_at().as_secs() > latest_time:
-                latest_time = entry.created_at().as_secs()
-                latest_entry = entry
-        profile = json.loads(latest_entry.content())
-        if profile.get("name"):
-            name = profile['name']
-        if profile.get("nip05"):
-            nip05 = profile['nip05']
-        if profile.get("lud16"):
-            lud16 = profile['lud16']
+        try:
+            for entry in events:
+                if entry.created_at().as_secs() > latest_time:
+                    latest_time = entry.created_at().as_secs()
+                    latest_entry = entry
+            profile = json.loads(latest_entry.content())
+            if profile.get("name"):
+                name = profile['name']
+            if profile.get("nip05"):
+                nip05 = profile['nip05']
+            if profile.get("lud16"):
+                lud16 = profile['lud16']
+        except Exception as e:
+            print(e)
     return name, nip05, lud16

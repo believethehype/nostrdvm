@@ -1,4 +1,5 @@
 # LIGHTNING FUNCTIONS
+import base64
 import json
 import os
 import urllib.parse
@@ -54,26 +55,26 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
         elif tag.as_vec()[0] == 'e':
             zapped_event = get_event_by_id(tag.as_vec()[1], client=client, config=config)
         elif tag.as_vec()[0] == 'description':
-                zap_request_event = Event.from_json(tag.as_vec()[1])
-                sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
-                                             zap_request_event.content())
-                for z_tag in zap_request_event.tags():
-                    if z_tag.as_vec()[0] == 'anon':
-                        if len(z_tag.as_vec()) > 1:
-                            #print("[" + name + "] Private Zap received.")
-                            decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
-                                                                            keys.secret_key(),
-                                                                            zap_request_event.pubkey())
-                            decrypted_private_event = Event.from_json(decrypted_content)
-                            if decrypted_private_event.kind() == 9733:
-                                sender = decrypted_private_event.pubkey().to_hex()
-                                message = decrypted_private_event.content()
-                                #if message != "":
-                                #    print("Zap Message: " + message)
-                        else:
-                            anon = True
-                            print(
-                                "[" + name + "] Anonymous Zap received. Unlucky, I don't know from whom, and never will")
+            zap_request_event = Event.from_json(tag.as_vec()[1])
+            sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
+                                         zap_request_event.content())
+            for z_tag in zap_request_event.tags():
+                if z_tag.as_vec()[0] == 'anon':
+                    if len(z_tag.as_vec()) > 1:
+                        # print("[" + name + "] Private Zap received.")
+                        decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
+                                                                        keys.secret_key(),
+                                                                        zap_request_event.pubkey())
+                        decrypted_private_event = Event.from_json(decrypted_content)
+                        if decrypted_private_event.kind() == 9733:
+                            sender = decrypted_private_event.pubkey().to_hex()
+                            message = decrypted_private_event.content()
+                            # if message != "":
+                            #    print("Zap Message: " + message)
+                    else:
+                        anon = True
+                        print(
+                            "[" + name + "] Anonymous Zap received. Unlucky, I don't know from whom, and never will")
 
     return invoice_amount, zapped_event, sender, message, anon
 
@@ -212,3 +213,52 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
     except Exception as e:
         print(e)
         return None
+
+
+def parse_cashu(cashuToken):
+    try:
+        base64token = cashuToken.replace("cashuA", "")
+        cashu = json.loads(base64.b64decode(base64token).decode('utf-8'))
+        token = cashu["token"][0]
+        proofs = token["proofs"]
+        mint = token["mint"]
+
+        totalAmount = 0
+        for proof in proofs:
+            totalAmount += proof["amount"]
+
+        fees = max(int(totalAmount * 0.02), 2)
+        redeemInvoiceAmount = totalAmount - fees
+
+        return cashuToken, mint, totalAmount, fees, redeemInvoiceAmount, proofs
+    except Exception as e:
+        print("Could not parse this cashu token")
+        return None, None, None, None, None, None
+
+
+def redeem_cashu(cashu, config):
+    # TODO untested
+    is_redeemed = False
+    cashuToken, mint, totalAmount, fees, redeemInvoiceAmount, proofs = parse_cashu(cashu)
+    invoice = create_bolt11_ln_bits(totalAmount, config)
+    try:
+        url = mint + "/melt"  # Melt cashu tokens at Mint
+        json_object = {"proofs": proofs, "pr": invoice}
+
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        request = requests.post(url, json=json_object, headers=headers)
+
+        if request.status_code == 200:
+            tree = json.loads(request.text)
+            successful = tree.get("paid") == "true"
+            if successful:
+                is_redeemed = True
+            else:
+                msg = tree.get("detail", "").split('.')[0].strip() if tree.get("detail") else None
+                is_redeemed = False
+                print(msg)
+
+    except Exception as e:
+        print(e)
+
+    return is_redeemed
