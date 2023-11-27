@@ -81,7 +81,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
     i_tag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
     paramTag1 = Tag.parse(["param", "size", "1024x1024"])
-    tTag = Tag.parse(["t", "bitcoin"])
+    pTag = Tag.parse(["p", receiver_keys.public_key().to_hex()])
 
     bid = str(50 * 1000)
     bid_tag = Tag.parse(['bid', bid, bid])
@@ -89,17 +89,17 @@ def nostr_client_test_image_private(prompt, cashutoken):
     alt_tag = Tag.parse(["alt", "Super secret test"])
     cashu_tag = Tag.parse(["cashu", cashutoken])
 
-    encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), tTag, bid_tag.as_vec(),
+    encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), bid_tag.as_vec(),
                                           relays_tag.as_vec(), alt_tag.as_vec(), cashu_tag.as_vec()])
 
 
     encrypted_params = nip04_encrypt(keys.secret_key(), receiver_keys.public_key(),
                                      encrypted_params_string)
 
-    p_tag = Tag.parse(['p', keys.public_key().to_hex()])
+
     encrypted_tag = Tag.parse(['encrypted'])
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params,
-                                [p_tag, encrypted_tag]).to_event(keys)
+                                [pTag, encrypted_tag]).to_event(keys)
     client = Client(keys)
     for relay in relay_list:
         client.add_relay(relay)
@@ -130,9 +130,10 @@ def nostr_client():
     #nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     #nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
-    nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+    #nostr_client_test_image("a beautiful purple ostrich watching the sunset")
 
-   #nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
+    cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
+    nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
     class NotificationHandler(HandleNotification):
         def handle(self, relay_url, event):
             print(f"Received new event from {relay_url}: {event.as_json()}")

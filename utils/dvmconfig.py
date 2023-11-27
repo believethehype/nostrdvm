@@ -1,11 +1,14 @@
 import os
 
+from nostr_sdk import Keys
+
 from utils.nip89_utils import NIP89Announcement
 
 
 class DVMConfig:
     SUPPORTED_DVMS= []
-    PRIVATE_KEY: str = os.getenv("NOSTR_PRIVATE_KEY")
+    PRIVATE_KEY: str = ""
+    PUBLIC_KEY: str = ""
     COST: int = None
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",

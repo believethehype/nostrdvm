@@ -3,16 +3,56 @@ import base64
 import json
 import os
 import urllib.parse
-
 import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
 from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys
+
+from utils.database_utils import get_or_add_user
 from utils.dvmconfig import DVMConfig
-from utils.nostr_utils import get_event_by_id
+from utils.nostr_utils import get_event_by_id, check_and_decrypt_tags, check_and_decrypt_own_tags
 import lnurl
 from hashlib import sha256
+
+
+def parse_zap_event_tags(zap_event, keys, name, client, config):
+    zapped_event = None
+    invoice_amount = 0
+    anon = False
+    message = ""
+    sender = zap_event.pubkey()
+    for tag in zap_event.tags():
+        if tag.as_vec()[0] == 'bolt11':
+            invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
+        elif tag.as_vec()[0] == 'e':
+            zapped_event = get_event_by_id(tag.as_vec()[1], client=client, config=config)
+            zapped_event = check_and_decrypt_own_tags(zapped_event, config)
+        elif tag.as_vec()[0] == 'p':
+            p_tag = tag.as_vec()[1]
+        elif tag.as_vec()[0] == 'description':
+            zap_request_event = Event.from_json(tag.as_vec()[1])
+            sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
+                                         zap_request_event.content())
+            for z_tag in zap_request_event.tags():
+                if z_tag.as_vec()[0] == 'anon':
+                    if len(z_tag.as_vec()) > 1:
+                        # print("[" + name + "] Private Zap received.")
+                        decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
+                                                                        keys.secret_key(),
+                                                                        zap_request_event.pubkey())
+                        decrypted_private_event = Event.from_json(decrypted_content)
+                        if decrypted_private_event.kind() == 9733:
+                            sender = decrypted_private_event.pubkey().to_hex()
+                            message = decrypted_private_event.content()
+                            # if message != "":
+                            #    print("Zap Message: " + message)
+                    else:
+                        anon = True
+                        print(
+                            "[" + name + "] Anonymous Zap received. Unlucky, I don't know from whom, and never will")
+
+    return invoice_amount, zapped_event, sender, message, anon
 
 
 def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
@@ -42,44 +82,9 @@ def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
     return int(number)
 
 
-def parse_zap_event_tags(zap_event, keys, name, client, config):
-    zapped_event = None
-    invoice_amount = 0
-    anon = False
-    message = ""
-    sender = zap_event.pubkey()
-
-    for tag in zap_event.tags():
-        if tag.as_vec()[0] == 'bolt11':
-            invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
-        elif tag.as_vec()[0] == 'e':
-            zapped_event = get_event_by_id(tag.as_vec()[1], client=client, config=config)
-        elif tag.as_vec()[0] == 'description':
-            zap_request_event = Event.from_json(tag.as_vec()[1])
-            sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
-                                         zap_request_event.content())
-            for z_tag in zap_request_event.tags():
-                if z_tag.as_vec()[0] == 'anon':
-                    if len(z_tag.as_vec()) > 1:
-                        # print("[" + name + "] Private Zap received.")
-                        decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
-                                                                        keys.secret_key(),
-                                                                        zap_request_event.pubkey())
-                        decrypted_private_event = Event.from_json(decrypted_content)
-                        if decrypted_private_event.kind() == 9733:
-                            sender = decrypted_private_event.pubkey().to_hex()
-                            message = decrypted_private_event.content()
-                            # if message != "":
-                            #    print("Zap Message: " + message)
-                    else:
-                        anon = True
-                        print(
-                            "[" + name + "] Anonymous Zap received. Unlucky, I don't know from whom, and never will")
-
-    return invoice_amount, zapped_event, sender, message, anon
-
-
 def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
+    if config.LNBITS_URL == "":
+        return None
     url = config.LNBITS_URL + "/api/v1/payments"
     data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM " + config.NIP89.name}
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
@@ -90,6 +95,24 @@ def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
     except Exception as e:
         print("LNBITS: " + str(e))
         return None, None
+
+
+def create_bolt11_lud16(lud16, amount):
+    if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
+        url = lnurl.decode(lud16)
+    elif '@' in lud16:  # LNaddress
+        url = 'https://' + str(lud16).split('@')[1] + '/.well-known/lnurlp/' + str(lud16).split('@')[0]
+    else:  # No lud16 set or format invalid
+        return None
+    try:
+        response = requests.get(url)
+        ob = json.loads(response.content)
+        callback = ob["callback"]
+        response = requests.get(callback + "?amount=" + str(int(amount) * 1000))
+        ob = json.loads(response.content)
+        return ob["pr"]
+    except:
+        return None
 
 
 def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
@@ -215,50 +238,70 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
         return None
 
 
-def parse_cashu(cashuToken):
+def parse_cashu(cashu_token):
     try:
-        base64token = cashuToken.replace("cashuA", "")
-        cashu = json.loads(base64.b64decode(base64token).decode('utf-8'))
+        try:
+            prefix = "cashuA"
+            assert cashu_token.startswith(prefix), Exception(
+                f"Token prefix not valid. Expected {prefix}."
+            )
+            token_base64 = cashu_token[len(prefix):]
+            cashu = json.loads(base64.urlsafe_b64decode(token_base64))
+        except Exception as e:
+            print(e)
+
         token = cashu["token"][0]
         proofs = token["proofs"]
         mint = token["mint"]
-
-        totalAmount = 0
+        total_amount = 0
         for proof in proofs:
-            totalAmount += proof["amount"]
+            total_amount += proof["amount"]
+        fees = max(int(total_amount * 0.02), 3)
+        redeem_invoice_amount = total_amount - fees
+        return proofs, mint, redeem_invoice_amount, total_amount
 
-        fees = max(int(totalAmount * 0.02), 2)
-        redeemInvoiceAmount = totalAmount - fees
-
-        return cashuToken, mint, totalAmount, fees, redeemInvoiceAmount, proofs
     except Exception as e:
         print("Could not parse this cashu token")
-        return None, None, None, None, None, None
+        return None, None, None, None
 
 
-def redeem_cashu(cashu, config):
-    # TODO untested
-    is_redeemed = False
-    cashuToken, mint, totalAmount, fees, redeemInvoiceAmount, proofs = parse_cashu(cashu)
-    invoice = create_bolt11_ln_bits(totalAmount, config)
+def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
+    proofs, mint, redeem_invoice_amount, total_amount = parse_cashu(cashu)
+    fees = total_amount - redeem_invoice_amount
+    if redeem_invoice_amount <= required_amount:
+        err = ("Token value (Payment: " + str(total_amount) + " Sats. Fees: " +
+               str(fees) + " Sats) below required amount of  " + str(required_amount)
+               + " Sats. Cashu token has not been claimed.")
+        print("[" + config.NIP89.name + "] " + err)
+        return False, err
+
+    if config.LNBITS_INVOICE_KEY != "":
+        invoice = create_bolt11_ln_bits(redeem_invoice_amount, config)
+    else:
+        user = get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
+                               client=client, config=config)
+        invoice = create_bolt11_lud16(user.lud16, redeem_invoice_amount)
+    print(invoice)
+    if invoice is None:
+        return False, "couldn't create invoice"
     try:
         url = mint + "/melt"  # Melt cashu tokens at Mint
         json_object = {"proofs": proofs, "pr": invoice}
-
         headers = {"Content-Type": "application/json; charset=utf-8"}
-        request = requests.post(url, json=json_object, headers=headers)
-
-        if request.status_code == 200:
-            tree = json.loads(request.text)
-            successful = tree.get("paid") == "true"
-            if successful:
-                is_redeemed = True
-            else:
-                msg = tree.get("detail", "").split('.')[0].strip() if tree.get("detail") else None
-                is_redeemed = False
-                print(msg)
-
+        request_body = json.dumps(json_object).encode('utf-8')
+        request = requests.post(url, data=request_body, headers=headers)
+        tree = json.loads(request.text)
+        print(request.text)
+        is_paid = tree["paid"] if tree.get("paid") else "false"
+        print(is_paid)
+        if is_paid == "true":
+            print("token redeemed")
+            return True, "success"
+        else:
+            msg = tree.get("detail").split('.')[0].strip() if tree.get("detail") else None
+            print(msg)
+            return False, msg
     except Exception as e:
         print(e)
 
-    return is_redeemed
+    return False, ""

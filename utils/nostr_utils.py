@@ -74,25 +74,54 @@ def check_and_decrypt_tags(event, dvm_config):
                 p = tag.as_vec()[1]
 
         if is_encrypted:
-            if p != Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
+            if p != dvm_config.PUBLIC_KEY:
                 print("[" + dvm_config.NIP89.name + "] Task encrypted and not addressed to this DVM, "
                                                     "skipping..")
                 return None
 
-            elif p == Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
-                print("encrypted")
-                #encrypted_tag = Tag.parse(["encrypted"])
-                #p_tag = Tag.parse(["p", p])
-
+            elif p == dvm_config.PUBLIC_KEY:
                 tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
                                          event.pubkey(), event.content())
-                #TODO add outer p tag so it doesnt have to be sent twice
                 params = json.loads(tags_str)
-                eventasjson = json.loads(event.as_json())
-                eventasjson['tags'] = params
-                eventasjson['content'] = ""
-                event = Event.from_json(json.dumps(eventasjson))
-                print(event.as_json())
+                params.append(Tag.parse(["p", p]).as_vec())
+                params.append(Tag.parse(["encrypted"]).as_vec())
+                event_as_json = json.loads(event.as_json())
+                event_as_json['tags'] = params
+                event_as_json['content'] = ""
+                event = Event.from_json(json.dumps(event_as_json))
+    except Exception as e:
+        print(e)
+
+    return event
+
+def check_and_decrypt_own_tags(event, dvm_config):
+    try:
+        tags = []
+        is_encrypted = False
+        p = ""
+        sender = event.pubkey()
+        for tag in event.tags():
+            if tag.as_vec()[0] == 'encrypted':
+                is_encrypted = True
+            elif tag.as_vec()[0] == 'p':
+                p = tag.as_vec()[1]
+
+        if is_encrypted:
+            if dvm_config.PUBLIC_KEY != event.pubkey().to_hex():
+                print("[" + dvm_config.NIP89.name + "] Task encrypted and not addressed to this DVM, "
+                                                    "skipping..")
+                return None
+
+            elif event.pubkey().to_hex() == dvm_config.PUBLIC_KEY:
+                tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                                         PublicKey.from_hex(p), event.content())
+                params = json.loads(tags_str)
+                params.append(Tag.parse(["p", p]).as_vec())
+                params.append(Tag.parse(["encrypted"]).as_vec())
+                event_as_json = json.loads(event.as_json())
+                event_as_json['tags'] = params
+                event_as_json['content'] = ""
+                event = Event.from_json(json.dumps(event_as_json))
     except Exception as e:
         print(e)
 
