@@ -1,4 +1,8 @@
+import typing
+
 import requests
+from nostr_sdk import Event, Tag
+
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import get_event_by_id
 
@@ -19,7 +23,7 @@ def get_task(event, client, dvmconfig):
 
     # This looks a bit more complicated, but we do several tasks for text-extraction in the future
     elif event.kind() == EventDefinitions.KIND_NIP90_EXTRACT_TEXT:
-        for tag in event.tags():
+        for tag in event.tags:
             if tag.as_vec()[0] == "i":
                 if tag.as_vec()[2] == "url":
                     file_type = check_url_is_readable(tag.as_vec()[1])
@@ -50,43 +54,47 @@ def get_task(event, client, dvmconfig):
         return "unknown type"
 
 
-def check_task_is_supported(event, client, get_duration=False, config=None):
+def check_task_is_supported(event: Event, client, get_duration=False, config=None):
     try:
         dvm_config = config
         input_value = ""
         input_type = ""
         duration = 1
-
         task = get_task(event, client=client, dvmconfig=dvm_config)
 
-        for tag in event.tags:
-            if tag.as_vec()[0] == 'i':
-                if len(tag.as_vec()) < 3:
-                    print("Job Event missing/malformed i tag, skipping..")
-                    return False, "", 0
-                else:
-                    input_value = tag.as_vec()[1]
-                    input_type = tag.as_vec()[2]
-                    if input_type == "event":
-                        evt = get_event_by_id(input_value, client=client, config=dvm_config)
-                        if evt is None:
-                            print("Event not found")
-                            return False, "", 0
-                    elif input_type == 'url' and check_url_is_readable(input_value) is None:
-                        print("Url not readable / supported")
-                        return False, task, duration
+        try:
+            for tag in event.tags():
+                if tag.as_vec()[0] == 'i':
+                    if len(tag.as_vec()) < 3:
+                        print("Job Event missing/malformed i tag, skipping..")
+                        return False, "", 0
+                    else:
+                        input_value = tag.as_vec()[1]
+                        input_type = tag.as_vec()[2]
+                        if input_type == "event":
+                            evt = get_event_by_id(input_value, client=client, config=dvm_config)
+                            if evt is None:
+                                print("Event not found")
+                                return False, "", 0
+                        elif input_type == 'url' and check_url_is_readable(input_value) is None:
+                            print("Url not readable / supported")
+                            return False, task, duration  #
 
-            elif tag.as_vec()[0] == 'output':
-                output = tag.as_vec()[1]
-                if not (output == "text/plain"
-                        or output == "text/json" or output == "json"
-                        or output == "image/png" or "image/jpg"
-                        or output == "image/png;format=url" or output == "image/jpg;format=url"
-                        or output == ""):
-                    print("Output format not supported, skipping..")
-                    return False, "", 0
+                elif tag.as_vec()[0] == 'output':
+                    # TODO move this to individual modules
+                    output = tag.as_vec()[1]
+                    if not (output == "text/plain"
+                            or output == "text/json" or output == "json"
+                            or output == "image/png" or "image/jpg"
+                            or output == "image/png;format=url" or output == "image/jpg;format=url"
+                            or output == ""):
+                        print("Output format not supported, skipping..")
+                        return False, "", 0
+        except Exception as e:
+            print("Check task 2: " + str(e))
 
         for dvm in dvm_config.SUPPORTED_DVMS:
+            print(dvm.TASK)
             if dvm.TASK == task:
                 if not dvm.is_input_supported(input_type, event.content()):
                     return False, task, duration
@@ -95,6 +103,7 @@ def check_task_is_supported(event, client, get_duration=False, config=None):
             return False, task, duration
 
         return True, task, duration
+
 
     except Exception as e:
         print("Check task: " + str(e))
@@ -124,10 +133,11 @@ def check_url_is_readable(url):
 
 
 def get_amount_per_task(task, dvm_config, duration=1):
-    for dvm in dvm_config.SUPPORTED_DVMS: #this is currently just one
+    for dvm in dvm_config.SUPPORTED_DVMS:  # this is currently just one
         if dvm.TASK == task:
             amount = dvm.COST * duration
             return amount
     else:
-        print("["+dvm_config.SUPPORTED_DVMS[0].NAME +"] Task " + task + " is currently not supported by this instance, skipping")
+        print("[" + dvm_config.SUPPORTED_DVMS[
+            0].NAME + "] Task " + task + " is currently not supported by this instance, skipping")
         return None

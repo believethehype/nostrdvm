@@ -19,8 +19,6 @@ class DVMConfig:
     DB: str
     NEW_USER_BALANCE: int = 250  # Free credits for new users
     NIP89: NIP89Announcement
-    DM_ALLOWED = []
-
     SHOW_RESULT_BEFORE_PAYMENT: bool = False  # if this is true show results even when not paid right after autoprocess
 
 

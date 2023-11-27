@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import datetime as datetime
@@ -5,7 +6,8 @@ from pathlib import Path
 from threading import Thread
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt
+from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
+    nip04_encrypt
 
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import send_event
@@ -66,6 +68,46 @@ def nostr_client_test_image(prompt):
     send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
+
+def nostr_client_test_image_private(prompt, cashutoken):
+    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
+    receiver_keys = Keys.from_sk_str(os.getenv("NOSTR_PRIVATE_KEY"))
+
+
+    # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
+
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                  "wss://nostr-pub.wellorder.net"]
+    i_tag = Tag.parse(["i", prompt, "text"])
+    outTag = Tag.parse(["output", "image/png;format=url"])
+    paramTag1 = Tag.parse(["param", "size", "1024x1024"])
+    tTag = Tag.parse(["t", "bitcoin"])
+
+    bid = str(50 * 1000)
+    bid_tag = Tag.parse(['bid', bid, bid])
+    relays_tag = Tag.parse(["relays", json.dumps(relay_list)])
+    alt_tag = Tag.parse(["alt", "Super secret test"])
+    cashu_tag = Tag.parse(["cashu", cashutoken])
+
+    encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), tTag, bid_tag.as_vec(),
+                                          relays_tag.as_vec(), alt_tag.as_vec(), cashu_tag.as_vec()])
+
+
+    encrypted_params = nip04_encrypt(keys.secret_key(), receiver_keys.public_key(),
+                                     encrypted_params_string)
+
+    p_tag = Tag.parse(['p', keys.public_key().to_hex()])
+    encrypted_tag = Tag.parse(['encrypted'])
+    nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params,
+                                [p_tag, encrypted_tag]).to_event(keys)
+    client = Client(keys)
+    for relay in relay_list:
+        client.add_relay(relay)
+    client.connect()
+    config = DVMConfig
+    send_event(nip90request, client=client, dvm_config=config)
+    return nip90request.as_json()
+
 def nostr_client():
     keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
     sk = keys.secret_key()
@@ -89,6 +131,8 @@ def nostr_client():
     #nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
     nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+
+   #nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
     class NotificationHandler(HandleNotification):
         def handle(self, relay_url, event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
