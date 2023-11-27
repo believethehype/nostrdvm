@@ -18,7 +18,6 @@ def post_process_result(anno, original_event):
     print("Post-processing...")
     if isinstance(anno, pandas.DataFrame):  # if input is an anno we parse it to required output format
         for tag in original_event.tags:
-            print(tag.as_vec()[0])
             if tag.as_vec()[0] == "output":
                 output_format = tag.as_vec()[1]
                 print("requested output is " + str(tag.as_vec()[1]) + "...")
@@ -166,7 +165,7 @@ def build_status_reaction(status, task, amount, content):
         if content is None:
             reaction = alt_description + emoji.emojize(":thumbs_down:")
         else:
-            reaction = alt_description + emoji.emojize(":thumbs_down:") + content
+            reaction = alt_description + emoji.emojize(":thumbs_down:") + " " + content
 
     elif status == "payment-required":
         alt_description = "NIP90 DVM AI task " + task + " requires payment of min " + str(

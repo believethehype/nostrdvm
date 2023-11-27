@@ -24,9 +24,9 @@ class ImageGenerationSDXL(DVMTaskInterface):
     TASK: str = "text-to-image"
     COST: int = 50
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None, options=None):
-        self.init(name, dvm_config, admin_config, nip89config)
-        self.options = options
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+                 admin_config: AdminConfig = None, options=None):
+        super().__init__(name, dvm_config, nip89config, admin_config, options)
 
     def is_input_supported(self, input_type, input_content):
         if input_type != "text":
