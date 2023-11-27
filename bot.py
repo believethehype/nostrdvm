@@ -238,7 +238,7 @@ class Bot:
                                     user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
                                                            client=self.client, config=self.dvm_config)
                                     print("PAYING: " + user.name)
-                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config, "public")
+                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config, "private")
                                     if bolt11 == None:
                                         print("Receiver has no Lightning address")
                                         return
