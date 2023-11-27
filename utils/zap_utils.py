@@ -3,43 +3,17 @@ import base64
 import json
 import os
 import urllib.parse
-
 import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
 from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys
+
+from utils.database_utils import get_or_add_user
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import get_event_by_id
 import lnurl
 from hashlib import sha256
-
-
-def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
-    def get_index_of_first_letter(ip):
-        index = 0
-        for c in ip:
-            if c.isalpha():
-                return index
-            else:
-                index = index + 1
-        return len(ip)
-
-    remaining_invoice = bolt11_invoice[4:]
-    index = get_index_of_first_letter(remaining_invoice)
-    identifier = remaining_invoice[index]
-    number_string = remaining_invoice[:index]
-    number = float(number_string)
-    if identifier == 'm':
-        number = number * 100000000 * 0.001
-    elif identifier == 'u':
-        number = number * 100000000 * 0.000001
-    elif identifier == 'n':
-        number = number * 100000000 * 0.000000001
-    elif identifier == 'p':
-        number = number * 100000000 * 0.000000000001
-
-    return int(number)
 
 
 def parse_zap_event_tags(zap_event, keys, name, client, config):
@@ -79,7 +53,36 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
     return invoice_amount, zapped_event, sender, message, anon
 
 
+def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
+    def get_index_of_first_letter(ip):
+        index = 0
+        for c in ip:
+            if c.isalpha():
+                return index
+            else:
+                index = index + 1
+        return len(ip)
+
+    remaining_invoice = bolt11_invoice[4:]
+    index = get_index_of_first_letter(remaining_invoice)
+    identifier = remaining_invoice[index]
+    number_string = remaining_invoice[:index]
+    number = float(number_string)
+    if identifier == 'm':
+        number = number * 100000000 * 0.001
+    elif identifier == 'u':
+        number = number * 100000000 * 0.000001
+    elif identifier == 'n':
+        number = number * 100000000 * 0.000000001
+    elif identifier == 'p':
+        number = number * 100000000 * 0.000000000001
+
+    return int(number)
+
+
 def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
+    if config.LNBITS_URL == "":
+        return None
     url = config.LNBITS_URL + "/api/v1/payments"
     data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM " + config.NIP89.name}
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
@@ -90,6 +93,24 @@ def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
     except Exception as e:
         print("LNBITS: " + str(e))
         return None, None
+
+
+def create_bolt11_lud16(lud16, amount):
+    if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
+        url = lnurl.decode(lud16)
+    elif '@' in lud16:  # LNaddress
+        url = 'https://' + str(lud16).split('@')[1] + '/.well-known/lnurlp/' + str(lud16).split('@')[0]
+    else:  # No lud16 set or format invalid
+        return None
+    try:
+        response = requests.get(url)
+        ob = json.loads(response.content)
+        callback = ob["callback"]
+        response = requests.get(callback + "?amount=" + str(int(amount) * 1000))
+        ob = json.loads(response.content)
+        return ob["pr"]
+    except:
+        return None
 
 
 def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
@@ -215,50 +236,61 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
         return None
 
 
-def parse_cashu(cashuToken):
+def parse_cashu(cashu_token):
     try:
-        base64token = cashuToken.replace("cashuA", "")
-        cashu = json.loads(base64.b64decode(base64token).decode('utf-8'))
+        try:
+            prefix = "cashuA"
+            assert cashu_token.startswith(prefix), Exception(
+                f"Token prefix not valid. Expected {prefix}."
+            )
+            token_base64 = cashu_token[len(prefix):]
+            cashu = json.loads(base64.urlsafe_b64decode(token_base64))
+        except Exception as e:
+            print(e)
+
         token = cashu["token"][0]
+        print(token)
         proofs = token["proofs"]
         mint = token["mint"]
-
-        totalAmount = 0
+        total_amount = 0
         for proof in proofs:
-            totalAmount += proof["amount"]
+            total_amount += proof["amount"]
+        fees = max(int(total_amount * 0.02), 2)
+        redeem_invoice_amount = total_amount - fees
+        return proofs, mint, redeem_invoice_amount
 
-        fees = max(int(totalAmount * 0.02), 2)
-        redeemInvoiceAmount = totalAmount - fees
-
-        return cashuToken, mint, totalAmount, fees, redeemInvoiceAmount, proofs
     except Exception as e:
         print("Could not parse this cashu token")
-        return None, None, None, None, None, None
+        return None, None, None
 
 
-def redeem_cashu(cashu, config):
-    # TODO untested
-    is_redeemed = False
-    cashuToken, mint, totalAmount, fees, redeemInvoiceAmount, proofs = parse_cashu(cashu)
-    invoice = create_bolt11_ln_bits(totalAmount, config)
+def redeem_cashu(cashu, config, client):
+    proofs, mint, redeem_invoice_amount = parse_cashu(cashu)
+    if config.LNBITS_INVOICE_KEY != "":
+        invoice = create_bolt11_ln_bits(redeem_invoice_amount, config)
+    else:
+        user = get_or_add_user(db=config.DB, npub=Keys.from_sk_str(config.PRIVATE_KEY).public_key().to_hex(),
+                               client=client, config=config)
+        invoice = create_bolt11_lud16(user.lud16, redeem_invoice_amount)
+    print(invoice)
+    if invoice is None:
+        return False
     try:
         url = mint + "/melt"  # Melt cashu tokens at Mint
         json_object = {"proofs": proofs, "pr": invoice}
-
         headers = {"Content-Type": "application/json; charset=utf-8"}
-        request = requests.post(url, json=json_object, headers=headers)
-
-        if request.status_code == 200:
-            tree = json.loads(request.text)
-            successful = tree.get("paid") == "true"
-            if successful:
-                is_redeemed = True
-            else:
-                msg = tree.get("detail", "").split('.')[0].strip() if tree.get("detail") else None
-                is_redeemed = False
-                print(msg)
-
+        request_body = json.dumps(json_object).encode('utf-8')
+        request = requests.post(url, data=request_body, headers=headers)
+        tree = json.loads(request.text)
+        is_paid = (tree.get("paid") == "true") if tree.get("detail") else False
+        if is_paid:
+            print("token redeemed")
+            return True
+        else:
+            msg = tree.get("detail").split('.')[0].strip() if tree.get("detail") else None
+            print(msg)
+            return False
     except Exception as e:
         print(e)
 
-    return is_redeemed
+    return False
