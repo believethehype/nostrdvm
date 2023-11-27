@@ -12,23 +12,21 @@ class DVMTaskInterface:
     KIND: int
     TASK: str
     COST: int
-    PK: str
+    PRIVATE_KEY: str
+    PUBLIC_KEY: str
     DVM = DVM
     dvm_config: DVMConfig
     admin_config: AdminConfig
 
-    def NIP89_announcement(self, nip89config: NIP89Config):
-        nip89 = NIP89Announcement()
-        nip89.name = self.NAME
-        nip89.kind = self.KIND
-        nip89.pk = self.PK
-        nip89.dtag = nip89config.DTAG
-        nip89.content = nip89config.CONTENT
-        return nip89
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None,
+                 options=None):
+        self.init(name, dvm_config, admin_config, nip89config)
+        self.options = options
 
-    def init(self, name, dvm_config, admin_config, nip89config):
+    def init(self, name, dvm_config, admin_config=None, nip89config=None):
         self.NAME = name
-        self.PK = dvm_config.PRIVATE_KEY
+        self.PRIVATE_KEY = dvm_config.PRIVATE_KEY
+        self.PUBLIC_KEY = dvm_config.PUBLIC_KEY
         if dvm_config.COST is not None:
             self.COST = dvm_config.COST
 
@@ -43,6 +41,14 @@ class DVMTaskInterface:
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
         nostr_dvm_thread.start()
 
+    def NIP89_announcement(self, nip89config: NIP89Config):
+        nip89 = NIP89Announcement()
+        nip89.name = self.NAME
+        nip89.kind = self.KIND
+        nip89.pk = self.PRIVATE_KEY
+        nip89.dtag = nip89config.DTAG
+        nip89.content = nip89config.CONTENT
+        return nip89
 
     def is_input_supported(self, input_type, input_content) -> bool:
         """Check if input is supported for current Task."""

@@ -16,7 +16,6 @@ from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap
 
 class Bot:
     job_list: list
-
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
     def __init__(self, dvm_config, admin_config=None):
         self.NAME = "Bot"
@@ -61,7 +60,8 @@ class Bot:
             keys = self.keys
 
             def handle(self, relay_url, nostr_event):
-                if EventDefinitions.KIND_NIP90_EXTRACT_TEXT + 1000 <= nostr_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC + 1000:
+                if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT + 1000 <= nostr_event.kind()
+                        <= EventDefinitions.KIND_NIP90_GENERIC + 1000):
                     handle_nip90_response_event(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_FEEDBACK:
                     handle_nip90_feedback(nostr_event)
@@ -81,7 +81,6 @@ class Bot:
                 print(decrypted_text)
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
 
-                # We do a selection of tasks now, maybe change this later, Idk.
                 if decrypted_text[0].isdigit():
                     index = int(decrypted_text.split(' ')[0]) - 1
                     task = self.dvm_config.SUPPORTED_DVMS[index].TASK
@@ -99,65 +98,58 @@ class Bot:
                                                                     "services.", None).to_event(self.keys)
                         send_event(evt, client=self.client, dvm_config=dvm_config)
 
-                    elif user.iswhitelisted or user.balance >= required_amount or required_amount == 0:
-                        time.sleep(2.0)
-                        if user.iswhitelisted:
-                            evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
-                                                                        "As you are "
-                                                                        "whitelisted, your balance remains at"
-                                                                        + str(user.balance) + " Sats.\n",
-                                                                        nostr_event.id()).to_event(self.keys)
+                    elif user.balance >= required_amount or required_amount == 0:
+                        command = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
+                        input = command.split("-")[0].rstrip()
 
-                        else:
-                            balance = max(user.balance - required_amount, 0)
-                            update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
-                                             iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
-                                             nip05=user.nip05, lud16=user.lud16, name=user.name,
-                                             lastactive=Timestamp.now().as_secs())
-                            evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
-                                                                        "New balance is " +
-                                                                        str(balance)
-                                                                        + " Sats.\n",
-                                                                        nostr_event.id()).to_event(self.keys)
-
-                        input = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
-
-                        dvm_keys = Keys.from_sk_str(self.dvm_config.SUPPORTED_DVMS[index].PK)
                         i_tag = Tag.parse(["i", input, "text"])
-
-                        # we use the y tag to keep information about the original sender, in order to forward the
-                        # results later
-
-                        # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
-                        # outTag = Tag.parse(["output", "image/png;format=url"])
-                        # paramTag1 = Tag.parse(["param", "size", "1024x1024"])
-
                         bid = str(self.dvm_config.SUPPORTED_DVMS[index].COST * 1000)
                         bid_tag = Tag.parse(['bid', bid, bid])
                         relays_tag = Tag.parse(["relays", json.dumps(self.dvm_config.RELAY_LIST)])
                         alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
-                        p_tag = Tag.parse(['p', dvm_keys.public_key().to_hex()])
 
-                        encrypted_params_string = json.dumps([i_tag.as_vec(), bid_tag.as_vec(),
-                                                              relays_tag.as_vec(), alt_tag.as_vec(), p_tag.as_vec()])
+                        tags = [i_tag.as_vec(), bid_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
+
+                        remaining_text = command.replace(input, "")
+                        params = remaining_text.rstrip().split("-")
+
+                        for i in params:
+                            if i != " ":
+                                try:
+                                    split = i.split(" ")
+                                    param = str(split[0])
+                                    print(param)
+                                    value = str(split[1])
+                                    print(value)
+                                    tag = Tag.parse(["param", param, value])
+                                    tags.append(tag.as_vec())
+                                    print("Added params: " + tag.as_vec())
+                                except Exception as e:
+                                    print(e)
+                                    print("Couldn't add " + i)
+
+                        encrypted_params_string = json.dumps(tags)
 
                         print(encrypted_params_string)
 
-                        encrypted_params = nip04_encrypt(self.keys.secret_key(), dvm_keys.public_key(),
+                        encrypted_params = nip04_encrypt(self.keys.secret_key(),
+                                                         PublicKey.from_hex(
+                                                             self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY),
                                                          encrypted_params_string)
 
                         encrypted_tag = Tag.parse(['encrypted'])
-                        nip90request = EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND, encrypted_params,
-                                                    [p_tag, encrypted_tag]).to_event(self.keys)
+                        p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
+                        encrypted_nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
+                                                               encrypted_params, [p_tag, encrypted_tag]).
+                                                  to_event(self.keys))
 
-                        entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
-                                 "dvm_key": dvm_keys.public_key().to_hex(), "is_paid": False}
+                        entry = {"npub": user.npub, "event_id": encrypted_nip90request.id().to_hex(),
+                                 "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False}
                         self.job_list.append(entry)
 
-                        send_event(nip90request, client=self.client, dvm_config=dvm_config)
+                        send_event(encrypted_nip90request, client=self.client, dvm_config=dvm_config)
 
-                        print("[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
-                        send_event(evt, client=self.client, dvm_config=dvm_config)
+
                     else:
                         print("Bot payment-required")
                         time.sleep(2.0)
@@ -190,7 +182,9 @@ class Bot:
                 print("Error in bot " + str(e))
 
         def handle_nip90_feedback(nostr_event):
+
             try:
+                is_encrypted = False
                 status = ""
                 etag = ""
                 ptag = ""
@@ -202,6 +196,33 @@ class Bot:
                         etag = tag.as_vec()[1]
                     elif tag.as_vec()[0] == "p":
                         ptag = tag.as_vec()[1]
+                    elif tag.as_vec()[0] == "encrypted":
+                        is_encrypted = True
+
+                content = nostr_event.content()
+                if is_encrypted:
+                    if ptag == self.dvm_config.PUBLIC_KEY:
+                        tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                                                 nostr_event.pubkey(), nostr_event.content())
+                        params = json.loads(tags_str)
+                        params.append(Tag.parse(["p", ptag]).as_vec())
+                        params.append(Tag.parse(["encrypted"]).as_vec())
+                        print(params)
+                        event_as_json = json.loads(nostr_event.as_json())
+                        event_as_json['tags'] = params
+                        event_as_json['content'] = ""
+                        nostr_event = Event.from_json(json.dumps(event_as_json))
+
+                        for tag in nostr_event.tags():
+                            if tag.as_vec()[0] == "status":
+                                status = tag.as_vec()[1]
+                            elif tag.as_vec()[0] == "e":
+                                etag = tag.as_vec()[1]
+                            elif tag.as_vec()[0] == "content":
+                                content = tag.as_vec()[1]
+
+                    else:
+                        return
 
                 if status == "success" or status == "error" or status == "processing" or status == "partial":
                     entry = next((x for x in self.job_list if x['event_id'] == etag), None)
@@ -211,34 +232,49 @@ class Bot:
 
                         reply_event = EventBuilder.new_encrypted_direct_msg(self.keys,
                                                                             PublicKey.from_hex(user.npub),
-                                                                            nostr_event.content(),
+                                                                            content,
                                                                             None).to_event(self.keys)
-                        print(status + ": " + nostr_event.content())
+                        print(status + ": " + content)
                         print(
                             "[" + self.NAME + "] Received reaction from " + nostr_event.pubkey().to_hex() + " message to orignal sender " + user.name)
                         send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
-
                 elif status == "payment-required" or status == "partial":
-                    amount = 0
-
                     for tag in nostr_event.tags():
                         if tag.as_vec()[0] == "amount":
                             amount_msats = int(tag.as_vec()[1])
                             amount = int(amount_msats / 1000)
                             entry = next((x for x in self.job_list if x['event_id'] == etag), None)
-                            if entry is not None and entry['is_paid'] is False and entry['dvm_key'] == ptag:
-                                print("PAYMENT: " + nostr_event.as_json())
-                                #if we get a bolt11, we pay and move on
+                            if entry is not None and entry['is_paid'] is False and entry['dvm_key'] == nostr_event.pubkey().to_hex():
+                                # if we get a bolt11, we pay and move on
+                                user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
+                                                       client=self.client, config=self.dvm_config)
+                                balance = max(user.balance - amount, 0)
+                                update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
+                                                 iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
+                                                 nip05=user.nip05, lud16=user.lud16, name=user.name,
+                                                 lastactive=Timestamp.now().as_secs())
+                                time.sleep(2.0)
+                                evt = EventBuilder.new_encrypted_direct_msg(self.keys,
+                                                                            PublicKey.from_hex(entry["npub"]),
+                                                                            "Paid " + str(
+                                                                                amount) + " Sats from balance to DVM. New balance is " +
+                                                                            str(balance)
+                                                                            + " Sats.\n",
+                                                                            None).to_event(self.keys)
+
+                                print("[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
+                                send_event(evt, client=self.client, dvm_config=dvm_config)
+
                                 if len(tag.as_vec()) > 2:
                                     bolt11 = tag.as_vec()[2]
-
                                 # else we create a zap
                                 else:
                                     user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
                                                            client=self.client, config=self.dvm_config)
-                                    print("PAYING: " + user.name)
-                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config, "private")
+                                    print("Paying: " + user.name)
+                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config,
+                                                 "private")
                                     if bolt11 == None:
                                         print("Receiver has no Lightning address")
                                         return
@@ -256,6 +292,7 @@ class Bot:
 
         def handle_nip90_response_event(nostr_event: Event):
             try:
+                ptag = ""
                 is_encrypted = False
                 for tag in nostr_event.tags():
                     if tag.as_vec()[0] == "e":
@@ -274,7 +311,10 @@ class Bot:
                     self.job_list.remove(entry)
                     content = nostr_event.content()
                     if is_encrypted:
-                        content = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), content)
+                        if ptag == self.dvm_config.PUBLIC_KEY:
+                            content = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), content)
+                        else:
+                            return
 
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     time.sleep(1.0)
@@ -291,11 +331,11 @@ class Bot:
             print("[" + self.NAME + "] Zap received")
             try:
                 invoice_amount, zapped_event, sender, message, anon = parse_zap_event_tags(zap_event,
-                                                                                  self.keys, self.NAME,
-                                                                                  self.client, self.dvm_config)
+                                                                                           self.keys, self.NAME,
+                                                                                           self.client, self.dvm_config)
 
                 user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
-
+                print("ZAPED EVENT: " + zapped_event.as_json())
                 if zapped_event is not None:
                     if not anon:
                         print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
