@@ -71,6 +71,7 @@ def nostr_client_test_image(prompt):
 
 def nostr_client_test_image_private(prompt, cashutoken):
     keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
+    receiver_keys = Keys.from_sk_str(os.getenv("NOSTR_PRIVATE_KEY"))
 
 
     # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
@@ -92,7 +93,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
                                           relays_tag.as_vec(), alt_tag.as_vec(), cashu_tag.as_vec()])
 
 
-    encrypted_params = nip04_encrypt(keys.secret_key(), keys.public_key(),
+    encrypted_params = nip04_encrypt(keys.secret_key(), receiver_keys.public_key(),
                                      encrypted_params_string)
 
     p_tag = Tag.parse(['p', keys.public_key().to_hex()])
@@ -106,31 +107,6 @@ def nostr_client_test_image_private(prompt, cashutoken):
     config = DVMConfig
     send_event(nip90request, client=client, dvm_config=config)
     return nip90request.as_json()
-
-
-
-    iTag = Tag.parse(["i", prompt, "text"])
-    outTag = Tag.parse(["output", "image/png;format=url"])
-    paramTag1 = Tag.parse(["param", "size", "1024x1024"])
-    tTag = Tag.parse(["t", "bitcoin"])
-
-    bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
-                           "wss://nostr-pub.wellorder.net"])
-    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
-    event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, str("Generate an Image."),
-                         [iTag, outTag, tTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
-
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
-                  "wss://nostr-pub.wellorder.net"]
-
-    client = Client(keys)
-    for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
-    config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
-    return event.as_json()
 
 def nostr_client():
     keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
@@ -156,8 +132,8 @@ def nostr_client():
 
     nostr_client_test_image("a beautiful purple ostrich watching the sunset")
 
-    cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6NCwiQyI6IjAzNzZhYTQ4YTJiMDU1NTlmYzQ4MTU2NjJjZThhMjZmZGM5OTQzYzY2Yzg0OWEzNTg3NDgwYWRmYzE0ZTEwNTRiZCIsInNlY3JldCI6IlIzTGhSZDI5UktJTzRkMHdNZ0Z0K2ZKWlVoYi90K0RmZXMxdFVrZVBVV0E9In0seyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6MTYsIkMiOiIwMmYyNTdhYzYzOTU4NGY1YTE5NTNkMGI0ODI3OWJkN2EyMjdmZTBkYzI0OWY0MjQwNjgzMDZlOTI0ZGE3ZGVhZDciLCJzZWNyZXQiOiJ4Tmhwdm50SkNwcXFiYmFjWDA0NzluVld4SGo5U05jaVBvdTNYQ3JWcmRjPSJ9LHsiaWQiOiJYV0MwL0V0YXFTOEMiLCJhbW91bnQiOjMyLCJDIjoiMDIyYjhiY2JkYTQ1OTNlMGZlNTY4ZWYyOTM2OWNmZjNmMzY2NzdlZDAzYTQ4ODMxNzYwNDQxN2JkNGE3MTYzZDYyIiwic2VjcmV0IjoiTEprUVlheWNyUE9yZ3hZcHhlcDZVV3U0RjZ3QUVydnZJNHZiRmN0R3h6MD0ifV0sIm1pbnQiOiJodHRwczovL2xuYml0cy5iaXRjb2luZml4ZXN0aGlzLm9yZy9jYXNodS9hcGkvdjEvOXVDcDIyUllWVXE4WjI0bzVCMlZ2VyJ9XX0" =
-    nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
+   # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6NCwiQyI6IjAzNzZhYTQ4YTJiMDU1NTlmYzQ4MTU2NjJjZThhMjZmZGM5OTQzYzY2Yzg0OWEzNTg3NDgwYWRmYzE0ZTEwNTRiZCIsInNlY3JldCI6IlIzTGhSZDI5UktJTzRkMHdNZ0Z0K2ZKWlVoYi90K0RmZXMxdFVrZVBVV0E9In0seyJpZCI6IlhXQzAvRXRhcVM4QyIsImFtb3VudCI6MTYsIkMiOiIwMmYyNTdhYzYzOTU4NGY1YTE5NTNkMGI0ODI3OWJkN2EyMjdmZTBkYzI0OWY0MjQwNjgzMDZlOTI0ZGE3ZGVhZDciLCJzZWNyZXQiOiJ4Tmhwdm50SkNwcXFiYmFjWDA0NzluVld4SGo5U05jaVBvdTNYQ3JWcmRjPSJ9LHsiaWQiOiJYV0MwL0V0YXFTOEMiLCJhbW91bnQiOjMyLCJDIjoiMDIyYjhiY2JkYTQ1OTNlMGZlNTY4ZWYyOTM2OWNmZjNmMzY2NzdlZDAzYTQ4ODMxNzYwNDQxN2JkNGE3MTYzZDYyIiwic2VjcmV0IjoiTEprUVlheWNyUE9yZ3hZcHhlcDZVV3U0RjZ3QUVydnZJNHZiRmN0R3h6MD0ifV0sIm1pbnQiOiJodHRwczovL2xuYml0cy5iaXRjb2luZml4ZXN0aGlzLm9yZy9jYXNodS9hcGkvdjEvOXVDcDIyUllWVXE4WjI0bzVCMlZ2VyJ9XX0"
+   #nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
     class NotificationHandler(HandleNotification):
         def handle(self, relay_url, event):
             print(f"Received new event from {relay_url}: {event.as_json()}")

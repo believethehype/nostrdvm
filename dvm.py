@@ -83,24 +83,24 @@ class DVM:
                 return
 
         def handle_nip90_job_event(nip90_event):
-            """
-            :type nip90_event: Event
-            """
 
-            tags: typing.List[Tag]
-            tags, p_tag_str = check_and_decrypt_tags(nip90_event, self.dvm_config)
-            if p_tag_str is None:
+            nip90_event = check_and_decrypt_tags(nip90_event, self.dvm_config)
+            if nip90_event is None:
                 return
-            nip90_event.tags = tags
-            cashu = ""
-            for tag in tags:
-                if tag.as_vec()[0] == "cashu":
-                    cashu = tag.as_vec()[0]
 
             user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex(), client=self.client,
                                    config=self.dvm_config)
 
-            task_supported, task, duration = check_task_is_supported(nip90_event, tags, client=self.client,
+
+            cashu = ""
+            p_tag_str = ""
+            for tag in nip90_event.tags():
+                if tag.as_vec()[0] == "cashu":
+                    cashu = tag.as_vec()[0]
+                elif tag.as_vec()[0] == "p":
+                    p_tag_str = tag.as_vec()[0]
+
+            task_supported, task, duration = check_task_is_supported(nip90_event, client=self.client,
                                                                      get_duration=(not user.iswhitelisted),
                                                                      config=self.dvm_config)
 
@@ -134,6 +134,7 @@ class DVM:
 
                     do_work(nip90_event)
                 # if task is directed to us via p tag and user has balance, do the job and update balance
+
                 elif p_tag_str == Keys.from_sk_str(
                         self.dvm_config.PRIVATE_KEY).public_key().to_hex() and user.balance >= amount:
                     balance = max(user.balance - amount, 0)
@@ -155,7 +156,7 @@ class DVM:
                 # else send a payment required event to user
                 else:
                     bid = 0
-                    for tag in nip90_event.tags:
+                    for tag in nip90_event.tags():
                         if tag.as_vec()[0] == 'bid':
                             bid = int(tag.as_vec()[1])
 
@@ -177,14 +178,15 @@ class DVM:
                                                  False, amount, client=self.client, dvm_config=self.dvm_config)
 
             else:
-                print("Task not supported on this DVM, skipping..")
+                print("[" + self.dvm_config.NIP89.name + "] Task " + task + " not supported on this DVM, skipping..")
 
         def handle_zap(zap_event):
 
             try:
                 invoice_amount, zapped_event, sender, message, anon = parse_zap_event_tags(zap_event,
-                                                                                  self.keys, self.dvm_config.NIP89.name,
-                                                                                  self.client, self.dvm_config)
+                                                                                           self.keys,
+                                                                                           self.dvm_config.NIP89.name,
+                                                                                           self.client, self.dvm_config)
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
 
                 if zapped_event is not None:
@@ -198,16 +200,17 @@ class DVM:
                                 amount = int(float(tag.as_vec()[1]) / 1000)
                             elif tag.as_vec()[0] == 'e':
                                 job_event = get_event_by_id(tag.as_vec()[1], client=self.client, config=self.dvm_config)
-                                tags: typing.List[Tag]
-                                tags, p_tag_str = check_and_decrypt_tags(job_event, self.dvm_config)
-                                job_event.tags = tags
+                                if job_event is not None:
+                                    job_event = check_and_decrypt_tags(job_event, self.dvm_config)
+                                else:
+                                    return
 
                         if p_tag_str is None:
                             return
 
-                                # if a reaction by us got zapped
+                            # if a reaction by us got zapped
 
-                        task_supported, task, duration = check_task_is_supported(job_event, tags,
+                        task_supported, task, duration = check_task_is_supported(job_event,
                                                                                  client=self.client,
                                                                                  get_duration=False,
                                                                                  config=self.dvm_config)
@@ -263,7 +266,7 @@ class DVM:
                 print("[" + self.dvm_config.NIP89.name + "] Error during content decryption: " + str(e))
 
         def check_event_has_not_unfinished_job_input(nevent, append, client, dvmconfig):
-            task_supported, task, duration = check_task_is_supported(nevent, nevent.tags, client, False,
+            task_supported, task, duration = check_task_is_supported(nevent, client, False,
                                                                      config=dvmconfig)
             if not task_supported:
                 return False
@@ -372,7 +375,7 @@ class DVM:
             status_tag = Tag.parse(["status", status])
 
             tags = [e_tag, alt_tag, status_tag]
-            for tag in original_event.tags:
+            for tag in original_event.tags():
 
                 if tag.as_vec()[0] == "p":
                     p_tag = tag

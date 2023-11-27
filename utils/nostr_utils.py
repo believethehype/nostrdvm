@@ -1,6 +1,7 @@
 import json
+import typing
 from datetime import timedelta
-from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt
+from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, EventBuilder
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
@@ -61,38 +62,38 @@ def send_event(event: Event, client: Client, dvm_config) -> EventId:
 
 
 def check_and_decrypt_tags(event, dvm_config):
-    tags = []
-    is_encrypted = False
-    p = ""
-    for tag in event.tags():
-        if tag.as_vec()[0] == 'encrypted':
-            is_encrypted = True
-        elif tag.as_vec()[0] == 'p':
-            p = tag.as_vec()[1]
+    try:
+        tags = []
+        is_encrypted = False
+        p = ""
+        sender = event.pubkey()
+        for tag in event.tags():
+            if tag.as_vec()[0] == 'encrypted':
+                is_encrypted = True
+            elif tag.as_vec()[0] == 'p':
+                p = tag.as_vec()[1]
 
-    if is_encrypted:
-        if p != Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
-            print("[" + dvm_config.NIP89.name + "] Task encrypted and not addressed to this DVM, "
-                                                     "skipping..")
-            return None, None
+        if is_encrypted:
+            if p != Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
+                print("[" + dvm_config.NIP89.name + "] Task encrypted and not addressed to this DVM, "
+                                                    "skipping..")
+                return None
 
-        elif p == Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
-            encrypted_tag = Tag.parse(["encrypted"])
-            p_tag = Tag.parse(["p", p])
+            elif p == Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
+                print("encrypted")
+                #encrypted_tag = Tag.parse(["encrypted"])
+                #p_tag = Tag.parse(["p", p])
 
-            tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
-                                     event.pubkey(), event.content())
-            params = json.loads(tags_str)
+                tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                                         event.pubkey(), event.content())
+                #TODO add outer p tag so it doesnt have to be sent twice
+                params = json.loads(tags_str)
+                eventasjson = json.loads(event.as_json())
+                eventasjson['tags'] = params
+                eventasjson['content'] = ""
+                event = Event.from_json(json.dumps(eventasjson))
+                print(event.as_json())
+    except Exception as e:
+        print(e)
 
-            for element in params:
-                tags.append(Tag.parse(element))
-
-            # Keep the encrypted tag
-            tags.append(p_tag)
-            tags.append(encrypted_tag)
-
-        return tags, p
-
-    else:
-        return event.tags, p
-
+    return event

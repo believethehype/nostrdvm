@@ -136,15 +136,16 @@ class Bot:
                         bid_tag = Tag.parse(['bid', bid, bid])
                         relays_tag = Tag.parse(["relays", json.dumps(self.dvm_config.RELAY_LIST)])
                         alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
+                        p_tag = Tag.parse(['p', dvm_keys.public_key().to_hex()])
 
                         encrypted_params_string = json.dumps([i_tag.as_vec(), bid_tag.as_vec(),
-                                                              relays_tag.as_vec(), alt_tag.as_vec()])
+                                                              relays_tag.as_vec(), alt_tag.as_vec(), p_tag.as_vec()])
 
                         print(encrypted_params_string)
 
                         encrypted_params = nip04_encrypt(self.keys.secret_key(), dvm_keys.public_key(),
                                                          encrypted_params_string)
-                        p_tag = Tag.parse(['p', dvm_keys.public_key().to_hex()])
+
                         encrypted_tag = Tag.parse(['encrypted'])
                         nip90request = EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND, encrypted_params,
                                                     [p_tag, encrypted_tag]).to_event(self.keys)
@@ -220,14 +221,14 @@ class Bot:
 
                 elif status == "payment-required" or status == "partial":
                     amount = 0
+
                     for tag in nostr_event.tags():
                         if tag.as_vec()[0] == "amount":
                             amount_msats = int(tag.as_vec()[1])
                             amount = int(amount_msats / 1000)
-
                             entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                             if entry is not None and entry['is_paid'] is False and entry['dvm_key'] == ptag:
-
+                                print("PAYMENT: " + nostr_event.as_json())
                                 #if we get a bolt11, we pay and move on
                                 if len(tag.as_vec()) > 2:
                                     bolt11 = tag.as_vec()[2]
@@ -236,7 +237,8 @@ class Bot:
                                 else:
                                     user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
                                                            client=self.client, config=self.dvm_config)
-                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config, "private")
+                                    print("PAYING: " + user.name)
+                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config, "public")
                                     if bolt11 == None:
                                         print("Receiver has no Lightning address")
                                         return
