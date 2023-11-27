@@ -1,6 +1,9 @@
 import json
 import os
 
+from nostr_sdk import PublicKey, Keys
+
+from interfaces.dvmtaskinterface import DVMTaskInterface
 from tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from tasks.imagegeneration_sdxl import ImageGenerationSDXL
 from tasks.textextractionpdf import TextExtractionPDF
@@ -40,6 +43,7 @@ admin_config.REBROADCAST_NIP89 = False
 def build_pdf_extractor(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
+    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     # Add NIP89
@@ -61,6 +65,7 @@ def build_pdf_extractor(name):
 def build_translator(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
+    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -93,6 +98,7 @@ def build_translator(name):
 def build_unstable_diffusion(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
+    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = "" #This one will not use Lnbits to create invoices, but rely on zaps
     dvm_config.LNBITS_URL = ""
 
@@ -126,6 +132,7 @@ def build_unstable_diffusion(name):
 def build_sketcher(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY2")
+    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -161,6 +168,7 @@ def build_sketcher(name):
 def build_dalle(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY3")
+    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     profit_in_sats = 10
@@ -189,6 +197,17 @@ def build_dalle(name):
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                 admin_config=admin_config)
 
+
+def external_dvm(name, pubkey):
+    dvm_config = DVMConfig()
+    dvm_config.PUBLIC_KEY = Keys.from_public_key(pubkey).public_key().to_hex()
+    nip89info = {
+        "name": name,
+    }
+    nip89config = NIP89Config()
+    nip89config.CONTENT = json.dumps(nip89info)
+
+    return DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config)
 
 # Little Gimmick:
 # For Dalle where we have to pay 4cent per image, we fetch current sat price in fiat

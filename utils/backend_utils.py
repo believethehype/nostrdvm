@@ -62,39 +62,36 @@ def check_task_is_supported(event: Event, client, get_duration=False, config=Non
         duration = 1
         task = get_task(event, client=client, dvmconfig=dvm_config)
 
-        try:
-            for tag in event.tags():
-                if tag.as_vec()[0] == 'i':
-                    if len(tag.as_vec()) < 3:
-                        print("Job Event missing/malformed i tag, skipping..")
-                        return False, "", 0
-                    else:
-                        input_value = tag.as_vec()[1]
-                        input_type = tag.as_vec()[2]
-                        if input_type == "event":
-                            evt = get_event_by_id(input_value, client=client, config=dvm_config)
-                            if evt is None:
-                                print("Event not found")
-                                return False, "", 0
-                        elif input_type == 'url' and check_url_is_readable(input_value) is None:
-                            print("Url not readable / supported")
-                            return False, task, duration  #
+        for tag in event.tags():
+            if tag.as_vec()[0] == 'i':
+                if len(tag.as_vec()) < 3:
+                    print("Job Event missing/malformed i tag, skipping..")
+                    return False, "", 0
+                else:
+                    input_value = tag.as_vec()[1]
+                    input_type = tag.as_vec()[2]
+                    if input_type == "event":
+                        evt = get_event_by_id(input_value, client=client, config=dvm_config)
+                        if evt is None:
+                            print("Event not found")
+                            return False, "", 0
+                    elif input_type == 'url' and check_url_is_readable(input_value) is None:
+                        print("Url not readable / supported")
+                        return False, task, duration  #
 
-                elif tag.as_vec()[0] == 'output':
-                    # TODO move this to individual modules
-                    output = tag.as_vec()[1]
-                    if not (output == "text/plain"
-                            or output == "text/json" or output == "json"
-                            or output == "image/png" or "image/jpg"
-                            or output == "image/png;format=url" or output == "image/jpg;format=url"
-                            or output == ""):
-                        print("Output format not supported, skipping..")
-                        return False, "", 0
-        except Exception as e:
-            print("Check task 2: " + str(e))
+            elif tag.as_vec()[0] == 'output':
+                # TODO move this to individual modules
+                output = tag.as_vec()[1]
+                if not (output == "text/plain"
+                        or output == "text/json" or output == "json"
+                        or output == "image/png" or "image/jpg"
+                        or output == "image/png;format=url" or output == "image/jpg;format=url"
+                        or output == ""):
+                    print("Output format not supported, skipping..")
+                    return False, "", 0
+
 
         for dvm in dvm_config.SUPPORTED_DVMS:
-            print(dvm.TASK)
             if dvm.TASK == task:
                 if not dvm.is_input_supported(input_type, event.content()):
                     return False, task, duration

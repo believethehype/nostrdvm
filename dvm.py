@@ -90,8 +90,6 @@ class DVM:
 
             user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex(), client=self.client,
                                    config=self.dvm_config)
-
-
             cashu = ""
             p_tag_str = ""
             for tag in nip90_event.tags():
@@ -120,8 +118,13 @@ class DVM:
                         task_is_free = True
 
                 cashu_redeemed = False
+                cashu_message = ""
                 if cashu != "":
-                    cashu_redeemed = redeem_cashu(cashu, self.dvm_config, self.client)
+                    cashu_redeemed, cashu_message = redeem_cashu(cashu, amount, self.dvm_config, self.client)
+                    if cashu_message != "":
+                        send_job_status_reaction(nip90_event, "error", False, amount, self.client, cashu_message,
+                                                 self.dvm_config)
+                        return
                 # if user is whitelisted or task is free, just do the job
                 if user.iswhitelisted or task_is_free or cashu_redeemed:
                     print(
@@ -135,7 +138,7 @@ class DVM:
                 # if task is directed to us via p tag and user has balance, do the job and update balance
 
                 elif p_tag_str == Keys.from_sk_str(
-                        self.dvm_config.PRIVATE_KEY).public_key().to_hex() and user.balance >= amount:
+                        self.dvm_config.PUBLIC_KEY) and user.balance >= amount:
                     balance = max(user.balance - amount, 0)
                     update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
@@ -176,17 +179,17 @@ class DVM:
                         send_job_status_reaction(nip90_event, "payment-required",
                                                  False, amount, client=self.client, dvm_config=self.dvm_config)
 
-            else:
-                print("[" + self.dvm_config.NIP89.name + "] Task " + task + " not supported on this DVM, skipping..")
+            #else:
+                #print("[" + self.dvm_config.NIP89.name + "] Task " + task + " not supported on this DVM, skipping..")
 
         def handle_zap(zap_event):
-
             try:
                 invoice_amount, zapped_event, sender, message, anon = parse_zap_event_tags(zap_event,
                                                                                            self.keys,
                                                                                            self.dvm_config.NIP89.name,
                                                                                            self.client, self.dvm_config)
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
+
 
                 if zapped_event is not None:
                     if zapped_event.kind() == EventDefinitions.KIND_FEEDBACK:
@@ -201,11 +204,10 @@ class DVM:
                                 job_event = get_event_by_id(tag.as_vec()[1], client=self.client, config=self.dvm_config)
                                 if job_event is not None:
                                     job_event = check_and_decrypt_tags(job_event, self.dvm_config)
+                                    if job_event is None:
+                                        return
                                 else:
                                     return
-
-                        if p_tag_str is None:
-                            return
 
                             # if a reaction by us got zapped
 
@@ -330,11 +332,11 @@ class DVM:
             original_event = Event.from_json(original_event_as_str)
             request_tag = Tag.parse(["request", original_event_as_str.replace("\\", "")])
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
-            # p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
+            p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
             alt_tag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
                 original_event.kind()) + ". The task was: " + original_event.content()])
             status_tag = Tag.parse(["status", "success"])
-            reply_tags = [request_tag, e_tag, alt_tag, status_tag]
+            reply_tags = [request_tag, e_tag, p_tag, alt_tag, status_tag]
             encrypted = False
             for tag in original_event.tags():
                 if tag.as_vec()[0] == "encrypted":
@@ -347,9 +349,6 @@ class DVM:
                     i_tag = tag
                     if not encrypted:
                         reply_tags.append(i_tag)
-                elif tag.as_vec()[0] == "p":
-                    p_tag = tag
-                    reply_tags.append(p_tag)
 
             if encrypted:
                 content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.pubkey().to_hex()),
@@ -369,16 +368,23 @@ class DVM:
             alt_description, reaction = build_status_reaction(status, task, amount, content)
 
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
-            # p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
+            p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
             alt_tag = Tag.parse(["alt", alt_description])
             status_tag = Tag.parse(["status", status])
+            reply_tags = [e_tag, alt_tag, status_tag]
+            encryption_tags = []
 
-            tags = [e_tag, alt_tag, status_tag]
+            encrypted = False
             for tag in original_event.tags():
+                if tag.as_vec()[0] == "encrypted":
+                    encrypted = True
+                    encrypted_tag = Tag.parse(["encrypted"])
+                    encryption_tags.append(encrypted_tag)
 
-                if tag.as_vec()[0] == "p":
-                    p_tag = tag
-                    tags.append(p_tag)
+            if encrypted:
+                encryption_tags.append(p_tag)
+            else:
+                reply_tags.append(p_tag)
 
             if status == "success" or status == "error":  #
                 for x in self.job_list:
@@ -415,10 +421,25 @@ class DVM:
                     amount_tag = Tag.parse(["amount", str(amount * 1000), bolt11])
                 else:
                     amount_tag = Tag.parse(["amount", str(amount * 1000)])  # to millisats
-                tags.append(amount_tag)
+                reply_tags.append(amount_tag)
+
+            if encrypted:
+                content_tag = Tag.parse(["content", reaction])
+                reply_tags.append(content_tag)
+                str_tags = []
+                for element in reply_tags:
+                    str_tags.append(element.as_vec())
+
+                content = json.dumps(str_tags)
+                content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.pubkey().to_hex()),
+                                        content)
+                reply_tags = encryption_tags
+
+            else:
+                content = reaction
 
             keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, reaction, tags).to_event(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
             send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.name + "]" + ": Sent Kind " + str(
                 EventDefinitions.KIND_FEEDBACK) + " Reaction: " + status + " " + reaction_event.as_json())

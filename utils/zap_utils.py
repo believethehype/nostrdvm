@@ -11,7 +11,7 @@ from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag,
 
 from utils.database_utils import get_or_add_user
 from utils.dvmconfig import DVMConfig
-from utils.nostr_utils import get_event_by_id
+from utils.nostr_utils import get_event_by_id, check_and_decrypt_tags, check_and_decrypt_own_tags
 import lnurl
 from hashlib import sha256
 
@@ -22,12 +22,14 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
     anon = False
     message = ""
     sender = zap_event.pubkey()
-
     for tag in zap_event.tags():
         if tag.as_vec()[0] == 'bolt11':
             invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
         elif tag.as_vec()[0] == 'e':
             zapped_event = get_event_by_id(tag.as_vec()[1], client=client, config=config)
+            zapped_event = check_and_decrypt_own_tags(zapped_event, config)
+        elif tag.as_vec()[0] == 'p':
+            p_tag = tag.as_vec()[1]
         elif tag.as_vec()[0] == 'description':
             zap_request_event = Event.from_json(tag.as_vec()[1])
             sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
@@ -249,32 +251,39 @@ def parse_cashu(cashu_token):
             print(e)
 
         token = cashu["token"][0]
-        print(token)
         proofs = token["proofs"]
         mint = token["mint"]
         total_amount = 0
         for proof in proofs:
             total_amount += proof["amount"]
-        fees = max(int(total_amount * 0.02), 2)
+        fees = max(int(total_amount * 0.02), 3)
         redeem_invoice_amount = total_amount - fees
-        return proofs, mint, redeem_invoice_amount
+        return proofs, mint, redeem_invoice_amount, total_amount
 
     except Exception as e:
         print("Could not parse this cashu token")
-        return None, None, None
+        return None, None, None, None
 
 
-def redeem_cashu(cashu, config, client):
-    proofs, mint, redeem_invoice_amount = parse_cashu(cashu)
+def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
+    proofs, mint, redeem_invoice_amount, total_amount = parse_cashu(cashu)
+    fees = total_amount - redeem_invoice_amount
+    if redeem_invoice_amount <= required_amount:
+        err = ("Token value (Payment: " + str(total_amount) + " Sats. Fees: " +
+               str(fees) + " Sats) below required amount of  " + str(required_amount)
+               + " Sats. Cashu token has not been claimed.")
+        print("[" + config.NIP89.name + "] " + err)
+        return False, err
+
     if config.LNBITS_INVOICE_KEY != "":
         invoice = create_bolt11_ln_bits(redeem_invoice_amount, config)
     else:
-        user = get_or_add_user(db=config.DB, npub=Keys.from_sk_str(config.PRIVATE_KEY).public_key().to_hex(),
+        user = get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
                                client=client, config=config)
         invoice = create_bolt11_lud16(user.lud16, redeem_invoice_amount)
     print(invoice)
     if invoice is None:
-        return False
+        return False, "couldn't create invoice"
     try:
         url = mint + "/melt"  # Melt cashu tokens at Mint
         json_object = {"proofs": proofs, "pr": invoice}
@@ -282,15 +291,17 @@ def redeem_cashu(cashu, config, client):
         request_body = json.dumps(json_object).encode('utf-8')
         request = requests.post(url, data=request_body, headers=headers)
         tree = json.loads(request.text)
-        is_paid = (tree.get("paid") == "true") if tree.get("detail") else False
-        if is_paid:
+        print(request.text)
+        is_paid = tree["paid"] if tree.get("paid") else "false"
+        print(is_paid)
+        if is_paid == "true":
             print("token redeemed")
-            return True
+            return True, "success"
         else:
             msg = tree.get("detail").split('.')[0].strip() if tree.get("detail") else None
             print(msg)
-            return False
+            return False, msg
     except Exception as e:
         print(e)
 
-    return False
+    return False, ""
