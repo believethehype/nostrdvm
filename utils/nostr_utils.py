@@ -81,13 +81,11 @@ def check_and_decrypt_tags(event, dvm_config):
 
             elif p == Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex():
                 print("encrypted")
-                #encrypted_tag = Tag.parse(["encrypted"])
-                #p_tag = Tag.parse(["p", p])
-
                 tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
                                          event.pubkey(), event.content())
-                #TODO add outer p tag so it doesnt have to be sent twice
                 params = json.loads(tags_str)
+                params.append(Tag.parse(["p", p]).as_vec())
+                print(params)
                 eventasjson = json.loads(event.as_json())
                 eventasjson['tags'] = params
                 eventasjson['content'] = ""
