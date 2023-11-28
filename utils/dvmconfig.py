@@ -9,7 +9,8 @@ class DVMConfig:
     SUPPORTED_DVMS= []
     PRIVATE_KEY: str = ""
     PUBLIC_KEY: str = ""
-    COST: int = None
+    FIX_COST: float = None
+    PER_UNIT_COST: float = None
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
                   "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",

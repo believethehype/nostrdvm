@@ -84,87 +84,117 @@ class Bot:
                 if decrypted_text[0].isdigit():
                     index = int(decrypted_text.split(' ')[0]) - 1
                     task = self.dvm_config.SUPPORTED_DVMS[index].TASK
-                    print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) + ", Balance: "
-                          + str(user.balance) + " Sats) Task: " + str(task))
 
-                    if user.isblacklisted:
-                        # For some reason an admin might blacklist npubs, e.g. for abusing the service
-                        evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
-                                                                    "Your are currently blocked from all "
-                                                                    "services.", None).to_event(self.keys)
-                        send_event(evt, client=self.client, dvm_config=dvm_config)
 
+                    if decrypted_text.split(" ")[1].lower() == "info":
+                        nip89 = self.dvm_config.SUPPORTED_DVMS[index].dvm_config.NIP89
+                        nip89content = json.loads(nip89.content)
+                        info = ""
+                        if nip89content.get("name"):
+                            info += "Name: " + nip89content.get("name") + "\n"
+                            info += nip89content.get("image")+ "\n"
+                            info += "About:\n" + nip89content.get("about") + "\n"
+                            params = nip89content["nip90Params"]
+                            print(params)
+                            info += "\nParameters:\n"
+                            for param in params:
+                                info += "-" + param + '\n'
+                                info += "Required: " + str(params[param]['required']) + '\n'
+                                info += "Possible Values: " + json.dumps(params[param]['values']) + '\n\n'
+                            evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                                                                        info, None).to_event(self.keys)
+                            send_event(evt, client=self.client, dvm_config=dvm_config)
+
+                        print(nip89content)
                     else:
-                        command = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
-                        input = command.split(" -")[0].rstrip()
-                        input_type = "text"
-                        if input.startswith("http"):
-                            input_type = "url"
+                        print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) + ", Balance: "
+                              + str(user.balance) + " Sats) Task: " + str(task))
 
-                        i_tag = Tag.parse(["i", input, input_type])
-                        #bid = str(self.dvm_config.SUPPORTED_DVMS[index].COST * 1000)
-                        #bid_tag = Tag.parse(['bid', bid, bid])
-                        relays_tag = Tag.parse(["relays", json.dumps(self.dvm_config.RELAY_LIST)])
-                        alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
+                        if user.isblacklisted:
+                            # For some reason an admin might blacklist npubs, e.g. for abusing the service
+                            evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                                                                        "Your are currently blocked from all "
+                                                                        "services.", None).to_event(self.keys)
+                            send_event(evt, client=self.client, dvm_config=dvm_config)
 
-                        tags = [i_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
+                        else:
+                            command = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
+                            input = command.split(" -")[0].rstrip()
+                            input_type = "text"
+                            if input.startswith("http"):
+                                input_type = "url"
 
-                        remaining_text = command.replace(input, "")
-                        print(remaining_text)
-                        params = remaining_text.rstrip().split(" -")
+                            i_tag = Tag.parse(["i", input, input_type])
+                            #bid = str(self.dvm_config.SUPPORTED_DVMS[index].FIX_COST * 1000)
+                            #bid_tag = Tag.parse(['bid', bid, bid])
+                            relays_tag = Tag.parse(["relays", json.dumps(self.dvm_config.RELAY_LIST)])
+                            alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
 
-                        for i in params:
-                            print(i)
-                            if i != " ":
-                                try:
-                                    split = i.split(" ")
-                                    param = str(split[0])
-                                    print(str(param))
-                                    value = str(split[1])
-                                    print(str(value))
-                                    if param == "cashu":
-                                        tag = Tag.parse([param, value])
-                                    else:
-                                        tag = Tag.parse(["param", param, value])
-                                    tags.append(tag.as_vec())
-                                    print("Added params: " + str(tag.as_vec()))
-                                except Exception as e:
-                                    print(e)
-                                    print("Couldn't add " + str(i))
+                            tags = [i_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
 
-                        encrypted_params_string = json.dumps(tags)
+                            remaining_text = command.replace(input, "")
+                            print(remaining_text)
+                            params = remaining_text.rstrip().split(" -")
 
-                        print(encrypted_params_string)
+                            for i in params:
+                                print(i)
+                                if i != " ":
+                                    try:
+                                        split = i.split(" ")
+                                        param = str(split[0])
+                                        print(str(param))
+                                        value = str(split[1])
+                                        print(str(value))
+                                        if param == "cashu":
+                                            tag = Tag.parse([param, value])
+                                        else:
+                                            tag = Tag.parse(["param", param, value])
+                                        tags.append(tag.as_vec())
+                                        print("Added params: " + str(tag.as_vec()))
+                                    except Exception as e:
+                                        print(e)
+                                        print("Couldn't add " + str(i))
 
-                        encrypted_params = nip04_encrypt(self.keys.secret_key(),
-                                                         PublicKey.from_hex(
-                                                             self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY),
-                                                         encrypted_params_string)
+                            encrypted_params_string = json.dumps(tags)
 
-                        encrypted_tag = Tag.parse(['encrypted'])
-                        p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
-                        encrypted_nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
-                                                               encrypted_params, [p_tag, encrypted_tag]).
-                                                  to_event(self.keys))
+                            print(encrypted_params_string)
 
-                        entry = {"npub": user.npub, "event_id": encrypted_nip90request.id().to_hex(),
-                                 "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False}
-                        self.job_list.append(entry)
+                            encrypted_params = nip04_encrypt(self.keys.secret_key(),
+                                                             PublicKey.from_hex(
+                                                                 self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY),
+                                                             encrypted_params_string)
 
-                        send_event(encrypted_nip90request, client=self.client, dvm_config=dvm_config)
+                            encrypted_tag = Tag.parse(['encrypted'])
+                            p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
+                            encrypted_nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
+                                                                   encrypted_params, [p_tag, encrypted_tag]).
+                                                      to_event(self.keys))
+
+                            entry = {"npub": user.npub, "event_id": encrypted_nip90request.id().to_hex(),
+                                     "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False}
+                            self.job_list.append(entry)
+
+                            send_event(encrypted_nip90request, client=self.client, dvm_config=dvm_config)
 
                 else:
                     print("[" + self.NAME + "] Message from " + user.name + ": " + decrypted_text)
                     message = "DVMs that I support:\n\n"
                     index = 1
                     for p in self.dvm_config.SUPPORTED_DVMS:
-                        message += str(index) + " " + p.NAME + " " + p.TASK + " " + str(p.COST) + " Sats" + "\n"
+                        if p.PER_UNIT_COST != 0 and p.PER_UNIT_COST is not None:
+                            message += (str(index) + " " + p.NAME + " " + p.TASK + " " + str(p.FIX_COST) +
+                                        " Sats + " + str(p.PER_UNIT_COST) + " Sats per Second\n")
+                        else:
+                            message += (str(index) + " " + p.NAME + " " + p.TASK + " " + str(p.FIX_COST) +
+                                        " Sats\n")
                         index += 1
 
-                    time.sleep(1.0)
+                    time.sleep(3.0)
                     evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
                                                                 message + "\nSelect an Index and provide an input ("
-                                                                          "e.g. 1 A purple ostrich)",
+                                                                          "e.g. 2 A purple ostrich)\nType index info to learn more about each DVM. (e.g. 2 info)\n\n"
+                                                                          ""
+                                                                          "Add -cashu cashutoken with the amount + mint fees (at least 3 sat) to pay via #cashu",
                                                                 nostr_event.id()).to_event(self.keys)
 
                     send_event(evt, client=self.client, dvm_config=dvm_config)
@@ -258,7 +288,7 @@ class Bot:
                                 else:
                                     print("Bot payment-required")
                                     evt = EventBuilder.new_encrypted_direct_msg(self.keys, PublicKey.from_hex(entry["npub"]),
-                                                                                "Current balance: " + str(user.balance) + " Sats. Balance required, please zap me with at least " +
+                                                                                "Current balance: " + str(user.balance) + " Sats. Balance of "+ str(amount) +" Sats required. Please zap me with at least " +
                                                                                 str(int(amount - user.balance))
                                                                                 + " Sats, then try again.",
                                                                                 None).to_event(self.keys)
