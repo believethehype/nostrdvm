@@ -238,13 +238,16 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
         return None
 
 
-def parse_cashu(cashu_token):
+def parse_cashu(cashu_token: str):
     try:
         try:
             prefix = "cashuA"
             assert cashu_token.startswith(prefix), Exception(
                 f"Token prefix not valid. Expected {prefix}."
             )
+            if not cashu_token.endswith("="):
+                cashu_token = cashu_token + "="
+
             token_base64 = cashu_token[len(prefix):]
             cashu = json.loads(base64.urlsafe_b64decode(token_base64))
         except Exception as e:
@@ -292,9 +295,9 @@ def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
         request = requests.post(url, data=request_body, headers=headers)
         tree = json.loads(request.text)
         print(request.text)
-        is_paid = tree["paid"] if tree.get("paid") else "false"
+        is_paid = tree["paid"] if tree.get("paid") else False
         print(is_paid)
-        if is_paid == "true":
+        if is_paid:
             print("token redeemed")
             return True, "success"
         else:
