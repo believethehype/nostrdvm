@@ -59,7 +59,6 @@ class Translation(DVMTaskInterface):
                                                      dvm_config=dvm_config)
                     text = evt.content()
 
-
             elif tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "language":  # check for param type

@@ -87,10 +87,6 @@ class Bot:
                     print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) + ", Balance: "
                           + str(user.balance) + " Sats) Task: " + str(task))
 
-                    duration = 1
-                    required_amount = get_amount_per_task(self.dvm_config.SUPPORTED_DVMS[index].TASK,
-                                                          self.dvm_config, duration)
-
                     if user.isblacklisted:
                         # For some reason an admin might blacklist npubs, e.g. for abusing the service
                         evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
@@ -98,7 +94,7 @@ class Bot:
                                                                     "services.", None).to_event(self.keys)
                         send_event(evt, client=self.client, dvm_config=dvm_config)
 
-                    elif user.balance >= required_amount or required_amount == 0:
+                    else:
                         command = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
                         input = command.split(" -")[0].rstrip()
                         input_type = "text"
@@ -114,9 +110,11 @@ class Bot:
                         tags = [i_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
 
                         remaining_text = command.replace(input, "")
-                        params = remaining_text.split(" -")
+                        print(remaining_text)
+                        params = remaining_text.rstrip().split(" -")
 
                         for i in params:
+                            print(i)
                             if i != " ":
                                 try:
                                     split = i.split(" ")
@@ -124,9 +122,12 @@ class Bot:
                                     print(str(param))
                                     value = str(split[1])
                                     print(str(value))
-                                    tag = Tag.parse(["param", param, value])
+                                    if param == "cashu":
+                                        tag = Tag.parse([param, value])
+                                    else:
+                                        tag = Tag.parse(["param", param, value])
                                     tags.append(tag.as_vec())
-                                    print("Added params: " + tag.as_vec())
+                                    print("Added params: " + str(tag.as_vec()))
                                 except Exception as e:
                                     print(e)
                                     print("Couldn't add " + str(i))
@@ -152,18 +153,6 @@ class Bot:
 
                         send_event(encrypted_nip90request, client=self.client, dvm_config=dvm_config)
 
-
-                    else:
-                        print("Bot payment-required")
-                        time.sleep(2.0)
-                        evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
-                                                                    "Balance required, please zap me with at least " +
-                                                                    str(int(required_amount - user.balance))
-                                                                    + " Sats, then try again.",
-                                                                    nostr_event.id()).to_event(self.keys)
-                        send_event(evt, client=self.client, dvm_config=dvm_config)
-
-
                 else:
                     print("[" + self.NAME + "] Message from " + user.name + ": " + decrypted_text)
                     message = "DVMs that I support:\n\n"
@@ -185,7 +174,6 @@ class Bot:
                 print("Error in bot " + str(e))
 
         def handle_nip90_feedback(nostr_event):
-
             try:
                 is_encrypted = False
                 status = ""
@@ -252,22 +240,32 @@ class Bot:
                                 # if we get a bolt11, we pay and move on
                                 user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                                        client=self.client, config=self.dvm_config)
-                                balance = max(user.balance - amount, 0)
-                                update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
-                                                 iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
-                                                 nip05=user.nip05, lud16=user.lud16, name=user.name,
-                                                 lastactive=Timestamp.now().as_secs())
-                                time.sleep(2.0)
-                                evt = EventBuilder.new_encrypted_direct_msg(self.keys,
-                                                                            PublicKey.from_hex(entry["npub"]),
-                                                                            "Paid " + str(
-                                                                                amount) + " Sats from balance to DVM. New balance is " +
-                                                                            str(balance)
-                                                                            + " Sats.\n",
-                                                                            None).to_event(self.keys)
+                                if user.balance > amount:
+                                    balance = max(user.balance - amount, 0)
+                                    update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
+                                                     iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
+                                                     nip05=user.nip05, lud16=user.lud16, name=user.name,
+                                                     lastactive=Timestamp.now().as_secs())
+                                    evt = EventBuilder.new_encrypted_direct_msg(self.keys,
+                                                                                PublicKey.from_hex(entry["npub"]),
+                                                                                "Paid " + str(
+                                                                                    amount) + " Sats from balance to DVM. New balance is " +
+                                                                                str(balance)
+                                                                                + " Sats.\n",
+                                                                                None).to_event(self.keys)
 
-                                print("[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
-                                send_event(evt, client=self.client, dvm_config=dvm_config)
+                                    print("[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
+                                    send_event(evt, client=self.client, dvm_config=dvm_config)
+                                else:
+                                    print("Bot payment-required")
+                                    evt = EventBuilder.new_encrypted_direct_msg(self.keys, PublicKey.from_hex(entry["npub"]),
+                                                                                "Current balance: " + str(user.balance) + " Sats. Balance required, please zap me with at least " +
+                                                                                str(int(amount - user.balance))
+                                                                                + " Sats, then try again.",
+                                                                                None).to_event(self.keys)
+                                    send_event(evt, client=self.client, dvm_config=dvm_config)
+                                    return
+
 
                                 if len(tag.as_vec()) > 2:
                                     bolt11 = tag.as_vec()[2]
