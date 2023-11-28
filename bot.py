@@ -118,15 +118,15 @@ class Bot:
                                 try:
                                     split = i.split(" ")
                                     param = str(split[0])
-                                    print(param)
+                                    print(str(param))
                                     value = str(split[1])
-                                    print(value)
+                                    print(str(value))
                                     tag = Tag.parse(["param", param, value])
                                     tags.append(tag.as_vec())
                                     print("Added params: " + tag.as_vec())
                                 except Exception as e:
                                     print(e)
-                                    print("Couldn't add " + i)
+                                    print("Couldn't add " + str(i))
 
                         encrypted_params_string = json.dumps(tags)
 

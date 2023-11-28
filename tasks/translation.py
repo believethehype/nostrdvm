@@ -36,50 +36,36 @@ class Translation(DVMTaskInterface):
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex()}
-
-        input_type = "event"
         text = ""
         translation_lang = "en"
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
-
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
-                if param == "language":  # check for param type
-                    translation_lang = str(tag.as_vec()[2]).split('-')[0]
-
-        if input_type == "event":
-            for tag in event.tags:
-                if tag.as_vec()[0] == 'i':
+                if input_type == "event":
                     evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
                     text = evt.content()
-                    break
-
-        elif input_type == "text":
-            for tag in event.tags:
-                if tag.as_vec()[0] == 'i':
+                elif input_type == "text":
                     text = tag.as_vec()[1]
-                    break
-
-        elif input_type == "job":
-            for tag in event.tags:
-                if tag.as_vec()[0] == 'i':
+                elif input_type == "job":
                     evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
                                                      kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
                                                      dvm_config=dvm_config)
                     text = evt.content()
-                    break
+
+
+            elif tag.as_vec()[0] == 'param':
+                param = tag.as_vec()[1]
+                if param == "language":  # check for param type
+                    translation_lang = str(tag.as_vec()[2]).split('-')[0]
 
         options = {
             "text": text,
             "language": translation_lang
         }
         request_form['options'] = json.dumps(options)
-
         return request_form
 
     def process(self, request_form):

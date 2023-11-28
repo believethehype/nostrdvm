@@ -450,6 +450,7 @@ class DVM:
                     or job_event.kind() == EventDefinitions.KIND_DM):
 
                 task = get_task(job_event, client=self.client, dvmconfig=self.dvm_config)
+
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     try:
                         if task == dvm.TASK:
@@ -457,6 +458,7 @@ class DVM:
                                                                                     self.dvm_config)
                             result = dvm.process(request_form)
                             check_and_return_event(result, str(job_event.as_json()))
+
 
                     except Exception as e:
                         print(e)
