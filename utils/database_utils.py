@@ -171,7 +171,7 @@ def update_user_balance(db, npub, additional_sats, client, config):
 
         if config is not None:
             keys = Keys.from_sk_str(config.PRIVATE_KEY)
-            time.sleep(1.0)
+            #time.sleep(1.0)
 
             message = ("Added " + str(additional_sats) + " Sats to balance. New balance is " + str(new_balance) + " Sats.")
 
