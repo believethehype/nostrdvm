@@ -200,7 +200,7 @@ def build_dalle(name):
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     profit_in_sats = 10
-    dvm_config.COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
+    dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
 
     nip90params = {
         "size": {
