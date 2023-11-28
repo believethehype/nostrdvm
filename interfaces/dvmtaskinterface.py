@@ -13,7 +13,8 @@ class DVMTaskInterface:
     NAME: str
     KIND: int
     TASK: str
-    COST: float
+    FIX_COST: float = 0
+    PER_UNIT_COST: float = 0
     PRIVATE_KEY: str
     PUBLIC_KEY: str
     DVM = DVM
@@ -31,8 +32,10 @@ class DVMTaskInterface:
         if dvm_config.PUBLIC_KEY == "" or dvm_config.PUBLIC_KEY is None:
             dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
         self.PUBLIC_KEY = dvm_config.PUBLIC_KEY
-        if dvm_config.COST is not None:
-            self.COST = dvm_config.COST
+        if dvm_config.FIX_COST is not None:
+            self.FIX_COST = dvm_config.FIX_COST
+        if dvm_config.PER_UNIT_COST is not None:
+            self.PER_UNIT_COST = dvm_config.PER_UNIT_COST
 
         dvm_config.SUPPORTED_DVMS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"

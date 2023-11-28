@@ -107,15 +107,9 @@ def check_nova_server_status(jobID, address) -> str | pd.DataFrame:
                             columns = ['from', 'to', 'name', 'conf']
                             result = pd.DataFrame([row.split(';') for row in anno_string.split('\n')],
                                                   columns=columns)
-                            #print(str(result))
                             return result
-                            #with open("response.zip", "wb") as f:
-                            #    f.write(response.content)
                         except Exception as e:
-                            #zf.extractall()
                             print(e)
-
-
         except Exception as e:
             print("Couldn't fetch result: " + str(e))
 
