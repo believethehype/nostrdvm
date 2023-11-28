@@ -116,7 +116,7 @@ class DVM:
                 cashu_redeemed = False
                 if cashu != "":
                     cashu_redeemed, cashu_message = redeem_cashu(cashu, amount, self.dvm_config, self.client)
-                    if cashu_message != "":
+                    if cashu_message != "success":
                         send_job_status_reaction(nip90_event, "error", False, amount, self.client, cashu_message,
                                                  self.dvm_config)
                         return
