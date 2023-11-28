@@ -75,5 +75,4 @@ class DVMTaskInterface:
         if request_form.get("options"):
             opts = json.loads(request_form["options"])
             print(opts)
-
         return dict(opts)

@@ -27,11 +27,15 @@ class Translation(DVMTaskInterface):
                  admin_config: AdminConfig = None, options=None):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-    def is_input_supported(self, input_type, input_content):
-        if input_type != "event" and input_type != "job" and input_type != "text":
-            return False
-        if input_type != "text" and len(input_content) > 4999:
-            return False
+    def is_input_supported(self, tags):
+        for tag in tags:
+            if tag.as_vec()[0] == 'i':
+                input_value = tag.as_vec()[1]
+                input_type = tag.as_vec()[2]
+                if input_type != "event" and input_type != "job" and input_type != "text":
+                    return False
+                if input_type != "text" and len(input_value) > 4999:
+                    return False
         return True
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):

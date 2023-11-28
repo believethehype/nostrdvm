@@ -3,6 +3,8 @@ import json
 import os
 import time
 import zipfile
+from pathlib import Path
+
 import pandas as pd
 import requests
 import PIL.Image as Image
@@ -36,6 +38,18 @@ def send_request_to_nova_server(request_form, address):
     return response.text
 
 
+def send_file_to_nova_server(filepath, address):
+    print("Sending file to NOVA-Server")
+    url = ('http://' + address + '/upload')
+    fp = open(filepath, 'rb')
+    response = requests.post(url, files={'file': fp})
+    result = response.content.decode('utf-8')
+    print(result)
+    return result
+
+    # headers = {'Content-type': 'application/x-www-form-urlencoded'}
+
+
 """
 check_nova_server_status(request_form, address)
 Function that requests the status of the current process with the jobID (we use the Nostr event as jobID).
@@ -44,7 +58,7 @@ We throw an exception on error
 """
 
 
-def check_nova_server_status(jobID, address):
+def check_nova_server_status(jobID, address) -> str | pd.DataFrame:
     headers = {'Content-type': 'application/x-www-form-urlencoded'}
     url_status = 'http://' + address + '/job_status'
     url_log = 'http://' + address + '/log'
@@ -68,7 +82,6 @@ def check_nova_server_status(jobID, address):
 
     if status == 2:
         try:
-            result = ""
             url_fetch = 'http://' + address + '/fetch_result'
             print("Fetching Results from NOVA-Server...")
             data = {"jobID": jobID, "delete_after_download": True}
@@ -79,10 +92,12 @@ def check_nova_server_status(jobID, address):
                 image = Image.open(io.BytesIO(response.content))
                 image.save("./outputs/image.jpg")
                 result = upload_media_to_hoster("./outputs/image.jpg")
+                return result
                 os.remove("./outputs/image.jpg")
             elif content_type == 'text/plain; charset=utf-8':
                 result = response.content.decode('utf-8')
-            elif content_type == "zip":
+                return result
+            elif content_type == "application/x-zip-compressed":
                 zf = zipfile.ZipFile(io.BytesIO(response.content), "r")
 
                 for fileinfo in zf.infolist():
@@ -92,14 +107,15 @@ def check_nova_server_status(jobID, address):
                             columns = ['from', 'to', 'name', 'conf']
                             result = pd.DataFrame([row.split(';') for row in anno_string.split('\n')],
                                                   columns=columns)
-                            print(result)
-                            with open("response.zip", "wb") as f:
-                                f.write(response.content)
+                            #print(str(result))
+                            return result
+                            #with open("response.zip", "wb") as f:
+                            #    f.write(response.content)
                         except Exception as e:
                             #zf.extractall()
                             print(e)
 
-            return result
+
         except Exception as e:
             print("Couldn't fetch result: " + str(e))
 

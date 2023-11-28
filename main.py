@@ -9,7 +9,8 @@ import dotenv
 from nostr_sdk import Keys
 
 from bot import Bot
-from playground import build_pdf_extractor, build_translator, build_unstable_diffusion, build_sketcher, build_dalle
+from playground import build_pdf_extractor, build_translator, build_unstable_diffusion, build_sketcher, build_dalle, \
+    build_whisperx
 from utils.dvmconfig import DVMConfig
 
 
@@ -47,6 +48,13 @@ def run_nostr_dvm_with_local_config():
         sketcher = build_sketcher("Sketcher")
         bot_config.SUPPORTED_DVMS.append(sketcher)  # We also add Sketcher to the bot
         sketcher.run()
+
+    if os.getenv("NOVA_SERVER") is not None and os.getenv("NOVA_SERVER") != "":
+        whisperer = build_whisperx("Whisperer")
+        bot_config.SUPPORTED_DVMS.append(whisperer)  # We also add Sketcher to the bot
+        whisperer.run()
+
+
 
     # Spawn DVM5, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
     # per call. Make sure you have enough balance and the DVM's cost is set higher than what you pay yourself, except, you know,

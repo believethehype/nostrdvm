@@ -31,9 +31,22 @@ class ImageGenerationDALLE(DVMTaskInterface):
                  admin_config: AdminConfig = None, options=None):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-    def is_input_supported(self, input_type, input_content):
-        if input_type != "text":
-            return False
+    def is_input_supported(self, tags):
+        for tag in tags:
+            if tag.as_vec()[0] == 'i':
+                input_value = tag.as_vec()[1]
+                input_type = tag.as_vec()[2]
+                if input_type != "text":
+                    return False
+
+            elif tag.as_vec()[0] == 'output':
+                output = tag.as_vec()[1]
+                if (output == "" or
+                        not (output == "image/png" or "image/jpg"
+                             or output == "image/png;format=url" or output == "image/jpg;format=url")):
+                    print("Output format not supported, skipping..")
+                    return False
+
         return True
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
