@@ -18,7 +18,6 @@ def run_nostr_dvm_with_local_config():
     # Note this is very basic for now and still under development
     bot_config = DVMConfig()
     bot_config.PRIVATE_KEY = os.getenv("BOT_PRIVATE_KEY")
-    bot_config.PUBLIC_KEY = Keys.from_sk_str(bot_config.PRIVATE_KEY).public_key().to_hex()
     bot_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     bot_config.LNBITS_ADMIN_KEY = os.getenv("LNBITS_ADMIN_KEY")  # The bot will forward zaps for us, use responsibly
     bot_config.LNBITS_URL = os.getenv("LNBITS_HOST")
@@ -60,7 +59,7 @@ def run_nostr_dvm_with_local_config():
     bot = Bot(bot_config)
     bot.run()
 
-    # Keep the main function alive for libraries like openai
+    # Keep the main function alive for libraries that require it, like openai
     try:
         while True:
             time.sleep(10)

@@ -43,7 +43,6 @@ admin_config.REBROADCAST_NIP89 = False
 def build_pdf_extractor(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     # Add NIP89
@@ -65,7 +64,6 @@ def build_pdf_extractor(name):
 def build_translator(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -98,7 +96,6 @@ def build_translator(name):
 def build_unstable_diffusion(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = "" #This one will not use Lnbits to create invoices, but rely on zaps
     dvm_config.LNBITS_URL = ""
 
@@ -132,7 +129,6 @@ def build_unstable_diffusion(name):
 def build_sketcher(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY2")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -168,7 +164,6 @@ def build_sketcher(name):
 def build_dalle(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY3")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     profit_in_sats = 10

@@ -2,12 +2,11 @@ import json
 from multiprocessing.pool import ThreadPool
 
 from backends.nova_server import check_nova_server_status, send_request_to_nova_server
-from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
-from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config
+from utils.definitions import EventDefinitions
 
 """
 This File contains a Module to transform Text input on NOVA-Server and receive results back. 
@@ -28,7 +27,16 @@ class ImageGenerationSDXL(DVMTaskInterface):
                  admin_config: AdminConfig = None, options=None):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-    def is_input_supported(self, input_type, input_content):
+    def is_input_supported(self, tags):
+        for tag in tags:
+            if tag.as_vec()[0] == 'i':
+                if len(tag.as_vec()) < 3:
+                    print("Job Event missing/malformed i tag, skipping..")
+                    return False
+                else:
+                    input_value = tag.as_vec()[1]
+                    input_type = tag.as_vec()[2]
+
         if input_type != "text":
             return False
         return True

@@ -3,7 +3,7 @@ import typing
 from datetime import timedelta
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, nip04_decrypt, Options, nip04_encrypt
+    init_logger, LogLevel, Options, nip04_encrypt
 
 import time
 
@@ -39,10 +39,8 @@ class DVM:
                 .skip_disconnected_relays(skip_disconnected_relays))
 
         self.client = Client.with_opts(self.keys, opts)
-
         self.job_list = []
         self.jobs_on_hold_list = []
-
         pk = self.keys.public_key()
 
         print("Nostr DVM public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Supported DVM tasks: " +
@@ -53,9 +51,6 @@ class DVM:
         self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
-        # bot_dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).authors(self.dvm_config.DM_ALLOWED).since(
-        #    Timestamp.now())
-
         kinds = [EventDefinitions.KIND_NIP90_GENERIC]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
@@ -76,8 +71,6 @@ class DVM:
                     handle_nip90_job_event(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
                     handle_zap(nostr_event)
-                # elif nostr_event.kind() == EventDefinitions.KIND_DM:
-                #   handle_dm(nostr_event)
 
             def handle_msg(self, relay_url, msg):
                 return
@@ -118,7 +111,6 @@ class DVM:
                         task_is_free = True
 
                 cashu_redeemed = False
-                cashu_message = ""
                 if cashu != "":
                     cashu_redeemed, cashu_message = redeem_cashu(cashu, amount, self.dvm_config, self.client)
                     if cashu_message != "":
@@ -136,7 +128,6 @@ class DVM:
 
                     do_work(nip90_event)
                 # if task is directed to us via p tag and user has balance, do the job and update balance
-
                 elif p_tag_str == Keys.from_sk_str(
                         self.dvm_config.PUBLIC_KEY) and user.balance >= amount:
                     balance = max(user.balance - amount, 0)
@@ -147,7 +138,6 @@ class DVM:
 
                     print(
                         "[" + self.dvm_config.NIP89.name + "] Using user's balance for task: " + task +
-
                         ". Starting processing.. New balance is: " + str(balance))
 
                     send_job_status_reaction(nip90_event, "processing", True, 0,
@@ -364,7 +354,7 @@ class DVM:
                                      content=None,
                                      dvm_config=None):
 
-            task = get_task(original_event, client=client, dvmconfig=dvm_config)
+            task = get_task(original_event, client=client, dvm_config=dvm_config)
             alt_description, reaction = build_status_reaction(status, task, amount, content)
 
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
@@ -449,7 +439,7 @@ class DVM:
             if ((EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= job_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC)
                     or job_event.kind() == EventDefinitions.KIND_DM):
 
-                task = get_task(job_event, client=self.client, dvmconfig=self.dvm_config)
+                task = get_task(job_event, client=self.client, dvm_config=self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     try:
@@ -458,7 +448,6 @@ class DVM:
                                                                                     self.dvm_config)
                             result = dvm.process(request_form)
                             check_and_return_event(result, str(job_event.as_json()))
-
 
                     except Exception as e:
                         print(e)

@@ -201,7 +201,7 @@ class Bot:
 
                 content = nostr_event.content()
                 if is_encrypted:
-                    if ptag == self.dvm_config.PUBLIC_KEY:
+                    if ptag == self.keys.public_key().to_hex():
                         tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
                                                  nostr_event.pubkey(), nostr_event.content())
                         params = json.loads(tags_str)
@@ -311,7 +311,7 @@ class Bot:
                     self.job_list.remove(entry)
                     content = nostr_event.content()
                     if is_encrypted:
-                        if ptag == self.dvm_config.PUBLIC_KEY:
+                        if ptag == self.keys.public_key().to_hex():
                             content = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), content)
                         else:
                             return
@@ -335,7 +335,6 @@ class Bot:
                                                                                            self.client, self.dvm_config)
 
                 user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
-                print("ZAPED EVENT: " + zapped_event.as_json())
                 if zapped_event is not None:
                     if not anon:
                         print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
