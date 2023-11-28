@@ -110,7 +110,7 @@ class DVM:
 
                 task_is_free = False
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
-                    if dvm.TASK == task and dvm.COST == 0:
+                    if dvm.TASK == task and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0:
                         task_is_free = True
 
                 cashu_redeemed = False
