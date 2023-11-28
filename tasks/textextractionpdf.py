@@ -23,7 +23,7 @@ Params:  None
 class TextExtractionPDF(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
-    COST: int = 0
+    COST: float = 0
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):

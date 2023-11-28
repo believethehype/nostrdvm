@@ -21,7 +21,7 @@ Params:  -language The target language
 class Translation(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_TRANSLATE_TEXT
     TASK: str = "translation"
-    COST: int = 0
+    COST: float = 0
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):

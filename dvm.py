@@ -115,7 +115,7 @@ class DVM:
 
                 cashu_redeemed = False
                 if cashu != "":
-                    cashu_redeemed, cashu_message = redeem_cashu(cashu, amount, self.dvm_config, self.client)
+                    cashu_redeemed, cashu_message = redeem_cashu(cashu, int(amount), self.dvm_config, self.client)
                     if cashu_message != "success":
                         send_job_status_reaction(nip90_event, "error", False, amount, self.client, cashu_message,
                                                  self.dvm_config)
@@ -132,8 +132,8 @@ class DVM:
                     do_work(nip90_event)
                 # if task is directed to us via p tag and user has balance, do the job and update balance
                 elif p_tag_str == Keys.from_sk_str(
-                        self.dvm_config.PUBLIC_KEY) and user.balance >= amount:
-                    balance = max(user.balance - amount, 0)
+                        self.dvm_config.PUBLIC_KEY) and user.balance >= int(amount):
+                    balance = max(user.balance - int(amount), 0)
                     update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
                                      nip05=user.nip05, lud16=user.lud16, name=user.name,
@@ -160,9 +160,9 @@ class DVM:
                         + nip90_event.as_json())
                     if bid > 0:
                         bid_offer = int(bid / 1000)
-                        if bid_offer >= amount:
+                        if bid_offer >= int(amount):
                             send_job_status_reaction(nip90_event, "payment-required", False,
-                                                     amount,  # bid_offer
+                                                     int(amount),  # bid_offer
                                                      client=self.client, dvm_config=self.dvm_config)
 
                     else:  # If there is no bid, just request server rate from user
@@ -170,7 +170,7 @@ class DVM:
                             "[" + self.dvm_config.NIP89.name + "]  Requesting payment for Event: " +
                             nip90_event.id().to_hex())
                         send_job_status_reaction(nip90_event, "payment-required",
-                                                 False, amount, client=self.client, dvm_config=self.dvm_config)
+                                                 False, int(amount), client=self.client, dvm_config=self.dvm_config)
 
             # else:
             # print("[" + self.dvm_config.NIP89.name + "] Task " + task + " not supported on this DVM, skipping..")

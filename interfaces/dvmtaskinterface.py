@@ -13,7 +13,7 @@ class DVMTaskInterface:
     NAME: str
     KIND: int
     TASK: str
-    COST: int
+    COST: float
     PRIVATE_KEY: str
     PUBLIC_KEY: str
     DVM = DVM

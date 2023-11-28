@@ -25,7 +25,7 @@ Params: -model         # models: juggernaut, dynavision, colossusProject, newrea
 class SpeechToTextWhisperX(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "speech-to-text"
-    COST: int = 1
+    COST: float = 0.1
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):

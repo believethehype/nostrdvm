@@ -9,6 +9,7 @@ from utils.nostr_utils import get_event_by_id
 
 
 def input_data_file_duration(event, dvm_config, client, start=0, end=0):
+    print("[" + dvm_config.NIP89.name + "] Getting Duration of the Media file..")
     input_value = ""
     input_type = "url"
     for tag in event.tags():
@@ -228,7 +229,7 @@ def get_Twitter(input_value, start, end):
 
 
 def get_youtube(input_value, start, end, audioonly=True):
-    filepath = '.\\outputs\\'
+    filepath = os.path.abspath(os.curdir) + r'/outputs/'
     filename = ""
     try:
         filename = downloadYouTube(input_value, filepath, audioonly)
