@@ -30,15 +30,19 @@ class ImageGenerationSDXL(DVMTaskInterface):
     def is_input_supported(self, tags):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
-                if len(tag.as_vec()) < 3:
-                    print("Job Event missing/malformed i tag, skipping..")
+                input_value = tag.as_vec()[1]
+                input_type = tag.as_vec()[2]
+                if input_type != "text":
                     return False
-                else:
-                    input_value = tag.as_vec()[1]
-                    input_type = tag.as_vec()[2]
 
-        if input_type != "text":
-            return False
+            elif tag.as_vec()[0] == 'output':
+                output = tag.as_vec()[1]
+                if (output == "" or
+                        not (output == "image/png" or "image/jpg"
+                             or output == "image/png;format=url" or output == "image/jpg;format=url")):
+                    print("Output format not supported, skipping..")
+                    return False
+
         return True
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
@@ -134,11 +138,6 @@ class ImageGenerationSDXL(DVMTaskInterface):
         }
         request_form['options'] = json.dumps(options)
 
-        # old format, deprecated, will remove
-        request_form["optStr"] = ('model=' + model + ';ratio=' + str(ratio_width) + '-' + str(ratio_height) + ';size=' +
-                                  str(width) + '-' + str(height) + ';strength=' + str(strength) + ';guidance_scale=' +
-                                  str(guidance_scale) + ';lora=' + lora + ';lora_weight=' + lora_weight)
-
         return request_form
 
     def process(self, request_form):
@@ -152,7 +151,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
             thread = pool.apply_async(check_nova_server_status, (request_form['jobID'], self.options['nova_server']))
             print("Wait for results of NOVA-Server...")
             result = thread.get()
-            return str(result)
+            return result
 
         except Exception as e:
             raise Exception(e)

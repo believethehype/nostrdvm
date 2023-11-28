@@ -1,7 +1,7 @@
 import json
-import typing
 from datetime import timedelta
 
+import pandas as pd
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
     init_logger, LogLevel, Options, nip04_encrypt
 
@@ -12,6 +12,7 @@ from utils.dvmconfig import DVMConfig
 from utils.admin_utils import admin_make_database_updates, AdminConfig
 from utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
 from utils.database_utils import create_sql_table, get_or_add_user, update_user_balance, update_sql_table
+from utils.mediasource_utils import input_data_file_duration
 from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
 from utils.output_utils import post_process_result, build_status_reaction
 from utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, redeem_cashu
@@ -91,9 +92,9 @@ class DVM:
                 elif tag.as_vec()[0] == "p":
                     p_tag_str = tag.as_vec()[1]
 
-            task_supported, task, duration = check_task_is_supported(nip90_event, client=self.client,
-                                                                     get_duration=(not user.iswhitelisted),
-                                                                     config=self.dvm_config)
+            task_supported, task = check_task_is_supported(nip90_event, client=self.client,
+                                                           config=self.dvm_config)
+
 
             if user.isblacklisted:
                 send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
@@ -101,6 +102,8 @@ class DVM:
 
             elif task_supported:
                 print("[" + self.dvm_config.NIP89.name + "] Received new Request: " + task + " from " + user.name)
+                duration = input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
+                print("File Duration: " + str(duration))
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
                     return
@@ -169,8 +172,8 @@ class DVM:
                         send_job_status_reaction(nip90_event, "payment-required",
                                                  False, amount, client=self.client, dvm_config=self.dvm_config)
 
-            #else:
-                #print("[" + self.dvm_config.NIP89.name + "] Task " + task + " not supported on this DVM, skipping..")
+            # else:
+            # print("[" + self.dvm_config.NIP89.name + "] Task " + task + " not supported on this DVM, skipping..")
 
         def handle_zap(zap_event):
             try:
@@ -179,7 +182,6 @@ class DVM:
                                                                                            self.dvm_config.NIP89.name,
                                                                                            self.client, self.dvm_config)
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
-
 
                 if zapped_event is not None:
                     if zapped_event.kind() == EventDefinitions.KIND_FEEDBACK:
@@ -201,10 +203,8 @@ class DVM:
 
                             # if a reaction by us got zapped
 
-                        task_supported, task, duration = check_task_is_supported(job_event,
-                                                                                 client=self.client,
-                                                                                 get_duration=False,
-                                                                                 config=self.dvm_config)
+                        task_supported, task = check_task_is_supported(job_event, client=self.client,
+                                                                       config=self.dvm_config)
                         if job_event is not None and task_supported:
                             print("Zap received for NIP90 task: " + str(invoice_amount) + " Sats from " + str(
                                 user.name))
@@ -257,8 +257,7 @@ class DVM:
                 print("[" + self.dvm_config.NIP89.name + "] Error during content decryption: " + str(e))
 
         def check_event_has_not_unfinished_job_input(nevent, append, client, dvmconfig):
-            task_supported, task, duration = check_task_is_supported(nevent, client, False,
-                                                                     config=dvmconfig)
+            task_supported, task = check_task_is_supported(nevent, client, config=dvmconfig)
             if not task_supported:
                 return False
 
@@ -312,6 +311,7 @@ class DVM:
                     break
 
             try:
+
                 post_processed_content = post_process_result(data, original_event)
                 send_nostr_reply_event(post_processed_content, original_event_str)
             except Exception as e:

@@ -91,7 +91,11 @@ def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
     try:
         res = requests.post(url, json=data, headers=headers)
         obj = json.loads(res.text)
-        return obj["payment_request"], obj["payment_hash"]
+        if obj.get("payment_request") and obj.get("payment_hash"):
+            return obj["payment_request"], obj["payment_hash"]#
+        else:
+            print(res.text)
+            return None, None
     except Exception as e:
         print("LNBITS: " + str(e))
         return None, None
@@ -121,7 +125,10 @@ def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
     try:
         res = requests.get(url, headers=headers)
         obj = json.loads(res.text)
-        return obj["paid"]
+        if obj.get("paid"):
+            return obj["paid"]
+        else:
+            return False
     except Exception as e:
         return None
 
@@ -133,7 +140,10 @@ def pay_bolt11_ln_bits(bolt11: str, config: DVMConfig):
     try:
         res = requests.post(url, json=data, headers=headers)
         obj = json.loads(res.text)
-        return obj["payment_hash"]
+        if obj.get("payment_hash"):
+            return obj["payment_hash"]
+        else:
+            return "Error"
     except Exception as e:
         print("LNBITS: " + str(e))
         return None, None

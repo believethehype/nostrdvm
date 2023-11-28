@@ -100,18 +100,21 @@ class Bot:
 
                     elif user.balance >= required_amount or required_amount == 0:
                         command = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
-                        input = command.split("-")[0].rstrip()
+                        input = command.split(" -")[0].rstrip()
+                        input_type = "text"
+                        if input.startswith("http"):
+                            input_type = "url"
 
-                        i_tag = Tag.parse(["i", input, "text"])
-                        bid = str(self.dvm_config.SUPPORTED_DVMS[index].COST * 1000)
-                        bid_tag = Tag.parse(['bid', bid, bid])
+                        i_tag = Tag.parse(["i", input, input_type])
+                        #bid = str(self.dvm_config.SUPPORTED_DVMS[index].COST * 1000)
+                        #bid_tag = Tag.parse(['bid', bid, bid])
                         relays_tag = Tag.parse(["relays", json.dumps(self.dvm_config.RELAY_LIST)])
                         alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
 
-                        tags = [i_tag.as_vec(), bid_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
+                        tags = [i_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
 
                         remaining_text = command.replace(input, "")
-                        params = remaining_text.rstrip().split("-")
+                        params = remaining_text.split(" -")
 
                         for i in params:
                             if i != " ":
