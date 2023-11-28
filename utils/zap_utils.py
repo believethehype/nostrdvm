@@ -1,4 +1,4 @@
-# LIGHTNING FUNCTIONS
+# LIGHTNING/CASHU/ZAP FUNCTIONS
 import base64
 import json
 import os
@@ -11,7 +11,7 @@ from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag,
 
 from utils.database_utils import get_or_add_user
 from utils.dvmconfig import DVMConfig
-from utils.nostr_utils import get_event_by_id, check_and_decrypt_tags, check_and_decrypt_own_tags
+from utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
 import lnurl
 from hashlib import sha256
 
@@ -240,15 +240,12 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
 
 def parse_cashu(cashu_token):
     try:
-        try:
-            prefix = "cashuA"
-            assert cashu_token.startswith(prefix), Exception(
-                f"Token prefix not valid. Expected {prefix}."
-            )
-            token_base64 = cashu_token[len(prefix):]
-            cashu = json.loads(base64.urlsafe_b64decode(token_base64))
-        except Exception as e:
-            print(e)
+        prefix = "cashuA"
+        assert cashu_token.startswith(prefix), Exception(
+            f"Token prefix not valid. Expected {prefix}."
+        )
+        token_base64 = cashu_token[len(prefix):]
+        cashu = json.loads(base64.urlsafe_b64decode(token_base64))
 
         token = cashu["token"][0]
         proofs = token["proofs"]

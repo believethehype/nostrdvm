@@ -1,6 +1,8 @@
 import json
 from threading import Thread
 
+from nostr_sdk import Keys
+
 from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Announcement, NIP89Config
@@ -26,6 +28,8 @@ class DVMTaskInterface:
     def init(self, name, dvm_config, admin_config=None, nip89config=None):
         self.NAME = name
         self.PRIVATE_KEY = dvm_config.PRIVATE_KEY
+        if dvm_config.PUBLIC_KEY == "" or dvm_config.PUBLIC_KEY is None:
+            dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
         self.PUBLIC_KEY = dvm_config.PUBLIC_KEY
         if dvm_config.COST is not None:
             self.COST = dvm_config.COST
@@ -50,9 +54,11 @@ class DVMTaskInterface:
         nip89.content = nip89config.CONTENT
         return nip89
 
-    def is_input_supported(self, input_type, input_content) -> bool:
+    def is_input_supported(self, tags) -> bool:
         """Check if input is supported for current Task."""
         pass
+
+
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None) -> dict:
         """Parse input into a request form that will be given to the process method"""

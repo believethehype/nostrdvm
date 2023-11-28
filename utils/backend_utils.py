@@ -7,8 +7,8 @@ from utils.definitions import EventDefinitions
 from utils.nostr_utils import get_event_by_id
 
 
-def get_task(event, client, dvmconfig):
-    if event.kind() == EventDefinitions.KIND_NIP90_GENERIC:  # use this for events that have no id yet
+def get_task(event, client, dvm_config):
+    if event.kind() == EventDefinitions.KIND_NIP90_GENERIC:  # use this for events that have no id yet, inclufr j tag
         for tag in event.tags():
             if tag.as_vec()[0] == 'j':
                 return tag.as_vec()[1]
@@ -32,7 +32,7 @@ def get_task(event, client, dvmconfig):
                     else:
                         return "unknown job"
                 elif tag.as_vec()[2] == "event":
-                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvmconfig)
+                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
                     if evt is not None:
                         if evt.kind() == 1063:
                             for tg in evt.tags():
@@ -44,14 +44,32 @@ def get_task(event, client, dvmconfig):
                                         return "unknown job"
                         else:
                             return "unknown type"
-
-    elif event.kind() == EventDefinitions.KIND_NIP90_TRANSLATE_TEXT:
-        return "translation"
-    elif event.kind() == EventDefinitions.KIND_NIP90_GENERATE_IMAGE:
-        return "text-to-image"
-
+    #  TODO if a task can consist of multiple inputs add them here
+    #  else if kind is supported, simply return task
     else:
+        for dvm in dvm_config.SUPPORTED_DVMS:
+            if dvm.KIND == event.kind():
+                return dvm.TASK
         return "unknown type"
+
+
+def is_input_supported__generic(tags, client, dvm_config) -> bool:
+      for tag in tags:
+            if tag.as_vec()[0] == 'i':
+                if len(tag.as_vec()) < 3:
+                    print("Job Event missing/malformed i tag, skipping..")
+                    return False
+            else:
+                input_value = tag.as_vec()[1]
+                input_type = tag.as_vec()[2]
+
+                if input_type == "event":
+                    evt = get_event_by_id(input_value, client=client, config=dvm_config)
+                    if evt is None:
+                        print("Event not found")
+
+      return True
+
 
 
 def check_task_is_supported(event: Event, client, get_duration=False, config=None):
@@ -60,24 +78,19 @@ def check_task_is_supported(event: Event, client, get_duration=False, config=Non
         input_value = ""
         input_type = ""
         duration = 1
-        task = get_task(event, client=client, dvmconfig=dvm_config)
+        task = get_task(event, client=client, dvm_config=dvm_config)
+
+        if not is_input_supported__generic(event.tags(), client, dvm_config):
+            return False, "", 0
+
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
-                if len(tag.as_vec()) < 3:
-                    print("Job Event missing/malformed i tag, skipping..")
-                    return False, "", 0
-                else:
-                    input_value = tag.as_vec()[1]
-                    input_type = tag.as_vec()[2]
-                    if input_type == "event":
-                        evt = get_event_by_id(input_value, client=client, config=dvm_config)
-                        if evt is None:
-                            print("Event not found")
-                            return False, "", 0
-                    elif input_type == 'url' and check_url_is_readable(input_value) is None:
-                        print("Url not readable / supported")
-                        return False, task, duration  #
+                input_value = tag.as_vec()[1]
+                input_type = tag.as_vec()[2]
+                if input_type == 'url' and check_url_is_readable(input_value) is None:
+                    print("Url not readable / supported")
+                    return False, task, duration  #
 
             elif tag.as_vec()[0] == 'output':
                 # TODO move this to individual modules
@@ -90,14 +103,13 @@ def check_task_is_supported(event: Event, client, get_duration=False, config=Non
                     print("Output format not supported, skipping..")
                     return False, "", 0
 
+        if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS):
+            return False, task, duration
 
         for dvm in dvm_config.SUPPORTED_DVMS:
             if dvm.TASK == task:
-                if not dvm.is_input_supported(input_type, event.content()):
+                if not dvm.is_input_supported(event.tags()):
                     return False, task, duration
-
-        if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS):
-            return False, task, duration
 
         return True, task, duration
 
