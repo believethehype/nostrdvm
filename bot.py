@@ -198,7 +198,6 @@ class Bot:
                         params = json.loads(tags_str)
                         params.append(Tag.parse(["p", ptag]).as_vec())
                         params.append(Tag.parse(["encrypted"]).as_vec())
-                        print(params)
                         event_as_json = json.loads(nostr_event.as_json())
                         event_as_json['tags'] = params
                         event_as_json['content'] = ""
