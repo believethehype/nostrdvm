@@ -6,6 +6,7 @@ from nostr_sdk import PublicKey, Keys
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from tasks.imagegeneration_sdxl import ImageGenerationSDXL
+from tasks.textextraction_whisperx import SpeechToTextWhisperX
 from tasks.textextractionpdf import TextExtractionPDF
 from tasks.translation import Translation
 from utils.admin_utils import AdminConfig
@@ -43,7 +44,6 @@ admin_config.REBROADCAST_NIP89 = False
 def build_pdf_extractor(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     # Add NIP89
@@ -65,7 +65,6 @@ def build_pdf_extractor(name):
 def build_translator(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -98,7 +97,6 @@ def build_translator(name):
 def build_unstable_diffusion(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = "" #This one will not use Lnbits to create invoices, but rely on zaps
     dvm_config.LNBITS_URL = ""
 
@@ -128,11 +126,42 @@ def build_unstable_diffusion(name):
     return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
+def build_whisperx(name):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY4")
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+
+    # A module might have options it can be initialized with, here we set a default model, and the nova-server
+    # address it should use. These parameters can be freely defined in the task component
+    options = {'default_model': "base", 'nova_server': os.getenv("NOVA_SERVER")}
+
+    nip90params = {
+        "model": {
+            "required": False,
+            "values": ["base","tiny","small","medium","large-v1","large-v2","tiny.en","base.en","small.en","medium.en"]
+        },
+        "alignment": {
+            "required": False,
+            "values": ["raw", "segment","word"]
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "about": "I am a test dvm to extract text from media files (very beta)",
+        "nip90Params": nip90params
+    }
+    nip89config = NIP89Config()
+    nip89config.DTAG = os.getenv("TASK_SPEECH_TO_TEXT_NIP89")
+    nip89config.CONTENT = json.dumps(nip89info)
+    return SpeechToTextWhisperX(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                               admin_config=admin_config, options=options)
+
 
 def build_sketcher(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY2")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -168,7 +197,6 @@ def build_sketcher(name):
 def build_dalle(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY3")
-    dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     profit_in_sats = 10

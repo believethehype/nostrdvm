@@ -96,15 +96,18 @@ class Bot:
 
                     else:
                         command = decrypted_text.replace(decrypted_text.split(' ')[0] + " ", "")
-                        input = command.split("-")[0].rstrip()
+                        input = command.split(" -")[0].rstrip()
+                        input_type = "text"
+                        if input.startswith("http"):
+                            input_type = "url"
 
-                        i_tag = Tag.parse(["i", input, "text"])
-                        bid = str(self.dvm_config.SUPPORTED_DVMS[index].COST * 1000)
-                        bid_tag = Tag.parse(['bid', bid, bid])
+                        i_tag = Tag.parse(["i", input, input_type])
+                        #bid = str(self.dvm_config.SUPPORTED_DVMS[index].COST * 1000)
+                        #bid_tag = Tag.parse(['bid', bid, bid])
                         relays_tag = Tag.parse(["relays", json.dumps(self.dvm_config.RELAY_LIST)])
                         alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
 
-                        tags = [i_tag.as_vec(), bid_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
+                        tags = [i_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
 
                         remaining_text = command.replace(input, "")
                         print(remaining_text)
@@ -189,7 +192,7 @@ class Bot:
 
                 content = nostr_event.content()
                 if is_encrypted:
-                    if ptag == self.dvm_config.PUBLIC_KEY:
+                    if ptag == self.keys.public_key().to_hex():
                         tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
                                                  nostr_event.pubkey(), nostr_event.content())
                         params = json.loads(tags_str)
@@ -309,7 +312,7 @@ class Bot:
                     self.job_list.remove(entry)
                     content = nostr_event.content()
                     if is_encrypted:
-                        if ptag == self.dvm_config.PUBLIC_KEY:
+                        if ptag == self.keys.public_key().to_hex():
                             content = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), content)
                         else:
                             return
@@ -333,7 +336,6 @@ class Bot:
                                                                                            self.client, self.dvm_config)
 
                 user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
-                print("ZAPED EVENT: " + zapped_event.as_json())
                 if zapped_event is not None:
                     if not anon:
                         print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
