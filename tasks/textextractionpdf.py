@@ -23,16 +23,19 @@ Params:  None
 class TextExtractionPDF(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
-    COST: int = 0
+    COST: float = 0
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-
-    def is_input_supported(self, input_type, input_content):
-        if input_type != "url" and input_type != "event":
-            return False
+    def is_input_supported(self, tags):
+        for tag in tags:
+            if tag.as_vec()[0] == 'i':
+                input_value = tag.as_vec()[1]
+                input_type = tag.as_vec()[2]
+                if input_type != "url" and input_type != "event":
+                    return False
         return True
 
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):

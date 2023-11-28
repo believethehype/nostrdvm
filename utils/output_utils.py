@@ -17,80 +17,85 @@ Post process results to either given output format or a Nostr readable plain tex
 def post_process_result(anno, original_event):
     print("Post-processing...")
     if isinstance(anno, pandas.DataFrame):  # if input is an anno we parse it to required output format
-        for tag in original_event.tags:
+        print("Pandas Dataframe...")
+        has_output_tag = False
+        output_format = "text/plain"
+
+        for tag in original_event.tags():
             if tag.as_vec()[0] == "output":
                 output_format = tag.as_vec()[1]
-                print("requested output is " + str(tag.as_vec()[1]) + "...")
-                try:
-                    if output_format == "text/plain":
-                        result = ""
-                        for each_row in anno['name']:
-                            if each_row is not None:
-                                for i in str(each_row).split('\n'):
-                                    result = result + i + "\n"
-                        result = replace_broken_words(
-                            str(result).replace("\"", "").replace('[', "").replace(']',
-                                                                                   "").lstrip(None))
-                        return result
+                has_output_tag = True
+                print("requested output is " + str(output_format) + "...")
 
-                    elif output_format == "text/vtt":
-                        print(str(anno))
-                        result = "WEBVTT\n\n"
-                        for element in anno:
-                            name = element["name"]  # name
-                            start = float(element["from"])
-                            convertstart = str(datetime.timedelta(seconds=start))
-                            end = float(element["to"])
-                            convertend = str(datetime.timedelta(seconds=end))
-                            print(str(convertstart) + " --> " + str(convertend))
-                            cleared_name = str(name).lstrip("\'").rstrip("\'")
-                            result = result + str(convertstart) + " --> " + str(
-                                convertend) + "\n" + cleared_name + "\n\n"
-                        result = replace_broken_words(
-                            str(result).replace("\"", "").replace('[', "").replace(']',
-                                                                                   "").lstrip(None))
-                        return result
-
-                    elif output_format == "text/json" or output_format == "json":
-                        # result = json.dumps(json.loads(anno.data.to_json(orient="records")))
-                        result = replace_broken_words(json.dumps(anno.data.tolist()))
-                        return result
-                    # TODO add more
-                    else:
-                        result = ""
-                        for element in anno.data:
-                            element["name"] = str(element["name"]).lstrip()
-                            element["from"] = (format(float(element["from"]), '.2f')).lstrip()  # name
-                            element["to"] = (format(float(element["to"]), '.2f')).lstrip()  # name
-                            result = result + "(" + str(element["from"]) + "," + str(element["to"]) + ")" + " " + str(
-                                element["name"]) + "\n"
-
-                        print(result)
-                        result = replace_broken_words(result)
-                        return result
-
-                except Exception as e:
-                    print(e)
-                    result = replace_broken_words(str(anno.data))
+        if has_output_tag:
+            print("Output Tag found: " + output_format)
+            try:
+                if output_format == "text/plain":
+                    result = pandas_to_plaintext(anno)
+                    result = replace_broken_words(
+                    str(result).replace("\"", "").replace('[', "").replace(']',
+                                                                               "").lstrip(None))
                     return result
 
-        else:
-            result = ""
-            for element in anno.data:
-                element["name"] = str(element["name"]).lstrip()
-                element["from"] = (format(float(element["from"]), '.2f')).lstrip()  # name
-                element["to"] = (format(float(element["to"]), '.2f')).lstrip()  # name
-                result = result + "(" + str(element["from"]) + "," + str(element["to"]) + ")" + " " + str(
-                    element["name"]) + "\n"
+                elif output_format == "text/vtt":
+                    print(str(anno))
+                    result = "WEBVTT\n\n"
+                    for element in anno:
+                        name = element["name"]  # name
+                        start = float(element["from"])
+                        convertstart = str(datetime.timedelta(seconds=start))
+                        end = float(element["to"])
+                        convertend = str(datetime.timedelta(seconds=end))
+                        print(str(convertstart) + " --> " + str(convertend))
+                        cleared_name = str(name).lstrip("\'").rstrip("\'")
+                        result = result + str(convertstart) + " --> " + str(
+                            convertend) + "\n" + cleared_name + "\n\n"
+                    result = replace_broken_words(
+                        str(result).replace("\"", "").replace('[', "").replace(']',
+                                                                               "").lstrip(None))
+                    return result
 
+                elif output_format == "text/json" or output_format == "json":
+                    # result = json.dumps(json.loads(anno.data.to_json(orient="records")))
+                    result = replace_broken_words(json.dumps(anno.data.tolist()))
+                    return result
+                # TODO add more
+                else:
+                    print("Pandas Dataframe but output tag not supported.. falling back to default..")
+                    result = pandas_to_plaintext(anno)
+                    print(result)
+                    result = str(result).replace("\"", "").replace('[', "").replace(']',
+                                                                                    "").lstrip(None)
+                    return result
+
+            except Exception as e:
+                print(e)
+                result = replace_broken_words(str(anno.data))
+                return result
+
+        else:
+            print("Pandas Dataframe but no output tag set.. falling back to default..")
+            result = pandas_to_plaintext(anno)
             print(result)
-            result = replace_broken_words(result)
+            result = str(result).replace("\"", "").replace('[', "").replace(']',
+                                                                               "").lstrip(None)
             return result
     elif isinstance(anno, NoneType):
         return "An error occurred"
     else:
+        print("Nonetype")
         result = replace_broken_words(anno)  # TODO
         return result
+
+
+def pandas_to_plaintext(anno):
+    result = ""
+    for each_row in anno['name']:
+        if each_row is not None:
+            for i in str(each_row).split('\n'):
+                result = result + i + "\n"
+    return result
+
 
 
 '''

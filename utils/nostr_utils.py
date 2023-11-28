@@ -1,7 +1,6 @@
 import json
-import typing
 from datetime import timedelta
-from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, EventBuilder
+from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
@@ -19,6 +18,7 @@ def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
         id_filter = Filter().id(event_id).limit(1)
         events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
+
         return events[0]
     else:
         return None
@@ -42,23 +42,26 @@ def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | N
 
 
 def send_event(event: Event, client: Client, dvm_config) -> EventId:
-    relays = []
+    try:
+        relays = []
 
-    for tag in event.tags():
-        if tag.as_vec()[0] == 'relays':
-            relays = tag.as_vec()[1].split(',')
+        for tag in event.tags():
+            if tag.as_vec()[0] == 'relays':
+                relays = tag.as_vec()[1].split(',')
 
-    for relay in relays:
-        if relay not in dvm_config.RELAY_LIST:
-            client.add_relay(relay)
+        for relay in relays:
+            if relay not in dvm_config.RELAY_LIST:
+                client.add_relay(relay)
 
-    event_id = client.send_event(event)
+        event_id = client.send_event(event)
 
-    for relay in relays:
-        if relay not in dvm_config.RELAY_LIST:
-            client.remove_relay(relay)
+        for relay in relays:
+            if relay not in dvm_config.RELAY_LIST:
+                client.remove_relay(relay)
 
-    return event_id
+        return event_id
+    except Exception as e:
+        print(e)
 
 
 def check_and_decrypt_tags(event, dvm_config):

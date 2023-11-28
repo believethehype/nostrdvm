@@ -160,3 +160,8 @@ cython_debug/
 #.idea/
 .DS_Store
 *.db
+outputs/yt.mp3
+.\outputs\audio.mp3
+.\outputs\/yt.mp3
+.\outputs\audio.mp3
+.\outputs\/yt.mp3
