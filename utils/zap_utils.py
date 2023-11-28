@@ -281,7 +281,7 @@ def parse_cashu(cashu_token: str):
 def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
     proofs, mint, redeem_invoice_amount, total_amount = parse_cashu(cashu)
     fees = total_amount - redeem_invoice_amount
-    if redeem_invoice_amount <= required_amount:
+    if redeem_invoice_amount < required_amount:
         err = ("Token value (Payment: " + str(total_amount) + " Sats. Fees: " +
                str(fees) + " Sats) below required amount of  " + str(required_amount)
                + " Sats. Cashu token has not been claimed.")
@@ -308,7 +308,7 @@ def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
         is_paid = tree["paid"] if tree.get("paid") else False
         print(is_paid)
         if is_paid:
-            print("token redeemed")
+            print("cashu token redeemed")
             return True, "success"
         else:
             msg = tree.get("detail").split('.')[0].strip() if tree.get("detail") else None
