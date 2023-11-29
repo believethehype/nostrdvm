@@ -1,11 +1,5 @@
 import json
-import os
-import time
-from multiprocessing.pool import ThreadPool
-from threading import Thread
 
-from backends.nova_server import check_nova_server_status, send_request_to_nova_server
-from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions

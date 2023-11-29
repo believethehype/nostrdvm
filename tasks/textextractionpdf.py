@@ -1,9 +1,7 @@
 import json
 import os
 import re
-from threading import Thread
 
-from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions

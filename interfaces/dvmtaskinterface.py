@@ -6,7 +6,7 @@ from nostr_sdk import Keys
 from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Announcement, NIP89Config
-from dvm import DVM
+from core.dvm import DVM
 
 
 class DVMTaskInterface:
