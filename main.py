@@ -11,7 +11,8 @@ from nostr_sdk import Keys
 from bot.bot import Bot
 from playground import build_pdf_extractor, build_googletranslator, build_unstable_diffusion, build_sketcher, \
     build_dalle, \
-    build_whisperx, build_libretranslator
+    build_whisperx, build_libretranslator, build_external_dvm
+from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 
 
@@ -73,8 +74,19 @@ def run_nostr_dvm_with_local_config():
         bot_config.SUPPORTED_DVMS.append(dalle)
         dalle.run()
 
-    bot = Bot(bot_config)
-    bot.run()
+    # Spawn DVM7.. oh wait, actually we don't spawn a new DVM, we use the dvmtaskinterface to define an external dvm by providing some info about it, such as
+    # their pubkey, a name, task, kind etc.
+
+    libretranslate_external = build_external_dvm(name="External DVM test",
+                                                 pubkey="08fd6bdb17cb2c8a87f8d50653238cb46e26cd44948c474f51dae5f138609da6",
+                                                 task="translation",
+                                                 kind=EventDefinitions.KIND_NIP90_TRANSLATE_TEXT,
+                                                 fix_cost=0, per_unit_cost=0)
+    bot_config.SUPPORTED_DVMS.append(libretranslate_external)
+    #Don't run it, it's on someone else's machine and we simply make the bot aware of it.
+
+    Bot(bot_config)
+
 
     # Keep the main function alive for libraries that require it, like openai
     try:

@@ -9,15 +9,16 @@ from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNot
                        Options, Tag, Event, nip04_encrypt)
 
 from utils.admin_utils import admin_make_database_updates
-from utils.backend_utils import get_amount_per_task
 from utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table, User
 from utils.definitions import EventDefinitions
+from utils.nip89_utils import nip89_fetch_events_pubkey
 from utils.nostr_utils import send_event
 from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap
 
 
 class Bot:
     job_list: list
+
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
     def __init__(self, dvm_config, admin_config=None):
         self.NAME = "Bot"
@@ -85,33 +86,25 @@ class Bot:
 
                 if decrypted_text[0].isdigit():
                     index = int(decrypted_text.split(' ')[0]) - 1
-                    task = self.dvm_config.SUPPORTED_DVMS[index].TASK
-
 
                     if decrypted_text.split(" ")[1].lower() == "info":
-                        nip89 = self.dvm_config.SUPPORTED_DVMS[index].dvm_config.NIP89
-
-
-                        nip89content = json.loads(nip89.content)
-                        info = ""
-                        if nip89content.get("name"):
-                            info += "Name: " + nip89content.get("name") + "\n"
-                            info += nip89content.get("image")+ "\n"
-                            info += "About:\n" + nip89content.get("about") + "\n"
-                            params = nip89content["nip90Params"]
-                            print(params)
-                            info += "\nParameters:\n"
-                            for param in params:
-                                info += "-" + param + '\n'
-                                info += "Required: " + str(params[param]['required']) + '\n'
-                                info += "Possible Values: " + json.dumps(params[param]['values']) + '\n\n'
+                        info = print_dvm_info(self.client, index)
+                        time.sleep(2.0)
+                        if info is not None:
                             evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
                                                                         info, None).to_event(self.keys)
-                            send_event(evt, client=self.client, dvm_config=dvm_config)
+                        else:
+                            evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                                                                        "No NIP89 Info found for " +
+                                                                        self.dvm_config.SUPPORTED_DVMS[index].NAME,
+                                                                        None).to_event(self.keys)
 
-                        print(nip89content)
+                        send_event(evt, client=self.client, dvm_config=dvm_config)
+
                     else:
-                        print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) + ", Balance: "
+                        task = self.dvm_config.SUPPORTED_DVMS[index].TASK
+                        print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(
+                            user.nip05) + ", Balance: "
                               + str(user.balance) + " Sats) Task: " + str(task))
 
                         if user.isblacklisted:
@@ -129,13 +122,10 @@ class Bot:
                                 input_type = "url"
 
                             i_tag = Tag.parse(["i", input, input_type])
-                            #bid = str(self.dvm_config.SUPPORTED_DVMS[index].FIX_COST * 1000)
-                            #bid_tag = Tag.parse(['bid', bid, bid])
                             relays_tag = Tag.parse(["relays", json.dumps(self.dvm_config.RELAY_LIST)])
                             alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
 
                             tags = [i_tag.as_vec(), relays_tag.as_vec(), alt_tag.as_vec()]
-
                             remaining_text = command.replace(input, "")
                             print(remaining_text)
                             params = remaining_text.rstrip().split(" -")
@@ -269,7 +259,8 @@ class Bot:
                             amount_msats = int(tag.as_vec()[1])
                             amount = int(amount_msats / 1000)
                             entry = next((x for x in self.job_list if x['event_id'] == etag), None)
-                            if entry is not None and entry['is_paid'] is False and entry['dvm_key'] == nostr_event.pubkey().to_hex():
+                            if entry is not None and entry['is_paid'] is False and entry[
+                                'dvm_key'] == nostr_event.pubkey().to_hex():
                                 # if we get a bolt11, we pay and move on
                                 user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                                        client=self.client, config=self.dvm_config)
@@ -287,18 +278,21 @@ class Bot:
                                                                                 + " Sats.\n",
                                                                                 None).to_event(self.keys)
 
-                                    print("[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
+                                    print(
+                                        "[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
                                     send_event(evt, client=self.client, dvm_config=dvm_config)
                                 else:
                                     print("Bot payment-required")
-                                    evt = EventBuilder.new_encrypted_direct_msg(self.keys, PublicKey.from_hex(entry["npub"]),
-                                                                                "Current balance: " + str(user.balance) + " Sats. Balance of "+ str(amount) +" Sats required. Please zap me with at least " +
+                                    evt = EventBuilder.new_encrypted_direct_msg(self.keys,
+                                                                                PublicKey.from_hex(entry["npub"]),
+                                                                                "Current balance: " + str(
+                                                                                    user.balance) + " Sats. Balance of " + str(
+                                                                                    amount) + " Sats required. Please zap me with at least " +
                                                                                 str(int(amount - user.balance))
                                                                                 + " Sats, then try again.",
                                                                                 None).to_event(self.keys)
                                     send_event(evt, client=self.client, dvm_config=dvm_config)
                                     return
-
 
                                 if len(tag.as_vec()) > 2:
                                     bolt11 = tag.as_vec()[2]
@@ -390,6 +384,28 @@ class Bot:
 
         self.client.handle_notifications(NotificationHandler())
 
+        def print_dvm_info(client, index):
+            pubkey = self.dvm_config.SUPPORTED_DVMS[index].dvm_config.PUBLIC_KEY
+            kind = self.dvm_config.SUPPORTED_DVMS[index].KIND
+            nip89content_str = nip89_fetch_events_pubkey(client, pubkey, kind)
+            print(nip89content_str)
+            if nip89content_str is not None:
+                nip89content = json.loads(nip89content_str)
+                info = ""
+                if nip89content.get("name"):
+                    info += "Name: " + nip89content.get("name") + "\n"
+                    info += nip89content.get("image") + "\n"
+                    info += "About:\n" + nip89content.get("about") + "\n"
+                    params = nip89content["nip90Params"]
+                    info += "\nParameters:\n"
+                    for param in params:
+                        info += "-" + param + '\n'
+                        info += "Required: " + str(params[param]['required']) + '\n'
+                        info += "Possible Values: " + json.dumps(params[param]['values']) + '\n\n'
+                    return info
+
+            return None
+
         try:
             while True:
                 time.sleep(1.0)
@@ -398,7 +414,3 @@ class Bot:
             os.kill(os.getpid(), signal.SIGTERM)
 
 
-    def run(self):
-        bot = Bot
-        nostr_dvm_thread = Thread(target=bot, args=[self.dvm_config])
-        nostr_dvm_thread.start()

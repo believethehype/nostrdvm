@@ -9,7 +9,7 @@ from utils.nostr_utils import get_event_by_id
 
 
 def input_data_file_duration(event, dvm_config, client, start=0, end=0):
-    print("[" + dvm_config.NIP89.name + "] Getting Duration of the Media file..")
+    print("[" + dvm_config.NIP89.NAME + "] Getting Duration of the Media file..")
     input_value = ""
     input_type = "url"
     for tag in event.tags():
@@ -17,11 +17,17 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
             input_value = tag.as_vec()[1]
             input_type = tag.as_vec()[2]
 
+    if input_type == "text":
+        #For now, ingore length of any text, just return 1.
+        return 1
+
     if input_type == "event":  # NIP94 event
         evt = get_event_by_id(input_value, client=client, config=dvm_config)
         if evt is not None:
             input_value, input_type = check_nip94_event_for_media(evt, input_value, input_type)
-
+            if input_type == "text":
+                # For now, ingore length of any text, just return 1.
+                return 1
 
     if input_type == "url":
         source_type = check_source_type(input_value)
@@ -46,9 +52,7 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     return 1
 
 
-
-
-def organize_input_data(input_value, input_type, start, end, dvm_config, client, process=True) -> str:
+def organize_input_data_to_audio(input_value, input_type, start, end, dvm_config, client) -> str:
     if input_type == "event":  # NIP94 event
         evt = get_event_by_id(input_value, client=client, config=dvm_config)
         if evt is not None:
@@ -71,7 +75,6 @@ def organize_input_data(input_value, input_type, start, end, dvm_config, client,
             convert_media_length(start, end, duration))
         print("New Duration of the Media file: " + str(new_duration))
 
-
         # TODO if already in a working format and time is 0 0, dont convert
         print("Converting from " + str(start_time) + " until " + str(end_time))
         # for now, we cut and convert all files to mp3
@@ -80,6 +83,7 @@ def organize_input_data(input_value, input_type, start, end, dvm_config, client,
         fs, x = ffmpegio.audio.read(filename, ss=start_time, to=end_time, sample_fmt='dbl', ac=1)
         ffmpegio.audio.write(final_filename, fs, x, overwrite=True)
         return final_filename
+
 
 def check_nip94_event_for_media(evt, input_value, input_type):
     # Parse NIP94 event for url, if found, use it.
@@ -91,6 +95,7 @@ def check_nip94_event_for_media(evt, input_value, input_type):
                 return input_value, input_type
 
     return input_value, input_type
+
 
 def convert_media_length(start: float, end: float, duration: float):
     if end == 0.0:

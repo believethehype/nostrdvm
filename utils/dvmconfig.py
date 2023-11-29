@@ -2,7 +2,7 @@ import os
 
 from nostr_sdk import Keys
 
-from utils.nip89_utils import NIP89Announcement
+from utils.nip89_utils import NIP89Config
 
 
 class DVMConfig:
@@ -22,7 +22,7 @@ class DVMConfig:
     LNBITS_URL = 'https://lnbits.com'
     DB: str
     NEW_USER_BALANCE: int = 250  # Free credits for new users
-    NIP89: NIP89Announcement
+    NIP89: NIP89Config
     SHOW_RESULT_BEFORE_PAYMENT: bool = False  # if this is true show results even when not paid right after autoprocess
 
 

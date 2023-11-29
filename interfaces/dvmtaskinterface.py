@@ -5,14 +5,14 @@ from nostr_sdk import Keys
 
 from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
-from utils.nip89_utils import NIP89Announcement, NIP89Config
+from utils.nip89_utils import NIP89Config
 from core.dvm import DVM
 
 
 class DVMTaskInterface:
     NAME: str
     KIND: int
-    TASK: str
+    TASK: str = ""
     FIX_COST: float = 0
     PER_UNIT_COST: float = 0
     PRIVATE_KEY: str
@@ -22,11 +22,11 @@ class DVMTaskInterface:
     admin_config: AdminConfig
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None,
-                 options=None):
-        self.init(name, dvm_config, admin_config, nip89config)
+                 options=None, task=None):
+        self.init(name, dvm_config, admin_config, nip89config, task)
         self.options = options
 
-    def init(self, name, dvm_config, admin_config=None, nip89config=None):
+    def init(self, name, dvm_config, admin_config=None, nip89config=None, task=None):
         self.NAME = name
         self.PRIVATE_KEY = dvm_config.PRIVATE_KEY
         if dvm_config.PUBLIC_KEY == "" or dvm_config.PUBLIC_KEY is None:
@@ -36,9 +36,15 @@ class DVMTaskInterface:
             self.FIX_COST = dvm_config.FIX_COST
         if dvm_config.PER_UNIT_COST is not None:
             self.PER_UNIT_COST = dvm_config.PER_UNIT_COST
+        if task is not None:
+            self.TASK = task
+
 
         dvm_config.SUPPORTED_DVMS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
+        if nip89config.KIND is not None:
+            self.KIND = nip89config.KIND
+
         dvm_config.NIP89 = self.NIP89_announcement(nip89config)
         self.dvm_config = dvm_config
         self.admin_config = admin_config
@@ -49,12 +55,12 @@ class DVMTaskInterface:
         nostr_dvm_thread.start()
 
     def NIP89_announcement(self, nip89config: NIP89Config):
-        nip89 = NIP89Announcement()
-        nip89.name = self.NAME
-        nip89.kind = self.KIND
-        nip89.pk = self.PRIVATE_KEY
-        nip89.dtag = nip89config.DTAG
-        nip89.content = nip89config.CONTENT
+        nip89 = NIP89Config()
+        nip89.NAME = self.NAME
+        nip89.KIND = self.KIND
+        nip89.PK = self.PRIVATE_KEY
+        nip89.DTAG = nip89config.DTAG
+        nip89.CONTENT = nip89config.CONTENT
         return nip89
 
     def is_input_supported(self, tags) -> bool:

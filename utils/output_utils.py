@@ -83,7 +83,6 @@ def post_process_result(anno, original_event):
     elif isinstance(anno, NoneType):
         return "An error occurred"
     else:
-        print("Nonetype")
         result = replace_broken_words(anno)  # TODO
         return result
 
