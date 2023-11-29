@@ -1,4 +1,6 @@
 import json
+import os
+import signal
 import time
 from datetime import timedelta
 from threading import Thread
@@ -88,6 +90,8 @@ class Bot:
 
                     if decrypted_text.split(" ")[1].lower() == "info":
                         nip89 = self.dvm_config.SUPPORTED_DVMS[index].dvm_config.NIP89
+
+
                         nip89content = json.loads(nip89.content)
                         info = ""
                         if nip89content.get("name"):
@@ -385,8 +389,14 @@ class Bot:
                 print("[" + self.NAME + "] Error during content decryption:" + str(e))
 
         self.client.handle_notifications(NotificationHandler())
-        while True:
-            time.sleep(1.0)
+
+        try:
+            while True:
+                time.sleep(1.0)
+        except KeyboardInterrupt:
+            print('Stay weird!')
+            os.kill(os.getpid(), signal.SIGKILL)
+            exit(1)
 
     def run(self):
         bot = Bot
