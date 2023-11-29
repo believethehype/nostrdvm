@@ -82,6 +82,7 @@ def run_nostr_dvm_with_local_config():
     except KeyboardInterrupt:
         print('Stay weird!')
         os.kill(os.getpid(), signal.SIGKILL)
+        exit(1)
 
 
 if __name__ == '__main__':
