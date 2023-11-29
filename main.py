@@ -80,7 +80,6 @@ def run_nostr_dvm_with_local_config():
         while True:
             time.sleep(10)
     except KeyboardInterrupt:
-        print('Stay weird!')
         os.kill(os.getpid(), signal.SIGKILL)
         exit(1)
 
