@@ -56,6 +56,7 @@ def run_nostr_dvm_with_local_config():
         sketcher = build_sketcher("Sketcher")
         bot_config.SUPPORTED_DVMS.append(sketcher)  # We also add Sketcher to the bot
         sketcher.run()
+    # Spawn DVM5, Another script on nova-server calling WhisperX to transcribe media files
 
     if os.getenv("NOVA_SERVER") is not None and os.getenv("NOVA_SERVER") != "":
         whisperer = build_whisperx("Whisperer")
@@ -64,7 +65,7 @@ def run_nostr_dvm_with_local_config():
 
 
 
-    # Spawn DVM5, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
+    # Spawn DVM6, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
     # per call. Make sure you have enough balance and the DVM's cost is set higher than what you pay yourself, except, you know,
     # you're being generous.
     if os.getenv("OPENAI_API_KEY") is not None and os.getenv("OPENAI_API_KEY") != "":
