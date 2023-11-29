@@ -11,6 +11,7 @@ from tasks.textextractionpdf import TextExtractionPDF
 from tasks.translation_google import TranslationGoogle
 from tasks.translation_libretranslate import TranslationLibre
 from utils.admin_utils import AdminConfig
+from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config
 
@@ -93,8 +94,7 @@ def build_googletranslator(name):
     nip89config = NIP89Config()
     nip89config.DTAG = os.getenv("TASK_TRANSLATION_NIP89_DTAG")
     nip89config.CONTENT = json.dumps(nip89info)
-    return TranslationGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                             admin_config=admin_config)
+    return TranslationGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
 def build_libretranslator(name):
@@ -160,7 +160,7 @@ def build_unstable_diffusion(name):
     nip89config = NIP89Config()
     nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG")
     nip89config.CONTENT = json.dumps(nip89info)
-    return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
+    return ImageGenerationSDXL(name=name, dvm_config=dvm_config,  nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
 
@@ -194,7 +194,7 @@ def build_whisperx(name):
     nip89config = NIP89Config()
     nip89config.DTAG = os.getenv("TASK_SPEECH_TO_TEXT_NIP89")
     nip89config.CONTENT = json.dumps(nip89info)
-    return SpeechToTextWhisperX(name=name, dvm_config=dvm_config, nip89config=nip89config,
+    return SpeechToTextWhisperX(name=name, dvm_config=dvm_config,  nip89config=nip89config,
                                 admin_config=admin_config, options=options)
 
 
@@ -229,7 +229,7 @@ def build_sketcher(name):
     nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG2")
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
-    return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
+    return ImageGenerationSDXL(name=name, dvm_config=dvm_config,  nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
 
@@ -261,20 +261,22 @@ def build_dalle(name):
     nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG3")
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
-    return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                admin_config=admin_config)
+    return ImageGenerationDALLE(name=name, dvm_config=dvm_config,  nip89config=nip89config, admin_config=admin_config)
 
 
-def external_dvm(name, pubkey):
+def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost):
     dvm_config = DVMConfig()
-    dvm_config.PUBLIC_KEY = Keys.from_public_key(pubkey).public_key().to_hex()
+    dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
+    dvm_config.FIX_COST = fix_cost
+    dvm_config.PER_UNIT_COST = per_unit_cost
     nip89info = {
         "name": name,
     }
     nip89config = NIP89Config()
+    nip89config.KIND = kind
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config)
+    return DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config, task=task)
 
 
 # Little Gimmick:

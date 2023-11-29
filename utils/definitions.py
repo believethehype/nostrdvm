@@ -5,6 +5,7 @@ from nostr_sdk import Event
 class EventDefinitions:
     KIND_DM: int = 4
     KIND_ZAP: int = 9735
+    KIND_ANNOUNCEMENT: int = 31990
     KIND_NIP94_METADATA: int = 1063
     KIND_FEEDBACK: int = 7000
     KIND_NIP90_EXTRACT_TEXT = 5000

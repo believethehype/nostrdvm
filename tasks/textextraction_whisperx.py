@@ -8,7 +8,7 @@ from backends.nova_server import check_nova_server_status, send_request_to_nova_
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
-from utils.mediasource_utils import organize_input_data
+from utils.mediasource_utils import organize_input_data_to_audio
 from utils.nip89_utils import NIP89Config
 from utils.definitions import EventDefinitions
 
@@ -102,7 +102,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                                 except:
                                     end_time = float(tag.as_vec()[3])
 
-        filepath = organize_input_data(url, input_type, start_time, end_time, dvm_config, client)
+        filepath = organize_input_data_to_audio(url, input_type, start_time, end_time, dvm_config, client)
         pathonserver = send_file_to_nova_server(filepath, self.options['nova_server'])
 
         io_input = {

@@ -24,8 +24,8 @@ class TranslationLibre(DVMTaskInterface):
     FIX_COST: float = 0
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
-                 admin_config: AdminConfig = None, options=None):
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+                 admin_config: AdminConfig = None, options=None, task=None):
+        super().__init__(name, dvm_config, nip89config, admin_config, options, task)
 
     def is_input_supported(self, tags):
         for tag in tags:
@@ -88,10 +88,10 @@ class TranslationLibre(DVMTaskInterface):
         reply = json.loads(response.text)
         if reply.get("translatedText"):
             translated_text = reply['translatedText']
-
-            confidence = reply["detectedLanguage"]['confidence']
-            language = reply["detectedLanguage"]['language']
-            print(translated_text + "language: " + language + "conf: " + confidence)
+            #untested
+            #confidence = reply["detectedLanguage"]['confidence']
+            #language = reply["detectedLanguage"]['language']
+            #print(translated_text + "language: " + language + "conf: " + confidence)
         else:
             return response.text
 

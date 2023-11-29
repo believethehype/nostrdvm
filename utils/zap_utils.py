@@ -86,7 +86,7 @@ def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
     if config.LNBITS_URL == "":
         return None
     url = config.LNBITS_URL + "/api/v1/payments"
-    data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM " + config.NIP89.name}
+    data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM " + config.NIP89.NAME}
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
         res = requests.post(url, json=data, headers=headers)
@@ -285,7 +285,7 @@ def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
         err = ("Token value (Payment: " + str(total_amount) + " Sats. Fees: " +
                str(fees) + " Sats) below required amount of  " + str(required_amount)
                + " Sats. Cashu token has not been claimed.")
-        print("[" + config.NIP89.name + "] " + err)
+        print("[" + config.NIP89.NAME + "] " + err)
         return False, err
 
     if config.LNBITS_INVOICE_KEY != "":

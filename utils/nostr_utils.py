@@ -78,7 +78,7 @@ def check_and_decrypt_tags(event, dvm_config):
 
         if is_encrypted:
             if p != dvm_config.PUBLIC_KEY:
-                print("[" + dvm_config.NIP89.name + "] Task encrypted and not addressed to this DVM, "
+                print("[" + dvm_config.NIP89.NAME + "] Task encrypted and not addressed to this DVM, "
                                                     "skipping..")
                 return None
 
@@ -111,7 +111,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
 
         if is_encrypted:
             if dvm_config.PUBLIC_KEY != event.pubkey().to_hex():
-                print("[" + dvm_config.NIP89.name + "] Task encrypted and not addressed to this DVM, "
+                print("[" + dvm_config.NIP89.NAME + "] Task encrypted and not addressed to this DVM, "
                                                     "skipping..")
                 return None
 
