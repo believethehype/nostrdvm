@@ -8,7 +8,7 @@ from threading import Thread
 import dotenv
 from nostr_sdk import Keys
 
-from bot import Bot
+from bot.bot import Bot
 from playground import build_pdf_extractor, build_googletranslator, build_unstable_diffusion, build_sketcher, \
     build_dalle, \
     build_whisperx, build_libretranslator

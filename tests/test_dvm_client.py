@@ -161,7 +161,7 @@ def nostr_client():
 
 if __name__ == '__main__':
 
-    env_path = Path('.env')
+    env_path = Path('../.env')
     if env_path.is_file():
         print(f'loading environment from {env_path.resolve()}')
         dotenv.load_dotenv(env_path, verbose=True, override=True)
