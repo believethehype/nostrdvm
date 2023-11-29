@@ -8,7 +8,8 @@ from tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from tasks.imagegeneration_sdxl import ImageGenerationSDXL
 from tasks.textextraction_whisperx import SpeechToTextWhisperX
 from tasks.textextractionpdf import TextExtractionPDF
-from tasks.translation import Translation
+from tasks.translation_google import TranslationGoogle
+from tasks.translation_libretranslate import TranslationLibre
 from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config
@@ -37,6 +38,8 @@ task, for example an address or an API key.
 # their NIP89 announcement
 admin_config = AdminConfig()
 admin_config.REBROADCAST_NIP89 = False
+
+
 # Set rebroadcast to true once you have set your NIP89 descriptions and d tags. You only need to rebroadcast once you
 # want to update your NIP89 descriptions
 
@@ -62,7 +65,7 @@ def build_pdf_extractor(name):
                              admin_config=admin_config)
 
 
-def build_translator(name):
+def build_googletranslator(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
@@ -83,21 +86,55 @@ def build_translator(name):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I translate text from given text/event/job. Currently using Google Translation Services to translate "
+        "about": "I translate text from given text/event/job. Currently using Google TranslationGoogle Services to translate "
                  "input into the language defined in params.",
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()
     nip89config.DTAG = os.getenv("TASK_TRANSLATION_NIP89_DTAG")
     nip89config.CONTENT = json.dumps(nip89info)
-    return Translation(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                       admin_config=admin_config)
+    return TranslationGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                             admin_config=admin_config)
+
+
+def build_libretranslator(name):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY5")
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+
+    options = {'libre_end_point': os.getenv("LIBRE_TRANSLATE_ENDPOINT"),
+               'libre_api_key': os.getenv("LIBRE_TRANSLATE_API_KEY")}
+    nip90params = {
+        "language": {
+            "required": False,
+            "values": ["en", "az", "be", "bg", "bn", "bs", "ca", "ceb", "co", "cs", "cy", "da", "de", "el", "eo", "es",
+                       "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "hi", "hmn", "hr", "ht",
+                       "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky",
+                       "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl",
+                       "no", "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl", "sm", "sn", "so",
+                       "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tl", "tr", "ug", "uk", "ur", "uz",
+                       "vi", "xh", "yi", "yo", "zh", "zu"]
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "about": "I translate text from given text/event/job using LibreTranslate Services to translate "
+                 "input into the language defined in params.",
+        "nip90Params": nip90params
+    }
+    nip89config = NIP89Config()
+    nip89config.DTAG = os.getenv("TASK_TRANSLATION_NIP89_DTAG6")
+    nip89config.CONTENT = json.dumps(nip89info)
+    return TranslationLibre(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                            admin_config=admin_config, options=options)
 
 
 def build_unstable_diffusion(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
-    dvm_config.LNBITS_INVOICE_KEY = "" #This one will not use Lnbits to create invoices, but rely on zaps
+    dvm_config.LNBITS_INVOICE_KEY = ""  # This one will not use Lnbits to create invoices, but rely on zaps
     dvm_config.LNBITS_URL = ""
 
     # A module might have options it can be initialized with, here we set a default model, and the nova-server
@@ -126,6 +163,7 @@ def build_unstable_diffusion(name):
     return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
+
 def build_whisperx(name):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY4")
@@ -139,11 +177,12 @@ def build_whisperx(name):
     nip90params = {
         "model": {
             "required": False,
-            "values": ["base","tiny","small","medium","large-v1","large-v2","tiny.en","base.en","small.en","medium.en"]
+            "values": ["base", "tiny", "small", "medium", "large-v1", "large-v2", "tiny.en", "base.en", "small.en",
+                       "medium.en"]
         },
         "alignment": {
             "required": False,
-            "values": ["raw", "segment","word"]
+            "values": ["raw", "segment", "word"]
         }
     }
     nip89info = {
@@ -156,7 +195,7 @@ def build_whisperx(name):
     nip89config.DTAG = os.getenv("TASK_SPEECH_TO_TEXT_NIP89")
     nip89config.CONTENT = json.dumps(nip89info)
     return SpeechToTextWhisperX(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                               admin_config=admin_config, options=options)
+                                admin_config=admin_config, options=options)
 
 
 def build_sketcher(name):
@@ -236,6 +275,7 @@ def external_dvm(name, pubkey):
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config)
+
 
 # Little Gimmick:
 # For Dalle where we have to pay 4cent per image, we fetch current sat price in fiat

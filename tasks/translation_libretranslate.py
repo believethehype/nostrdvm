@@ -1,6 +1,8 @@
 import json
 from threading import Thread
 
+import requests
+
 from dvm import DVM
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
@@ -12,13 +14,13 @@ from utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
 """
 This File contains a Module to call Google Translate Services locally on the DVM Machine
 
-Accepted Inputs: Text, Events, Jobs (Text Extraction, Summary, Translation)
-Outputs: Text containing the Translation in the desired language.
+Accepted Inputs: Text, Events, Jobs (Text Extraction, Summary, TranslationGoogle)
+Outputs: Text containing the TranslationGoogle in the desired language.
 Params:  -language The target language
 """
 
 
-class Translation(DVMTaskInterface):
+class TranslationLibre(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_TRANSLATE_TEXT
     TASK: str = "translation"
     FIX_COST: float = 0
@@ -72,34 +74,27 @@ class Translation(DVMTaskInterface):
         return request_form
 
     def process(self, request_form):
-        from translatepy.translators.google import GoogleTranslate
-
         options = DVMTaskInterface.set_options(request_form)
-        gtranslate = GoogleTranslate()
-        length = len(options["text"])
+        request = {
+            "q":  options["text"],
+            "source": "auto",
+            "target":  options["language"]
+        }
+        if options["libre_api_key"] != "":
+            request["api_key"] = options["libre_api_key"]
 
-        step = 0
-        translated_text = ""
-        if length > 4999:
-            while step + 5000 < length:
-                text_part = options["text"][step:step + 5000]
-                step = step + 5000
-                try:
-                    translated_text_part = str(gtranslate.translate(text_part, options["language"]))
-                    print("Translated Text part:\n\n " + translated_text_part)
-                except Exception as e:
-                    raise Exception(e)
+        data = json.dumps(request)
 
-                translated_text = translated_text + translated_text_part
+        headers = {'Content-type': 'application/json'}
+        response = requests.post(options["libre_end_point"] + "/translate", headers=headers, data=data)
+        reply = json.loads(response.text)
+        if reply.get("translatedText"):
+            translated_text = reply['translatedText']
 
-        if step < length:
-            text_part = options["text"][step:length]
-            try:
-                translated_text_part = str(gtranslate.translate(text_part, options["language"]))
-                print("Translated Text part:\n " + translated_text_part)
-            except Exception as e:
-                raise Exception(e)
-
-            translated_text = translated_text + translated_text_part
+            confidence = reply["detectedLanguage"]['confidence']
+            language = reply["detectedLanguage"]['language']
+            print(translated_text + "language: " + language + "conf: " + confidence)
+        else:
+            return response.text
 
         return translated_text
