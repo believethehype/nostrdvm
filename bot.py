@@ -395,8 +395,8 @@ class Bot:
                 time.sleep(1.0)
         except KeyboardInterrupt:
             print('Stay weird!')
-            os.kill(os.getpid(), signal.SIGKILL)
-            exit(1)
+            os.kill(os.getpid(), signal.SIGTERM)
+
 
     def run(self):
         bot = Bot
