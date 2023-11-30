@@ -11,7 +11,7 @@ from nostr_sdk import Keys
 from bot.bot import Bot
 from playground import build_pdf_extractor, build_googletranslator, build_unstable_diffusion, build_sketcher, \
     build_dalle, \
-    build_whisperx, build_libretranslator, build_external_dvm, build_media_converter
+    build_whisperx, build_libretranslator, build_external_dvm, build_media_converter, build_inactive_follows_finder
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 
@@ -98,6 +98,11 @@ def run_nostr_dvm_with_local_config():
     media_bringer = build_media_converter("Media Bringer")
     bot_config.SUPPORTED_DVMS.append(media_bringer)  # We also add Sketcher to the bot
     media_bringer.run()
+
+    #Spawn DVM10 Discover inactive followers
+    discover_inactive = build_inactive_follows_finder("Bygones")
+    bot_config.SUPPORTED_DVMS.append(discover_inactive)  # We also add Sketcher to the bot
+    discover_inactive.run()
 
 
     Bot(bot_config)

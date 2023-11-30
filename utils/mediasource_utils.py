@@ -11,7 +11,7 @@ from utils.nostr_utils import get_event_by_id
 def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     #print("[" + dvm_config.NIP89.NAME + "] Getting Duration of the Media file..")
     input_value = ""
-    input_type = "url"
+    input_type = ""
     for tag in event.tags():
         if tag.as_vec()[0] == 'i':
             input_value = tag.as_vec()[1]
