@@ -11,7 +11,7 @@ from nostr_sdk import Keys
 from bot.bot import Bot
 from playground import build_pdf_extractor, build_googletranslator, build_unstable_diffusion, build_sketcher, \
     build_dalle, \
-    build_whisperx, build_libretranslator, build_external_dvm
+    build_whisperx, build_libretranslator, build_external_dvm, build_media_converter
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 
@@ -38,8 +38,8 @@ def run_nostr_dvm_with_local_config():
     bot_config.SUPPORTED_DVMS.append(translator)  # We add translator to the bot
     translator.run()
 
-
     # Spawn DVM3 Kind 5002 Local Text TranslationLibre, calling the free LibreTranslateApi, as an alternative.
+    # This will only run and appear on the bot if an endpoint is set in the .env
     if os.getenv("LIBRE_TRANSLATE_ENDPOINT") is not None and os.getenv("LIBRE_TRANSLATE_ENDPOINT") != "":
         libre_translator = build_libretranslator("Libre Translator")
         bot_config.SUPPORTED_DVMS.append(libre_translator)  # We add translator to the bot
@@ -64,8 +64,6 @@ def run_nostr_dvm_with_local_config():
         bot_config.SUPPORTED_DVMS.append(whisperer)  # We also add Sketcher to the bot
         whisperer.run()
 
-
-
     # Spawn DVM6, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
     # per call. Make sure you have enough balance and the DVM's cost is set higher than what you pay yourself, except, you know,
     # you're being generous.
@@ -75,18 +73,34 @@ def run_nostr_dvm_with_local_config():
         dalle.run()
 
     # Spawn DVM7.. oh wait, actually we don't spawn a new DVM, we use the dvmtaskinterface to define an external dvm by providing some info about it, such as
-    # their pubkey, a name, task, kind etc.
+    # their pubkey, a name, task, kind etc. (unencrypted)
+    tasktiger_external = build_external_dvm(name="External DVM: TaskTiger",
+                                                 pubkey="d483935d6bfcef3645195c04c97bbb70aedb6e65665c5ea83e562ca3c7acb978",
+                                                 task="text-to-image",
+                                                 kind=EventDefinitions.KIND_NIP90_GENERATE_IMAGE,
+                                                 fix_cost=100, per_unit_cost=0)
 
-    libretranslate_external = build_external_dvm(name="External DVM test",
-                                                 pubkey="08fd6bdb17cb2c8a87f8d50653238cb46e26cd44948c474f51dae5f138609da6",
-                                                 task="translation",
-                                                 kind=EventDefinitions.KIND_NIP90_TRANSLATE_TEXT,
-                                                 fix_cost=0, per_unit_cost=0)
-    bot_config.SUPPORTED_DVMS.append(libretranslate_external)
-    #Don't run it, it's on someone else's machine and we simply make the bot aware of it.
+    tasktiger_external.SUPPORTS_ENCRYPTION = False # if the dvm does not support encrypted events, just send a regular event and mark it with p tag. Other dvms might initial answer
+    bot_config.SUPPORTED_DVMS.append(tasktiger_external)
+    # Don't run it, it's on someone else's machine and we simply make the bot aware of it.
+
+    # DVM: 8 Another external dvm for recommendations:
+    ymhm_external = build_external_dvm(name="External DVM: You might have missed",
+                                            pubkey="6b37d5dc88c1cbd32d75b713f6d4c2f7766276f51c9337af9d32c8d715cc1b93",
+                                            task="content-discovery",
+                                            kind=EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY,
+                                            fix_cost=0, per_unit_cost=0)
+
+    ymhm_external.SUPPORTS_ENCRYPTION = False  # if the dvm does not support encrypted events, just send a regular event and mark it with p tag. Other dvms might initial answer
+    bot_config.SUPPORTED_DVMS.append(ymhm_external)
+
+    # Spawn DVM9.. A Media Grabber/Converter
+    media_bringer = build_media_converter("Media Bringer")
+    bot_config.SUPPORTED_DVMS.append(media_bringer)  # We also add Sketcher to the bot
+    media_bringer.run()
+
 
     Bot(bot_config)
-
 
     # Keep the main function alive for libraries that require it, like openai
     try:

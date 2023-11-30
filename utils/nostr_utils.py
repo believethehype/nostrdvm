@@ -47,7 +47,9 @@ def send_event(event: Event, client: Client, dvm_config) -> EventId:
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'relays':
-                relays = tag.as_vec()[1].split(',')
+                for index, param in enumerate(tag.as_vec()):
+                    if index != 0:
+                        relays.append(tag.as_vec()[index])
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:

@@ -95,7 +95,6 @@ class DVM:
             task_supported, task = check_task_is_supported(nip90_event, client=self.client,
                                                            config=self.dvm_config)
 
-
             if user.isblacklisted:
                 send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
                 print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
@@ -122,7 +121,8 @@ class DVM:
                                                  self.dvm_config)
                         return
                 # if user is whitelisted or task is free, just do the job
-                if user.iswhitelisted or task_is_free or cashu_redeemed:
+                if (user.iswhitelisted or task_is_free or cashu_redeemed) and (p_tag_str == "" or p_tag_str ==
+                                                                               self.dvm_config.PUBLIC_KEY):
                     print(
                         "[" + self.dvm_config.NIP89.NAME + "] Free task or Whitelisted for task " + task +
                         ". Starting processing..")
@@ -132,8 +132,7 @@ class DVM:
 
                     do_work(nip90_event)
                 # if task is directed to us via p tag and user has balance, do the job and update balance
-                elif p_tag_str == Keys.from_sk_str(
-                        self.dvm_config.PUBLIC_KEY) and user.balance >= int(amount):
+                elif p_tag_str == self.dvm_config.PUBLIC_KEY and user.balance >= int(amount):
                     balance = max(user.balance - int(amount), 0)
                     update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
@@ -150,7 +149,7 @@ class DVM:
                     do_work(nip90_event)
 
                 # else send a payment required event to user
-                else:
+                elif p_tag_str == "" or p_tag_str == self.dvm_config.PUBLIC_KEY:
                     bid = 0
                     for tag in nip90_event.tags():
                         if tag.as_vec()[0] == 'bid':
@@ -172,7 +171,8 @@ class DVM:
                             nip90_event.id().to_hex())
                         send_job_status_reaction(nip90_event, "payment-required",
                                                  False, int(amount), client=self.client, dvm_config=self.dvm_config)
-
+                else:
+                    print("[" + self.dvm_config.NIP89.NAME + "] Job addressed to someone else, skipping..")
             # else:
             # print("[" + self.dvm_config.NIP89.NAME + "] Task " + task + " not supported on this DVM, skipping..")
 
@@ -311,13 +311,19 @@ class DVM:
                         send_nostr_reply_event(data, original_event_str)
                     break
 
-            try:
+                task = get_task(original_event, self.client, self.dvm_config)
+                for dvm in self.dvm_config.SUPPORTED_DVMS:
+                        if task == dvm.TASK:
+                            try:
+                                post_processed = dvm.post_process(data, original_event)
+                                send_nostr_reply_event(post_processed, original_event.as_json())
+                            except Exception as e:
+                                send_job_status_reaction(original_event, "error", content=str(e),
+                                                     dvm_config=self.dvm_config,
+)
 
-                post_processed_content = post_process_result(data, original_event)
-                send_nostr_reply_event(post_processed_content, original_event_str)
-            except Exception as e:
-                send_job_status_reaction(original_event, "error", content=str(e), dvm_config=self.dvm_config,
-                                         )
+
+
 
         def send_nostr_reply_event(content, original_event_as_str):
             original_event = Event.from_json(original_event_as_str)
@@ -448,11 +454,20 @@ class DVM:
                             request_form = dvm.create_request_form_from_nostr_event(job_event, self.client,
                                                                                     self.dvm_config)
                             result = dvm.process(request_form)
-                            check_and_return_event(result, str(job_event.as_json()))
-
+                            try:
+                                post_processed = dvm.post_process(result, job_event)
+                                send_nostr_reply_event(post_processed, job_event.as_json())
+                            except Exception as e:
+                                send_job_status_reaction(job_event, "error", content=str(e),
+                                                         dvm_config=self.dvm_config,
+                                                         )
                     except Exception as e:
                         print(e)
-                        send_job_status_reaction(job_event, "error", content=str(e), dvm_config=self.dvm_config)
+                        # we could send the exception here to the user, but maybe that's not a good idea after all.
+                        send_job_status_reaction(job_event, "error", content="An error occurred",
+                                                 dvm_config=self.dvm_config)
+                        # TODO send sats back on error
+
                         return
 
         self.client.handle_notifications(NotificationHandler())

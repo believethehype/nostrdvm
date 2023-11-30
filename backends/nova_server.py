@@ -41,10 +41,14 @@ def send_request_to_nova_server(request_form, address):
 def send_file_to_nova_server(filepath, address):
     print("Sending file to NOVA-Server")
     url = ('http://' + address + '/upload')
-    fp = open(filepath, 'rb')
-    response = requests.post(url, files={'file': fp})
-    result = response.content.decode('utf-8')
-    print(result)
+    try:
+        fp = open(filepath, 'rb')
+        response = requests.post(url, files={'file': fp})
+        result = response.content.decode('utf-8')
+    except Exception as e:
+        print(e)
+        print(response.content.decode('utf-8'))
+
     return result
 
     # headers = {'Content-type': 'application/x-www-form-urlencoded'}

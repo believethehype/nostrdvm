@@ -8,17 +8,16 @@ from backends.nova_server import check_nova_server_status, send_request_to_nova_
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
-from utils.mediasource_utils import organize_input_data_to_audio
+from utils.mediasource_utils import organize_input_media_data
 from utils.nip89_utils import NIP89Config
 from utils.definitions import EventDefinitions
 
 """
-This File contains a Module to transform Text input on NOVA-Server and receive results back. 
+This File contains a Module to transform A media file input on NOVA-Server and receive results back. 
 
-Accepted Inputs: Prompt (text)
-Outputs: An url to an Image
-Params: -model         # models: juggernaut, dynavision, colossusProject, newreality, unstable
-        -lora          # loras (weights on top of models) voxel, 
+Accepted Inputs: Url to media file (url)
+Outputs: Transcribed text
+
 """
 
 
@@ -26,7 +25,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "speech-to-text"
     FIX_COST: float = 10
-    PER_UNIT_COST: float  = 0.1
+    PER_UNIT_COST: float = 0.1
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
@@ -42,7 +41,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
 
             elif tag.as_vec()[0] == 'output':
                 output = tag.as_vec()[1]
-                if (output == "" or not (output == "text/plain")):
+                if output == "" or not (output == "text/plain"):
                     print("Output format not supported, skipping..")
                     return False
 
@@ -65,6 +64,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
         input_type = "url"
         start_time = 0
         end_time = 0
+        media_format = "audio/mp3"
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -78,7 +78,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                     alignment = tag.as_vec()[2]
                 elif tag.as_vec()[1] == "model":
                     model = tag.as_vec()[2]
-                elif tag.as_vec()[1] == "range": #hui
+                elif tag.as_vec()[1] == "range":
                     try:
                         t = time.strptime(tag.as_vec()[2], "%H:%M:%S")
                         seconds = t.tm_hour * 60 * 60 + t.tm_min * 60 + t.tm_sec
@@ -102,14 +102,14 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                                 except:
                                     end_time = float(tag.as_vec()[3])
 
-        filepath = organize_input_data_to_audio(url, input_type, start_time, end_time, dvm_config, client)
-        pathonserver = send_file_to_nova_server(filepath, self.options['nova_server'])
+        filepath = organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True, media_format)
+        path_on_server = send_file_to_nova_server(os.path.realpath(filepath), self.options['nova_server'])
 
         io_input = {
             "id": "audio",
             "type": "input",
             "src": "file:stream",
-            "uri": pathonserver
+            "uri": path_on_server
         }
 
         io_output = {
