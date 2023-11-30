@@ -10,13 +10,13 @@ from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotificatio
     nip04_encrypt
 
 from utils.dvmconfig import DVMConfig
-from utils.nostr_utils import send_event
+from utils.nostr_utils import send_event, check_and_set_private_key
 from utils.definitions import EventDefinitions
 
 
 # TODO HINT: Best use this path with a previously whitelisted privkey, as zapping events is not implemented in the lib/code
 def nostr_client_test_translation(input, kind, lang, sats, satsmax):
-    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
+    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
     if kind == "text":
         iTag = Tag.parse(["i", input, "text"])
     elif kind == "event":
@@ -43,7 +43,7 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
 
 
 def nostr_client_test_image(prompt):
-    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
+    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
@@ -70,8 +70,8 @@ def nostr_client_test_image(prompt):
 
 
 def nostr_client_test_image_private(prompt, cashutoken):
-    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
-    receiver_keys = Keys.from_sk_str(os.getenv("NOSTR_PRIVATE_KEY"))
+    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    receiver_keys = Keys.from_sk_str(check_and_set_private_key("sketcher"))
 
 
     # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
@@ -109,7 +109,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
     return nip90request.as_json()
 
 def nostr_client():
-    keys = Keys.from_sk_str(os.getenv("NOSTR_TEST_CLIENT_PRIVATE_KEY"))
+    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
@@ -127,13 +127,13 @@ def nostr_client():
     client.subscribe([dm_zap_filter, dvm_filter])
 
     #nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
-    #nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
+    nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     #nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
     #nostr_client_test_image("a beautiful purple ostrich watching the sunset")
 
-    cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
-    nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
+    #cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
+    #nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
     class NotificationHandler(HandleNotification):
         def handle(self, relay_url, event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
@@ -161,7 +161,7 @@ def nostr_client():
 
 if __name__ == '__main__':
 
-    env_path = Path('../.env')
+    env_path = Path('.env')
     if env_path.is_file():
         print(f'loading environment from {env_path.resolve()}')
         dotenv.load_dotenv(env_path, verbose=True, override=True)

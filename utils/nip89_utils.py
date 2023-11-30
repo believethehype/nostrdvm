@@ -1,6 +1,9 @@
+import os
 from datetime import timedelta
 from hashlib import sha256
+from pathlib import Path
 
+import dotenv
 from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Event
 
 from utils.definitions import EventDefinitions
@@ -16,21 +19,17 @@ class NIP89Config:
 
 
 def nip89_create_d_tag(name, pubkey, image):
-    #import hashlib
-    #m = hashlib.md5()
-    #m.update(str(name + image + pubkey).encode("utf-8"))
-    #d_tag = m.hexdigest()[0:16]
-
     key_str = str(name + image + pubkey)
     d_tag = sha256(key_str.encode('utf-8')).hexdigest()[:16]
     return d_tag
 
 
+
 def nip89_announce_tasks(dvm_config, client):
-    k_tag = Tag.parse(["k", str(dvm_config.NIP89.kind)])
-    d_tag = Tag.parse(["d", dvm_config.NIP89.dtag])
-    keys = Keys.from_sk_str(dvm_config.NIP89.pk)
-    content = dvm_config.NIP89.content
+    k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND)])
+    d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
+    keys = Keys.from_sk_str(dvm_config.NIP89.PK)
+    content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
     send_event(event, client=client, dvm_config=dvm_config)
     print("Announced NIP 89 for " + dvm_config.NIP89.NAME)
@@ -66,3 +65,21 @@ def nip89_fetch_events_pubkey(client, pubkey, kind):
     # should be one element of the kind now
     for dvm in dvms:
         return dvms[dvm].content()
+
+
+def check_and_set_d_tag(identifier, name, pk, imageurl):
+    if not os.getenv("NIP89_DTAG_" + identifier.upper()):
+        new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(pk).public_key().to_hex(),
+                                      imageurl)
+        nip89_add_dtag_to_env_file("NIP89_DTAG_" + identifier.upper(), new_dtag)
+        print("Some new dtag:" + new_dtag)
+        return new_dtag
+    else:
+        return os.getenv("NIP89_DTAG_" + identifier.upper())
+
+def nip89_add_dtag_to_env_file(dtag, oskey):
+    env_path = Path('.env')
+    if env_path.is_file():
+        print(f'loading environment from {env_path.resolve()}')
+        dotenv.load_dotenv(env_path, verbose=True, override=True)
+        dotenv.set_key(env_path, dtag, oskey)
