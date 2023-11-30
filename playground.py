@@ -9,6 +9,7 @@ from tasks.discovery_inactive_follows import DiscoverInactiveFollows
 from tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from tasks.imagegeneration_sdxl import ImageGenerationSDXL
 from tasks.imagegeneration_sdxlimg2img import ImageGenerationSDXLIMG2IMG
+from tasks.textextraction_google import SpeechToTextGoogle
 from tasks.textextraction_whisperx import SpeechToTextWhisperX
 from tasks.textextraction_pdf import TextExtractionPDF
 from tasks.translation_google import TranslationGoogle
@@ -203,7 +204,7 @@ def build_whisperx(name, identifier):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I am a test dvm to extract text from media files (very beta)",
+        "about": "I extract text from media files with WhisperX",
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()
@@ -213,6 +214,34 @@ def build_whisperx(name, identifier):
     return SpeechToTextWhisperX(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                 admin_config=admin_config, options=options)
 
+
+def build_googletranscribe(name, identifier):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    options = {'api_key': None}
+    # A module might have options it can be initialized with, here we set a default model, and the nova-server
+    # address it should use. These parameters can be freely defined in the task component
+
+    nip90params = {
+        "language": {
+            "required": False,
+            "values": ["en-US"]
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "about": "I extract text from media files with the Google API. I understand English by default",
+        "nip90Params": nip90params
+    }
+    nip89config = NIP89Config()
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+    return SpeechToTextGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                admin_config=admin_config, options=options)
 
 def build_sketcher(name, identifier):
     dvm_config = DVMConfig()

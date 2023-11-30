@@ -8,7 +8,7 @@ from bot.bot import Bot
 from playground import build_pdf_extractor, build_googletranslator, build_unstable_diffusion, build_sketcher, \
     build_dalle, \
     build_whisperx, build_libretranslator, build_external_dvm, build_media_converter, build_inactive_follows_finder, \
-    build_image_converter
+    build_image_converter, build_googletranscribe
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import check_and_set_private_key
@@ -69,6 +69,10 @@ def run_nostr_dvm_with_local_config():
         whisperer = build_whisperx("Whisperer", "whisperx")
         bot_config.SUPPORTED_DVMS.append(whisperer)  # We also add Sketcher to the bot
         whisperer.run()
+
+    transcriptor = build_googletranscribe("Transcriptor", "speech_recognition")
+    bot_config.SUPPORTED_DVMS.append(transcriptor)  # We also add Sketcher to the bot
+    transcriptor.run()
 
     # Spawn DVM6, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
     # per call. Make sure you have enough balance and the DVM's cost is set higher than what you pay yourself, except, you know,
