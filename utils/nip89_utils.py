@@ -4,7 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Event, Client
+from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Event, Client, EventId
 
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import send_event
@@ -33,6 +33,28 @@ def nip89_announce_tasks(dvm_config, client):
     send_event(event, client=client, dvm_config=dvm_config)
     print("Announced NIP 89 for " + dvm_config.NIP89.NAME)
 
+
+
+def fetch_nip89_paramters_for_deletion( keys, eventid, client, dvmconfig):
+
+    print("Pubkey generated from Private Key " + keys.public_key().to_hex())
+    idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
+    nip89events = client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
+    d_tag = ""
+    for event in nip89events:
+        print(event.as_json())
+        for tag in event.tags():
+            if tag.as_vec()[0] == "d":
+                d_tag = tag.as_vec()[1]
+        if d_tag == "":
+            print("No dtag found")
+            return
+
+        pubkey = event.pubkey().to_hex()
+        print("Pubkey of Event: " + pubkey)
+        event_id = event.id().to_hex()
+        nip89_delete_announcement(event_id, keys, d_tag, client, dvmconfig)
+        print("NIP89 announcement deleted from known relays!")
 
 def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
     e_tag = Tag.parse(["e", eid])

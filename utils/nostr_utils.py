@@ -72,10 +72,9 @@ def send_event(event: Event, client: Client, dvm_config) -> EventId:
 
 def check_and_decrypt_tags(event, dvm_config):
     try:
-        tags = []
+
         is_encrypted = False
         p = ""
-        sender = event.pubkey()
         for tag in event.tags():
             if tag.as_vec()[0] == 'encrypted':
                 is_encrypted = True
@@ -106,10 +105,8 @@ def check_and_decrypt_tags(event, dvm_config):
 
 def check_and_decrypt_own_tags(event, dvm_config):
     try:
-        tags = []
         is_encrypted = False
         p = ""
-        sender = event.pubkey()
         for tag in event.tags():
             if tag.as_vec()[0] == 'encrypted':
                 is_encrypted = True
@@ -187,6 +184,3 @@ def add_pk_to_env_file(dtag, oskey):
         dotenv.load_dotenv(env_path, verbose=True, override=True)
         dotenv.set_key(env_path, dtag, oskey)
 
-
-def generate_private_key():
-    return Keys.generate()

@@ -14,7 +14,9 @@ class DVMConfig:
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nostr-pub.wellorder.net", "wss://nos.lol", "wss://nostr.wine",
                   "wss://relay.nostfiles.dev", "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                  "wss://relay.f7z.io"]
+                  "wss://relay.f7z.io", "wss://pablof7z.nostr1.com", "wss://purplepag.es", "wss://nos.lol",
+                  "wss://relay.snort.social", "wss://offchain.pub/",
+                  "wss://nostr-pub.wellorder.net"]
 
     RELAY_TIMEOUT = 3
     LNBITS_INVOICE_KEY = ''
