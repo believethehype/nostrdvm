@@ -138,7 +138,8 @@ class Bot:
 
                             # send the event to the DVM
                             send_event(nip90request, client=self.client, dvm_config=self.dvm_config)
-                            print(nip90request.as_json())
+                            #print(nip90request.as_json())
+
 
 
                 elif decrypted_text.lower().startswith("balance"):

@@ -5,10 +5,11 @@ from nostr_sdk import PublicKey, Keys
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from tasks.convert_media import MediaConverter
+from tasks.discovery_inactive_follows import DiscoverInactiveFollows
 from tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from tasks.imagegeneration_sdxl import ImageGenerationSDXL
 from tasks.textextraction_whisperx import SpeechToTextWhisperX
-from tasks.textextractionpdf import TextExtractionPDF
+from tasks.textextraction_pdf import TextExtractionPDF
 from tasks.translation_google import TranslationGoogle
 from tasks.translation_libretranslate import TranslationLibre
 from utils.admin_utils import AdminConfig
@@ -161,7 +162,7 @@ def build_unstable_diffusion(name):
     nip89config = NIP89Config()
     nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG")
     nip89config.CONTENT = json.dumps(nip89info)
-    return ImageGenerationSDXL(name=name, dvm_config=dvm_config,  nip89config=nip89config,
+    return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
 
@@ -195,7 +196,7 @@ def build_whisperx(name):
     nip89config = NIP89Config()
     nip89config.DTAG = os.getenv("TASK_SPEECH_TO_TEXT_NIP89")
     nip89config.CONTENT = json.dumps(nip89info)
-    return SpeechToTextWhisperX(name=name, dvm_config=dvm_config,  nip89config=nip89config,
+    return SpeechToTextWhisperX(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                 admin_config=admin_config, options=options)
 
 
@@ -230,7 +231,7 @@ def build_sketcher(name):
     nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG2")
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
-    return ImageGenerationSDXL(name=name, dvm_config=dvm_config,  nip89config=nip89config,
+    return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
 
@@ -262,7 +263,8 @@ def build_dalle(name):
     nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG3")
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
-    return ImageGenerationDALLE(name=name, dvm_config=dvm_config,  nip89config=nip89config, admin_config=admin_config)
+    return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
+
 
 def build_media_converter(name):
     dvm_config = DVMConfig()
@@ -284,13 +286,50 @@ def build_media_converter(name):
     }
 
     nip89config = NIP89Config()
-    new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex(), nip89info["image"])
+    new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex(),
+                                  nip89info["image"])
     print("Some new dtag:" + new_dtag)
     nip89config.DTAG = os.getenv("TASK_MEDIA_CONVERTER_NIP89_DTAG")
     nip89config.CONTENT = json.dumps(nip89info)
     return MediaConverter(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                             admin_config=admin_config)
+                          admin_config=admin_config)
 
+
+
+def build_inactive_follows_finder(name):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY7")
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    # Add NIP89
+    nip90params = {
+        "user": {
+            "required": False,
+            "values": [],
+            "description": "Do the task for another user"
+        },
+        "since_days": {
+            "required": False,
+            "values": [],
+            "description": "The number of days a user has not been active to be considered inactive"
+
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "about": "I discover users you follow, but that have been inactive on Nostr",
+        "nip90Params": nip90params
+    }
+
+    nip89config = NIP89Config()
+    new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex(),
+                                  nip89info["image"])
+    print("Some new dtag:" + new_dtag)
+    nip89config.DTAG = os.getenv("TASK_DISCOVER_INACTIVE_NIP89_DTAG")
+    nip89config.CONTENT = json.dumps(nip89info)
+    return DiscoverInactiveFollows(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                          admin_config=admin_config)
 
 def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost):
     dvm_config = DVMConfig()

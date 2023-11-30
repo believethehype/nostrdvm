@@ -1,4 +1,5 @@
 from datetime import timedelta
+from hashlib import sha256
 
 from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Event
 
@@ -15,10 +16,13 @@ class NIP89Config:
 
 
 def nip89_create_d_tag(name, pubkey, image):
-    import hashlib
-    m = hashlib.md5()
-    m.update(str(name + image + pubkey).encode("utf-8"))
-    d_tag = m.hexdigest()[0:16]
+    #import hashlib
+    #m = hashlib.md5()
+    #m.update(str(name + image + pubkey).encode("utf-8"))
+    #d_tag = m.hexdigest()[0:16]
+
+    key_str = str(name + image + pubkey)
+    d_tag = sha256(key_str.encode('utf-8')).hexdigest()[:16]
     return d_tag
 
 
