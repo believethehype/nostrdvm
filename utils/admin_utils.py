@@ -1,12 +1,14 @@
 # ADMINISTRARIVE DB MANAGEMENT
 import time
+from datetime import timedelta
 
-from nostr_sdk import Keys, EventBuilder, PublicKey
+from nostr_sdk import Keys, EventBuilder, PublicKey, Client, Filter, EventId
 
 from utils.database_utils import get_from_sql_table, list_db, delete_from_sql_table, update_sql_table, \
     get_or_add_user, clean_db
 from utils.dvmconfig import DVMConfig
-from utils.nip89_utils import nip89_announce_tasks, NIP89Config, nip89_delete_announcement
+from utils.nip89_utils import nip89_announce_tasks, NIP89Config, nip89_delete_announcement, \
+    fetch_nip89_paramters_for_deletion
 from utils.nostr_utils import send_event, update_profile
 
 
@@ -24,7 +26,7 @@ class AdminConfig:
     LUD16: str = ""
 
 
-def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None, client=None):
+def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None, client: Client = None):
     # This is called on start of Server, Admin function to manually whitelist/blacklist/add balance/delete users
     if adminconfig is None or dvmconfig is None:
         return
@@ -32,7 +34,8 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
     if not isinstance(adminconfig, AdminConfig):
         return
 
-    if ((adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
+    if ((
+            adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
             and adminconfig.USERNPUB == ""):
         return
 
@@ -51,7 +54,6 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
         update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
         user = get_from_sql_table(db, publickey)
         print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
-
 
     if adminconfig.UNWHITELISTUSER:
         user = get_from_sql_table(db, publickey)
@@ -76,15 +78,9 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
     #  TODO make this callable
     delete_previous_announcement = False
     if delete_previous_announcement:
-        # privkey from sender
-        keys = Keys.from_sk_str("")
-        print("Pubkey generated from Private Key " + keys.public_key().to_hex())
-
-        print("Pubkey of Event: " + "") #pubkey from event, to compare to given privkey
-        dtag = "" #dtag from event
-        event_id = "" #id of event
-        nip89_delete_announcement(event_id, keys, dtag, client, dvmconfig)
+        eventid = ""  #Id of Event to delete
+        keys = Keys.from_sk_str("") # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
+        fetch_nip89_paramters_for_deletion(keys, eventid, client, dvmconfig)
 
     if adminconfig.UPDATE_PROFILE:
         update_profile(dvmconfig, lud16=adminconfig.LUD16)
-
