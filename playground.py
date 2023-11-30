@@ -1,37 +1,36 @@
 import json
 import os
 
-from nostr_sdk import PublicKey, Keys
+from nostr_sdk import PublicKey
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from tasks.convert_media import MediaConverter
 from tasks.discovery_inactive_follows import DiscoverInactiveFollows
 from tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from tasks.imagegeneration_sdxl import ImageGenerationSDXL
+from tasks.imagegeneration_sdxlimg2img import ImageGenerationSDXLIMG2IMG
 from tasks.textextraction_whisperx import SpeechToTextWhisperX
 from tasks.textextraction_pdf import TextExtractionPDF
 from tasks.translation_google import TranslationGoogle
 from tasks.translation_libretranslate import TranslationLibre
 from utils.admin_utils import AdminConfig
-from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
-from utils.nip89_utils import NIP89Config, nip89_create_d_tag
+from utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from utils.nostr_utils import check_and_set_private_key
 
 """
 This File is a playground to create DVMs. It shows some examples of DVMs that make use of the modules in the tasks folder
-These DVMs should be considered examples and will be extended in the future. env variables are used to not commit keys,
-but if used privatley, these can also be directly filled in this file. The main.py function calls some of the functions
-defined here and starts the DVMs.
+These DVMs should be considered examples and will be extended in the future. 
+Keys and dtags will be automatically generated and stored in the .env file. 
+If you already have a pk and dtag you can replace them there before publishing the nip89
+
 
 Note that the admin_config is optional, and if given commands as defined in admin_utils will be called at start of the 
-DVM. For example the NIP89 event can be rebroadcasted (store the d_tag somewhere).
+DVM. For example the NIP89 event can be rebroadcasted.
 
-DM_ALLOWED is used to tell the DVM to which npubs it should listen to. We use this here to listen to our bot, 
-as defined in main.py to perform jobs on it's behalf and reply. 
+If LNBITS_INVOICE_KEY is not set (=""), the DVM is still zappable but a lud16 address in required in the profile. 
 
-if LNBITS_INVOICE_KEY is not set (=""), the DVM is still zappable but a lud16 address in required in the profile. 
-
-additional options can be set, for example to preinitalize vaiables or give parameters that are required to perform a 
+Additional options can be set, for example to preinitalize vaiables or give parameters that are required to perform a 
 task, for example an address or an API key. 
 
 
@@ -39,17 +38,28 @@ task, for example an address or an API key.
 
 # Generate an optional Admin Config, in this case, whenever we give our DVMs this config, they will (re)broadcast
 # their NIP89 announcement
+# You can create individual admins configs and hand them over when initializing the dvm,
+# for example to whilelist users or add to their balance.
+# If you use this global config, options will be set for all dvms that use it.
 admin_config = AdminConfig()
 admin_config.REBROADCAST_NIP89 = False
-
-
 # Set rebroadcast to true once you have set your NIP89 descriptions and d tags. You only need to rebroadcast once you
 # want to update your NIP89 descriptions
 
+admin_config.UPDATE_PROFILE = False
+admin_config.LUD16 = ""
 
-def build_pdf_extractor(name):
+
+# Auto update the profiles of your privkeys based on the nip89 information.
+# Ideally set a lightning address in the LUD16 field above so our DVMs can get zapped from everywhere
+
+
+# We build a couple of example dvms, create privatekeys and dtags and set their NIP89 descriptions
+# We currently call these from the main function and start the dvms there.
+
+def build_pdf_extractor(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     # Add NIP89
@@ -62,15 +72,15 @@ def build_pdf_extractor(name):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = os.getenv("TASK_TEXT_EXTRACTION_NIP89_DTAG")
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return TextExtractionPDF(name=name, dvm_config=dvm_config, nip89config=nip89config,
                              admin_config=admin_config)
 
 
-def build_googletranslator(name):
+def build_googletranslator(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -94,14 +104,15 @@ def build_googletranslator(name):
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = os.getenv("TASK_TRANSLATION_NIP89_DTAG")
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return TranslationGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
-def build_libretranslator(name):
+def build_libretranslator(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY5")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -127,15 +138,16 @@ def build_libretranslator(name):
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = os.getenv("TASK_TRANSLATION_NIP89_DTAG6")
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return TranslationLibre(name=name, dvm_config=dvm_config, nip89config=nip89config,
                             admin_config=admin_config, options=options)
 
 
-def build_unstable_diffusion(name):
+def build_unstable_diffusion(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = ""  # This one will not use Lnbits to create invoices, but rely on zaps
     dvm_config.LNBITS_URL = ""
 
@@ -160,15 +172,16 @@ def build_unstable_diffusion(name):
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG")
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
 
-def build_whisperx(name):
+def build_whisperx(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY4")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -194,15 +207,16 @@ def build_whisperx(name):
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = os.getenv("TASK_SPEECH_TO_TEXT_NIP89")
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return SpeechToTextWhisperX(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                 admin_config=admin_config, options=options)
 
 
-def build_sketcher(name):
+def build_sketcher(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY2")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
@@ -228,16 +242,58 @@ def build_sketcher(name):
     options = {'default_model': "mohawk", 'default_lora': "timburton", 'nova_server': os.getenv("NOVA_SERVER")}
 
     nip89config = NIP89Config()
-    nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG2")
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     return ImageGenerationSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                admin_config=admin_config, options=options)
 
 
-def build_dalle(name):
+def build_image_converter(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY3")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+
+    nip90params = {
+        "negative_prompt": {
+            "required": False,
+            "values": []
+        },
+        "lora": {
+            "required": False,
+            "values": ["inkpunk", "timburton", "voxel"]
+        },
+
+        "strength": {
+            "required": False,
+            "values": []
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg",
+        "about": "I convert an image to another image, kinda random for now. ",
+        "nip90Params": nip90params
+    }
+
+    # A module might have options it can be initialized with, here we set a default model, lora and the nova-server
+    options = {'default_lora': "inkpunk", 'strength': 0.5, 'nova_server': os.getenv("NOVA_SERVER")}
+
+    nip89config = NIP89Config()
+
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+    # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
+    return ImageGenerationSDXLIMG2IMG(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                      admin_config=admin_config, options=options)
+
+
+def build_dalle(name, identifier):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     profit_in_sats = 10
@@ -260,15 +316,16 @@ def build_dalle(name):
     # address it should use. These parameters can be freely defined in the task component
 
     nip89config = NIP89Config()
-    nip89config.DTAG = os.getenv("TASK_IMAGE_GENERATION_NIP89_DTAG3")
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
-def build_media_converter(name):
+def build_media_converter(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY6")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     # Add NIP89
@@ -286,19 +343,15 @@ def build_media_converter(name):
     }
 
     nip89config = NIP89Config()
-    new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex(),
-                                  nip89info["image"])
-    print("Some new dtag:" + new_dtag)
-    nip89config.DTAG = os.getenv("TASK_MEDIA_CONVERTER_NIP89_DTAG")
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return MediaConverter(name=name, dvm_config=dvm_config, nip89config=nip89config,
                           admin_config=admin_config)
 
 
-
-def build_inactive_follows_finder(name):
+def build_inactive_follows_finder(name, identifier):
     dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY7")
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     # Add NIP89
@@ -323,14 +376,16 @@ def build_inactive_follows_finder(name):
     }
 
     nip89config = NIP89Config()
-    new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex(),
-                                  nip89info["image"])
-    print("Some new dtag:" + new_dtag)
-    nip89config.DTAG = os.getenv("TASK_DISCOVER_INACTIVE_NIP89_DTAG")
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
+
     nip89config.CONTENT = json.dumps(nip89info)
     return DiscoverInactiveFollows(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                          admin_config=admin_config)
+                                   admin_config=admin_config)
 
+
+# This function can be used to build a DVM object for a DVM we don't control, but we want the bot to be aware of.
+# See main.py for examples.
 def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost):
     dvm_config = DVMConfig()
     dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
@@ -346,8 +401,8 @@ def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost):
     return DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config, task=task)
 
 
-# Little Gimmick:
-# For Dalle where we have to pay 4cent per image, we fetch current sat price in fiat
+# Little optional Gimmick:
+# For Dalle where we have to pay 4cent per image to openai, we fetch current sat price in fiat from coinstats api
 # and update cost at each start
 def get_price_per_sat(currency):
     import requests

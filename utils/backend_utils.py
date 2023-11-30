@@ -5,7 +5,7 @@ from nostr_sdk import Event, Tag
 
 from utils.definitions import EventDefinitions
 from utils.mediasource_utils import check_source_type, media_source
-from utils.nostr_utils import get_event_by_id
+from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id
 
 
 def get_task(event, client, dvm_config):
@@ -53,8 +53,38 @@ def get_task(event, client, dvm_config):
                                 return "unknown type"
                     else:
                         return "unknown job"
+        elif event.kind() == EventDefinitions.KIND_NIP90_GENERATE_IMAGE:
+            has_image_tag = False
+            has_text_tag = False
+            for tag in event.tags():
+                if tag.as_vec()[0] == "i":
+                    if tag.as_vec()[2] == "url":
+                        file_type = check_url_is_readable(tag.as_vec()[1])
+                        if file_type == "image":
+                            has_image_tag = True
+                            print("found image tag")
+                    elif tag.as_vec()[2] == "job":
+                        evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], kinds=
+                                                         [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                          EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
+                                                          EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT],
+                                                         client=client,
+                                                         dvm_config=dvm_config)
+                        if evt is not None:
+                            file_type = check_url_is_readable(evt.content())
+                            if file_type == "image":
+                                has_image_tag = True
+                    elif tag.as_vec()[2] == "text":
+                        has_text_tag = True
 
+            if has_image_tag:
+                return "image-to-image"
+            elif has_text_tag and not has_image_tag:
+                return "text-to-image"
         #  TODO if a task can consist of multiple inputs add them here
+        #  This is not ideal. Maybe such events should have their own kind
+
+
         #  else if kind is supported, simply return task
         else:
 

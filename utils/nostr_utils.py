@@ -1,6 +1,10 @@
 import json
+import os
 from datetime import timedelta
-from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt
+from pathlib import Path
+
+import dotenv
+from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
@@ -99,6 +103,7 @@ def check_and_decrypt_tags(event, dvm_config):
 
     return event
 
+
 def check_and_decrypt_own_tags(event, dvm_config):
     try:
         tags = []
@@ -131,3 +136,57 @@ def check_and_decrypt_own_tags(event, dvm_config):
         print(e)
 
     return event
+
+
+def update_profile(dvm_config, lud16=""):
+    keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+    opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=dvm_config.RELAY_TIMEOUT))
+            .skip_disconnected_relays(True))
+
+    client = Client.with_opts(keys, opts)
+    for relay in dvm_config.RELAY_LIST:
+        client.add_relay(relay)
+    client.connect()
+
+    nip89content = json.loads(dvm_config.NIP89.CONTENT)
+    if nip89content.get("name"):
+        name = nip89content.get("name")
+        about = nip89content.get("about")
+        image = nip89content.get("image")
+
+
+        # Set metadata
+        metadata = Metadata() \
+            .set_name(name) \
+            .set_display_name(name) \
+            .set_about(about) \
+            .set_picture(image) \
+            .set_lud16(lud16)
+            # .set_banner("https://example.com/banner.png") \
+            # .set_nip05("username@example.com") \
+
+        print(f"Setting profile metadata for {keys.public_key().to_bech32()}...")
+        print(metadata.as_json())
+        client.set_metadata(metadata)
+        client.disconnect()
+
+
+def check_and_set_private_key(identifier):
+    if not os.getenv("DVM_PRIVATE_KEY_" + identifier.upper()):
+        pk = Keys.generate().secret_key().to_hex()
+        add_pk_to_env_file("DVM_PRIVATE_KEY_" + identifier.upper(), pk)
+        return pk
+    else:
+        return os.getenv("DVM_PRIVATE_KEY_" + identifier.upper())
+
+
+def add_pk_to_env_file(dtag, oskey):
+    env_path = Path('.env')
+    if env_path.is_file():
+        print(f'loading environment from {env_path.resolve()}')
+        dotenv.load_dotenv(env_path, verbose=True, override=True)
+        dotenv.set_key(env_path, dtag, oskey)
+
+
+def generate_private_key():
+    return Keys.generate()
