@@ -4,7 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Event
+from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Event, Client
 
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import send_event
@@ -24,7 +24,6 @@ def nip89_create_d_tag(name, pubkey, image):
     return d_tag
 
 
-
 def nip89_announce_tasks(dvm_config, client):
     k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND)])
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
@@ -33,6 +32,13 @@ def nip89_announce_tasks(dvm_config, client):
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
     send_event(event, client=client, dvm_config=dvm_config)
     print("Announced NIP 89 for " + dvm_config.NIP89.NAME)
+
+
+def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
+    e_tag = Tag.parse(["e", eid])
+    a_tag = Tag.parse(["a", str(EventDefinitions.KIND_ANNOUNCEMENT) + ":" + keys.public_key().to_hex() + ":" + dtag])
+    event = EventBuilder(5, "", [e_tag, a_tag]).to_event(keys)
+    send_event(event, client, config)
 
 
 def nip89_fetch_all_dvms(client):
@@ -76,6 +82,7 @@ def check_and_set_d_tag(identifier, name, pk, imageurl):
         return new_dtag
     else:
         return os.getenv("NIP89_DTAG_" + identifier.upper())
+
 
 def nip89_add_dtag_to_env_file(dtag, oskey):
     env_path = Path('.env')

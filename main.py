@@ -39,7 +39,7 @@ def run_nostr_dvm_with_local_config():
     # Spawn DVM3 Kind 5002 Local Text TranslationLibre, calling the free LibreTranslateApi, as an alternative.
     # This will only run and appear on the bot if an endpoint is set in the .env
     if os.getenv("LIBRE_TRANSLATE_ENDPOINT") is not None and os.getenv("LIBRE_TRANSLATE_ENDPOINT") != "":
-        libre_translator = build_libretranslator("Libre Translator", "google_translator")
+        libre_translator = build_libretranslator("Libre Translator", "libre_translator")
         bot_config.SUPPORTED_DVMS.append(libre_translator)  # We add translator to the bot
         libre_translator.run()
 
