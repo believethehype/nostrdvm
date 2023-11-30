@@ -14,6 +14,14 @@ class NIP89Config:
     CONTENT: str = ""
 
 
+def nip89_create_d_tag(name, pubkey, image):
+    import hashlib
+    m = hashlib.md5()
+    m.update(str(name + image + pubkey).encode("utf-8"))
+    d_tag = m.hexdigest()[0:16]
+    return d_tag
+
+
 def nip89_announce_tasks(dvm_config, client):
     k_tag = Tag.parse(["k", str(dvm_config.NIP89.kind)])
     d_tag = Tag.parse(["d", dvm_config.NIP89.dtag])

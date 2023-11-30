@@ -4,6 +4,7 @@ import os
 from nostr_sdk import PublicKey, Keys
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
+from tasks.convert_media import MediaConverter
 from tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from tasks.imagegeneration_sdxl import ImageGenerationSDXL
 from tasks.textextraction_whisperx import SpeechToTextWhisperX
@@ -13,7 +14,7 @@ from tasks.translation_libretranslate import TranslationLibre
 from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
-from utils.nip89_utils import NIP89Config
+from utils.nip89_utils import NIP89Config, nip89_create_d_tag
 
 """
 This File is a playground to create DVMs. It shows some examples of DVMs that make use of the modules in the tasks folder
@@ -262,6 +263,33 @@ def build_dalle(name):
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config,  nip89config=nip89config, admin_config=admin_config)
+
+def build_media_converter(name):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = os.getenv("NOSTR_PRIVATE_KEY6")
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    # Add NIP89
+    nip90params = {
+        "media_format": {
+            "required": False,
+            "values": ["video/mp4", "audio/mp3"]
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "about": "I convert videos from urls to given output format.",
+        "nip90Params": nip90params
+    }
+
+    nip89config = NIP89Config()
+    new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex(), nip89info["image"])
+    print("Some new dtag:" + new_dtag)
+    nip89config.DTAG = os.getenv("TASK_MEDIA_CONVERTER_NIP89_DTAG")
+    nip89config.CONTENT = json.dumps(nip89info)
+    return MediaConverter(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                             admin_config=admin_config)
 
 
 def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost):

@@ -7,6 +7,7 @@ from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config
 from core.dvm import DVM
+from utils.output_utils import post_process_result
 
 
 class DVMTaskInterface:
@@ -18,6 +19,7 @@ class DVMTaskInterface:
     PRIVATE_KEY: str
     PUBLIC_KEY: str
     DVM = DVM
+    SUPPORTS_ENCRYPTION = True  # DVMs build with this framework support encryption, but others might not.
     dvm_config: DVMConfig
     admin_config: AdminConfig
 
@@ -39,7 +41,6 @@ class DVMTaskInterface:
         if task is not None:
             self.TASK = task
 
-
         dvm_config.SUPPORTED_DVMS = [self]
         dvm_config.DB = "db/" + self.NAME + ".db"
         if nip89config.KIND is not None:
@@ -48,7 +49,6 @@ class DVMTaskInterface:
         dvm_config.NIP89 = self.NIP89_announcement(nip89config)
         self.dvm_config = dvm_config
         self.admin_config = admin_config
-
 
     def run(self):
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
@@ -67,8 +67,6 @@ class DVMTaskInterface:
         """Check if input is supported for current Task."""
         pass
 
-
-
     def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None) -> dict:
         """Parse input into a request form that will be given to the process method"""
         pass
@@ -76,6 +74,11 @@ class DVMTaskInterface:
     def process(self, request_form):
         "Process the data and return the result"
         pass
+
+    def post_process(self, result, event):
+        """Post-process the data and return the result Use default function, if not overwritten"""
+        return post_process_result(result, event)
+
 
     @staticmethod
     def set_options(request_form):

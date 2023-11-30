@@ -148,6 +148,7 @@ def get_amount_per_task(task, dvm_config, duration=1):
     for dvm in dvm_config.SUPPORTED_DVMS:  # this is currently just one
         if dvm.TASK == task:
             amount = dvm.FIX_COST + (dvm.PER_UNIT_COST * duration)
+            print("Cost: " + str(amount))
             return amount
     else:
         print("[" + dvm_config.SUPPORTED_DVMS[
