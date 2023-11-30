@@ -1,10 +1,15 @@
 import json
+from io import BytesIO
+
+import requests
+from PIL import Image
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config
+from utils.output_utils import upload_media_to_hoster
 
 """
 This File contains a Module to transform Text input on NOVA-Server and receive results back. 
@@ -101,7 +106,12 @@ class ImageGenerationDALLE(DVMTaskInterface):
             )
 
             image_url = response.data[0].url
-            return image_url
+            # rehost the result instead of relying on the openai link
+            response = requests.get(image_url)
+            image = Image.open(BytesIO(response.content)).convert("RGB")
+            image.save("./outputs/image.jpg")
+            result = upload_media_to_hoster("./outputs/image.jpg")
+            return result
 
         except Exception as e:
             print("Error in Module")
