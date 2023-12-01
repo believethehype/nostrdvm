@@ -247,7 +247,7 @@ if __name__ == '__main__':
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
     admin_config.LUD16 = ""
-    dvm = build_example("Image Converter Inkpunk", "image_converter_inkpunk", admin_config, os.getenv("NOVA_SERVER"), "inkpunk", 0.6)
+    dvm = build_example("Image Converter Inkpunk", "image2image", admin_config, os.getenv("NOVA_SERVER"), "", 0.6)
     dvm.run()
 
     keep_alive()

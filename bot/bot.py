@@ -213,7 +213,7 @@ class Bot:
                     if entry is not None:
                         user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                                client=self.client, config=self.dvm_config)
-
+                        time.sleep(2.0)
                         reply_event = EventBuilder.new_encrypted_direct_msg(self.keys,
                                                                             PublicKey.from_hex(user.npub),
                                                                             content,
@@ -420,22 +420,36 @@ class Bot:
                 tags.append(tag)
                 output = Tag.parse(["output", "text/plain"])
                 tags.append(output)
-                relaylist = ["relays"]
+                relay_list = ["relays"]
                 for relay in self.dvm_config.RELAY_LIST:
-                    relaylist.append(relay)
-                relays = Tag.parse(relaylist)
+                    relay_list.append(relay)
+                relays = Tag.parse(relay_list)
                 tags.append(relays)
                 return tags
 
+
+            tags = []
             command = decrypted_text.replace(split[0] + " ", "")
             split = command.split(" -")
             input = split[0].rstrip()
-            print(input)
-            input_type = "text"
             if input.startswith("http"):
-                input_type = "url"
-
-            i_tag = Tag.parse(["i", input, input_type])
+                temp = input.split(" ")
+                if len(temp) > 1:
+                    input_type = "url"
+                    i_tag1 = Tag.parse(["i", temp[0], input_type])
+                    tags.append(i_tag1)
+                    input_type = "text"
+                    i_tag2 = Tag.parse(["i", input.replace(temp[0], "").lstrip(), input_type])
+                    tags.append(i_tag2)
+                else:
+                    input_type = "url"
+                    i_tag = Tag.parse(["i", input, input_type])
+                    tags.append(i_tag)
+            else:
+                print(input)
+                input_type = "text"
+                i_tag = Tag.parse(["i", input, input_type])
+                tags.append(i_tag)
 
             alt_tag = Tag.parse(["alt", self.dvm_config.SUPPORTED_DVMS[index].TASK])
             tags.append(alt_tag)
@@ -443,10 +457,11 @@ class Bot:
             for relay in self.dvm_config.RELAY_LIST:
                 relaylist.append(relay)
             relays_tag = Tag.parse(relaylist)
-            # TODO readd relays tag, but need to find a way to parse it for both str and tag
-            tags = [i_tag, relays_tag, alt_tag]
+            tags.append(relays_tag)
             remaining_text = command.replace(input, "")
             print(remaining_text)
+
+
             params = remaining_text.rstrip().split(" -")
 
             for i in params:
