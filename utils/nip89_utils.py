@@ -39,6 +39,9 @@ def fetch_nip89_paramters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
     nip89events = client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""
+    if len(nip89events) == 0:
+        print("Event not found. Potentially gone.")
+
     for event in nip89events:
         print(event.as_json())
         for tag in event.tags():
@@ -50,9 +53,13 @@ def fetch_nip89_paramters_for_deletion(keys, eventid, client, dvmconfig):
 
         pubkey = event.pubkey().to_hex()
         print("Pubkey of Event: " + pubkey)
-        event_id = event.id().to_hex()
-        nip89_delete_announcement(event_id, keys, d_tag, client, dvmconfig)
-        print("NIP89 announcement deleted from known relays!")
+        if pubkey == keys.public_key().to_hex():
+            nip89_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
+            print("NIP89 announcement deleted from known relays!")
+        else:
+            print("Privatekey does not belong to event")
+
+
 
 
 def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
