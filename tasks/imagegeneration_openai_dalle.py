@@ -1,15 +1,21 @@
 import json
+import os
 from io import BytesIO
+from pathlib import Path
 
+import dotenv
 import requests
 from PIL import Image
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
+from utils.backend_utils import keep_alive
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
-from utils.nip89_utils import NIP89Config
+from utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from utils.nostr_utils import check_and_set_private_key
 from utils.output_utils import upload_media_to_hoster
+from utils.zap_utils import get_price_per_sat
 
 """
 This File contains a Module to transform Text input on NOVA-Server and receive results back. 
@@ -116,3 +122,54 @@ class ImageGenerationDALLE(DVMTaskInterface):
         except Exception as e:
             print("Error in Module")
             raise Exception(e)
+
+# We build an example here that we can call by either calling this file directly from the main directory,
+# or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
+# playground or elsewhere
+def build_example(name, identifier, admin_config):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    profit_in_sats = 10
+    dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
+
+    nip90params = {
+        "size": {
+            "required": False,
+            "values": ["1024:1024", "1024x1792", "1792x1024"]
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "about": "I use OpenAI's DALL·E 3",
+        "nip90Params": nip90params
+    }
+
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+    # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
+    return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
+
+
+if __name__ == '__main__':
+    env_path = Path('.env')
+    if env_path.is_file():
+        print(f'loading environment from {env_path.resolve()}')
+        dotenv.load_dotenv(env_path, verbose=True, override=True)
+    else:
+        raise FileNotFoundError(f'.env file not found at {env_path} ')
+
+    admin_config = AdminConfig()
+    admin_config.REBROADCAST_NIP89 = False
+    admin_config.UPDATE_PROFILE = False
+    admin_config.LUD16 = ""
+
+    dvm = build_example("Dall-E 3", "dalle3", admin_config)
+    dvm.run()
+
+    keep_alive()
