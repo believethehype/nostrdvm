@@ -15,6 +15,7 @@ from utils.nostr_utils import send_event, update_profile
 class AdminConfig:
     REBROADCAST_NIP89: bool = False
     UPDATE_PROFILE: bool = False
+    DELETE_NIP89: bool = False
     WHITELISTUSER: bool = False
     UNWHITELISTUSER: bool = False
     BLACKLISTUSER: bool = False
@@ -24,6 +25,9 @@ class AdminConfig:
 
     USERNPUB: str = ""
     LUD16: str = ""
+
+    EVENTID: str = ""
+    PRIVKEY: str = ""
 
 
 def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None, client: Client = None):
@@ -40,6 +44,9 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
         return
 
     if adminconfig.UPDATE_PROFILE and (dvmconfig.NIP89 is None):
+        return
+
+    if adminconfig.DELETE_NIP89 and (adminconfig.EVENTID == "" or adminconfig.EVENTID == ""):
         return
 
     db = dvmconfig.DB
@@ -75,12 +82,11 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
     if adminconfig.REBROADCAST_NIP89:
         nip89_announce_tasks(dvmconfig, client=client)
 
-    #  TODO make this callable
-    delete_previous_announcement = False
-    if delete_previous_announcement:
-        eventid = ""  #Id of Event to delete
-        keys = Keys.from_sk_str("") # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
-        fetch_nip89_paramters_for_deletion(keys, eventid, client, dvmconfig)
+    if adminconfig.DELETE_NIP89:
+        event_id = adminconfig.EVENTID
+        keys = Keys.from_sk_str(
+            adminconfig.PRIVKEY)  # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
+        fetch_nip89_paramters_for_deletion(keys, event_id, client, dvmconfig)
 
     if adminconfig.UPDATE_PROFILE:
         update_profile(dvmconfig, lud16=adminconfig.LUD16)
