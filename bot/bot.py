@@ -3,7 +3,6 @@ import os
 import signal
 import time
 from datetime import timedelta
-from threading import Thread
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
                        Options, Tag, Event, nip04_encrypt)
@@ -13,6 +12,7 @@ from utils.database_utils import get_or_add_user, update_user_balance, create_sq
 from utils.definitions import EventDefinitions
 from utils.nip89_utils import nip89_fetch_events_pubkey
 from utils.nostr_utils import send_event
+from utils.output_utils import PostProcessFunctionType, post_process_list_to_users, post_process_list_to_events
 from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap
 
 
@@ -138,7 +138,7 @@ class Bot:
 
                             # send the event to the DVM
                             send_event(nip90request, client=self.client, dvm_config=self.dvm_config)
-                            #print(nip90request.as_json())
+                            # print(nip90request.as_json())
 
 
 
@@ -234,7 +234,7 @@ class Bot:
                                 # if we get a bolt11, we pay and move on
                                 user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                                        client=self.client, config=self.dvm_config)
-                                if user.balance > amount:
+                                if user.balance >= amount:
                                     balance = max(user.balance - amount, 0)
                                     update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
                                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
@@ -314,6 +314,20 @@ class Bot:
                             content = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), content)
                         else:
                             return
+
+                    dvms = [x for x in self.dvm_config.SUPPORTED_DVMS if
+                            x.PUBLIC_KEY == nostr_event.pubkey().to_hex() and x.KIND == nostr_event.kind() - 1000]
+                    print(dvms[0])
+
+                    if len(dvms) > 0:
+                            dvm = dvms[0]
+                            if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE != PostProcessFunctionType.NONE:
+                                if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE == PostProcessFunctionType.LIST_TO_EVENTS:
+                                    content = post_process_list_to_events(content)
+                                elif dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE == PostProcessFunctionType.LIST_TO_USERS:
+                                    content = post_process_list_to_users(content)
+
+
 
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     time.sleep(1.0)

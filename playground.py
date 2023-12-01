@@ -18,6 +18,7 @@ from utils.admin_utils import AdminConfig
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from utils.nostr_utils import check_and_set_private_key
+from utils.output_utils import PostProcessFunctionType
 
 """
 This File is a playground to create DVMs. It shows some examples of DVMs that make use of the modules in the tasks folder
@@ -241,7 +242,8 @@ def build_googletranscribe(name, identifier):
                                                               nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return SpeechToTextGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                admin_config=admin_config, options=options)
+                              admin_config=admin_config, options=options)
+
 
 def build_sketcher(name, identifier):
     dvm_config = DVMConfig()
@@ -415,11 +417,12 @@ def build_inactive_follows_finder(name, identifier):
 
 # This function can be used to build a DVM object for a DVM we don't control, but we want the bot to be aware of.
 # See main.py for examples.
-def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost):
+def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost, external_post_process=PostProcessFunctionType.NONE):
     dvm_config = DVMConfig()
     dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
     dvm_config.FIX_COST = fix_cost
     dvm_config.PER_UNIT_COST = per_unit_cost
+    dvm_config.EXTERNAL_POST_PROCESS_TYPE = external_post_process
     nip89info = {
         "name": name,
     }
@@ -427,7 +430,9 @@ def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost):
     nip89config.KIND = kind
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config, task=task)
+    interface = DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config, task=task)
+
+    return interface
 
 
 # Little optional Gimmick:

@@ -12,6 +12,7 @@ from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config
 from utils.nostr_utils import get_event_by_id
+from utils.output_utils import post_process_list_to_users
 
 """
 This File contains a Module to find inactive follows for a user on nostr
@@ -158,13 +159,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
-                    result_list = json.loads(result)
-                    inactive_follows_list = ""
-                    for tag in result_list:
-                        p_tag = Tag.parse(tag)
-                        inactive_follows_list = inactive_follows_list + "nostr:" + PublicKey.from_hex(
-                            p_tag.as_vec()[1]).to_bech32() + "\n"
-                    return inactive_follows_list
+                    result = post_process_list_to_users(result)
 
         # if not text/plain, don't post-process
         return result
