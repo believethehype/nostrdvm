@@ -21,7 +21,7 @@ class DVMConfig:
     LNBITS_ADMIN_KEY = ''  # In order to pay invoices, e.g. from the bot to DVMs, or reimburse users.
     LNBITS_URL = 'https://lnbits.com'
     DB: str
-    NEW_USER_BALANCE: int = 250  # Free credits for new users
+    NEW_USER_BALANCE: int = 0  # Free credits for new users
     NIP89: NIP89Config
     SHOW_RESULT_BEFORE_PAYMENT: bool = False  # if this is true show results even when not paid right after autoprocess
 
