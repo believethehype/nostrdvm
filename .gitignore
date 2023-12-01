@@ -163,3 +163,6 @@ cython_debug/
 
 outputs
 .env2
+nostraidvm_deploy.py
+app.py
+nostraidvm_deploy.py
