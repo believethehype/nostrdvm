@@ -5,6 +5,7 @@ from types import NoneType
 
 import emoji
 import requests
+from nostr_sdk import Tag, PublicKey, EventId
 from pyupload.uploader import CatboxUploader
 
 import pandas
@@ -12,6 +13,12 @@ import pandas
 '''
 Post process results to either given output format or a Nostr readable plain text.
 '''
+
+
+class PostProcessFunctionType:
+    NONE = 0
+    LIST_TO_USERS = 1
+    LIST_TO_EVENTS = 2
 
 
 def post_process_result(anno, original_event):
@@ -33,7 +40,7 @@ def post_process_result(anno, original_event):
                 if output_format == "text/plain":
                     result = pandas_to_plaintext(anno)
                     result = replace_broken_words(
-                    str(result).replace("\"", "").replace('[', "").replace(']',
+                        str(result).replace("\"", "").replace('[', "").replace(']',
                                                                                "").lstrip(None))
                     return result
 
@@ -78,13 +85,33 @@ def post_process_result(anno, original_event):
             result = pandas_to_plaintext(anno)
             print(result)
             result = str(result).replace("\"", "").replace('[', "").replace(']',
-                                                                               "").lstrip(None)
+                                                                            "").lstrip(None)
             return result
     elif isinstance(anno, NoneType):
         return "An error occurred"
     else:
         result = replace_broken_words(anno)  # TODO
         return result
+
+
+def post_process_list_to_events(result):
+    result_list = json.loads(result)
+    result_str = ""
+    for tag in result_list:
+        p_tag = Tag.parse(tag)
+        result_str = result_str + "nostr:" + EventId.from_hex(
+            p_tag.as_vec()[1]).to_bech32() + "\n"
+    return result_str
+
+
+def post_process_list_to_users(result):
+    result_list = json.loads(result)
+    result_str = ""
+    for tag in result_list:
+        p_tag = Tag.parse(tag)
+        result_str = result_str + "nostr:" + PublicKey.from_hex(
+            p_tag.as_vec()[1]).to_bech32() + "\n"
+    return result_str
 
 
 def pandas_to_plaintext(anno):
@@ -94,7 +121,6 @@ def pandas_to_plaintext(anno):
             for i in str(each_row).split('\n'):
                 result = result + i + "\n"
     return result
-
 
 
 '''

@@ -1,8 +1,5 @@
-import os
-
-from nostr_sdk import Keys
-
 from utils.nip89_utils import NIP89Config
+from utils.output_utils import PostProcessFunctionType
 
 
 class DVMConfig:
@@ -19,6 +16,7 @@ class DVMConfig:
                   "wss://nostr-pub.wellorder.net"]
 
     RELAY_TIMEOUT = 3
+    EXTERNAL_POST_PROCESS_TYPE = PostProcessFunctionType.NONE  # Leave this on None, except the DVM is external
     LNBITS_INVOICE_KEY = ''
     LNBITS_ADMIN_KEY = ''  # In order to pay invoices, e.g. from the bot to DVMs, or reimburse users.
     LNBITS_URL = 'https://lnbits.com'

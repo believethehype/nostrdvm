@@ -12,6 +12,7 @@ from playground import build_pdf_extractor, build_googletranslator, build_unstab
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.nostr_utils import check_and_set_private_key
+from utils.output_utils import PostProcessFunctionType
 
 
 def run_nostr_dvm_with_local_config():
@@ -88,7 +89,7 @@ def run_nostr_dvm_with_local_config():
                                                  pubkey="d483935d6bfcef3645195c04c97bbb70aedb6e65665c5ea83e562ca3c7acb978",
                                                  task="text-to-image",
                                                  kind=EventDefinitions.KIND_NIP90_GENERATE_IMAGE,
-                                                 fix_cost=100, per_unit_cost=0)
+                                                 fix_cost=80, per_unit_cost=0)
 
     tasktiger_external.SUPPORTS_ENCRYPTION = False # if the dvm does not support encrypted events, just send a regular event and mark it with p tag. Other dvms might initial answer
     bot_config.SUPPORTED_DVMS.append(tasktiger_external)
@@ -97,10 +98,11 @@ def run_nostr_dvm_with_local_config():
 
     # DVM: 8 Another external dvm for recommendations:
     ymhm_external = build_external_dvm(name="External DVM: You might have missed",
-                                            pubkey="6b37d5dc88c1cbd32d75b713f6d4c2f7766276f51c9337af9d32c8d715cc1b93",
-                                            task="content-discovery",
-                                            kind=EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY,
-                                            fix_cost=0, per_unit_cost=0)
+                                       pubkey="6b37d5dc88c1cbd32d75b713f6d4c2f7766276f51c9337af9d32c8d715cc1b93",
+                                       task="content-discovery",
+                                       kind=EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY,
+                                       fix_cost=0, per_unit_cost=0,
+                                       external_post_process=PostProcessFunctionType.LIST_TO_EVENTS)
 
     ymhm_external.SUPPORTS_ENCRYPTION = False  # if the dvm does not support encrypted events, just send a regular event and mark it with p tag. Other dvms might initial answer
     bot_config.SUPPORTED_DVMS.append(ymhm_external)
