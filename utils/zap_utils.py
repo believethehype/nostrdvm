@@ -318,3 +318,20 @@ def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
         print(e)
 
     return False, ""
+
+def get_price_per_sat(currency):
+    import requests
+
+    url = "https://api.coinstats.app/public/v1/coins"
+    params = {"skip": 0, "limit": 1, "currency": currency}
+    try:
+        response = requests.get(url, params=params)
+        response_json = response.json()
+
+        bitcoin_price = response_json["coins"][0]["price"]
+        price_currency_per_sat = bitcoin_price / 100000000.0
+    except:
+        price_currency_per_sat = 0.0004
+
+    return price_currency_per_sat
+

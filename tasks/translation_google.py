@@ -1,11 +1,16 @@
 import json
+import os
+from pathlib import Path
+
+import dotenv
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
+from utils.backend_utils import keep_alive
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
-from utils.nip89_utils import NIP89Config
-from utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
+from utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from utils.nostr_utils import get_referenced_event_by_id, get_event_by_id, check_and_set_private_key
 
 """
 This File contains a Module to call Google Translate Services locally on the DVM Machine
@@ -101,3 +106,54 @@ class TranslationGoogle(DVMTaskInterface):
             translated_text = translated_text + translated_text_part
 
         return translated_text
+
+# We build an example here that we can call by either calling this file directly from the main directory,
+# or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
+# playground or elsewhere
+def build_example(name, identifier, admin_config):
+    dvm_config = DVMConfig()
+    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
+    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+
+    nip90params = {
+        "language": {
+            "required": False,
+            "values": ["en", "az", "be", "bg", "bn", "bs", "ca", "ceb", "co", "cs", "cy", "da", "de", "el", "eo", "es",
+                       "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "hi", "hmn", "hr", "ht",
+                       "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky",
+                       "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl",
+                       "no", "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl", "sm", "sn", "so",
+                       "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tl", "tr", "ug", "uk", "ur", "uz",
+                       "vi", "xh", "yi", "yo", "zh", "zu"]
+        }
+    }
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "about": "I translate text from given text/event/job. Currently using Google TranslationGoogle Services to translate "
+                 "input into the language defined in params.",
+        "nip90Params": nip90params
+    }
+    nip89config = NIP89Config()
+    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+                                                              nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+    return TranslationGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
+
+if __name__ == '__main__':
+    env_path = Path('.env')
+    if env_path.is_file():
+        print(f'loading environment from {env_path.resolve()}')
+        dotenv.load_dotenv(env_path, verbose=True, override=True)
+    else:
+        raise FileNotFoundError(f'.env file not found at {env_path} ')
+
+    admin_config = AdminConfig()
+    admin_config.REBROADCAST_NIP89 = False
+    admin_config.UPDATE_PROFILE = False
+    admin_config.LUD16 = ""
+    dvm = build_example("Google Translator", "google_translator", admin_config)
+    dvm.run()
+
+    keep_alive()

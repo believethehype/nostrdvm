@@ -1,4 +1,6 @@
-import typing
+import os
+import signal
+import time
 
 import requests
 from nostr_sdk import Event, Tag
@@ -184,3 +186,13 @@ def get_amount_per_task(task, dvm_config, duration=1):
         print("[" + dvm_config.SUPPORTED_DVMS[
             0].NAME + "] Task " + task + " is currently not supported by this instance, skipping")
         return None
+
+
+
+def keep_alive():
+    try:
+        while True:
+            time.sleep(10)
+    except KeyboardInterrupt:
+        os.kill(os.getpid(), signal.SIGKILL)
+        exit(1)
