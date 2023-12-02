@@ -198,7 +198,7 @@ def build_example(name, identifier, admin_config):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
                                                               nip89info["image"])
 
     nip89config.CONTENT = json.dumps(nip89info)
