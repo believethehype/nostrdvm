@@ -92,7 +92,7 @@ def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
         res = requests.post(url, json=data, headers=headers)
         obj = json.loads(res.text)
         if obj.get("payment_request") and obj.get("payment_hash"):
-            return obj["payment_request"], obj["payment_hash"]#
+            return obj["payment_request"], obj["payment_hash"]  #
         else:
             print(res.text)
             return None, None
@@ -102,7 +102,6 @@ def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
 
 
 def create_bolt11_lud16(lud16, amount):
-
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
         url = lnurl.decode(lud16)
     elif '@' in lud16:  # LNaddress
@@ -252,43 +251,63 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
 
 def parse_cashu(cashu_token: str):
     try:
-        try:
-            prefix = "cashuA"
-            assert cashu_token.startswith(prefix), Exception(
-                f"Token prefix not valid. Expected {prefix}."
-            )
-            if not cashu_token.endswith("="):
-                cashu_token = cashu_token + "="
-
-            token_base64 = cashu_token[len(prefix):]
-            cashu = json.loads(base64.urlsafe_b64decode(token_base64))
-        except Exception as e:
-            print(e)
-
+        prefix = "cashuA"
+        assert cashu_token.startswith(prefix), Exception(
+            f"Token prefix not valid. Expected {prefix}."
+        )
+        if not cashu_token.endswith("="):
+            cashu_token = str(cashu_token) + "=="
+        print(cashu_token)
+        token_base64 = cashu_token[len(prefix):].encode("utf-8")
+        cashu = json.loads(base64.urlsafe_b64decode(token_base64))
         token = cashu["token"][0]
         proofs = token["proofs"]
         mint = token["mint"]
         total_amount = 0
         for proof in proofs:
             total_amount += proof["amount"]
-        fees = max(int(total_amount * 0.02), 3)
-        redeem_invoice_amount = total_amount - fees
-        return proofs, mint, redeem_invoice_amount, total_amount
+
+
+        return proofs, mint, total_amount, None
 
     except Exception as e:
-        print("Could not parse this cashu token")
-        return None, None, None, None
+        print(e)
+        return None, None, None, "Cashu Parser: " + str(e)
 
 
-def redeem_cashu(cashu, required_amount, config, client, update_self=False) -> (bool, str):
-    proofs, mint, redeem_invoice_amount, total_amount = parse_cashu(cashu)
-    fees = total_amount - redeem_invoice_amount
+def redeem_cashu(cashu, config, client, required_amount=0, update_self=False) -> (bool, str, int, int):
+    proofs, mint, total_amount, message = parse_cashu(cashu)
+    if message is not None:
+        return False, message, 0, 0
+
+    # Not sure if this the best way to go, we first create an invoice that we send to the mint, we catch the fees
+    # for that invoice, and create another invoice with the amount without fees to melt.
+    if config.LNBITS_INVOICE_KEY != "":
+        invoice, paymenthash = create_bolt11_ln_bits(total_amount, config)
+    else:
+
+        user = get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
+                               client=client, config=config, update=update_self)
+        invoice = create_bolt11_lud16(user.lud16, total_amount)
+    print(invoice)
+    if invoice is None:
+        return False, "couldn't create invoice", 0, 0
+
+    url = mint + "/checkfees"  # Melt cashu tokens at Mint
+    json_object = {"pr": invoice}
+    headers = {"Content-Type": "application/json; charset=utf-8"}
+    request_body = json.dumps(json_object).encode('utf-8')
+    request = requests.post(url, data=request_body, headers=headers)
+    tree = json.loads(request.text)
+    fees = tree["fee"]
+    print("Fees on this mint are " + str(fees) + " Sats")
+    redeem_invoice_amount = total_amount -fees
     if redeem_invoice_amount < required_amount:
         err = ("Token value (Payment: " + str(total_amount) + " Sats. Fees: " +
                str(fees) + " Sats) below required amount of  " + str(required_amount)
                + " Sats. Cashu token has not been claimed.")
         print("[" + config.NIP89.NAME + "] " + err)
-        return False, err
+        return False, err, 0, 0
 
     if config.LNBITS_INVOICE_KEY != "":
         invoice, paymenthash = create_bolt11_ln_bits(redeem_invoice_amount, config)
@@ -298,8 +317,7 @@ def redeem_cashu(cashu, required_amount, config, client, update_self=False) -> (
                                client=client, config=config, update=update_self)
         invoice = create_bolt11_lud16(user.lud16, redeem_invoice_amount)
     print(invoice)
-    if invoice is None:
-        return False, "couldn't create invoice"
+
     try:
         url = mint + "/melt"  # Melt cashu tokens at Mint
         json_object = {"proofs": proofs, "pr": invoice}
@@ -312,7 +330,7 @@ def redeem_cashu(cashu, required_amount, config, client, update_self=False) -> (
         print(is_paid)
         if is_paid:
             print("cashu token redeemed")
-            return True, "success"
+            return True, "success", redeem_invoice_amount, fees
         else:
             msg = tree.get("detail").split('.')[0].strip() if tree.get("detail") else None
             print(msg)
@@ -320,7 +338,9 @@ def redeem_cashu(cashu, required_amount, config, client, update_self=False) -> (
     except Exception as e:
         print(e)
 
-    return False, ""
+    return False, "", redeem_invoice_amount, fees
+
+
 
 def get_price_per_sat(currency):
     import requests
@@ -337,4 +357,3 @@ def get_price_per_sat(currency):
         price_currency_per_sat = 0.0004
 
     return price_currency_per_sat
-
