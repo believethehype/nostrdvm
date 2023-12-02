@@ -19,10 +19,9 @@ from utils.nostr_utils import get_event_by_id, check_and_set_private_key
 from utils.output_utils import post_process_list_to_users, post_process_list_to_events
 
 """
-This File contains a Module to find inactive follows for a user on nostr
-
-Accepted Inputs: None needed
-Outputs: A list of users that have been inactive 
+This File contains a Module to search for notes
+Accepted Inputs: a search query
+Outputs: A list of events 
 Params:  None
 """
 
