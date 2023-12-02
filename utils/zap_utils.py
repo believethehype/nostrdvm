@@ -289,7 +289,7 @@ def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
         return False, err
 
     if config.LNBITS_INVOICE_KEY != "":
-        invoice = create_bolt11_ln_bits(redeem_invoice_amount, config)
+        invoice, paymenthash = create_bolt11_ln_bits(redeem_invoice_amount, config)
     else:
         user = get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
                                client=client, config=config)
