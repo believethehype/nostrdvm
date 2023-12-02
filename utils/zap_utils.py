@@ -102,6 +102,7 @@ def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
 
 
 def create_bolt11_lud16(lud16, amount):
+
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
         url = lnurl.decode(lud16)
     elif '@' in lud16:  # LNaddress
@@ -109,6 +110,7 @@ def create_bolt11_lud16(lud16, amount):
     else:  # No lud16 set or format invalid
         return None
     try:
+        print(url)
         response = requests.get(url)
         ob = json.loads(response.content)
         callback = ob["callback"]
@@ -278,7 +280,7 @@ def parse_cashu(cashu_token: str):
         return None, None, None, None
 
 
-def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
+def redeem_cashu(cashu, required_amount, config, client, update_self=False) -> (bool, str):
     proofs, mint, redeem_invoice_amount, total_amount = parse_cashu(cashu)
     fees = total_amount - redeem_invoice_amount
     if redeem_invoice_amount < required_amount:
@@ -291,8 +293,9 @@ def redeem_cashu(cashu, required_amount, config, client) -> (bool, str):
     if config.LNBITS_INVOICE_KEY != "":
         invoice, paymenthash = create_bolt11_ln_bits(redeem_invoice_amount, config)
     else:
+
         user = get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
-                               client=client, config=config)
+                               client=client, config=config, update=update_self)
         invoice = create_bolt11_lud16(user.lud16, redeem_invoice_amount)
     print(invoice)
     if invoice is None:
