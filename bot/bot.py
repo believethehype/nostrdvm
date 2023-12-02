@@ -10,10 +10,10 @@ from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNot
 from utils.admin_utils import admin_make_database_updates
 from utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table, User
 from utils.definitions import EventDefinitions
-from utils.nip89_utils import nip89_fetch_events_pubkey
+from utils.nip89_utils import nip89_fetch_events_pubkey, NIP89Config
 from utils.nostr_utils import send_event
 from utils.output_utils import PostProcessFunctionType, post_process_list_to_users, post_process_list_to_events
-from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap
+from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap, redeem_cashu
 
 
 class Bot:
@@ -24,6 +24,9 @@ class Bot:
         self.NAME = "Bot"
         dvm_config.DB = "db/" + self.NAME + ".db"
         self.dvm_config = dvm_config
+        nip89config = NIP89Config()
+        nip89config.NAME = self.NAME
+        self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
         wait_for_send = True
@@ -153,9 +156,19 @@ class Bot:
                                                                 , None).to_event(self.keys)
                     send_event(evt, client=self.client, dvm_config=dvm_config)
 
-
-
-
+                elif decrypted_text.startswith("cashuA"):
+                    print("Received Cashu token:" + decrypted_text)
+                    cashu_redeemed, cashu_message, total_amount, fees = redeem_cashu(decrypted_text, self.dvm_config, self.client)
+                    print(cashu_message)
+                    if cashu_message == "success":
+                        update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
+                                            config=self.dvm_config)
+                    else:
+                        time.sleep(2.0)
+                        message = "Error: " + cashu_message + ". Token has not been redeemed."
+                        evt = EventBuilder.new_encrypted_direct_msg(self.keys, PublicKey.from_hex(sender), message,
+                                                                    None).to_event(self.keys)
+                        send_event(evt, client=self.client, dvm_config=self.dvm_config)
                 else:
                     # Build an overview of known DVMs and send it to the user
                     answer_overview(nostr_event)
