@@ -456,6 +456,8 @@ class Bot:
                 relaylist.append(relay)
             relays_tag = Tag.parse(relaylist)
             tags.append(relays_tag)
+            output_tag = Tag.parse(["output", "text/plain"])
+            tags.append(output_tag)
             remaining_text = command.replace(input, "")
             print(remaining_text)
 
@@ -475,6 +477,9 @@ class Bot:
                             if param == "cashu":
                                 tag = Tag.parse([param, value])
                             else:
+                                if param == "user":
+                                    if value.startswith("@") or value.startswith("nostr:") or value.startswith("npub"):
+                                        value = PublicKey.from_bech32(value.replace("@","").replace("nostr:","")).to_hex()
                                 tag = Tag.parse(["param", param, value])
                             tags.append(tag)
                             print("Added params: " + str(tag.as_vec()))
