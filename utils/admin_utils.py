@@ -89,4 +89,4 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
         fetch_nip89_paramters_for_deletion(keys, event_id, client, dvmconfig)
 
     if adminconfig.UPDATE_PROFILE:
-        update_profile(dvmconfig, lud16=adminconfig.LUD16)
+        update_profile(dvmconfig, client, lud16=adminconfig.LUD16)

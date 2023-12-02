@@ -183,7 +183,7 @@ def update_user_balance(db, npub, additional_sats, client, config):
             send_event(evt, client=client, dvm_config=config)
 
 
-def get_or_add_user(db, npub, client, config):
+def get_or_add_user(db, npub, client, config, update=False):
     user = get_from_sql_table(db, npub)
     if user is None:
         try:
@@ -195,8 +195,19 @@ def get_or_add_user(db, npub, client, config):
             return user
         except Exception as e:
             print("Error Adding User to DB: " + str(e))
+    elif update:
+        try:
+            name, nip05, lud16 = fetch_user_metadata(npub, client)
+            print("Updating User: " + npub + " (" + npub + ")")
+            update_sql_table(db, user.npub, user.balance, user.iswhitelisted, user.isblacklisted, nip05,
+                             lud16, name, Timestamp.now().as_secs())
+            user = get_from_sql_table(db, npub)
+            return user
+        except Exception as e:
+            print("Error Updating User in DB: " + str(e))
 
     return user
+
 
 def fetch_user_metadata(npub, client):
     name = ""

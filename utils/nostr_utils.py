@@ -135,16 +135,8 @@ def check_and_decrypt_own_tags(event, dvm_config):
     return event
 
 
-def update_profile(dvm_config, lud16=""):
+def update_profile(dvm_config, client, lud16=""):
     keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
-    opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=dvm_config.RELAY_TIMEOUT))
-            .skip_disconnected_relays(True))
-
-    client = Client.with_opts(keys, opts)
-    for relay in dvm_config.RELAY_LIST:
-        client.add_relay(relay)
-    client.connect()
-
     nip89content = json.loads(dvm_config.NIP89.CONTENT)
     if nip89content.get("name"):
         name = nip89content.get("name")
@@ -165,7 +157,6 @@ def update_profile(dvm_config, lud16=""):
         print(f"Setting profile metadata for {keys.public_key().to_bech32()}...")
         print(metadata.as_json())
         client.set_metadata(metadata)
-        client.disconnect()
 
 
 def check_and_set_private_key(identifier):
