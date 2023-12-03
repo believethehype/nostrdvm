@@ -20,6 +20,7 @@ class DVMTaskInterface:
     PUBLIC_KEY: str
     DVM = DVM
     SUPPORTS_ENCRYPTION = True  # DVMs build with this framework support encryption, but others might not.
+    ACCEPTS_CASHU = True  # DVMs build with this framework support encryption, but others might not.
     dvm_config: DVMConfig
     admin_config: AdminConfig
 

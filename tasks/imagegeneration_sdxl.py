@@ -190,6 +190,8 @@ def build_example(name, identifier, admin_config, server_address, default_model=
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I draw images based on a prompt with a Model called unstable diffusion",
+        "encryptionSupported": True,
+        "cashuAccepted": True,
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()
