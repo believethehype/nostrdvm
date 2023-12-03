@@ -510,10 +510,24 @@ class Bot:
             if nip89content_str is not None:
                 nip89content = json.loads(nip89content_str)
                 info = ""
+                cashu_accepted = False
+                encryption_supported = False
+
                 if nip89content.get("name"):
                     info += "Name: " + nip89content.get("name") + "\n"
+                if nip89content.get("image"):
                     info += nip89content.get("image") + "\n"
-                    info += "About:\n" + nip89content.get("about") + "\n"
+                if nip89content.get("about"):
+                    info += "About:\n" + nip89content.get("about") + "\n\n"
+                if nip89content.get("acceptsCashu"):
+                    cashu_accepted =  str(nip89content.get("acceptsCashu"))
+
+                if nip89content.get("encryptionSupported"):
+                    encryption_supported = str(nip89content.get("encryptionSupported"))
+
+                info += "Encryption supported: " + str(encryption_supported) + "\n"
+                info += "Cashu accepted: " + str(cashu_accepted) + "\n\n"
+                if nip89content.get("nip90Params"):
                     params = nip89content["nip90Params"]
                     info += "\nParameters:\n"
                     for param in params:

@@ -175,6 +175,8 @@ def build_example(name, identifier, admin_config, server_address):
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I extract text from media files with WhisperX",
+        "encryptionSupported": True,
+        "cashuAccepted": True,
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()

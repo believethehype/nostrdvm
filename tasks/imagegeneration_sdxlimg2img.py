@@ -219,6 +219,8 @@ def build_example(name, identifier, admin_config, server_address, default_lora="
         "name": name,
         "image": "https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg",
         "about": "I convert an image to another image, kinda random for now. ",
+        "encryptionSupported": True,
+        "cashuAccepted": True,
         "nip90Params": nip90params
     }
 

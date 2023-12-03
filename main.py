@@ -1,8 +1,9 @@
 import json
 import os
+from datetime import timedelta
 from pathlib import Path
 import dotenv
-from nostr_sdk import PublicKey
+from nostr_sdk import PublicKey, Options, Client, Keys
 
 from bot.bot import Bot
 from interfaces.dvmtaskinterface import DVMTaskInterface
@@ -22,7 +23,8 @@ from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
-from utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from utils.external_dvm_utils import build_external_dvm
+from utils.nip89_utils import NIP89Config, check_and_set_d_tag, nip89_fetch_events_pubkey
 from utils.nostr_utils import check_and_set_private_key
 from utils.output_utils import PostProcessFunctionType
 
@@ -102,6 +104,8 @@ def playground():
                 "name": name,
                 "image": "https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg",
                 "about": "I draw images based on a prompt in the style of paper sketches",
+                "encryptionSupported": True,
+                "cashuAccepted": True,
                 "nip90Params": nip90params
             }
 
@@ -151,31 +155,13 @@ def playground():
 
 
     #Let's define a function so we can add external DVMs to our bot, we will instanciate it afterwards
-    def build_external_dvm(name, pubkey, task, kind, fix_cost, per_unit_cost,
-                           external_post_process=PostProcessFunctionType.NONE):
-        dvm_config = DVMConfig()
-        dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
-        dvm_config.FIX_COST = fix_cost
-        dvm_config.PER_UNIT_COST = per_unit_cost
-        dvm_config.EXTERNAL_POST_PROCESS_TYPE = external_post_process
-        nip89info = {
-            "name": name,
-        }
-        nip89config = NIP89Config()
-        nip89config.KIND = kind
-        nip89config.CONTENT = json.dumps(nip89info)
-
-        interface = DVMTaskInterface(name=name, dvm_config=dvm_config, nip89config=nip89config, task=task)
-
-        return interface
 
     # Spawn DVM7.. oh wait, actually we don't spawn a new DVM, we use the dvmtaskinterface to define an external dvm by providing some info about it, such as
     # their pubkey, a name, task, kind etc. (unencrypted)
-    tasktiger_external = build_external_dvm(name="External DVM: TaskTiger",
-                                            pubkey="d483935d6bfcef3645195c04c97bbb70aedb6e65665c5ea83e562ca3c7acb978",
+    tasktiger_external = build_external_dvm(pubkey="d483935d6bfcef3645195c04c97bbb70aedb6e65665c5ea83e562ca3c7acb978",
                                             task="text-to-image",
                                             kind=EventDefinitions.KIND_NIP90_GENERATE_IMAGE,
-                                            fix_cost=80, per_unit_cost=0)
+                                            fix_cost=80, per_unit_cost=0, config=bot_config)
 
     tasktiger_external.SUPPORTS_ENCRYPTION = False  # if the dvm does not support encrypted events, just send a regular NIP90 event and mark it with p tag. Other dvms might answer initally
     bot_config.SUPPORTED_DVMS.append(tasktiger_external)
@@ -187,12 +173,11 @@ def playground():
     media_bringer.run()
 
     # DVM: 9 Another external dvm for recommendations:
-    ymhm_external = build_external_dvm(name="External DVM: You might have missed",
-                                       pubkey="6b37d5dc88c1cbd32d75b713f6d4c2f7766276f51c9337af9d32c8d715cc1b93",
+    ymhm_external = build_external_dvm(pubkey="6b37d5dc88c1cbd32d75b713f6d4c2f7766276f51c9337af9d32c8d715cc1b93",
                                        task="content-discovery",
                                        kind=EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY,
                                        fix_cost=0, per_unit_cost=0,
-                                       external_post_process=PostProcessFunctionType.LIST_TO_EVENTS)
+                                       external_post_process=PostProcessFunctionType.LIST_TO_EVENTS, config=bot_config)
     # If we get back a list of people or events, we can post-process it to make it readable in social clients
 
     ymhm_external.SUPPORTS_ENCRYPTION = False
