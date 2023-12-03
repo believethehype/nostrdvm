@@ -41,7 +41,7 @@ class TranslationGoogle(DVMTaskInterface):
                     return False
         return True
 
-    def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
+    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex()}
         text = ""
         translation_lang = "en"

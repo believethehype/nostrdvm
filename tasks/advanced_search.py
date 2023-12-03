@@ -40,7 +40,7 @@ class AdvancedSearch(DVMTaskInterface):
         # no input required
         return True
 
-    def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None):
+    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
         print(self.dvm_config.PRIVATE_KEY)
 
