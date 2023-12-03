@@ -519,9 +519,8 @@ class Bot:
                     info += nip89content.get("image") + "\n"
                 if nip89content.get("about"):
                     info += "About:\n" + nip89content.get("about") + "\n\n"
-                if nip89content.get("acceptsCashu"):
-                    cashu_accepted =  str(nip89content.get("acceptsCashu"))
-
+                if nip89content.get("cashuAccepted"):
+                    cashu_accepted = str(nip89content.get("cashuAccepted"))
                 if nip89content.get("encryptionSupported"):
                     encryption_supported = str(nip89content.get("encryptionSupported"))
 
