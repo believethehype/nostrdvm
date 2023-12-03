@@ -169,6 +169,12 @@ class Bot:
                         evt = EventBuilder.new_encrypted_direct_msg(self.keys, PublicKey.from_hex(sender), message,
                                                                     None).to_event(self.keys)
                         send_event(evt, client=self.client, dvm_config=self.dvm_config)
+                elif decrypted_text.lower().startswith("what's the second best"):
+                    time.sleep(3.0)
+                    evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                                                                    "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4",nostr_event.id()).to_event(self.keys)
+                    send_event(evt, client=self.client, dvm_config=self.dvm_config)
+
                 else:
                     # Build an overview of known DVMs and send it to the user
                     answer_overview(nostr_event)
