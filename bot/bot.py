@@ -533,7 +533,7 @@ class Bot:
                         info += "-" + param + '\n'
                         info += "Required: " + str(params[param]['required']) + '\n'
                         info += "Possible Values: " + json.dumps(params[param]['values']) + '\n\n'
-                    return info
+                return info
 
             return None
 
