@@ -451,8 +451,8 @@ class DVM:
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     try:
                         if task == dvm.TASK:
-                            request_form = dvm.create_request_form_from_nostr_event(job_event, self.client,
-                                                                                    self.dvm_config)
+                            request_form = dvm.create_request_from_nostr_event(job_event, self.client,
+                                                                               self.dvm_config)
                             result = dvm.process(request_form)
                             try:
                                 post_processed = dvm.post_process(result, job_event)

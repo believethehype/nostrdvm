@@ -67,7 +67,7 @@ class DVMTaskInterface:
         """Check if input is supported for current Task."""
         pass
 
-    def create_request_form_from_nostr_event(self, event, client=None, dvm_config=None) -> dict:
+    def create_request_from_nostr_event(self, event, client=None, dvm_config=None) -> dict:
         """Parse input into a request form that will be given to the process method"""
         pass
 
