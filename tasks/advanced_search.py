@@ -37,8 +37,12 @@ class AdvancedSearch(DVMTaskInterface):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
     def is_input_supported(self, tags):
-        # no input required
-        return True
+        for tag in tags:
+            if tag.as_vec()[0] == 'i':
+                input_value = tag.as_vec()[1]
+                input_type = tag.as_vec()[2]
+                if input_type != "text":
+                    return False
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
