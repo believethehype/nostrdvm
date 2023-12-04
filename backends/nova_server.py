@@ -1,6 +1,7 @@
 import io
 import json
 import os
+import re
 import time
 import zipfile
 from pathlib import Path
@@ -96,10 +97,13 @@ def check_nova_server_status(jobID, address) -> str | pd.DataFrame:
                 image = Image.open(io.BytesIO(response.content))
                 image.save("./outputs/image.jpg")
                 result = upload_media_to_hoster("./outputs/image.jpg")
-                return result
                 os.remove("./outputs/image.jpg")
+                return result
+
             elif content_type == 'text/plain; charset=utf-8':
                 result = response.content.decode('utf-8')
+                # TODO: This should not be necessary?
+                result = result.replace("  ", "#").replace(" ", "").replace("#", " ")
                 return result
             elif content_type == "application/x-zip-compressed":
                 zf = zipfile.ZipFile(io.BytesIO(response.content), "r")

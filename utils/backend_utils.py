@@ -36,6 +36,8 @@ def get_task(event, client, dvm_config):
                             return "pdf-to-text"
                         elif file_type == "audio" or file_type == "video":
                             return "speech-to-text"
+                        elif file_type == "image":
+                            return "image-to-text"
                         else:
                             return "unknown job"
                     elif tag.as_vec()[2] == "event":
