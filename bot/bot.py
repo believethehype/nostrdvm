@@ -272,6 +272,7 @@ class Bot:
                                     send_event(evt, client=self.client, dvm_config=dvm_config)
                                 else:
                                     print("Bot payment-required")
+                                    time.sleep(2.0)
                                     evt = EventBuilder.new_encrypted_direct_msg(self.keys,
                                                                                 PublicKey.from_hex(entry["npub"]),
                                                                                 "Current balance: " + str(
