@@ -21,7 +21,6 @@ from utils.backend_utils import keep_alive
 from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.external_dvm_utils import build_external_dvm
-from utils.nip89_utils import NIP89Config, check_and_set_d_tag, nip89_fetch_events_pubkey
 from utils.nostr_utils import check_and_set_private_key
 from utils.output_utils import PostProcessFunctionType
 
@@ -68,7 +67,7 @@ def playground():
         libre_translator.run()
 
 
-    # Spawn DVM6, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
+    # Spawn DVM4, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
     # per call. Make sure you have enough balance and the DVM's cost is set higher than what you pay yourself, except, you know,
     # you're being generous.
     if os.getenv("OPENAI_API_KEY") is not None and os.getenv("OPENAI_API_KEY") != "":
@@ -79,39 +78,47 @@ def playground():
 
     #Let's define a function so we can add external DVMs to our bot, we will instanciate it afterwards
 
-    # Spawn DVM7.. oh wait, actually we don't spawn a new DVM, we use the dvmtaskinterface to define an external dvm by providing some info about it, such as
+    # Spawn DVM5.. oh wait, actually we don't spawn a new DVM, we use the dvmtaskinterface to define an external dvm by providing some info about it, such as
     # their pubkey, a name, task, kind etc. (unencrypted)
     tasktiger_external = build_external_dvm(pubkey="d483935d6bfcef3645195c04c97bbb70aedb6e65665c5ea83e562ca3c7acb978",
                                             task="text-to-image",
                                             kind=EventDefinitions.KIND_NIP90_GENERATE_IMAGE,
                                             fix_cost=80, per_unit_cost=0, config=bot_config)
-
-    tasktiger_external.SUPPORTS_ENCRYPTION = False  # if the dvm does not support encrypted events, just send a regular NIP90 event and mark it with p tag. Other dvms might answer initally
     bot_config.SUPPORTED_DVMS.append(tasktiger_external)
     # Don't run it, it's on someone else's machine, and we simply make the bot aware of it.
 
-    # Spawn DVM8 A Media Grabber/Converter
-    media_bringer = convert_media.build_example("Media Bringer", "media_converter", admin_config)
-    bot_config.SUPPORTED_DVMS.append(media_bringer)
-    media_bringer.run()
 
-    # DVM: 9 Another external dvm for recommendations:
+    # DVM: 6 Another external dvm for recommendations:
     ymhm_external = build_external_dvm(pubkey="6b37d5dc88c1cbd32d75b713f6d4c2f7766276f51c9337af9d32c8d715cc1b93",
                                        task="content-discovery",
                                        kind=EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY,
                                        fix_cost=0, per_unit_cost=0,
                                        external_post_process=PostProcessFunctionType.LIST_TO_EVENTS, config=bot_config)
     # If we get back a list of people or events, we can post-process it to make it readable in social clients
-
-    ymhm_external.SUPPORTS_ENCRYPTION = False
     bot_config.SUPPORTED_DVMS.append(ymhm_external)
 
-    # Spawn DVM10 Find inactive followers
+
+    # Spawn DVM 7 Find inactive followers
+    googleextractor = textextraction_google.build_example("Extractor", "speech_recognition",
+                                                                 admin_config)
+    bot_config.SUPPORTED_DVMS.append(googleextractor)
+    googleextractor.run()
+
+
+    # Spawn DVM 8 A Media Grabber/Converter
+    media_bringer = convert_media.build_example("Media Bringer", "media_converter", admin_config)
+    bot_config.SUPPORTED_DVMS.append(media_bringer)
+    media_bringer.run()
+
+
+
+    # Spawn DVM9  Find inactive followers
     discover_inactive = discovery_inactive_follows.build_example("Bygones", "discovery_inactive_follows",
                                                                  admin_config)
     bot_config.SUPPORTED_DVMS.append(discover_inactive)
     discover_inactive.run()
 
+    # Run the bot
     Bot(bot_config)
     # Keep the main function alive for libraries that require it, like openai
     keep_alive()
