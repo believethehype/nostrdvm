@@ -166,3 +166,4 @@ outputs
 app_deploy.py
 app.py
 app_deploy.py
+db/Cashu/wallet.sqlite3

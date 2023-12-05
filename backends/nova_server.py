@@ -101,10 +101,7 @@ def check_nova_server_status(jobID, address) -> str | pd.DataFrame:
                 return result
 
             elif content_type == 'text/plain; charset=utf-8':
-                result = response.content.decode('utf-8')
-                # TODO: This should not be necessary?
-                result = result.replace("  ", "#").replace(" ", "").replace("#", " ")
-                return result
+                return response.content.decode('utf-8')
             elif content_type == "application/x-zip-compressed":
                 zf = zipfile.ZipFile(io.BytesIO(response.content), "r")
 
