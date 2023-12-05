@@ -1,5 +1,4 @@
 # LIGHTNING/CASHU/ZAP FUNCTIONS
-import base64
 import json
 import os
 import urllib.parse
