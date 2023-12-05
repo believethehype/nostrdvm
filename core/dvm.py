@@ -14,8 +14,9 @@ from utils.backend_utils import get_amount_per_task, check_task_is_supported, ge
 from utils.database_utils import create_sql_table, get_or_add_user, update_user_balance, update_sql_table
 from utils.mediasource_utils import input_data_file_duration
 from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
-from utils.output_utils import post_process_result, build_status_reaction
-from utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, redeem_cashu
+from utils.output_utils import build_status_reaction
+from utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags
+from utils.cashu_utils import redeem_cashu
 
 use_logger = False
 if use_logger:

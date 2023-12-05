@@ -13,7 +13,8 @@ from utils.definitions import EventDefinitions
 from utils.nip89_utils import nip89_fetch_events_pubkey, NIP89Config
 from utils.nostr_utils import send_event
 from utils.output_utils import PostProcessFunctionType, post_process_list_to_users, post_process_list_to_events
-from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap, redeem_cashu
+from utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap
+from utils.cashu_utils import redeem_cashu
 
 
 class Bot:
