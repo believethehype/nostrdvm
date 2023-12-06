@@ -18,14 +18,15 @@ from utils.output_utils import upload_media_to_hoster
 from utils.zap_utils import get_price_per_sat
 
 """
-This File contains a Module to transform Text input on OpenAI's servers with DALLE-3 and receive results back. 
+This File contains a Module to transform Text input on NOVA-Server and receive results back. 
 
 Accepted Inputs: Prompt (text)
 Outputs: An url to an Image
+Params: 
 """
 
 
-class ImageGenerationDALLE(DVMTaskInterface):
+class ImageGenerationReplicate(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
     FIX_COST: float = 120
@@ -57,8 +58,7 @@ class ImageGenerationDALLE(DVMTaskInterface):
         prompt = ""
         width = "1024"
         height = "1024"
-        model = "dall-e-3"
-        quality = "standard"
+
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -85,8 +85,6 @@ class ImageGenerationDALLE(DVMTaskInterface):
         options = {
             "prompt": prompt,
             "size": width + "x" + height,
-            "model": model,
-            "quality": quality,
             "number": 1
         }
         request_form['options'] = json.dumps(options)
@@ -97,21 +95,18 @@ class ImageGenerationDALLE(DVMTaskInterface):
         try:
             options = DVMTaskInterface.set_options(request_form)
 
-            from openai import OpenAI
-            client = OpenAI()
-            print("Job " + request_form['jobID'] + " sent to OpenAI API..")
-
-            response = client.images.generate(
-                model=options['model'],
-                prompt=options['prompt'],
-                size=options['size'],
-                quality=options['quality'],
-                n=int(options['number']),
+            import replicate
+            width = int(options["size"].split("x")[0])
+            height = int(options["size"].split("x")[1])
+            output = replicate.run(
+                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+                input={"prompt": options["prompt"],
+                       "width": width,
+                       "height": height,
+                       "disable_safety_checker": True}
             )
-
-            image_url = response.data[0].url
-            # rehost the result instead of relying on the openai link
-            response = requests.get(image_url)
+            print(output[0])
+            response = requests.get(output[0])
             image = Image.open(BytesIO(response.content)).convert("RGB")
             image.save("./outputs/image.jpg")
             result = upload_media_to_hoster("./outputs/image.jpg")
@@ -141,7 +136,7 @@ def build_example(name, identifier, admin_config):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I use OpenAI's DALL·E 3",
+        "about": "I use Replicate to run StableDiffusion XL",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": nip90params
@@ -153,7 +148,7 @@ def build_example(name, identifier, admin_config):
                                                               nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
-    return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
+    return ImageGenerationReplicate(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
 if __name__ == '__main__':
@@ -169,7 +164,7 @@ if __name__ == '__main__':
     admin_config.UPDATE_PROFILE = False
     admin_config.LUD16 = ""
 
-    dvm = build_example("Dall-E 3", "dalle3", admin_config)
+    dvm = build_example("Stable Diffusion XL", "replicate_sdxl", admin_config)
     dvm.run()
 
     keep_alive()

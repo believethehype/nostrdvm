@@ -15,6 +15,7 @@ import tasks.textextraction_pdf as textextraction_pdf
 import tasks.textextraction_google as textextraction_google
 import tasks.translation_google as translation_google
 import tasks.translation_libretranslate as translation_libretranslate
+from tasks import imagegeneration_replicate
 
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -74,6 +75,12 @@ def playground():
         dalle = imagegeneration_openai_dalle.build_example("Dall-E 3", "dalle3", admin_config)
         bot_config.SUPPORTED_DVMS.append(dalle)
         dalle.run()
+
+    if os.getenv("REPLICATE_API_TOKEN") is not None and os.getenv("REPLICATE_API_TOKEN") != "":
+        sdxlreplicate = imagegeneration_replicate.build_example("Stable Diffusion XL", "replicate_sdxl", admin_config)
+        bot_config.SUPPORTED_DVMS.append(sdxlreplicate)
+        sdxlreplicate.run()
+
 
 
     #Let's define a function so we can add external DVMs to our bot, we will instanciate it afterwards
