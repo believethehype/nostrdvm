@@ -167,3 +167,5 @@ app_deploy.py
 app.py
 app_deploy.py
 db/Cashu/wallet.sqlite3
+.idea/misc.xml
+.idea/misc.xml
