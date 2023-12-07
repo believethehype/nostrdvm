@@ -69,9 +69,9 @@ def get_task(event, client, dvm_config):
                             print("found image tag")
                     elif tag.as_vec()[2] == "job":
                         evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], kinds=
-                                                         [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                          EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
-                                                          EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT],
+                        [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                         EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
+                         EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT],
                                                          client=client,
                                                          dvm_config=dvm_config)
                         if evt is not None:
@@ -88,7 +88,6 @@ def get_task(event, client, dvm_config):
         #  TODO if a task can consist of multiple inputs add them here
         #  This is not ideal. Maybe such events should have their own kind
 
-
         #  else if kind is supported, simply return task
         else:
 
@@ -102,6 +101,7 @@ def get_task(event, client, dvm_config):
 
 
 def is_input_supported_generic(tags, client, dvm_config) -> bool:
+    # Handle malformed tags, missing events etc here.
     try:
         for tag in tags:
             if tag.as_vec()[0] == 'i':
@@ -129,17 +129,19 @@ def is_input_supported_generic(tags, client, dvm_config) -> bool:
 def check_task_is_supported(event: Event, client, config=None):
     try:
         dvm_config = config
+        # Check for generic issues, event maformed, referenced event not found etc..
+        if not is_input_supported_generic(event.tags(), client, dvm_config):
+            return False, ""
+
+        # See if current dvm supports the task
         task = get_task(event, client=client, dvm_config=dvm_config)
         if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS):
             return False, task
-
-        if not is_input_supported_generic(event.tags(), client, dvm_config):
-            return False, ""
+        # See if current dvm can handle input for given task
         for dvm in dvm_config.SUPPORTED_DVMS:
             if dvm.TASK == task:
                 if not dvm.is_input_supported(event.tags()):
                     return False, task
-
         return True, task
 
 
@@ -158,14 +160,17 @@ def check_url_is_readable(url):
         # If link is comaptible with one of these file formats, move on.
         req = requests.get(url)
         content_type = req.headers['content-type']
-        if content_type == 'audio/x-wav' or str(url).endswith(".wav") or content_type == 'audio/mpeg' or str(url).endswith(
+        if content_type == 'audio/x-wav' or str(url).endswith(".wav") or content_type == 'audio/mpeg' or str(
+                url).endswith(
                 ".mp3") or content_type == 'audio/ogg' or str(url).endswith(".ogg"):
             return "audio"
-        elif (content_type == 'image/png' or str(url).endswith(".png") or content_type == 'image/jpg' or str(url).endswith(
+        elif (content_type == 'image/png' or str(url).endswith(".png") or content_type == 'image/jpg' or str(
+                url).endswith(
                 ".jpg") or content_type == 'image/jpeg' or str(url).endswith(".jpeg") or content_type == 'image/png' or
               str(url).endswith(".png")):
             return "image"
-        elif content_type == 'video/mp4' or str(url).endswith(".mp4") or content_type == 'video/avi' or str(url).endswith(
+        elif content_type == 'video/mp4' or str(url).endswith(".mp4") or content_type == 'video/avi' or str(
+                url).endswith(
                 ".avi") or content_type == 'video/mov' or str(url).endswith(".mov"):
             return "video"
         elif (str(url)).endswith(".pdf"):
@@ -189,7 +194,6 @@ def get_amount_per_task(task, dvm_config, duration=1):
         return None
 
 
-
 def keep_alive():
     try:
         while True:
@@ -197,5 +201,3 @@ def keep_alive():
     except KeyboardInterrupt:
         os.kill(os.getpid(), signal.SIGKILL)
         exit(1)
-
-

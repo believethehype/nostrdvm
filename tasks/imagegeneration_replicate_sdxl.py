@@ -26,7 +26,7 @@ Params:
 """
 
 
-class ImageGenerationReplicate(DVMTaskInterface):
+class ImageGenerationReplicateSDXL(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
     FIX_COST: float = 120
@@ -148,7 +148,7 @@ def build_example(name, identifier, admin_config):
                                                               nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
-    return ImageGenerationReplicate(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
+    return ImageGenerationReplicateSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
 if __name__ == '__main__':

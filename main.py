@@ -1,12 +1,7 @@
-import json
 import os
-from datetime import timedelta
 from pathlib import Path
 import dotenv
-from nostr_sdk import PublicKey, Options, Client, Keys
-
 from bot.bot import Bot
-from interfaces.dvmtaskinterface import DVMTaskInterface
 
 import tasks.convert_media as convert_media
 import tasks.discovery_inactive_follows as discovery_inactive_follows
@@ -15,7 +10,7 @@ import tasks.textextraction_pdf as textextraction_pdf
 import tasks.textextraction_google as textextraction_google
 import tasks.translation_google as translation_google
 import tasks.translation_libretranslate as translation_libretranslate
-from tasks import imagegeneration_replicate
+from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd
 
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -77,10 +72,14 @@ def playground():
         dalle.run()
 
     if os.getenv("REPLICATE_API_TOKEN") is not None and os.getenv("REPLICATE_API_TOKEN") != "":
-        sdxlreplicate = imagegeneration_replicate.build_example("Stable Diffusion XL", "replicate_sdxl", admin_config)
+        sdxlreplicate = imagegeneration_replicate_sdxl.build_example("Stable Diffusion XL", "replicate_sdxl", admin_config)
         bot_config.SUPPORTED_DVMS.append(sdxlreplicate)
         sdxlreplicate.run()
 
+    if os.getenv("REPLICATE_API_TOKEN") is not None and os.getenv("REPLICATE_API_TOKEN") != "":
+        svdreplicate = videogeneration_replicate_svd.build_example("Stable Video Diffusion", "replicate_svd", admin_config)
+        bot_config.SUPPORTED_DVMS.append(svdreplicate)
+        svdreplicate.run()
 
 
     #Let's define a function so we can add external DVMs to our bot, we will instanciate it afterwards
