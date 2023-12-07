@@ -3,7 +3,7 @@ import urllib
 from datetime import time
 from urllib.parse import urlparse
 import ffmpegio
-from decord import AudioReader, cpu
+from decord import AudioReader, VideoReader, cpu
 import requests
 from utils.nostr_utils import get_event_by_id
 
@@ -74,7 +74,13 @@ def organize_input_media_data(input_value, input_type, start, end, dvm_config, c
             duration = float(file_reader.duration())
         except Exception as e:
             print(e)
-            return ""
+            try:
+                from moviepy.editor import VideoFileClip
+                clip = VideoFileClip(filename)
+                duration = clip.duration
+            except Exception as e:
+                print(e)
+                return ""
 
         print("Original Duration of the Media file: " + str(duration))
         start_time, end_time, new_duration = (
@@ -95,6 +101,11 @@ def organize_input_media_data(input_value, input_type, start, end, dvm_config, c
             elif media_format.split('/')[0] == "video":
                 print("Converting Video from " + str(start_time) + " until " + str(end_time))
                 ffmpegio.transcode(filename, final_filename, overwrite=True, show_log=True)
+            elif media_format.split('/')[1] == "gif":
+                from moviepy.editor import VideoFileClip
+                print("Converting Video from " + str(start_time) + " until " + str(end_time))
+                videoClip = VideoFileClip(filename)
+                videoClip.write_gif(final_filename, program="ffmpeg")
             print(final_filename)
             return final_filename
         else:
