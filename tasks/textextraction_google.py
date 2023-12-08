@@ -136,7 +136,7 @@ def build_example(name, identifier, admin_config):
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     options = {'api_key': None}
-    # A module might have options it can be initialized with, here we set a default model, and the nova-server
+    # A module might have options it can be initialized with, here we set a default model, and the server
     # address it should use. These parameters can be freely defined in the task component
 
     nip90params = {

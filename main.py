@@ -10,7 +10,7 @@ import tasks.textextraction_pdf as textextraction_pdf
 import tasks.textextraction_google as textextraction_google
 import tasks.translation_google as translation_google
 import tasks.translation_libretranslate as translation_libretranslate
-from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd
+from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd, imagegeneration_sdxl
 
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -81,6 +81,11 @@ def playground():
         bot_config.SUPPORTED_DVMS.append(svdreplicate)
         svdreplicate.run()
 
+    if os.getenv("N_SERVER") is not None and os.getenv("N_SERVER") != "":
+        unstable_artist = imagegeneration_sdxl.build_example("NostrAI DVM Artist",
+                                                 "stable_diffusion", admin_config, os.getenv("N_SERVER"))
+        bot_config.SUPPORTED_DVMS.append(unstable_artist)  # We add unstable Diffusion to the bot
+        unstable_artist.run()
 
     #Let's define a function so we can add external DVMs to our bot, we will instanciate it afterwards
 

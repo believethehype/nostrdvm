@@ -1,0 +1,7 @@
+hcai-nova-utils>=1.5.5
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.1.0+cu118
+torchvision>= 0.15.1+cu118
+torchaudio >= 2.0.0+cu118
+pyannote-audio @ git+https://github.com/shelm/pyannote-audio.git@d7b4de3
+whisperx @ git+https://github.com/m-bain/whisperx.git@49e0130

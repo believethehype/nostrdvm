@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 
-from backends.nova_server import check_nova_server_status, send_request_to_nova_server
+from backends.nserver.utils import check_server_status, send_request_to_server
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -15,7 +15,7 @@ from utils.definitions import EventDefinitions
 from utils.nostr_utils import check_and_set_private_key
 
 """
-This File contains a Module to transform Text input on NOVA-Server and receive results back. 
+This File contains a module to transform Text input on n-server and receive results back. 
 
 Accepted Inputs: Prompt (text)
 Outputs: An url to an Image
@@ -53,7 +53,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
-        request_form["trainerFilePath"] = 'modules\\stablediffusionxl\\stablediffusionxl.trainer'
+        request_form["trainerFilePath"] = r'stablediffusionxl\stablediffusionxl.trainer'
 
         prompt = ""
         negative_prompt = ""
@@ -148,14 +148,14 @@ class ImageGenerationSDXL(DVMTaskInterface):
 
     def process(self, request_form):
         try:
-            # Call the process route of NOVA-Server with our request form.
-            response = send_request_to_nova_server(request_form, self.options['nova_server'])
+            # Call the process route of n-server with our request form.
+            response = send_request_to_server(request_form, self.options['server'])
             if bool(json.loads(response)['success']):
-                print("Job " + request_form['jobID'] + " sent to NOVA-server")
+                print("Job " + request_form['jobID'] + " sent to server")
 
             pool = ThreadPool(processes=1)
-            thread = pool.apply_async(check_nova_server_status, (request_form['jobID'], self.options['nova_server']))
-            print("Wait for results of NOVA-Server...")
+            thread = pool.apply_async(check_server_status, (request_form['jobID'], self.options['server']))
+            print("Wait for results of server...")
             result = thread.get()
             return result
 
@@ -172,9 +172,9 @@ def build_example(name, identifier, admin_config, server_address, default_model=
     dvm_config.LNBITS_INVOICE_KEY = ""  # This one will not use Lnbits to create invoices, but rely on zaps
     dvm_config.LNBITS_URL = ""
 
-    # A module might have options it can be initialized with, here we set a default model, and the nova-server
+    # A module might have options it can be initialized with, here we set a default model, and the server
     # address it should use. These parameters can be freely defined in the task component
-    options = {'default_model': default_model, 'default_lora': default_lora, 'nova_server': server_address}
+    options = {'default_model': default_model, 'default_lora': default_lora, 'server': server_address}
 
     nip90params = {
         "negative_prompt": {
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
     admin_config.LUD16 = ""
-    dvm = build_example("Unstable Diffusion", "unstable_diffusion", admin_config, os.getenv("NOVA_SERVER"), "stabilityai/stable-diffusion-xl", "")
+    dvm = build_example("Unstable Diffusion", "unstable_diffusion", admin_config, os.getenv("N_SERVER"), "stabilityai/stable-diffusion-xl", "")
     dvm.run()
 
     keep_alive()

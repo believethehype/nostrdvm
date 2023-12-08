@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 
-from backends.nova_server import check_nova_server_status, send_request_to_nova_server
+from backends.nserver.utils import check_server_status, send_request_to_server
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -91,13 +91,13 @@ class ImageUpscale(DVMTaskInterface):
     def process(self, request_form):
         try:
             # Call the process route of NOVA-Server with our request form.
-            response = send_request_to_nova_server(request_form, self.options['nova_server'])
+            response = send_request_to_server(request_form, self.options['server'])
             if bool(json.loads(response)['success']):
-                print("Job " + request_form['jobID'] + " sent to NOVA-server")
+                print("Job " + request_form['jobID'] + " sent to server")
 
             pool = ThreadPool(processes=1)
-            thread = pool.apply_async(check_nova_server_status, (request_form['jobID'], self.options['nova_server']))
-            print("Wait for results of NOVA-Server...")
+            thread = pool.apply_async(check_server_status, (request_form['jobID'], self.options['server']))
+            print("Wait for results of server...")
             result = thread.get()
             return result
 
@@ -128,8 +128,8 @@ def build_example(name, identifier, admin_config, server_address):
         "nip90Params": nip90params
     }
 
-    # A module might have options it can be initialized with, here we set a default model, lora and the nova-server
-    options = {'nova_server': server_address}
+    # A module might have options it can be initialized with, here we set a default model, lora and the server
+    options = {'server': server_address}
 
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
     admin_config.LUD16 = ""
-    dvm = build_example("Image Upscaler", "imageupscale", admin_config, os.getenv("NOVA_SERVER"))
+    dvm = build_example("Image Upscaler", "imageupscale", admin_config, os.getenv("N_SERVER"))
     dvm.run()
 
     keep_alive()

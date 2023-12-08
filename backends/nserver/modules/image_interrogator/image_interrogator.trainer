@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<trainer ssi-v="5">
+    <info trained="true" seed="1234"/>
+	<meta backend="nova-server" category="ImageGeneration" description="Generates Prompt from Image" is_iterable="False">
+	   	<io type="input" id="input_image" data="image" default_value=""/>
+	    <io type="output" id="output" data="text" default_value=""/>
+
+	</meta>
+    <model create="ImageInterrogator" script="image_interrogator.py" optstr="{kind:LIST:prompt,analysis};{mode:LIST:best,classic,fast,negative}"/>
+</trainer>

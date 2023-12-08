@@ -10,34 +10,29 @@ import PIL.Image as Image
 from utils.output_utils import upload_media_to_hoster
 
 """
-This file contains basic calling functions for ML tasks that are outsourced to nova-server 
-(https://pypi.org/project/hcai-nova-server/). nova-server is an Open-Source backend that enables running models locally
-based on preefined modules (nova-server-modules), by accepting a request form.
+This file contains basic calling functions for ML tasks that are outsourced to nova server. It is an Open-Source backend
+that enables running models locally based on preefined modules, by accepting a request form.
 Modules are deployed in in separate virtual environments so dependencies won't conflict. 
-
-Setup nova-server:
-https://hcmlab.github.io/nova-server/docbuild/html/tutorials/introduction.html
-
 """
 
 """
-send_request_to_nova_server(request_form, address)
+send_request_to_n_server(request_form, address)
 Function to send a request_form to the server, containing all the information we parsed from the Nostr event and added
 in the module that is calling the server
 
 """
 
 
-def send_request_to_nova_server(request_form, address):
-    print("Sending job to NOVA-Server")
+def send_request_to_server(request_form, address):
+    print("Sending job to Server")
     url = ('http://' + address + '/process')
     headers = {'Content-type': 'application/x-www-form-urlencoded'}
     response = requests.post(url, headers=headers, data=request_form)
     return response.text
 
 
-def send_file_to_nova_server(filepath, address):
-    print("Sending file to NOVA-Server")
+def send_file_to_server(filepath, address):
+    print("Sending file to Server")
     url = ('http://' + address + '/upload')
     try:
         fp = open(filepath, 'rb')
@@ -53,14 +48,14 @@ def send_file_to_nova_server(filepath, address):
 
 
 """
-check_nova_server_status(request_form, address)
+check_n_server_status(request_form, address)
 Function that requests the status of the current process with the jobID (we use the Nostr event as jobID).
 When the Job is successfully finished we grab the result and depending on the type return the output
 We throw an exception on error
 """
 
 
-def check_nova_server_status(jobID, address) -> str | pd.DataFrame:
+def check_server_status(jobID, address) -> str | pd.DataFrame:
     headers = {'Content-type': 'application/x-www-form-urlencoded'}
     url_status = 'http://' + address + '/job_status'
     url_log = 'http://' + address + '/log'
@@ -85,7 +80,7 @@ def check_nova_server_status(jobID, address) -> str | pd.DataFrame:
     if status == 2:
         try:
             url_fetch = 'http://' + address + '/fetch_result'
-            print("Fetching Results from NOVA-Server...")
+            print("Fetching Results from Server...")
             data = {"jobID": jobID, "delete_after_download": True}
             response = requests.post(url_fetch, headers=headers, data=data)
             content_type = response.headers['content-type']
@@ -96,7 +91,6 @@ def check_nova_server_status(jobID, address) -> str | pd.DataFrame:
                 result = upload_media_to_hoster("./outputs/image.jpg")
                 os.remove("./outputs/image.jpg")
                 return result
-
             elif content_type == 'text/plain; charset=utf-8':
                 return response.content.decode('utf-8')
             elif content_type == "application/x-zip-compressed":

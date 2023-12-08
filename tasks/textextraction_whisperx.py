@@ -6,7 +6,7 @@ from pathlib import Path
 
 import dotenv
 
-from backends.nova_server import check_nova_server_status, send_request_to_nova_server, send_file_to_nova_server
+from backends.nserver.utils import check_server_status, send_request_to_server, send_file_to_n_server
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -17,7 +17,7 @@ from utils.definitions import EventDefinitions
 from utils.nostr_utils import check_and_set_private_key
 
 """
-This File contains a Module to transform A media file input on NOVA-Server and receive results back. 
+This File contains a Module to transform A media file input on n-server and receive results back. 
 
 Accepted Inputs: Url to media file (url)
 Outputs: Transcribed text
@@ -53,7 +53,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", ""),
-                        "trainerFilePath": 'modules\\whisperx\\whisperx_transcript.trainer'}
+                        "trainerFilePath": r'whisperx\whisperx_transcript.trainer'}
 
         if self.options.get("default_model"):
             model = self.options['default_model']
@@ -107,7 +107,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                                     end_time = float(tag.as_vec()[3])
 
         filepath = organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True, media_format)
-        path_on_server = send_file_to_nova_server(os.path.realpath(filepath), self.options['nova_server'])
+        path_on_server = send_file_to_n_server(os.path.realpath(filepath), self.options['server'])
 
         io_input = {
             "id": "audio",
@@ -134,13 +134,13 @@ class SpeechToTextWhisperX(DVMTaskInterface):
     def process(self, request_form):
         try:
             # Call the process route of NOVA-Server with our request form.
-            response = send_request_to_nova_server(request_form, self.options['nova_server'])
+            response = send_request_to_server(request_form, self.options['server'])
             if bool(json.loads(response)['success']):
-                print("Job " + request_form['jobID'] + " sent to NOVA-server")
+                print("Job " + request_form['jobID'] + " sent to server")
 
             pool = ThreadPool(processes=1)
-            thread = pool.apply_async(check_nova_server_status, (request_form['jobID'], self.options['nova_server']))
-            print("Wait for results of NOVA-Server...")
+            thread = pool.apply_async(check_server_status, (request_form['jobID'], self.options['server']))
+            print("Wait for results of server...")
             result = thread.get()
             return result
 
@@ -156,9 +156,9 @@ def build_example(name, identifier, admin_config, server_address):
     dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
-    # A module might have options it can be initialized with, here we set a default model, and the nova-server
+    # A module might have options it can be initialized with, here we set a default model, and the server
     # address it should use. These parameters can be freely defined in the task component
-    options = {'default_model': "base", 'nova_server': server_address}
+    options = {'default_model': "base", 'server': server_address}
 
     nip90params = {
         "model": {
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
     admin_config.LUD16 = ""
-    dvm = build_example("Whisperer", "whisperx", admin_config, os.getenv("NOVA_SERVER"))
+    dvm = build_example("Whisperer", "whisperx", admin_config, os.getenv("N_SERVER"))
     dvm.run()
 
     keep_alive()

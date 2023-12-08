@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<trainer ssi-v="5">
+    <info trained="true" seed="1234"/>
+	<meta backend="nova-server" category="Transcript" description="Transcribes audio" is_iterable="False">
+	    <io type="input" id="audio" data="stream:Audio" default_value="audio"/>
+	    <io type="output" id="transcript" data="annotation:Free" default_value="transcript"/>
+	</meta>
+    <model create="WhisperX" script="whisperx_transcript.py" optstr="{model:LIST:base,tiny,small,medium,large-v1,large-v2,tiny.en,base.en,small.en,medium.en};{alignment_mode:LIST:segment,word,raw};{language:LIST:None,en,de,ar,cs,da,el,es,fa,fi,fr,he,hu,it,ja,ko,nl,pl,pt,ru,te,tr,uk,ur,vi,zh};{batch_size:STRING:16};{compute_type:LIST:float16,float32,int8}"/>
+</trainer>
