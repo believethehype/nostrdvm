@@ -6,7 +6,7 @@ from pathlib import Path
 
 import dotenv
 
-from backends.nserver.utils import check_server_status, send_request_to_server, send_file_to_n_server
+from backends.nserver.utils import check_server_status, send_request_to_server, send_file_to_server
 from interfaces.dvmtaskinterface import DVMTaskInterface
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -107,7 +107,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                                     end_time = float(tag.as_vec()[3])
 
         filepath = organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True, media_format)
-        path_on_server = send_file_to_n_server(os.path.realpath(filepath), self.options['server'])
+        path_on_server = send_file_to_server(os.path.realpath(filepath), self.options['server'])
 
         io_input = {
             "id": "audio",
