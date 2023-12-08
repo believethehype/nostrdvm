@@ -12,6 +12,7 @@ from diffusers import StableDiffusionXLImg2ImgPipeline, StableDiffusionXLPipelin
 from compel import Compel, ReturnedEmbeddingsType
 from nova_utils.utils.cache_utils import get_file
 import numpy as np
+PYTORCH_ENABLE_MPS_FALLBACK = 1
 
 import torch
 from PIL import Image
@@ -41,7 +42,7 @@ class StableDiffusionXL(Processor):
         self.output = self.output[0]
 
     def process_data(self, ds_iter) -> dict:
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self._device = ("cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_built() else "cpu"))
         self.variant = "fp16"
         self.torch_d_type = torch.float16
         self.ds_iter = ds_iter

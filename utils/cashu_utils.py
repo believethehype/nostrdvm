@@ -1,12 +1,16 @@
 import asyncio
 import base64
 import json
+import platform
+
 import requests
 from utils.database_utils import get_or_add_user
 from utils.zap_utils import create_bolt11_ln_bits, create_bolt11_lud16
 
 
 async def get_cashu_balance(url):
+    # will not work on windows
+    print("\nName of the OS system:", platform.system())
     from cashu.wallet.wallet import Wallet
     from cashu.core.settings import settings
 
@@ -24,6 +28,8 @@ async def get_cashu_balance(url):
 
 
 async def mint_cashu_test(url, amount):
+    # will not work on windows
+    print("\nName of the OS system:", platform.system())
     from cashu.wallet.wallet import Wallet
     from cashu.core.settings import settings
 
@@ -52,6 +58,9 @@ async def mint_cashu_test(url, amount):
     return token_str
 
 async def receive_cashu_test(token_str):
+    # will not work on windows
+    print("\nName of the OS system:", platform.system())
+
     from cashu.wallet.wallet import Wallet
     from cashu.core.settings import settings
     from cashu.core.base import TokenV3
