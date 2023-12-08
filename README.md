@@ -11,7 +11,7 @@ This means the project is in alpha status, interfaces might still change/break a
 
 Create a new venv by running `"python -m venv venv"`
   - Place .env file (based on .env_example) in main folder.
-  - the feamework will automatically create keys for your dvms in this file.
+  - the framework will automatically create keys for your dvms in this file.
   - Install requirements.txt
   - Run python main.py.
 
