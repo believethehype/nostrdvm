@@ -53,7 +53,7 @@ class ImageGenerationSDXL(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
-        request_form["trainerFilePath"] = r'stablediffusionxl\stablediffusionxl.trainer'
+        request_form["trainerFilePath"] = r'modules\stablediffusionxl\stablediffusionxl.trainer'
 
         prompt = ""
         negative_prompt = ""

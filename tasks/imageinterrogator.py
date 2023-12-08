@@ -48,7 +48,7 @@ class ImageInterrogator(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
-        request_form["trainerFilePath"] = r'\image_interrogator\image_interrogator.trainer'
+        request_form["trainerFilePath"] = r'modules\image_interrogator\image_interrogator.trainer'
         url = ""
         method = "prompt"
         mode = "best"

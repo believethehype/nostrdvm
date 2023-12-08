@@ -53,7 +53,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", ""),
-                        "trainerFilePath": r'whisperx\whisperx_transcript.trainer'}
+                        "trainerFilePath": r'modules\whisperx\whisperx_transcript.trainer'}
 
         if self.options.get("default_model"):
             model = self.options['default_model']

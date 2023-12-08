@@ -60,7 +60,7 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
     url_status = 'http://' + address + '/job_status'
     url_log = 'http://' + address + '/log'
 
-    print("Sending Status Request to NOVA-Server")
+    print("Sending Status Request to Server")
     data = {"jobID": jobID}
 
     status = 0
