@@ -43,7 +43,7 @@ class StableDiffusionXL(Processor):
     def process_data(self, ds_iter) -> dict:
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.variant = "fp16"
-        self.torch_d_type = torch.float32
+        self.torch_d_type = torch.float16
         self.ds_iter = ds_iter
         current_session_name = self.ds_iter.session_names[0]
         self.current_session = self.ds_iter.sessions[current_session_name]['manager']      
