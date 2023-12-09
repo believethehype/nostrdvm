@@ -15,7 +15,8 @@ from utils.database_utils import create_sql_table, get_or_add_user, update_user_
 from utils.mediasource_utils import input_data_file_duration
 from utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
 from utils.output_utils import build_status_reaction
-from utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags
+from utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
+    parse_amount_from_bolt11_invoice, zap, pay_bolt11_ln_bits
 from utils.cashu_utils import redeem_cashu
 
 use_logger = False
@@ -115,7 +116,8 @@ class DVM:
                 cashu_redeemed = False
                 if cashu != "":
                     print(cashu)
-                    cashu_redeemed, cashu_message, redeem_amount, fees = redeem_cashu(cashu, self.dvm_config, self.client, int(amount))
+                    cashu_redeemed, cashu_message, redeem_amount, fees = redeem_cashu(cashu, self.dvm_config,
+                                                                                      self.client, int(amount))
                     print(cashu_message)
                     if cashu_message != "success":
                         send_job_status_reaction(nip90_event, "error", False, amount, self.client, cashu_message,
@@ -131,7 +133,10 @@ class DVM:
                     send_job_status_reaction(nip90_event, "processing", True, 0,
                                              client=self.client, dvm_config=self.dvm_config)
 
-                    do_work(nip90_event)
+                    #  when we reimburse users on error make sure to not send anything if it was free
+                    if user.iswhitelisted or task_is_free:
+                        amount = 0
+                    do_work(nip90_event, amount)
                 # if task is directed to us via p tag and user has balance, do the job and update balance
                 elif p_tag_str == self.dvm_config.PUBLIC_KEY and user.balance >= int(amount):
                     balance = max(user.balance - int(amount), 0)
@@ -147,7 +152,7 @@ class DVM:
                     send_job_status_reaction(nip90_event, "processing", True, 0,
                                              client=self.client, dvm_config=self.dvm_config)
 
-                    do_work(nip90_event)
+                    do_work(nip90_event, amount)
 
                 # else send a payment required event to user
                 elif p_tag_str == "" or p_tag_str == self.dvm_config.PUBLIC_KEY:
@@ -228,10 +233,10 @@ class DVM:
                                         # If payment-required appears before processing
                                         self.job_list.pop(index)
                                         print("Starting work...")
-                                        do_work(job_event)
+                                        do_work(job_event, invoice_amount)
                                 else:
                                     print("Job not in List, but starting work...")
-                                    do_work(job_event)
+                                    do_work(job_event, invoice_amount)
 
                             else:
                                 send_job_status_reaction(job_event, "payment-rejected",
@@ -314,17 +319,14 @@ class DVM:
 
                 task = get_task(original_event, self.client, self.dvm_config)
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
-                        if task == dvm.TASK:
-                            try:
-                                post_processed = dvm.post_process(data, original_event)
-                                send_nostr_reply_event(post_processed, original_event.as_json())
-                            except Exception as e:
-                                send_job_status_reaction(original_event, "error", content=str(e),
+                    if task == dvm.TASK:
+                        try:
+                            post_processed = dvm.post_process(data, original_event)
+                            send_nostr_reply_event(post_processed, original_event.as_json())
+                        except Exception as e:
+                            send_job_status_reaction(original_event, "error", content=str(e),
                                                      dvm_config=self.dvm_config,
-)
-
-
-
+                                                     )
 
         def send_nostr_reply_event(content, original_event_as_str):
             original_event = Event.from_json(original_event_as_str)
@@ -443,7 +445,7 @@ class DVM:
                 EventDefinitions.KIND_FEEDBACK) + " Reaction: " + status + " " + reaction_event.as_json())
             return reaction_event.as_json()
 
-        def do_work(job_event):
+        def do_work(job_event, amount):
             if ((EventDefinitions.KIND_NIP90_EXTRACT_TEXT <= job_event.kind() <= EventDefinitions.KIND_NIP90_GENERIC)
                     or job_event.kind() == EventDefinitions.KIND_DM):
 
@@ -460,14 +462,27 @@ class DVM:
                                 send_nostr_reply_event(post_processed, job_event.as_json())
                             except Exception as e:
                                 send_job_status_reaction(job_event, "error", content=str(e),
-                                                         dvm_config=self.dvm_config,
-                                                         )
+                                                         dvm_config=self.dvm_config)
                     except Exception as e:
                         print(e)
                         # we could send the exception here to the user, but maybe that's not a good idea after all.
                         send_job_status_reaction(job_event, "error", content="An error occurred",
                                                  dvm_config=self.dvm_config)
-                        # TODO send sats back on error
+                        # Zapping back the user on error
+                        if amount > 0:
+                            user = get_or_add_user(self.dvm_config.DB, job_event.pubkey().to_hex(),
+                                                   client=self.client, config=self.dvm_config)
+                            print(user.lud16 + " " + str(amount))
+                            bolt11 = zap(user.lud16, amount, "Couldn't finish job, returning sats", job_event,
+                                         self.keys, self.dvm_config, zaptype="private")
+                            if bolt11 is None:
+                                print("Receiver has no Lightning address, can't zap back.")
+                                return
+                            try:
+                                payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
+                            except Exception as e:
+                                print(e)
+
 
                         return
 
@@ -484,7 +499,8 @@ class DVM:
                                                  client=self.client,
                                                  dvm_config=self.dvm_config)
                         print("[" + self.dvm_config.NIP89.NAME + "] doing work from joblist")
-                        do_work(job.event)
+                        amount = parse_amount_from_bolt11_invoice(job.bolt11)
+                        do_work(job.event, amount)
                     elif ispaid is None:  # invoice expired
                         self.job_list.remove(job)
 

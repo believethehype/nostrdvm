@@ -150,9 +150,9 @@ def update_profile(dvm_config, client, lud16=""):
             .set_display_name(name) \
             .set_about(about) \
             .set_picture(image) \
-            .set_lud16(lud16)
+            .set_lud16(lud16) \
+            .set_nip05(lud16)
             # .set_banner("https://example.com/banner.png") \
-            # .set_nip05("username@example.com") \
 
         print(f"Setting profile metadata for {keys.public_key().to_bech32()}...")
         print(metadata.as_json())

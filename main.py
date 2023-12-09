@@ -19,6 +19,8 @@ from utils.dvmconfig import DVMConfig
 from utils.external_dvm_utils import build_external_dvm
 from utils.nostr_utils import check_and_set_private_key
 from utils.output_utils import PostProcessFunctionType
+from utils.zap_utils import check_and_set_ln_bits_keys
+from nostr_sdk import Keys
 
 
 def playground():
@@ -26,9 +28,12 @@ def playground():
     # Note this is very basic for now and still under development
     bot_config = DVMConfig()
     bot_config.PRIVATE_KEY = check_and_set_private_key("bot")
-    bot_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
-    bot_config.LNBITS_ADMIN_KEY = os.getenv("LNBITS_ADMIN_KEY")  # The bot will forward zaps for us, use responsibly
+    npub = Keys.from_sk_str(bot_config.PRIVATE_KEY).public_key().to_bech32()
+    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("bot", npub)
+    bot_config.LNBITS_INVOICE_KEY = invoice_key
+    bot_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     bot_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+
 
     # Generate an optional Admin Config, in this case, whenever we give our DVMs this config, they will (re)broadcast
     # their NIP89 announcement
@@ -37,10 +42,13 @@ def playground():
     # If you use this global config, options will be set for all dvms that use it.
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = False
+    admin_config.LUD16 = lnaddress
     # Set rebroadcast to true once you have set your NIP89 descriptions and d tags. You only need to rebroadcast once you
     # want to update your NIP89 descriptions
+
+    # Update the DVMs (not the bot) profile. For example after you updated the NIP89 or the lnaddress, you can automatically update profiles here.
     admin_config.UPDATE_PROFILE = False
-    admin_config.LUD16 = ""
+
 
     # Spawn some DVMs in the playground and run them
     # You can add arbitrary DVMs there and instantiate them here

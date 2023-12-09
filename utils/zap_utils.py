@@ -1,17 +1,28 @@
-# LIGHTNING/CASHU/ZAP FUNCTIONS
+# LIGHTNING/ZAP FUNCTIONS
 import json
 import os
 import urllib.parse
+from pathlib import Path
+
 import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
 from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys
 from utils.dvmconfig import DVMConfig
-from utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
+from utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags, update_profile
 import lnurl
 from hashlib import sha256
+import dotenv
 
+
+# TODO tor connection to lnbits
+# proxies = {
+#    'http': 'socks5h://127.0.0.1:9050',
+#    'https': 'socks5h://127.0.0.1:9050'
+# }
+
+proxies = {}
 
 def parse_zap_event_tags(zap_event, keys, name, client, config):
     zapped_event = None
@@ -116,12 +127,34 @@ def create_bolt11_lud16(lud16, amount):
     except:
         return None
 
+def create_lnbits_account(name):
+    if os.getenv("LNBITS_ADMIN_ID") is None or os.getenv("LNBITS_ADMIN_ID") == "":
+        print("No admin id set, no wallet created.")
+        return
+    data = {
+        'admin_id': os.getenv("LNBITS_ADMIN_ID"),
+        'wallet_name': name,
+        'user_name': name,
+    }
+    try:
+        json_object = json.dumps(data)
+        url = os.getenv("LNBITS_HOST") + '/usermanager/api/v1/users'
+        print(url)
+        headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
+        r = requests.post(url, data=json_object, headers=headers, proxies=proxies)
+        walletjson = json.loads(r.text)
+        print(walletjson)
+        if walletjson.get("wallets"):
+            return walletjson['wallets'][0]['inkey'], walletjson['wallets'][0]['adminkey'], walletjson['wallets'][0]['id'], walletjson['id'], "success"
+    except:
+        print("error creating wallet")
+
 
 def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
     url = config.LNBITS_URL + "/api/v1/payments/" + payment_hash
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
-        res = requests.get(url, headers=headers)
+        res = requests.get(url, headers=headers, proxies=proxies)
         obj = json.loads(res.text)
         if obj.get("paid"):
             return obj["paid"]
@@ -264,3 +297,74 @@ def get_price_per_sat(currency):
         price_currency_per_sat = 0.0004
 
     return price_currency_per_sat
+
+
+
+def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
+    #env_path = Path('.env')
+    #if env_path.is_file():
+    #    dotenv.load_dotenv(env_path, verbose=True, override=True)
+
+
+    print(os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()))
+    data = {
+        'name': identifier,
+        'domain': nostdressdomain,
+        'kind': "lnbits",
+        'host': os.getenv("LNBITS_HOST"),
+        'key': os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()),
+        'pin': pin,
+        'npub': npub,
+        'currentname':  " "
+    }
+
+
+    try:
+        url = "https://" + nostdressdomain + "/api/easy/"
+        res = requests.post(url, data=data)
+        print(res.text)
+        obj = json.loads(res.text)
+
+        if obj.get("ok"):
+            return identifier + "@" + nostdressdomain, obj["pin"]
+    except Exception as e:
+        print(e)
+        return "", ""
+
+def check_and_set_ln_bits_keys(identifier, npub):
+
+    if not os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()):
+        invoicekey, adminkey, walletid, userid, success = create_lnbits_account(identifier)
+        add_key_to_env_file("LNBITS_INVOICE_KEY_" + identifier.upper(), invoicekey)
+        add_key_to_env_file("LNBITS_ADMIN_KEY_" + identifier.upper(), adminkey)
+        add_key_to_env_file("LNBITS_USER_ID_" + identifier.upper(), userid)
+        add_key_to_env_file("LNBITS_WALLET_ID_" + identifier.upper(), userid)
+
+        lnaddress = ""
+        pin = ""
+        if os.getenv("NOSTDRESS_DOMAIN"):
+            print(os.getenv("NOSTDRESS_DOMAIN"))
+            lnaddress, pin = make_ln_address_nostdress(identifier, npub, " ", os.getenv("NOSTDRESS_DOMAIN"))
+        add_key_to_env_file("LNADDRESS_" + identifier.upper(), lnaddress)
+        add_key_to_env_file("LNADDRESS_PIN_" + identifier.upper(), pin)
+
+        return invoicekey, adminkey, userid, walletid, lnaddress
+    else:
+        return (os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()),
+                os.getenv("LNBITS_ADMIN_KEY_" + identifier.upper()),
+                os.getenv("LNBITS_USER_ID_" + identifier.upper()),
+                os.getenv("LNBITS_WALLET_ID_" + identifier.upper()),
+                os.getenv("LNADDRESS_" + identifier.upper()))
+
+
+
+
+
+
+def add_key_to_env_file(value, oskey):
+    env_path = Path('.env')
+    if env_path.is_file():
+        dotenv.load_dotenv(env_path, verbose=True, override=True)
+        dotenv.set_key(env_path, value, oskey)
+
+
