@@ -298,6 +298,7 @@ class Bot:
                                         print("Receiver has no Lightning address")
                                         return
                                 try:
+                                    print(bolt11)
                                     payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
                                     self.job_list[self.job_list.index(entry)]['is_paid'] = True
                                     print("[" + self.NAME + "] payment_hash: " + payment_hash +
@@ -366,16 +367,39 @@ class Bot:
                                                                                            self.keys, self.NAME,
                                                                                            self.client, self.dvm_config)
 
-                user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
-                if zapped_event is not None:
-                    if not anon:
-                        print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
-                            invoice_amount) + " Sats from " + str(
-                            user.name))
-                        update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                                            config=self.dvm_config)
+                etag = ""
+                for tag in zap_event.tags():
+                    if tag.as_vec()[0] == "e":
+                        etag = tag.as_vec()[1]
 
-                        # a regular note
+
+                user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
+
+
+                entry = next((x for x in self.job_list if x['event_id'] == etag), None)
+                print(entry)
+                #print(entry['dvm_key'])
+                # print(str(zapped_event.pubkey().to_hex()))
+                # print(str(zap_event.pubkey().to_hex()))
+                print(sender)
+                if entry is not None and entry['is_paid'] is True and entry['dvm_key'] == sender:
+                    # if we get a bolt11, we pay and move on
+                    user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
+                                           client=self.client, config=self.dvm_config)
+
+                    print("HELLO: " + user.name)
+                    sender = user.npub
+                    #print(zap_event.as_json())
+
+                if zapped_event is not None:
+                        if not anon:
+                            print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
+                                invoice_amount) + " Sats from " + str(
+                                user.name))
+                            update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
+                                                config=self.dvm_config)
+
+                            # a regular note
                 elif not anon:
                     print("[" + self.NAME + "] Profile Zap received for Bot balance: " + str(
                         invoice_amount) + " Sats from " + str(
