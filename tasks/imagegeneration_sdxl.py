@@ -13,6 +13,9 @@ from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from utils.definitions import EventDefinitions
 from utils.nostr_utils import check_and_set_private_key
+from nostr_sdk import Keys
+
+from utils.zap_utils import check_and_set_ln_bits_keys
 
 """
 This File contains a module to transform Text input on n-server and receive results back. 
@@ -169,8 +172,12 @@ def build_example(name, identifier, admin_config, server_address, default_model=
                                                                                    "-base-1.0", default_lora=""):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
-    dvm_config.LNBITS_INVOICE_KEY = ""  # This one will not use Lnbits to create invoices, but rely on zaps
-    dvm_config.LNBITS_URL = ""
+    npub = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_bech32()
+    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    dvm_config.LNBITS_INVOICE_KEY = invoice_key
+    dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
+    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    admin_config.LUD16 = lnaddress
 
     # A module might have options it can be initialized with, here we set a default model, and the server
     # address it should use. These parameters can be freely defined in the task component
