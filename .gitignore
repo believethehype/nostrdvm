@@ -166,6 +166,10 @@ outputs
 app_deploy.py
 app.py
 app_deploy.py
-db/Cashu/wallet.sqlite3
+
+db/*
 .idea/misc.xml
 .idea/misc.xml
+backends/nserver/venv
+backends/nserver/cache
+backends/nserver/modules/image_upscale/weights
