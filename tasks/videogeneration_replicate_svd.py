@@ -16,7 +16,8 @@ from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from utils.nostr_utils import check_and_set_private_key
 from utils.output_utils import upload_media_to_hoster
-from utils.zap_utils import get_price_per_sat
+from utils.zap_utils import get_price_per_sat, check_and_set_ln_bits_keys
+from nostr_sdk import Keys
 
 """
 This File contains a Module to transform an image to a short video clip using Stable Video Diffusion with replicate
@@ -113,8 +114,12 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
 def build_example(name, identifier, admin_config):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
-    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    npub = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_bech32()
+    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    dvm_config.LNBITS_INVOICE_KEY = invoice_key
+    dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    admin_config.LUD16 = lnaddress
     profit_in_sats = 10
     cost_in_cent = 4.0
     dvm_config.FIX_COST = int(((cost_in_cent / (get_price_per_sat("USD") * 100)) + profit_in_sats))
@@ -136,6 +141,7 @@ def build_example(name, identifier, admin_config):
                                                               nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
+
     return VideoGenerationReplicateSVD(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 

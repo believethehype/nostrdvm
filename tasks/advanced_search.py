@@ -17,6 +17,7 @@ from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from utils.nostr_utils import get_event_by_id, check_and_set_private_key
 from utils.output_utils import post_process_list_to_users, post_process_list_to_events
+from utils.zap_utils import check_and_set_ln_bits_keys
 
 """
 This File contains a Module to search for notes
@@ -143,8 +144,12 @@ class AdvancedSearch(DVMTaskInterface):
 def build_example(name, identifier, admin_config):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
-    dvm_config.LNBITS_INVOICE_KEY = os.getenv("LNBITS_INVOICE_KEY")
+    npub = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_bech32()
+    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    dvm_config.LNBITS_INVOICE_KEY = invoice_key
+    dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    admin_config.LUD16 = lnaddress
     # Add NIP89
     nip90params = {
         "user": {
