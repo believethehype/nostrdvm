@@ -21,6 +21,7 @@ install==1.3.5
 instaloader==4.10.1
 lnurl==0.4.1
 mediatype==0.1.6
+moviepy==2.0.0.dev2
 nostr-sdk==0.0.5
 numpy==1.26.2
 openai==1.3.5
