@@ -44,6 +44,7 @@ class AdvancedSearch(DVMTaskInterface):
                 input_type = tag.as_vec()[2]
                 if input_type != "text":
                     return False
+        return True
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
