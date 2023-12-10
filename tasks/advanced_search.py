@@ -54,7 +54,7 @@ class AdvancedSearch(DVMTaskInterface):
 
         # default values
         user = ""
-        since_days = 1 #days ago
+        since_days = 800 #days ago
         until_days = 0 #days ago
         search = ""
         max_results = 20
@@ -105,23 +105,21 @@ class AdvancedSearch(DVMTaskInterface):
         search_until = Timestamp.from_secs(dif)
 
         if options["user"] == "":
-            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until)
+            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
         elif options["search"] == "":
-            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).since(search_since).until(search_until)
+            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).since(search_since).until(search_until).limit(options["max_results"])
         else:
-            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).search(options["search"]).since(search_since).until(search_until)
+            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
 
         events = cli.get_events_of([notes_filter], timedelta(seconds=5))
 
         result_list = []
         if len(events) > 0:
-            i = 0
+
             for event in events:
-                if i < int(options["max_results"]):
-                    i = i+1
-                    e_tag = Tag.parse(["e", event.id().to_hex()])
-                    print(e_tag.as_vec())
-                    result_list.append(e_tag.as_vec())
+                e_tag = Tag.parse(["e", event.id().to_hex()])
+                print(e_tag.as_vec())
+                result_list.append(e_tag.as_vec())
 
         return json.dumps(result_list)
 
