@@ -159,7 +159,8 @@ class Bot:
 
                 elif decrypted_text.startswith("cashuA"):
                     print("Received Cashu token:" + decrypted_text)
-                    cashu_redeemed, cashu_message, total_amount, fees = redeem_cashu(decrypted_text, self.dvm_config, self.client)
+                    cashu_redeemed, cashu_message, total_amount, fees = redeem_cashu(decrypted_text, self.dvm_config,
+                                                                                     self.client)
                     print(cashu_message)
                     if cashu_message == "success":
                         update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
@@ -173,7 +174,8 @@ class Bot:
                 elif decrypted_text.lower().startswith("what's the second best"):
                     time.sleep(3.0)
                     evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
-                                                                    "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4",nostr_event.id()).to_event(self.keys)
+                                                                "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4",
+                                                                nostr_event.id()).to_event(self.keys)
                     send_event(evt, client=self.client, dvm_config=self.dvm_config)
 
                 else:
@@ -230,7 +232,7 @@ class Bot:
 
                 if status == "success" or status == "error" or status == "processing" or status == "partial" and content != "":
                     entry = next((x for x in self.job_list if x['event_id'] == etag), None)
-                    if entry is not None:
+                    if entry is not None and entry['dvm_key'] == nostr_event.pubkey().to_hex():
                         user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                                client=self.client, config=self.dvm_config)
                         time.sleep(2.0)
@@ -324,7 +326,8 @@ class Bot:
                         is_encrypted = True
 
                 entry = next((x for x in self.job_list if x['event_id'] == etag), None)
-                if entry is not None:
+                if entry is not None and entry[
+                    'dvm_key'] == nostr_event.pubkey().to_hex():
                     print(entry)
                     user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                            client=self.client, config=self.dvm_config)
@@ -340,14 +343,12 @@ class Bot:
                     dvms = [x for x in self.dvm_config.SUPPORTED_DVMS if
                             x.PUBLIC_KEY == nostr_event.pubkey().to_hex() and x.KIND == nostr_event.kind() - 1000]
                     if len(dvms) > 0:
-                            dvm = dvms[0]
-                            if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE != PostProcessFunctionType.NONE:
-                                if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE == PostProcessFunctionType.LIST_TO_EVENTS:
-                                    content = post_process_list_to_events(content)
-                                elif dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE == PostProcessFunctionType.LIST_TO_USERS:
-                                    content = post_process_list_to_users(content)
-
-
+                        dvm = dvms[0]
+                        if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE != PostProcessFunctionType.NONE:
+                            if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE == PostProcessFunctionType.LIST_TO_EVENTS:
+                                content = post_process_list_to_events(content)
+                            elif dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE == PostProcessFunctionType.LIST_TO_USERS:
+                                content = post_process_list_to_users(content)
 
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     time.sleep(1.0)
@@ -372,13 +373,11 @@ class Bot:
                     if tag.as_vec()[0] == "e":
                         etag = tag.as_vec()[1]
 
-
                 user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
-
 
                 entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                 print(entry)
-                #print(entry['dvm_key'])
+                # print(entry['dvm_key'])
                 # print(str(zapped_event.pubkey().to_hex()))
                 # print(str(zap_event.pubkey().to_hex()))
                 print(sender)
@@ -387,19 +386,17 @@ class Bot:
                     user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                            client=self.client, config=self.dvm_config)
 
-                    print("HELLO: " + user.name)
                     sender = user.npub
-                    #print(zap_event.as_json())
 
                 if zapped_event is not None:
-                        if not anon:
-                            print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
-                                invoice_amount) + " Sats from " + str(
-                                user.name))
-                            update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                                                config=self.dvm_config)
+                    if not anon:
+                        print("[" + self.NAME + "] Note Zap received for Bot balance: " + str(
+                            invoice_amount) + " Sats from " + str(
+                            user.name))
+                        update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
+                                            config=self.dvm_config)
 
-                            # a regular note
+                        # a regular note
                 elif not anon:
                     print("[" + self.NAME + "] Profile Zap received for Bot balance: " + str(
                         invoice_amount) + " Sats from " + str(
@@ -470,7 +467,6 @@ class Bot:
                 tags.append(relays)
                 return tags
 
-
             tags = []
             command = decrypted_text.replace(split[0] + " ", "")
             split = command.split(" -")
@@ -506,7 +502,6 @@ class Bot:
             remaining_text = command.replace(input, "")
             print(remaining_text)
 
-
             params = remaining_text.rstrip().split(" -")
 
             for i in params:
@@ -524,7 +519,8 @@ class Bot:
                             else:
                                 if param == "user":
                                     if value.startswith("@") or value.startswith("nostr:") or value.startswith("npub"):
-                                        value = PublicKey.from_bech32(value.replace("@","").replace("nostr:","")).to_hex()
+                                        value = PublicKey.from_bech32(
+                                            value.replace("@", "").replace("nostr:", "")).to_hex()
                                 tag = Tag.parse(["param", param, value])
                             tags.append(tag)
                             print("Added params: " + str(tag.as_vec()))
