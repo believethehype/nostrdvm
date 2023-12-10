@@ -10,7 +10,7 @@ import tasks.textextraction_pdf as textextraction_pdf
 import tasks.textextraction_google as textextraction_google
 import tasks.translation_google as translation_google
 import tasks.translation_libretranslate as translation_libretranslate
-from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd, imagegeneration_sdxl
+from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd, imagegeneration_sdxl, trending_notes_nostrband
 
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -136,6 +136,10 @@ def playground():
                                                                  admin_config)
     bot_config.SUPPORTED_DVMS.append(discover_inactive)
     discover_inactive.run()
+
+    trending = trending_notes_nostrband.build_example("Trending Notes on nostr.band", "trending_notes_nostrband", admin_config)
+    bot_config.SUPPORTED_DVMS.append(trending)
+    trending.run()
 
     # Run the bot
     Bot(bot_config)
