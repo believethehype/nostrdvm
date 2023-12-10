@@ -227,8 +227,7 @@ class DVM:
                                 if index > -1:
                                     if self.job_list[index].is_processed:  # If payment-required appears a processing
                                         self.job_list[index].is_paid = True
-                                        check_and_return_event(self.job_list[index].result,
-                                                               str(job_event.as_json()))
+                                        check_and_return_event(self.job_list[index].result, job_event)
                                     elif not (self.job_list[index]).is_processed:
                                         # If payment-required appears before processing
                                         self.job_list.pop(index)
@@ -291,9 +290,8 @@ class DVM:
             else:
                 return True
 
-        def check_and_return_event(data, original_event_str: str):
-            original_event = Event.from_json(original_event_str)
-
+        def check_and_return_event(data, original_event: Event):
+            amount = 0
             for x in self.job_list:
                 if x.event == original_event:
                     is_paid = x.is_paid
@@ -301,7 +299,7 @@ class DVM:
                     x.result = data
                     x.is_processed = True
                     if self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and not is_paid:
-                        send_nostr_reply_event(data, original_event_str)
+                        send_nostr_reply_event(data, original_event.as_json())
                         send_job_status_reaction(original_event, "success", amount,
                                                  dvm_config=self.dvm_config,
                                                  )  # or payment-required, or both?
@@ -314,7 +312,7 @@ class DVM:
                         self.job_list.remove(x)
                     elif not self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and is_paid:
                         self.job_list.remove(x)
-                        send_nostr_reply_event(data, original_event_str)
+                        send_nostr_reply_event(data, original_event.as_json())
                     break
 
                 task = get_task(original_event, self.client, self.dvm_config)
@@ -324,9 +322,24 @@ class DVM:
                             post_processed = dvm.post_process(data, original_event)
                             send_nostr_reply_event(post_processed, original_event.as_json())
                         except Exception as e:
-                            send_job_status_reaction(original_event, "error", content=str(e),
+                            # Zapping back by error in post-processing is a risk for the DVM because work has been done,
+                            # but maybe something with parsing/uploading failed. Try to avoid errors here as good as possible
+                            send_job_status_reaction(original_event, "error", content="Error in Post-processing: " + str(e),
                                                      dvm_config=self.dvm_config,
                                                      )
+                            if amount > 0:
+                                user = get_or_add_user(self.dvm_config.DB, original_event.pubkey().to_hex(),
+                                                       client=self.client, config=self.dvm_config)
+                                print(user.lud16 + " " + str(amount))
+                                bolt11 = zap(user.lud16, amount, "Couldn't finish job, returning sats", original_event,
+                                             self.keys, self.dvm_config, zaptype="private")
+                                if bolt11 is None:
+                                    print("Receiver has no Lightning address, can't zap back.")
+                                    return
+                                try:
+                                    payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
+                                except Exception as e:
+                                    print(e)
 
         def send_nostr_reply_event(content, original_event_as_str):
             original_event = Event.from_json(original_event_as_str)
