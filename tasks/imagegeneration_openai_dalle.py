@@ -78,8 +78,6 @@ class ImageGenerationDALLE(DVMTaskInterface):
                         if len(split) > 1:
                             width = split[0]
                             height = split[1]
-                elif tag.as_vec()[1] == "model":
-                    model = tag.as_vec()[2]
                 elif tag.as_vec()[1] == "quality":
                     quality = tag.as_vec()[2]
 
