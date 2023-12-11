@@ -1,10 +1,8 @@
 import json
 import os
-from io import BytesIO
 from pathlib import Path
 
 import dotenv
-import requests
 from litellm import completion
 
 from interfaces.dvmtaskinterface import DVMTaskInterface
@@ -14,15 +12,14 @@ from utils.definitions import EventDefinitions
 from utils.dvmconfig import DVMConfig
 from utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from utils.nostr_utils import check_and_set_private_key
-from utils.output_utils import upload_media_to_hoster
-from utils.zap_utils import get_price_per_sat, check_and_set_ln_bits_keys
+from utils.zap_utils import check_and_set_ln_bits_keys
 from nostr_sdk import Keys
 
 """
-This File contains a Module to transform Text input on OpenAI's servers with DALLE-3 and receive results back. 
+This File contains a Module to generate Text, based on a prompt using a LLM (local or API)
 
 Accepted Inputs: Prompt (text)
-Outputs: An url to an Image
+Outputs: Generated text
 """
 
 
@@ -34,8 +31,7 @@ class TextGenerationOLLAMA(DVMTaskInterface):
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
-        if options is not None and options.get("server"):
-            self.options["server"] = options["server"]
+
 
     def is_input_supported(self, tags):
         for tag in tags:
@@ -50,9 +46,14 @@ class TextGenerationOLLAMA(DVMTaskInterface):
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
         prompt = ""
-        model = "ollama/llama2-uncensored" #ollama/nous-hermes # This requires an instance of OLLAMA running
-        #model = "gpt-4-1106-preview" # This will call chatgpt and requires an OpenAI API Key set in .env
-        server = "http://localhost:11434"
+        if self.options.get("default_model") and self.options.get("default_model") != "":
+            model = self.options['default_model']
+        else:
+            model = "gpt-3.5-turbo" #"gpt-4-1106-preview" # This will call chatgpt and requires an OpenAI API Key set in .env
+        if self.options.get("server") and self.options.get("server") != "":
+            server = self.options['server']
+        else:
+            server = "http://localhost:11434" #default ollama server. This will only be used for ollama models.
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -122,12 +123,14 @@ def build_example(name, identifier, admin_config):
         "nip90Params": nip90params
     }
 
+    options = {'default_model': "ollama/llama2-uncensored", 'server': "http://localhost:11434"}
+
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
                                            nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
-    return TextGenerationOLLAMA(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
+    return TextGenerationOLLAMA(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config, options=options)
 
 
 if __name__ == '__main__':
