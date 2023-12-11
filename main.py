@@ -10,7 +10,7 @@ import tasks.textextraction_pdf as textextraction_pdf
 import tasks.textextraction_google as textextraction_google
 import tasks.translation_google as translation_google
 import tasks.translation_libretranslate as translation_libretranslate
-from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd, imagegeneration_sdxl, trending_notes_nostrband
+from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd, imagegeneration_sdxl, trending_notes_nostrband, textgeneration_llmlite
 
 from utils.admin_utils import AdminConfig
 from utils.backend_utils import keep_alive
@@ -141,6 +141,9 @@ def playground():
     bot_config.SUPPORTED_DVMS.append(trending)
     trending.run()
 
+    ollama = textgeneration_llmlite.build_example("LLM", "llmlite", admin_config)
+    bot_config.SUPPORTED_DVMS.append(ollama)
+    ollama.run()
     # Run the bot
     Bot(bot_config)
     # Keep the main function alive for libraries that require it, like openai
