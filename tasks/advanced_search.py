@@ -201,7 +201,6 @@ if __name__ == '__main__':
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
-    admin_config.LUD16 = ""
 
     dvm = build_example("Advanced Nostr Search", "discovery_content_search", admin_config)
     dvm.run()
