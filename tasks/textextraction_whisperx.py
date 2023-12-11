@@ -204,7 +204,6 @@ if __name__ == '__main__':
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
-    admin_config.LUD16 = ""
     dvm = build_example("Whisperer", "whisperx", admin_config, os.getenv("N_SERVER"))
     dvm.run()
 
