@@ -327,7 +327,7 @@ class DVM:
                             send_job_status_reaction(original_event, "error", content="Error in Post-processing: " + str(e),
                                                      dvm_config=self.dvm_config,
                                                      )
-                            if amount > 0:
+                            if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":
                                 user = get_or_add_user(self.dvm_config.DB, original_event.pubkey().to_hex(),
                                                        client=self.client, config=self.dvm_config)
                                 print(user.lud16 + " " + str(amount))
@@ -482,7 +482,7 @@ class DVM:
                         send_job_status_reaction(job_event, "error", content="An error occurred",
                                                  dvm_config=self.dvm_config)
                         # Zapping back the user on error
-                        if amount > 0:
+                        if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":
                             user = get_or_add_user(self.dvm_config.DB, job_event.pubkey().to_hex(),
                                                    client=self.client, config=self.dvm_config)
                             print(user.lud16 + " " + str(amount))
