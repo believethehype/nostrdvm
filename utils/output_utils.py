@@ -175,8 +175,7 @@ def upload_media_to_hoster(filepath: str):
                 print(result)
                 return result
             except:
-                return "Upload not possible, all hosters didn't work"
-
+                raise Exception("Upload not possible, all hosters didn't work")
 
 def build_status_reaction(status, task, amount, content):
     alt_description = "This is a reaction to a NIP90 DVM AI task. "
