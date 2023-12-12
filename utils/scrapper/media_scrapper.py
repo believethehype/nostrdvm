@@ -498,7 +498,7 @@ def InstagramDownload(url, name, path) -> str:
             return path + "\\" + name + ".mp4"
     elif photo_url:
         response = requests.get(photo_url)
-        with open(path + name + "\\" + ".jpg", "wb") as f:
+        with open(path + "\\" + name + ".jpg", "wb") as f:
             f.write(response.content)
             return path + "\\" + name + ".jpg"
 
