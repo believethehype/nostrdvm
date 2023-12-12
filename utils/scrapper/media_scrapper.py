@@ -463,9 +463,9 @@ def TikTokDownload(cookies, headers, data, name, path) -> str:
                    if i.startswith("href=")][0]
 
     response = requests.get(parsed_link[6:-10])
-    with open(path + "tiktok" + name + ".mp4", "wb") as f:
+    with open(path + "\\" + name + ".mp4", "wb") as f:
         f.write(response.content)
-    return path + "tiktok" + name + ".mp4"
+    return path + "\\" + name + ".mp4"
 
 
 def TiktokDownloadAll(linkList, path) -> str:
@@ -475,7 +475,7 @@ def TiktokDownloadAll(linkList, path) -> str:
     for i in linkList:
         try:
             data['url'] = i
-            result = TikTokDownload(cookies, headers, data, str(linkList.index(i)), path)
+            result = TikTokDownload(cookies, headers, data, "tiktok", path) # str(linkList.index(i))
             return result
         except IndexError:
             parseDict = getDict()
