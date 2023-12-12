@@ -493,14 +493,14 @@ def InstagramDownload(url, name, path) -> str:
     print(video_url)
     if video_url:
         response = requests.get(video_url)
-        with open(path + "insta" + name + ".mp4", "wb") as f:
+        with open(path + "/" + name + ".mp4", "wb") as f:
             f.write(response.content)
-            return path + "insta" + name + ".mp4"
+            return path + "/" + name + ".mp4"
     elif photo_url:
         response = requests.get(photo_url)
-        with open(path + "insta" + name + ".jpg", "wb") as f:
+        with open(path + name + "/" + ".jpg", "wb") as f:
             f.write(response.content)
-            return path + "insta" + name + ".jpg"
+            return path + "/" + name + ".jpg"
 
 
 def InstagramDownloadAll(linklist, path) -> str:

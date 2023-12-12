@@ -177,6 +177,7 @@ def upload_media_to_hoster(filepath: str):
             except:
                 raise Exception("Upload not possible, all hosters didn't work or couldn't generate output")
 
+
 def build_status_reaction(status, task, amount, content):
     alt_description = "This is a reaction to a NIP90 DVM AI task. "
 
