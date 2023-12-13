@@ -28,10 +28,13 @@ class TextExtractionPDF(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "pdf-to-text"
     FIX_COST: float = 0
+    dependencies = ["pypdf==3.17.1"]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
+
+
 
     def is_input_supported(self, tags):
         for tag in tags:
