@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 import dotenv
-from litellm import completion
+
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -27,6 +27,7 @@ class TextGenerationOLLAMA(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_TEXT
     TASK: str = "text-to-text"
     FIX_COST: float = 0
+    dependencies = ["litellm==1.12.3"]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
@@ -71,6 +72,8 @@ class TextGenerationOLLAMA(DVMTaskInterface):
         return request_form
 
     def process(self, request_form):
+        from litellm import completion
+
         options = DVMTaskInterface.set_options(request_form)
 
         try:

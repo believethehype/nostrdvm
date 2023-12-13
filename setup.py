@@ -6,17 +6,29 @@ LONG_DESCRIPTION = '-'
 
 # Setting up
 setup(
-    # the name must match the folder name 'verysimplemodule'
     name="nostr-dvm",
     version=VERSION,
     author="Believethehype",
     author_email="-",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
-    packages=find_packages(),
-    install_requires=[],  # add any additional packages that
-    # needs to be installed along with your package. Eg: 'caer'
-
+    packages=find_packages(include=['nostr_dvm']),
+    install_requires=["nostr-sdk==0.0.5",
+                      "bech32==1.2.0",
+                      "pycryptodome==3.19.0",
+                      "python-dotenv==1.0.0",
+                      "emoji==2.8.0",
+                      "eva-decord==0.6.1",
+                      "ffmpegio==0.8.5",
+                      "lnurl==0.4.1",
+                      "pandas==2.1.3",
+                      "Pillow==10.1.0",
+                      "PyUpload==0.1.4",
+                      "requests==2.31.0",
+                      "instaloader==4.10.1",
+                      "pytube==15.0.0",
+                      "moviepy==2.0.0.dev2"
+                      ],
     keywords=['nostr', 'nip90', 'dvm', 'data vending machine'],
     classifiers=[
         "Development Status :: 3 - Alpha",
