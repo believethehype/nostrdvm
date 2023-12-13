@@ -9,7 +9,7 @@ setup(
     name="nostr-dvm",
     version=VERSION,
     author="Believethehype",
-    author_email="-",
+    author_email="believethehypeonnostr@proton.me",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     packages=find_packages(include=['nostr_dvm']),
