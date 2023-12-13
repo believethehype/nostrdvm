@@ -1,26 +1,19 @@
 import os
 from pathlib import Path
 import dotenv
-from bot.bot import Bot
 
-import tasks.convert_media as convert_media
-import tasks.discovery_inactive_follows as discovery_inactive_follows
-import tasks.imagegeneration_openai_dalle as imagegeneration_openai_dalle
-import tasks.textextraction_pdf as textextraction_pdf
-import tasks.textextraction_google as textextraction_google
-import tasks.translation_google as translation_google
-import tasks.translation_libretranslate as translation_libretranslate
-from tasks import imagegeneration_replicate_sdxl, videogeneration_replicate_svd, trending_notes_nostrband, \
-    textgeneration_llmlite
-
-from utils.admin_utils import AdminConfig
-from utils.backend_utils import keep_alive
-from utils.definitions import EventDefinitions
-from utils.dvmconfig import DVMConfig
-from utils.external_dvm_utils import build_external_dvm
-from utils.nostr_utils import check_and_set_private_key
-from utils.output_utils import PostProcessFunctionType
-from utils.zap_utils import check_and_set_ln_bits_keys
+from nostr_dvm.bot import Bot
+from nostr_dvm.tasks import videogeneration_replicate_svd, imagegeneration_replicate_sdxl, textgeneration_llmlite, \
+    trending_notes_nostrband, discovery_inactive_follows, translation_google, textextraction_pdf, \
+    translation_libretranslate, textextraction_google, convert_media, imagegeneration_openai_dalle
+from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.backend_utils import keep_alive
+from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.external_dvm_utils import build_external_dvm
+from nostr_dvm.utils.nostr_utils import check_and_set_private_key
+from nostr_dvm.utils.output_utils import PostProcessFunctionType
+from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 from nostr_sdk import Keys
 
 
@@ -115,7 +108,7 @@ def playground():
 
     # Spawn DVM 7 Find inactive followers
     googleextractor = textextraction_google.build_example("Extractor", "speech_recognition",
-                                                                 admin_config)
+                                                          admin_config)
     bot_config.SUPPORTED_DVMS.append(googleextractor)
     googleextractor.run()
 
