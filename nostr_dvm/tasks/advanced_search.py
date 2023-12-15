@@ -139,35 +139,34 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
-    nip90params = {
-        "user": {
-            "required": False,
-            "values": [],
-            "description": "Do the task for another user"
-        },
-        "since": {
-            "required": False,
-            "values": [],
-            "description": "The number of days in the past from now the search should include"
-        },
-        "until": {
-            "required": False,
-            "values": [],
-            "description": "The number of days in the past from now the search should include up to"
-        },
-        "max_results": {
-            "required": False,
-            "values": [],
-            "description": "The number of maximum results to return (default currently 20)"
-        }
-    }
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I search notes",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "user": {
+                "required": False,
+                "values": [],
+                "description": "Do the task for another user"
+            },
+            "since": {
+                "required": False,
+                "values": [],
+                "description": "The number of days in the past from now the search should include"
+            },
+            "until": {
+                "required": False,
+                "values": [],
+                "description": "The number of days in the past from now the search should include up to"
+            },
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 20)"
+            }
+        }
     }
 
     nip89config = NIP89Config()

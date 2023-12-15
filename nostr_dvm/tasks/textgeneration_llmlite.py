@@ -102,19 +102,18 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    nip90params = {
-        "size": {
-            "required": False,
-            "values": ["1024:1024", "1024x1792", "1792x1024"]
-        }
-    }
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I use a LLM connected via OLLAMA",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "size": {
+                "required": False,
+                "values": ["1024:1024", "1024x1792", "1792x1024"]
+            }
+        }
     }
 
     options = {'default_model': "ollama/llama2-uncensored", 'server': "http://localhost:11434"}
