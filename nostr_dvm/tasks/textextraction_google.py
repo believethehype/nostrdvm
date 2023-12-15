@@ -27,10 +27,13 @@ class SpeechToTextGoogle(DVMTaskInterface):
     TASK: str = "speech-to-text"
     FIX_COST: float = 10
     PER_UNIT_COST: float = 0.1
-    dependencies = [("speech_recognition", "SpeechRecognition==3.10.0")]
+    dependencies = [("nostr-dvm", "nostr-dvm"),
+                    ("speech_recognition", "SpeechRecognition==3.10.0")]
+
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
+        dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options)
         if options is None:
             options = {}
@@ -155,20 +158,26 @@ def build_example(name, identifier, admin_config):
 
     return SpeechToTextGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config,
                               admin_config=admin_config, options=options)
+def process_venv():
+    args = DVMTaskInterface.process_args()
+    dvm_config = build_default_config(args.identifier)
+    dvm = SpeechToTextGoogle(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    result = dvm.process(json.loads(args.request))
+    DVMTaskInterface.write_output(result, args.output)
 
 
-if __name__ == '__main__':
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-    else:
-        raise FileNotFoundError(f'.env file not found at {env_path} ')
+#if __name__ == '__main__':
+#    env_path = Path('.env')
+#    if env_path.is_file():
+#        print(f'loading environment from {env_path.resolve()}')
+#        dotenv.load_dotenv(env_path, verbose=True, override=True)
+#    else:
+#        raise FileNotFoundError(f'.env file not found at {env_path} ')
+#
+#    admin_config = AdminConfig()
+#    admin_config.REBROADCAST_NIP89 = False
+#    admin_config.UPDATE_PROFILE = False
+#    dvm = build_example("Transcriptor", "speech_recognition", admin_config)
+#    dvm.run()
 
-    admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP89 = False
-    admin_config.UPDATE_PROFILE = False
-    dvm = build_example("Transcriptor", "speech_recognition", admin_config)
-    dvm.run()
-
-    keep_alive()
+ #   keep_alive()

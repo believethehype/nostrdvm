@@ -27,6 +27,8 @@ class DVMConfig:
     LNBITS_ADMIN_KEY = ''  # In order to pay invoices, e.g. from the bot to DVMs, or reimburse users.
     LNBITS_URL = 'https://lnbits.com'
     LN_ADDRESS = ''
+    SCRIPT = ''
+    IDENTIFIER = ''
     DB: str
     NEW_USER_BALANCE: int = 0  # Free credits for new users
     NIP89: NIP89Config
@@ -36,6 +38,7 @@ class DVMConfig:
 def build_default_config(identifier):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
+    dvm_config.IDENTIFIER = identifier
     npub = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_bech32()
     invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     dvm_config.LNBITS_INVOICE_KEY = invoice_key

@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import dotenv
@@ -30,6 +31,7 @@ class MediaConverter(DVMTaskInterface):
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
+        dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
     def is_input_supported(self, tags):
@@ -106,20 +108,28 @@ def build_example(name, identifier, admin_config):
     return MediaConverter(name=name, dvm_config=dvm_config, nip89config=nip89config,
                           admin_config=admin_config)
 
+def process_venv():
+    args = DVMTaskInterface.process_args()
+    dvm_config = build_default_config(args.identifier)
+    dvm = MediaConverter(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    result = dvm.process(json.loads(args.request))
+    DVMTaskInterface.write_output(result, args.output)
 
-if __name__ == '__main__':
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-    else:
-        raise FileNotFoundError(f'.env file not found at {env_path} ')
+#if __name__ == '__main__':
+#    process_venv()
 
-    admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP89 = False
-    admin_config.UPDATE_PROFILE = False
+    #env_path = Path('.env')
+    #if env_path.is_file():
+    #    print(f'loading environment from {env_path.resolve()}')
+    #    dotenv.load_dotenv(env_path, verbose=True, override=True)
+    #else:
+    #    raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    dvm = build_example("Media Bringer", "media_converter", admin_config)
-    dvm.run()
+    #admin_config = AdminConfig()
+    #admin_config.REBROADCAST_NIP89 = False
+    #admin_config.UPDATE_PROFILE = False
 
-    keep_alive()
+    #dvm = build_example("Media Bringer", "media_converter", admin_config)
+    #dvm.run()
+
+    #keep_alive()

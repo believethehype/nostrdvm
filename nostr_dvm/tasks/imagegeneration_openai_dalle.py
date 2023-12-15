@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from io import BytesIO
 from pathlib import Path
 
@@ -28,10 +29,12 @@ class ImageGenerationDALLE(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
     FIX_COST: float = 120
-    dependencies = [("openai", "openai==1.3.5")]
+    dependencies = [("nostr-dvm", "nostr-dvm"),
+                    ("openai", "openai==1.3.5")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
+        dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
     def is_input_supported(self, tags):
@@ -107,6 +110,7 @@ class ImageGenerationDALLE(DVMTaskInterface):
                 n=int(options['number']),
             )
 
+
             image_url = response.data[0].url
             # rehost the result instead of relying on the openai link
             response = requests.get(image_url)
@@ -151,18 +155,31 @@ def build_example(name, identifier, admin_config):
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
-if __name__ == '__main__':
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-    else:
-        raise FileNotFoundError(f'.env file not found at {env_path} ')
+def process_venv():
+    args = DVMTaskInterface.process_args()
+    dvm_config = build_default_config(args.identifier)
+    dvm = ImageGenerationDALLE(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    result = ""
+    while result == "":
+        result = dvm.process(json.loads(args.request))
+        time.sleep(10)
 
-    admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP89 = False
-    admin_config.UPDATE_PROFILE = False
-    dvm = build_example("Dall-E 3", "dalle3", admin_config)
-    dvm.run()
 
-    keep_alive()
+    DVMTaskInterface.write_output(result, args.output)
+
+#if __name__ == '__main__':
+#    process_venv()
+    #env_path = Path('.env')
+    #if env_path.is_file():
+    #    print(f'loading environment from {env_path.resolve()}')
+    #    dotenv.load_dotenv(env_path, verbose=True, override=True)
+    #else:
+    #    raise FileNotFoundError(f'.env file not found at {env_path} ')
+
+    #admin_config = AdminConfig()
+    #admin_config.REBROADCAST_NIP89 = False
+    #admin_config.UPDATE_PROFILE = False
+    #dvm = build_example("Dall-E 3", "dalle3", admin_config)
+    #dvm.run()
+
+    #keep_alive()
