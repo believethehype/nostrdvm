@@ -115,23 +115,22 @@ def build_example(name, identifier, admin_config, server_address):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    nip90params = {
-        "method": {
-            "required": False,
-            "values": ["prompt", "analysis"]
-        },
-        "mode": {
-            "required": False,
-            "values": ["best", "classic", "fast", "negative"]
-        }
-    }
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg",
         "about": "I analyse Images an return a prompt or a prompt analysis",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "method": {
+                "required": False,
+                "values": ["prompt", "analysis"]
+            },
+            "mode": {
+                "required": False,
+                "values": ["best", "classic", "fast", "negative"]
+            }
+        }
     }
 
     # A module might have options it can be initialized with, here we set a default model, lora and the server
