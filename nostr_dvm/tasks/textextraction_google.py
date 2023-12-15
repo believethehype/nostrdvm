@@ -8,13 +8,10 @@ import dotenv
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
-from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
-from nostr_sdk import Keys
 
 """
 This File contains a Module to transform a media file input on Google Cloud
@@ -30,6 +27,7 @@ class SpeechToTextGoogle(DVMTaskInterface):
     TASK: str = "speech-to-text"
     FIX_COST: float = 10
     PER_UNIT_COST: float = 0.1
+    dependencies = ["SpeechRecognition==3.10.0"]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
@@ -132,14 +130,8 @@ class SpeechToTextGoogle(DVMTaskInterface):
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
 def build_example(name, identifier, admin_config):
-    dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
-    npub = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_bech32()
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
-    dvm_config.LNBITS_INVOICE_KEY = invoice_key
-    dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
-    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    admin_config.LUD16 = lnaddress
+    dvm_config = build_default_config(identifier)
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
     options = {'api_key': None}
     # A module might have options it can be initialized with, here we set a default model, and the nova-server
     # address it should use. These parameters can be freely defined in the task component
