@@ -102,6 +102,8 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
+    options = {'default_model': "ollama/llama2-uncensored", 'server': "http://localhost:11434"}
+
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
@@ -116,13 +118,10 @@ def build_example(name, identifier, admin_config):
         }
     }
 
-    options = {'default_model': "ollama/llama2-uncensored", 'server': "http://localhost:11434"}
-
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
+
     return TextGenerationOLLAMA(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config, options=options)
 
 
