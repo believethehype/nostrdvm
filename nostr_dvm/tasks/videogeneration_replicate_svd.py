@@ -53,9 +53,9 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
             length = "25_frames_with_svd_xt"
         else:
             length = "14_frames_with_svd"
-        sizing_strategy = "maintain_aspect_ratio" #crop_to_16_9, use_image_dimensions
+        sizing_strategy = "maintain_aspect_ratio"  # crop_to_16_9, use_image_dimensions
         frames_per_second = 6
-        motion_bucket_id = 127  #Increase overall motion in the generated video
+        motion_bucket_id = 127  # Increase overall motion in the generated video
         cond_aug = 0.02  # Amount of noise to add to input image
 
         for tag in event.tags():
@@ -63,7 +63,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
                 input_type = tag.as_vec()[2]
                 if input_type == "url":
                     url = tag.as_vec()[1]
-        #TODO add params as defined above
+        # TODO add params as defined above
 
         options = {
             "url": url,
@@ -107,6 +107,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
             print("Error in Module")
             raise Exception(e)
 
+
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
@@ -126,14 +127,12 @@ def build_example(name, identifier, admin_config):
         "nip90Params": {}
     }
 
-
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                                              nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
 
-    return VideoGenerationReplicateSVD(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
+    return VideoGenerationReplicateSVD(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                       admin_config=admin_config)
 
 
 if __name__ == '__main__':
