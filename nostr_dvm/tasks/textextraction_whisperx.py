@@ -160,24 +160,23 @@ def build_example(name, identifier, admin_config, server_address):
     # address it should use. These parameters can be freely defined in the task component
     options = {'default_model': "base", 'server': server_address}
 
-    nip90params = {
-        "model": {
-            "required": False,
-            "values": ["base", "tiny", "small", "medium", "large-v1", "large-v2", "tiny.en", "base.en", "small.en",
-                       "medium.en"]
-        },
-        "alignment": {
-            "required": False,
-            "values": ["raw", "segment", "word"]
-        }
-    }
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I extract text from media files with WhisperX",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "model": {
+                "required": False,
+                "values": ["base", "tiny", "small", "medium", "large-v1", "large-v2", "tiny.en", "base.en", "small.en",
+                           "medium.en"]
+            },
+            "alignment": {
+                "required": False,
+                "values": ["raw", "segment", "word"]
+            }
+        }
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,

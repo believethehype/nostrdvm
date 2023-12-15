@@ -176,23 +176,23 @@ def build_example(name, identifier, admin_config, server_address, default_model=
     # address it should use. These parameters can be freely defined in the task component
     options = {'default_model': default_model, 'default_lora': default_lora, 'server': server_address}
 
-    nip90params = {
-        "negative_prompt": {
-            "required": False,
-            "values": []
-        },
-        "ratio": {
-            "required": False,
-            "values": ["1:1", "4:3", "16:9", "3:4", "9:16", "10:16"]
-        }
-    }
+
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I draw images based on a prompt with a Model called unstable diffusion",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "negative_prompt": {
+                "required": False,
+                "values": []
+            },
+            "ratio": {
+                "required": False,
+                "values": ["1:1", "4:3", "16:9", "3:4", "9:16", "10:16"]
+            }
+        }
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
