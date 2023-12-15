@@ -15,7 +15,7 @@ from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by
 
 
 """
-This File contains a Module to call Google Translate Services locally on the DVM Machine
+This File contains a Module to call Libre Translate Services
 
 Accepted Inputs: Text, Events, Jobs (Text Extraction, Summary, Translation)
 Outputs: Text containing the Translation with LibreTranslation in the desired language.
@@ -136,9 +136,9 @@ def build_example(name, identifier, admin_config):
         }
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                                              nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
+
     return TranslationLibre(name=name, dvm_config=dvm_config, nip89config=nip89config,
                             admin_config=admin_config, options=options)
 
