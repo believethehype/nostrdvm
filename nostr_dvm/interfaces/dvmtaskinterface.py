@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from threading import Thread
@@ -9,7 +10,9 @@ from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nip89_utils import NIP89Config
+from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.output_utils import post_process_result
+from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
 class DVMTaskInterface:
@@ -91,6 +94,8 @@ class DVMTaskInterface:
                 __import__(package.split("=")[0])
             except ImportError:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+
 
     @staticmethod
     def set_options(request_form):
