@@ -15,7 +15,7 @@ from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by
 
 
 """
-This File contains a Module to call Google Translate Services locally on the DVM Machine
+This File contains a Module to call Libre Translate Services
 
 Accepted Inputs: Text, Events, Jobs (Text Extraction, Summary, Translation)
 Outputs: Text containing the Translation with LibreTranslation in the desired language.

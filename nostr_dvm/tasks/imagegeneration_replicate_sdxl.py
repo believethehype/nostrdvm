@@ -17,7 +17,7 @@ from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.zap_utils import get_price_per_sat
 
 """
-This File contains a Module to transform Text input on NOVA-Server and receive results back. 
+This File contains a Module to generate an Image on replicate and receive results back. 
 
 Accepted Inputs: Prompt (text)
 Outputs: An url to an Image
