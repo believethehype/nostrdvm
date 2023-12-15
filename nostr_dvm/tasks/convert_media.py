@@ -14,7 +14,7 @@ from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
 
 """
-This File contains a Module to call Google Translate Services locally on the DVM Machine
+This File contains a Module convert media locally
 
 Accepted Inputs: Text, Events, Jobs (Text Extraction, Summary, Translation)
 Outputs: Text containing the TranslationGoogle in the desired language.
