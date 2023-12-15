@@ -173,3 +173,4 @@ db/*
 backends/nserver/venv
 backends/nserver/cache
 backends/nserver/modules/image_upscale/weights
+cache/venvs/
