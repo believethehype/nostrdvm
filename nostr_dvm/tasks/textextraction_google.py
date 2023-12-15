@@ -136,19 +136,18 @@ def build_example(name, identifier, admin_config):
     # A module might have options it can be initialized with, here we set a default model, and the nova-server
     # address it should use. These parameters can be freely defined in the task component
 
-    nip90params = {
-        "language": {
-            "required": False,
-            "values": ["en-US"]
-        }
-    }
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I extract text from media files with the Google API. I understand English by default",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "language": {
+                "required": False,
+                "values": ["en-US"]
+            }
+        }
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
