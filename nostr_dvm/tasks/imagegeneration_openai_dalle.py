@@ -16,7 +16,6 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.zap_utils import get_price_per_sat
 
-
 """
 This File contains a Module to transform Text input on OpenAI's servers with DALLE-3 and receive results back. 
 
@@ -120,6 +119,7 @@ class ImageGenerationDALLE(DVMTaskInterface):
             print("Error in Module")
             raise Exception(e)
 
+
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
@@ -144,12 +144,10 @@ def build_example(name, identifier, admin_config):
         }
     }
 
-
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                                              nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
+
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
