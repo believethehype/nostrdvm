@@ -89,9 +89,9 @@ class DVMTaskInterface:
 
     def install_dependencies(self, packages):
         import pip
-        for package in packages:
+        for module, package in packages:
             try:
-                __import__(package.split("=")[0])
+                __import__(module)
             except ImportError:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
