@@ -9,7 +9,7 @@ from nostr_dvm.backends.nova_server.utils import check_server_status, send_reque
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
-from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -170,15 +170,8 @@ class ImageGenerationSDXL(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config, server_address, default_model="stabilityai/stable-diffusion-xl"
                                                                                    "-base-1.0", default_lora=""):
-    dvm_config = DVMConfig()
-    dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
-    npub = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_bech32()
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
-    dvm_config.LNBITS_INVOICE_KEY = invoice_key
-    dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
-    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    admin_config.LUD16 = lnaddress
-
+    dvm_config = build_default_config(identifier)
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
     # A module might have options it can be initialized with, here we set a default model, and the server
     # address it should use. These parameters can be freely defined in the task component
     options = {'default_model': default_model, 'default_lora': default_lora, 'server': server_address}
