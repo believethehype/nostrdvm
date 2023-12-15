@@ -85,19 +85,18 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
-    nip90params = {
-        "media_format": {
-            "required": False,
-            "values": ["video/mp4", "audio/mp3"]
-        }
-    }
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I convert videos from urls to given output format.",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "media_format": {
+                "required": False,
+                "values": ["video/mp4", "audio/mp3"]
+            }
+        }
     }
 
     nip89config = NIP89Config()

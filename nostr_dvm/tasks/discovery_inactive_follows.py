@@ -172,26 +172,24 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
-    nip90params = {
-        "user": {
-            "required": False,
-            "values": [],
-            "description": "Do the task for another user"
-        },
-        "since_days": {
-            "required": False,
-            "values": [],
-            "description": "The number of days a user has not been active to be considered inactive"
-
-        }
-    }
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I discover users you follow, but that have been inactive on Nostr",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "user": {
+                "required": False,
+                "values": [],
+                "description": "Do the task for another user"
+            },
+            "since_days": {
+                "required": False,
+                "values": [],
+                "description": "The number of days a user has not been active to be considered inactive"
+            }
+        }
     }
 
     nip89config = NIP89Config()

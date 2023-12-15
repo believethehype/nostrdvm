@@ -114,18 +114,7 @@ def build_example(name, identifier, admin_config):
 
     options = {'libre_end_point': os.getenv("LIBRE_TRANSLATE_ENDPOINT"),
                'libre_api_key': os.getenv("LIBRE_TRANSLATE_API_KEY")}
-    nip90params = {
-        "language": {
-            "required": False,
-            "values": ["en", "az", "be", "bg", "bn", "bs", "ca", "ceb", "co", "cs", "cy", "da", "de", "el", "eo", "es",
-                       "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "hi", "hmn", "hr", "ht",
-                       "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky",
-                       "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl",
-                       "no", "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl", "sm", "sn", "so",
-                       "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tl", "tr", "ug", "uk", "ur", "uz",
-                       "vi", "xh", "yi", "yo", "zh", "zu"]
-        }
-    }
+
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
@@ -133,7 +122,18 @@ def build_example(name, identifier, admin_config):
                  "input into the language defined in params.",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": nip90params
+        "nip90Params": {
+            "language": {
+                "required": False,
+                "values": ["en", "az", "be", "bg", "bn", "bs", "ca", "ceb", "co", "cs", "cy", "da", "de", "el", "eo", "es",
+                           "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "hi", "hmn", "hr", "ht",
+                           "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky",
+                           "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl",
+                           "no", "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl", "sm", "sn", "so",
+                           "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tl", "tr", "ug", "uk", "ur", "uz",
+                           "vi", "xh", "yi", "yo", "zh", "zu"]
+            }
+        }
     }
     nip89config = NIP89Config()
     nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
