@@ -113,6 +113,9 @@ def build_example(name, identifier, admin_config, server_address):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
+    # A module might have options it can be initialized with, here we set a default model, lora and the server
+    options = {'server': server_address}
+
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg",
@@ -126,15 +129,10 @@ def build_example(name, identifier, admin_config, server_address):
             }
         }
     }
-
-    # A module might have options it can be initialized with, here we set a default model, lora and the server
-    options = {'server': server_address}
-
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                                              nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
+
     return ImageUpscale(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                       admin_config=admin_config, options=options)
 
