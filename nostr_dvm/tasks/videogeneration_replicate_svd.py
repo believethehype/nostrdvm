@@ -30,6 +30,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_VIDEO
     TASK: str = "image-to-video"
     FIX_COST: float = 120
+    dependencies = [("replicate", "replicate==0.21.1")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
