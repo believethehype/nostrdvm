@@ -24,7 +24,7 @@ class TextGenerationOLLAMA(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_TEXT
     TASK: str = "text-to-text"
     FIX_COST: float = 0
-    dependencies = ["litellm==1.12.3"]
+    dependencies = [("litellm", "litellm==1.12.3")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):

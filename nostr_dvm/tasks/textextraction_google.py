@@ -27,7 +27,7 @@ class SpeechToTextGoogle(DVMTaskInterface):
     TASK: str = "speech-to-text"
     FIX_COST: float = 10
     PER_UNIT_COST: float = 0.1
-    dependencies = ["SpeechRecognition==3.10.0"]
+    dependencies = [("speech_recognition", "SpeechRecognition==3.10.0")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
