@@ -28,7 +28,8 @@ setup(
                       "requests==2.31.0",
                       "instaloader==4.10.1",
                       "pytube==15.0.0",
-                      "moviepy==2.0.0.dev2"
+                      "moviepy==2.0.0.dev2",
+                      "zipp==3.17.0"
                       ],
     keywords=['nostr', 'nip90', 'dvm', 'data vending machine'],
     url="https://github.com/believethehype/nostrdvm",
