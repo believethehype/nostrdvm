@@ -9,7 +9,6 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
 from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys
-from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
 import lnurl
 from hashlib import sha256
@@ -90,7 +89,7 @@ def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
     return int(number)
 
 
-def create_bolt11_ln_bits(sats: int, config: DVMConfig) -> (str, str):
+def create_bolt11_ln_bits(sats: int, config) -> (str, str):
     if config.LNBITS_URL == "":
         return None
     url = config.LNBITS_URL + "/api/v1/payments"
@@ -150,7 +149,7 @@ def create_lnbits_account(name):
         print("error creating wallet")
 
 
-def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
+def check_bolt11_ln_bits_is_paid(payment_hash: str, config):
     url = config.LNBITS_URL + "/api/v1/payments/" + payment_hash
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
@@ -164,7 +163,7 @@ def check_bolt11_ln_bits_is_paid(payment_hash: str, config: DVMConfig):
         return None
 
 
-def pay_bolt11_ln_bits(bolt11: str, config: DVMConfig):
+def pay_bolt11_ln_bits(bolt11: str, config):
     url = config.LNBITS_URL + "/api/v1/payments"
     data = {'out': True, 'bolt11': bolt11}
     headers = {'X-API-Key': config.LNBITS_ADMIN_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
