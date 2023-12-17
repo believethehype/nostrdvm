@@ -65,11 +65,35 @@ def nostr_client_test_image(prompt):
     config = DVMConfig
     send_event(event, client=client, dvm_config=config)
     return event.as_json()
+def nostr_client_test_tts(prompt):
+    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+
+    iTag = Tag.parse(["i", prompt, "text"])
+    paramTag1 = Tag.parse(["param", "language", "en"])
+
+
+    bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
+    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                           "wss://nostr-pub.wellorder.net"])
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTSt"])
+    event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File."),
+                         [iTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
+
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                  "wss://nostr-pub.wellorder.net"]
+
+    client = Client(keys)
+    for relay in relay_list:
+        client.add_relay(relay)
+    client.connect()
+    config = DVMConfig
+    send_event(event, client=client, dvm_config=config)
+    return event.as_json()
 
 
 def nostr_client_test_image_private(prompt, cashutoken):
     keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
-    receiver_keys = Keys.from_sk_str(check_and_set_private_key("sketcher"))
+    receiver_keys = Keys.from_sk_str(check_and_set_private_key("replicate_sdxl"))
 
 
     # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
@@ -125,13 +149,14 @@ def nostr_client():
     client.subscribe([dm_zap_filter, dvm_filter])
 
     #nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
-    nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
+    #nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     #nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
-
     #nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+    nostr_client_test_tts("Hello, this is a test. One two three.")
+
 
     #cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
-    #nostr_client_test_image_private("a beautiful ostrich watching the sunset", cashutoken )
+    #nostr_client_test_image_private("a beautiful ostrich watching the sunset")
     class NotificationHandler(HandleNotification):
         def handle(self, relay_url, event):
             print(f"Received new event from {relay_url}: {event.as_json()}")

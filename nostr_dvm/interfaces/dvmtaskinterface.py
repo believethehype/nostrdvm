@@ -1,18 +1,16 @@
 import json
 import os
 import subprocess
+from subprocess import run
 import sys
 from threading import Thread
-
+from venv import create
 from nostr_sdk import Keys
-
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.nip89_utils import NIP89Config
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
+from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_result
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
 class DVMTaskInterface:
@@ -34,7 +32,7 @@ class DVMTaskInterface:
                  options=None, task=None):
         self.init(name, dvm_config, admin_config, nip89config, task)
         self.options = options
-        self.install_dependencies(self.dependencies)
+        self.install_dependencies(dvm_config)
 
     def init(self, name, dvm_config, admin_config=None, nip89config=None, task=None):
         self.NAME = name
@@ -57,6 +55,25 @@ class DVMTaskInterface:
         dvm_config.NIP89 = self.NIP89_announcement(nip89config)
         self.dvm_config = dvm_config
         self.admin_config = admin_config
+
+    def install_dependencies(self, dvm_config):
+        if dvm_config.SCRIPT != "":
+            if self.dvm_config.USE_OWN_VENV:
+                dir = r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
+                if not os.path.isdir(dir):
+                    print(dir)
+                    create(dir, with_pip=True, upgrade_deps=True)
+                    for (module, package) in self.dependencies:
+                        print("Installing Venv Module: " + module)
+                        run(["bin/pip", "install", package], cwd=dir)
+            else:
+                for module, package in self.dependencies:
+                    if module != "nostr-dvm":
+                        try:
+                            __import__(module)
+                        except ImportError:
+                            print("Installing global Module: " + module)
+                            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
     def run(self):
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
@@ -87,16 +104,6 @@ class DVMTaskInterface:
         """Post-process the data and return the result Use default function, if not overwritten"""
         return post_process_result(result, event)
 
-    def install_dependencies(self, packages):
-        import pip
-        for module, package in packages:
-            try:
-                __import__(module)
-            except ImportError:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-
-
     @staticmethod
     def set_options(request_form):
         print("Setting options...")
@@ -105,3 +112,19 @@ class DVMTaskInterface:
             opts = json.loads(request_form["options"])
             print(opts)
         return dict(opts)
+
+    @staticmethod
+    def process_args():
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--request', dest='request')
+        parser.add_argument('--identifier', dest='identifier')
+        parser.add_argument('--output', dest='output')
+        args = parser.parse_args()
+        return args
+
+    @staticmethod
+    def write_output(result, output):
+        with open(os.path.abspath(output), 'w') as f:
+            f.write(result)
+        # f.close()
