@@ -2,6 +2,7 @@ import json
 import os
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 from pathlib import Path
+import urllib.request
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -21,7 +22,7 @@ Outputs: Generated Audiofile
 class TextToSpeech(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH
     TASK: str = "text-to-speech"
-    FIX_COST: float = 0
+    FIX_COST: float = 200
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("TTS", "TTS==0.22.0")]
 
@@ -46,10 +47,10 @@ class TextToSpeech(DVMTaskInterface):
         if self.options.get("input_file") and self.options.get("input_file") != "":
             input_file = self.options['input_file']
         else:
-            input_file = "https://media.nostr.build/av/de104e3260be636533a56fd4468b905c1eb22b226143a997aa936b011122af8a.wav"
-            import urllib.request
-            if not Path.exists(Path(r'cache/input.wav')):
-                urllib.request.urlretrieve(input_file, "cache/input.wav")
+            if not Path.exists(Path('cache/input.wav')):
+                input_file_url = "https://media.nostr.build/av/de104e3260be636533a56fd4468b905c1eb22b226143a997aa936b011122af8a.wav"
+                urllib.request.urlretrieve(input_file_url, "cache/input.wav")
+            input_file = "cache/input.wav"
         language = "en"
 
         for tag in event.tags():
@@ -86,7 +87,7 @@ class TextToSpeech(DVMTaskInterface):
 
             tts.tts_to_file(
                 text=options["prompt"],
-                speaker_wav="cache/input.wav", language=options["language"], file_path="outputs/output.wav")
+                speaker_wav=options["input_wav"], language=options["language"], file_path="outputs/output.wav")
             result = upload_media_to_hoster("outputs/output.wav")
             return result
         except Exception as e:
@@ -101,6 +102,7 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
+    #use an alternative local wav file you want to use for cloning
     options = {'input_file': ""}
 
     nip89info = {
