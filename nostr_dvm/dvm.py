@@ -473,20 +473,24 @@ class DVM:
                         if task == dvm.TASK:
 
                             request_form = dvm.create_request_from_nostr_event(job_event, self.client, self.dvm_config)
-                            python_bin = (r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
-                                          + "/bin/python")
-                            subprocess.run([python_bin, dvm_config.SCRIPT,
-                                            '--request', json.dumps(request_form),
-                                            '--identifier', dvm_config.IDENTIFIER,
-                                            '--output', 'output.txt'])
 
-                            print("Finished processing, loading data..")
+                            if dvm_config.USE_OWN_VENV:
+                                python_bin = (r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
+                                              + "/bin/python")
+                                retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
+                                                '--request', json.dumps(request_form),
+                                                '--identifier', dvm_config.IDENTIFIER,
+                                                '--output', 'output.txt'])
+                                print("Finished processing, loading data..")
 
-                            with open(os.path.abspath('output.txt')) as f:
-                                result = f.readlines()[0]
-                                print(result)
-                            #f.close()
-                            os.remove(os.path.abspath('output.txt'))
+                                with open(os.path.abspath('output.txt')) as f:
+                                    result = f.readlines()[0]
+                                    print(result)
+                                #f.close()
+                                os.remove(os.path.abspath('output.txt'))
+                            else: #Some components might have issues with running code in otuside venv.
+                                  # We install locally in these cases for now
+                                result = dvm.process(request_form)
                             try:
                                 post_processed = dvm.post_process(str(result), job_event)
                                 send_nostr_reply_event(post_processed, job_event.as_json())

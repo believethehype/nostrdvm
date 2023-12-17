@@ -125,19 +125,5 @@ def process_venv():
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
 
-#if __name__ == '__main__':
-#    env_path = Path('.env')
-#    if env_path.is_file():
-#        print(f'loading environment from {env_path.resolve()}')
-#        dotenv.load_dotenv(env_path, verbose=True, override=True)
-#    else:
-#        raise FileNotFoundError(f'.env file not found at {env_path} ')
-#
-#    admin_config = AdminConfig()
-#    admin_config.REBROADCAST_NIP89 = False
-#    admin_config.UPDATE_PROFILE = False
-#
-#    dvm = build_example("Trending Notes on Nostr.band", "trending_notes_nostrband", admin_config)
-#    dvm.run()
-#
-#    keep_alive()
+if __name__ == '__main__':
+    process_venv()

@@ -9,7 +9,7 @@ from nostr_sdk import Keys
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.nip89_utils import NIP89Config
+from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_result
 
 
@@ -28,13 +28,11 @@ class DVMTaskInterface:
     admin_config: AdminConfig
     dependencies = []
 
-
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None,
                  options=None, task=None):
         self.init(name, dvm_config, admin_config, nip89config, task)
         self.options = options
-        self.make_venv(dvm_config)
-
+        self.install_dependencies(dvm_config)
 
     def init(self, name, dvm_config, admin_config=None, nip89config=None, task=None):
         self.NAME = name
@@ -58,15 +56,24 @@ class DVMTaskInterface:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
 
-    def make_venv(self, dvm_config):
+    def install_dependencies(self, dvm_config):
         if dvm_config.SCRIPT != "":
-            dir = r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
-            if not os.path.isdir(dir):
-                print(dir)
-                create(dir, with_pip=True, upgrade_deps=True)
-                for (module, package) in self.dependencies:
-                    print("Installing Module: " + module)
-                    run(["bin/pip", "install", package], cwd=dir)
+            if self.dvm_config.USE_OWN_VENV:
+                dir = r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
+                if not os.path.isdir(dir):
+                    print(dir)
+                    create(dir, with_pip=True, upgrade_deps=True)
+                    for (module, package) in self.dependencies:
+                        print("Installing Venv Module: " + module)
+                        run(["bin/pip", "install", package], cwd=dir)
+            else:
+                for module, package in self.dependencies:
+                    if module != "nostr-dvm":
+                        try:
+                            __import__(module)
+                        except ImportError:
+                            print("Installing global Module: " + module)
+                            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
     def run(self):
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
@@ -120,10 +127,4 @@ class DVMTaskInterface:
     def write_output(result, output):
         with open(os.path.abspath(output), 'w') as f:
             f.write(result)
-        #f.close()
-
-    def process_venv(self):
-        pass
-
-    if __name__ == '__main__':
-        process_venv()
+        # f.close()

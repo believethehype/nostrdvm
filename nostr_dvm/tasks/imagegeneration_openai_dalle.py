@@ -2,15 +2,12 @@ import json
 import os
 import time
 from io import BytesIO
-from pathlib import Path
 
-import dotenv
 import requests
 from PIL import Image
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -129,6 +126,7 @@ class ImageGenerationDALLE(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = True
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     profit_in_sats = 10
     cost_in_cent = 4.0
@@ -167,19 +165,5 @@ def process_venv():
 
     DVMTaskInterface.write_output(result, args.output)
 
-#if __name__ == '__main__':
-#    process_venv()
-    #env_path = Path('.env')
-    #if env_path.is_file():
-    #    print(f'loading environment from {env_path.resolve()}')
-    #    dotenv.load_dotenv(env_path, verbose=True, override=True)
-    #else:
-    #    raise FileNotFoundError(f'.env file not found at {env_path} ')
-
-    #admin_config = AdminConfig()
-    #admin_config.REBROADCAST_NIP89 = False
-    #admin_config.UPDATE_PROFILE = False
-    #dvm = build_example("Dall-E 3", "dalle3", admin_config)
-    #dvm.run()
-
-    #keep_alive()
+if __name__ == '__main__':
+    process_venv()
