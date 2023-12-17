@@ -5,7 +5,7 @@ import dotenv
 from nostr_dvm.bot import Bot
 from nostr_dvm.tasks import videogeneration_replicate_svd, imagegeneration_replicate_sdxl, textgeneration_llmlite, \
     trending_notes_nostrband, discovery_inactive_follows, translation_google, textextraction_pdf, \
-    translation_libretranslate, textextraction_google, convert_media, imagegeneration_openai_dalle
+    translation_libretranslate, textextraction_google, convert_media, imagegeneration_openai_dalle, texttospeech
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -133,6 +133,11 @@ def playground():
     ollama = textgeneration_llmlite.build_example("LLM", "llmlite", admin_config)
     bot_config.SUPPORTED_DVMS.append(ollama)
     ollama.run()
+
+    tts = texttospeech.build_example("Text To Speech Test", "tts", admin_config)
+    bot_config.SUPPORTED_DVMS.append(tts)
+    tts.run()
+
     # Run the bot
     Bot(bot_config)
     # Keep the main function alive for libraries that require it, like openai
