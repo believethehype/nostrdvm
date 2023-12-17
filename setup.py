@@ -13,7 +13,7 @@ setup(
     author_email="believethehypeonnostr@proton.me",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
-    packages=find_packages(include=['nostr_dvm']),
+    packages=find_packages(include=['nostr_dvm', 'nostr_dvm.backends', 'nostr_dvm.interfaces', 'nostr_dvm.tasks', 'nostr_dvm.utils']),
     install_requires=["nostr-sdk==0.0.5",
                       "bech32==1.2.0",
                       "pycryptodome==3.19.0",
