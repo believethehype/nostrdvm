@@ -13,7 +13,6 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
 
-
 """
 This File contains a Module to call Libre Translate Services
 
@@ -32,6 +31,7 @@ class TranslationLibre(DVMTaskInterface):
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None, task=None):
+        dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options, task)
 
     def is_input_supported(self, tags):
@@ -81,9 +81,9 @@ class TranslationLibre(DVMTaskInterface):
     def process(self, request_form):
         options = DVMTaskInterface.set_options(request_form)
         request = {
-            "q":  options["text"],
+            "q": options["text"],
             "source": "auto",
-            "target":  options["language"]
+            "target": options["language"]
         }
         if options["libre_api_key"] != "":
             request["api_key"] = options["libre_api_key"]
@@ -95,10 +95,10 @@ class TranslationLibre(DVMTaskInterface):
         reply = json.loads(response.text)
         if reply.get("translatedText"):
             translated_text = reply['translatedText']
-            #untested
-            #confidence = reply["detectedLanguage"]['confidence']
-            #language = reply["detectedLanguage"]['language']
-            #print(translated_text + "language: " + language + "conf: " + confidence)
+            # untested
+            # confidence = reply["detectedLanguage"]['confidence']
+            # language = reply["detectedLanguage"]['language']
+            # print(translated_text + "language: " + language + "conf: " + confidence)
         else:
             return response.text
 
@@ -125,12 +125,18 @@ def build_example(name, identifier, admin_config):
         "nip90Params": {
             "language": {
                 "required": False,
-                "values": ["en", "az", "be", "bg", "bn", "bs", "ca", "ceb", "co", "cs", "cy", "da", "de", "el", "eo", "es",
-                           "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "hi", "hmn", "hr", "ht",
-                           "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku", "ky",
-                           "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne", "nl",
-                           "no", "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl", "sm", "sn", "so",
-                           "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tl", "tr", "ug", "uk", "ur", "uz",
+                "values": ["en", "az", "be", "bg", "bn", "bs", "ca", "ceb", "co", "cs", "cy", "da", "de", "el", "eo",
+                           "es",
+                           "et", "eu", "fa", "fi", "fr", "fy", "ga", "gd", "gl", "gu", "ha", "haw", "hi", "hmn", "hr",
+                           "ht",
+                           "hu", "hy", "id", "ig", "is", "it", "he", "ja", "jv", "ka", "kk", "km", "kn", "ko", "ku",
+                           "ky",
+                           "la", "lb", "lo", "lt", "lv", "mg", "mi", "mk", "ml", "mn", "mr", "ms", "mt", "my", "ne",
+                           "nl",
+                           "no", "ny", "or", "pa", "pl", "ps", "pt", "ro", "ru", "sd", "si", "sk", "sl", "sm", "sn",
+                           "so",
+                           "sq", "sr", "st", "su", "sv", "sw", "ta", "te", "tg", "th", "tl", "tr", "ug", "uk", "ur",
+                           "uz",
                            "vi", "xh", "yi", "yo", "zh", "zu"]
             }
         }
@@ -143,18 +149,12 @@ def build_example(name, identifier, admin_config):
                             admin_config=admin_config, options=options)
 
 
+def process_venv():
+    args = DVMTaskInterface.process_args()
+    dvm_config = build_default_config(args.identifier)
+    dvm = TranslationLibre(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    result = dvm.process(json.loads(args.request))
+    DVMTaskInterface.write_output(result, args.output)
+
 if __name__ == '__main__':
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-    else:
-        raise FileNotFoundError(f'.env file not found at {env_path} ')
-
-    admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP89 = False
-    admin_config.UPDATE_PROFILE = False
-    dvm = build_example("Libre Translator", "libre_translator", admin_config)
-    dvm.run()
-
-    keep_alive()
+    process_venv()
