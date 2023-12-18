@@ -4,7 +4,7 @@ from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
-from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 

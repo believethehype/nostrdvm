@@ -20,7 +20,7 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
             input_type = tag.as_vec()[2]
 
     if input_type == "text":
-        # For now, ingore length of any text, just return 1.
+        # For now, ignore length of any text, just return 1.
         return 1
 
     if input_type == "event":  # NIP94 event
