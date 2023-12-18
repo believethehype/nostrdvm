@@ -89,7 +89,7 @@ def build_example(name, identifier, admin_config):
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {
-            "media_format": {
+            "format": {
                 "required": False,
                 "values": ["video/mp4", "audio/mp3"]
             }

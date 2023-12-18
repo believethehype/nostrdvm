@@ -59,13 +59,15 @@ class DVMTaskInterface:
     def install_dependencies(self, dvm_config):
         if dvm_config.SCRIPT != "":
             if self.dvm_config.USE_OWN_VENV:
+
                 dir = r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
                 if not os.path.isdir(dir):
                     print(dir)
                     create(dir, with_pip=True, upgrade_deps=True)
+                    self.dependencies.append(("nostr-dvm", "nostr-dvm"))
                     for (module, package) in self.dependencies:
                         print("Installing Venv Module: " + module)
-                        run(["bin/pip", "install", package], cwd=dir)
+                        run(["bin/pip", "install", "--force-reinstall", package], cwd=dir)
             else:
                 for module, package in self.dependencies:
                     if module != "nostr-dvm":
