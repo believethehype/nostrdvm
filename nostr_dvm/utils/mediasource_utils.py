@@ -264,7 +264,7 @@ def get_youtube(input_value, start, end, audioonly=True):
         filename = downloadYouTube(input_value, filepath, audioonly)
 
     except Exception as e:
-        print("Youtube" + str(e))
+        print("Youtube " + str(e))
         return filename, start, end
     try:
         o = urlparse(input_value)
@@ -332,30 +332,30 @@ def get_media_link(url) -> (str, str):
 
 
 def downloadOvercast(source_url, target_location):
-    from scrapper.media_scrapper import OvercastDownload
+    from nostr_dvm.utils.scrapper.media_scrapper import OvercastDownload
     result = OvercastDownload(source_url, target_location)
     return result
 
 
 def downloadTwitter(videourl, path):
-    from scrapper.media_scrapper import XitterDownload
+    from nostr_dvm.utils.scrapper.media_scrapper import XitterDownload
     result = XitterDownload(videourl, path + "x.mp4")
     return result
 
 
 def downloadTikTok(videourl, path):
-    from scrapper.media_scrapper import TiktokDownloadAll
+    from nostr_dvm.utils.scrapper.media_scrapper import TiktokDownloadAll
     result = TiktokDownloadAll([videourl], path)
     return result
 
 
 def downloadInstagram(videourl, path):
-    from scrapper.media_scrapper import InstagramDownload
+    from nostr_dvm.utils.scrapper.media_scrapper  import InstagramDownload
     result = InstagramDownload(videourl, "insta", path)
     return result
 
 
 def downloadYouTube(link, path, audioonly=True):
-    from scrapper.media_scrapper import YouTubeDownload
+    from nostr_dvm.utils.scrapper.media_scrapper import YouTubeDownload
     result = YouTubeDownload(link, path, audio_only=audioonly)
     return result
