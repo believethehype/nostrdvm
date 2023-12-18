@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 VERSION = '0.0.5'
-DESCRIPTION = 'A framework to build and run NIP90 Data Vending Machines'
-LONG_DESCRIPTION = ('A framework to build and run NIP90 Data Vending Machines. '
+DESCRIPTION = 'A framework to build and run Nostr NIP90 Data Vending Machines'
+LONG_DESCRIPTION = ('A framework to build and run Nostr NIP90 Data Vending Machines. '
                     'This is an early stage release. Interfaces might change/brick')
 
 # Setting up
