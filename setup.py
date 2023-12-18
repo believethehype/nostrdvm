@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.6'
+VERSION = '0.0.7'
 DESCRIPTION = 'A framework to build and run Nostr NIP90 Data Vending Machines'
 LONG_DESCRIPTION = ('A framework to build and run Nostr NIP90 Data Vending Machines. '
                     'This is an early stage release. Interfaces might change/brick')
@@ -30,7 +30,9 @@ setup(
                       "instaloader==4.10.1",
                       "pytube==15.0.0",
                       "moviepy==2.0.0.dev2",
-                      "zipp==3.17.0"
+                      "zipp==3.17.0",
+                      "urllib3==2.1.0",
+                      "typing_extensions==4.8.0"
                       ],
     keywords=['nostr', 'nip90', 'dvm', 'data vending machine'],
     url="https://github.com/believethehype/nostrdvm",
