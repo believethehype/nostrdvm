@@ -146,6 +146,10 @@ def playground():
 
 if __name__ == '__main__':
     env_path = Path('.env')
+    if not env_path.is_file():
+        with open('.env', 'w') as f:
+            print("Wrting new .env file")
+            f.write('')
     if env_path.is_file():
         print(f'loading environment from {env_path.resolve()}')
         dotenv.load_dotenv(env_path, verbose=True, override=True)
