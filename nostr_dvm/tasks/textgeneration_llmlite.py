@@ -20,7 +20,7 @@ Outputs: Generated text
 """
 
 
-class TextGenerationOLLAMA(DVMTaskInterface):
+class TextGenerationLLMLite(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_TEXT
     TASK: str = "text-to-text"
     FIX_COST: float = 0
@@ -80,7 +80,8 @@ class TextGenerationOLLAMA(DVMTaskInterface):
                 response = completion(
                     model=options["model"],
                     messages=[{"content": options["prompt"], "role": "user"}],
-                    api_base=options["server"]
+                    api_base=options["server"],
+                    stream=False
                 )
                 print(response.choices[0].message.content)
                 return response.choices[0].message.content
@@ -112,25 +113,20 @@ def build_example(name, identifier, admin_config):
         "about": "I use a LLM connected via OLLAMA",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "nip90Params": {
-            "size": {
-                "required": False,
-                "values": ["1024:1024", "1024x1792", "1792x1024"]
-            }
-        }
+        "nip90Params": {}
     }
 
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return TextGenerationOLLAMA(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config, options=options)
+    return TextGenerationLLMLite(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config, options=options)
 
 
 def process_venv():
     args = DVMTaskInterface.process_args()
     dvm_config = build_default_config(args.identifier)
-    dvm = TextGenerationOLLAMA(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    dvm = TextGenerationLLMLite(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
 

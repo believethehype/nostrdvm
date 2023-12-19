@@ -484,9 +484,11 @@ class DVM:
                                 print("Finished processing, loading data..")
 
                                 with open(os.path.abspath('output.txt')) as f:
-                                    result = f.readlines()[0]
-                                    print(result)
-                                #f.close()
+                                    resultall = f.readlines()
+                                    result = ""
+                                    for line in resultall:
+                                        if line != '\n':
+                                            result += line
                                 os.remove(os.path.abspath('output.txt'))
                             else: #Some components might have issues with running code in otuside venv.
                                   # We install locally in these cases for now
