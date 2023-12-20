@@ -107,7 +107,6 @@ class ImageGenerationDALLE(DVMTaskInterface):
                 n=int(options['number']),
             )
 
-
             image_url = response.data[0].url
             # rehost the result instead of relying on the openai link
             response = requests.get(image_url)
@@ -162,8 +161,8 @@ def process_venv():
         result = dvm.process(json.loads(args.request))
         time.sleep(10)
 
-
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()

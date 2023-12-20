@@ -2,21 +2,13 @@ import json
 import os
 import time
 from multiprocessing.pool import ThreadPool
-from pathlib import Path
-
-import dotenv
-
 from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server, send_file_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
-from nostr_sdk import  Keys
 
 """
 This File contains a Module to transform A media file input on n-server and receive results back. 
@@ -108,7 +100,8 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                                 except:
                                     end_time = float(tag.as_vec()[3])
 
-        filepath = organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True, media_format)
+        filepath = organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True,
+                                             media_format)
         path_on_server = send_file_to_server(os.path.realpath(filepath), self.options['server'])
 
         io_input = {
@@ -149,6 +142,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
         except Exception as e:
             raise Exception(e)
 
+
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
@@ -182,7 +176,7 @@ def build_example(name, identifier, admin_config, server_address):
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    
+
     return SpeechToTextWhisperX(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                 admin_config=admin_config, options=options)
 
@@ -193,6 +187,7 @@ def process_venv():
     dvm = SpeechToTextWhisperX(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()

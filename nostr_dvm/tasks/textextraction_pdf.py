@@ -1,13 +1,9 @@
 import json
 import os
 import re
-from pathlib import Path
-
-import dotenv
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -29,13 +25,10 @@ class TextExtractionPDF(DVMTaskInterface):
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("pypdf", "pypdf==3.17.1")]
 
-
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options)
-
-
 
     def is_input_supported(self, tags):
         for tag in tags:
@@ -117,6 +110,7 @@ def build_example(name, identifier, admin_config):
     nip89config.CONTENT = json.dumps(nip89info)
     return TextExtractionPDF(name=name, dvm_config=dvm_config, nip89config=nip89config,
                              admin_config=admin_config)
+
 
 def process_venv():
     args = DVMTaskInterface.process_args()

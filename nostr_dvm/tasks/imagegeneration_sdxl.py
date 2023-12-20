@@ -1,21 +1,12 @@
 import json
-import os
 from multiprocessing.pool import ThreadPool
-from pathlib import Path
-
-import dotenv
 
 from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_sdk import Keys
-
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 """
 This File contains a module to transform Text input on n-server and receive results back. 
@@ -165,18 +156,18 @@ class ImageGenerationSDXL(DVMTaskInterface):
         except Exception as e:
             raise Exception(e)
 
+
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
 def build_example(name, identifier, admin_config, server_address, default_model="stabilityai/stable-diffusion-xl"
-                                                                                   "-base-1.0", default_lora=""):
+                                                                                "-base-1.0", default_lora=""):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # A module might have options it can be initialized with, here we set a default model, and the server
     # address it should use. These parameters can be freely defined in the task component
     options = {'default_model': default_model, 'default_lora': default_lora, 'server': server_address}
-
 
     nip89info = {
         "name": name,
