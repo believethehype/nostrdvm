@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<trainer ssi-v="5">
+    <info trained="true" seed="1234"/>
+	<meta backend="nova-server" category="ImageGeneration" description="Upscales an Image" is_iterable="False">
+	    <io type="input" id="input_image" data="image" default_value=""/>
+	    <io type="output" id="output_image" data="image" default_value=""/>
+	</meta>
+    <model create="RealESRGan" script="image_upscale_realesrgan.py" optstr="{model:LIST:RealESRGAN_x4plus,RealESRNet_x4plus,RealESRGAN_x4plus_anime_6B,RealESRGAN_x2plus,realesr-animevideov3,realesr-general-x4v3};{outscale:STRING:4};{denoise_strength:STRING:0.5};{tile:STRING:0};{tile_pad:STRING:10};{pre_pad:STRING:0};{compute_type:STRING:fp32};{face_enhance:BOOL:False}"/>
+</trainer>

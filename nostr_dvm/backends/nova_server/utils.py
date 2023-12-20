@@ -11,7 +11,7 @@ from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
 """
 This file contains basic calling functions for ML tasks that are outsourced to nova server. It is an Open-Source backend
-that enables running models locally based on preefined modules, by accepting a request form.
+that enables running models locally based on preefined modules, by accepting a request.
 Modules are deployed in in separate virtual environments so dependencies won't conflict. 
 """
 

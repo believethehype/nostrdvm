@@ -3,6 +3,7 @@ import os
 import subprocess
 from subprocess import run
 import sys
+from sys import platform
 from threading import Thread
 from venv import create
 from nostr_sdk import Keys
@@ -59,15 +60,18 @@ class DVMTaskInterface:
     def install_dependencies(self, dvm_config):
         if dvm_config.SCRIPT != "":
             if self.dvm_config.USE_OWN_VENV:
-
                 dir = r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
+                pip_location = 'bin/pip'
+                if platform == "win32":
+                    pip_location = dir + '/Scripts/pip'
+
                 if not os.path.isdir(dir):
-                    print(dir)
+                    print("Creating Venv: " + dir)
                     create(dir, with_pip=True, upgrade_deps=True)
                     self.dependencies.append(("nostr-dvm", "nostr-dvm"))
                     for (module, package) in self.dependencies:
                         print("Installing Venv Module: " + module)
-                        run(["bin/pip", "install", "--force-reinstall", package], cwd=dir)
+                        run([pip_location, "install", "--upgrade", package], cwd=dir)
             else:
                 for module, package in self.dependencies:
                     if module != "nostr-dvm":
