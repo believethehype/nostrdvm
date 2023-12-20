@@ -1,13 +1,9 @@
 import json
 import os
-from pathlib import Path
-
-import dotenv
 from nostr_sdk import Tag
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -118,12 +114,14 @@ def build_example(name, identifier, admin_config):
     return TrendingNotesNostrBand(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                   admin_config=admin_config)
 
+
 def process_venv():
     args = DVMTaskInterface.process_args()
     dvm_config = build_default_config(args.identifier)
     dvm = TrendingNotesNostrBand(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()

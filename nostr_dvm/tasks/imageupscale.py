@@ -1,20 +1,12 @@
 import json
-import os
 from multiprocessing.pool import ThreadPool
-from pathlib import Path
-
-import dotenv
 
 from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
-from nostr_sdk import Keys
 
 """
 This File contains a Module to upscale an image from an url by factor 2-4 

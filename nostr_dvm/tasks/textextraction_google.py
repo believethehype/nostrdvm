@@ -1,20 +1,16 @@
 import json
 import os
 import time
-from pathlib import Path
-
-import dotenv
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
 
 """
-This File contains a Module to transform a media file input on Google Cloud
+This File contains a Module to extract text form a media file input on Google Cloud
 
 Accepted Inputs: Url to media file (url)
 Outputs: Transcribed text
@@ -29,7 +25,6 @@ class SpeechToTextGoogle(DVMTaskInterface):
     PER_UNIT_COST: float = 0.1
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("speech_recognition", "SpeechRecognition==3.10.0")]
-
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
@@ -129,6 +124,7 @@ class SpeechToTextGoogle(DVMTaskInterface):
 
         return result
 
+
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
@@ -158,6 +154,8 @@ def build_example(name, identifier, admin_config):
 
     return SpeechToTextGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config,
                               admin_config=admin_config, options=options)
+
+
 def process_venv():
     args = DVMTaskInterface.process_args()
     dvm_config = build_default_config(args.identifier)

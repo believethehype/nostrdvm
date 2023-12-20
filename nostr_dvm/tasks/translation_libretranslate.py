@@ -1,13 +1,9 @@
 import json
 import os
-from pathlib import Path
-
-import dotenv
 import requests
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -155,6 +151,7 @@ def process_venv():
     dvm = TranslationLibre(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()

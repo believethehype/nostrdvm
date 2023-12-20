@@ -1,23 +1,15 @@
 import json
-import os
 from multiprocessing.pool import ThreadPool
-from pathlib import Path
-
-import dotenv
 
 from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
-from nostr_sdk import  Keys
 
 """
-This File contains a Module to transform Text input on N-server and receive results back. 
+This File contains a Module to transform Image (and Text) input on N-server and receive results back. 
 
 Accepted Inputs: Prompt (text)
 Outputs: An url to an Image
@@ -45,7 +37,7 @@ class ImageGenerationSDXLIMG2IMG(DVMTaskInterface):
                 if input_type == "url":
                     hasurl = True
                 elif input_type == "text":
-                    hasprompt = True #Little optional when lora is set
+                    hasprompt = True  # Little optional when lora is set
 
             elif tag.as_vec()[0] == 'output':
                 output = tag.as_vec()[1]
@@ -132,15 +124,11 @@ class ImageGenerationSDXLIMG2IMG(DVMTaskInterface):
                 elif tag.as_vec()[1] == "model":
                     model = tag.as_vec()[2]
 
-
-
-
-
         io_input_image = {
-        "id": "input_image",
-        "type": "input",
-        "src": "url:Image",
-        "uri": url
+            "id": "input_image",
+            "type": "input",
+            "src": "url:Image",
+            "uri": url
         }
         io_input = {
             "id": "input_prompt",
@@ -192,6 +180,7 @@ class ImageGenerationSDXLIMG2IMG(DVMTaskInterface):
 
         except Exception as e:
             raise Exception(e)
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the

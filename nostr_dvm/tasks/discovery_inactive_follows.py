@@ -163,6 +163,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
+
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
@@ -196,12 +197,14 @@ def build_example(name, identifier, admin_config):
     return DiscoverInactiveFollows(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                    admin_config=admin_config)
 
+
 def process_venv():
     args = DVMTaskInterface.process_args()
     dvm_config = build_default_config(args.identifier)
     dvm = DiscoverInactiveFollows(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()
