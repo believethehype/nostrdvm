@@ -11,9 +11,10 @@ This means the project is in alpha status, interfaces might still change/break a
 
 Create a new venv by running `"python -m venv venv"`
   - Place .env file (based on .env_example) in main folder.
-  - the framework will automatically create keys for your dvms in this file.
-  - Install requirements.txt
-  - Run python main.py.
+  - Create a `LNbits` account on an accessible instance of your choice, enter one account's id and admin key (this account will create other accounts for the dvms)
+  - the framework will then automatically create keys, nip89 tags and zapable NIP57 `lightning addresses` for your dvms in this file.
+  - pip install nostr-dvm
+  - Run python3 main.py.
 
 In each task component DVM examples are already prepared. Feel free to play along with the existing ones.
 You can also add new tasks by using the interface, just like the existing tasks in the `tasks` folder.
@@ -21,8 +22,6 @@ You can also add new tasks by using the interface, just like the existing tasks 
 A `bot` is running by default that lists and communicates with the `DVMs` added to it, 
 so your DVMs can be controled via any regular social client as well. 
 
-The Framework optionally supports `LNbits` to create invoices instead of using a `lightning address`. If LNBits is not used, 
-make sure your nostr accounts have a valid lightning address.
-
+If LNBits is not used, make sure your DVM's nostr accounts have a valid lightning address.
 
 A tutorial on how to add additional tasks, as well as the larger server backend will be added at a later stage. 

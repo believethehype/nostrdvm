@@ -1,12 +1,10 @@
 import json
 import os
-from io import BytesIO
-import requests
 from PIL import Image
+from tqdm import tqdm
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -22,12 +20,17 @@ Params:
 """
 
 
-class ImageGenerationReplicateSDXL(DVMTaskInterface):
+class ImageGenerationMLX(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
     FIX_COST: float = 120
     dependencies = [("nostr-dvm", "nostr-dvm"),
-                    ("replicate", "replicate==0.21.1")]
+                    ("mlx", "mlx"),
+                    ("safetensors", "safetensors"),
+                    ("huggingface-hub", "huggingface-hub"),
+                    ("regex", "regex"),
+                    ("tqdm", "tqdm"),
+                    ]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
@@ -91,21 +94,46 @@ class ImageGenerationReplicateSDXL(DVMTaskInterface):
 
     def process(self, request_form):
         try:
+            import mlx.core as mx
+            from backends.mlx.stable_diffusion import StableDiffusion
             options = DVMTaskInterface.set_options(request_form)
 
-            import replicate
-            width = int(options["size"].split("x")[0])
-            height = int(options["size"].split("x")[1])
-            output = replicate.run(
-                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                input={"prompt": options["prompt"],
-                       "width": width,
-                       "height": height,
-                       "disable_safety_checker": True}
+            sd = StableDiffusion()
+            cfg_weight = 7.5
+            batchsize = 1
+            n_rows = 1
+            steps = 50
+            n_images = options["number"]
+
+            # Generate the latent vectors using diffusion
+            latents = sd.generate_latents(
+                options["prompt"],
+                n_images=n_images,
+                cfg_weight=cfg_weight,
+                num_steps=steps,
+                negative_text="",
             )
-            print(output[0])
-            response = requests.get(output[0])
-            image = Image.open(BytesIO(response.content)).convert("RGB")
+            for x_t in tqdm(latents, total=steps):
+                mx.simplify(x_t)
+                mx.simplify(x_t)
+                mx.eval(x_t)
+
+            # Decode them into images
+            decoded = []
+            for i in tqdm(range(0, 1, batchsize)):
+                decoded.append(sd.decode(x_t[i: i + batchsize]))
+                mx.eval(decoded[-1])
+
+            # Arrange them on a grid
+            x = mx.concatenate(decoded, axis=0)
+            x = mx.pad(x, [(0, 0), (8, 8), (8, 8), (0, 0)])
+            B, H, W, C = x.shape
+            x = x.reshape(n_rows, B // n_rows, H, W, C).transpose(0, 2, 1, 3, 4)
+            x = x.reshape(n_rows * H, B // n_rows * W, C)
+            x = (x * 255).astype(mx.uint8)
+
+            # Save them to disc
+            image = Image.fromarray(x.__array__())
             image.save("./outputs/image.jpg")
             result = upload_media_to_hoster("./outputs/image.jpg")
             return result
@@ -142,16 +170,17 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return ImageGenerationReplicateSDXL(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                        admin_config=admin_config)
+    return ImageGenerationMLX(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                              admin_config=admin_config)
 
 
 def process_venv():
     args = DVMTaskInterface.process_args()
     dvm_config = build_default_config(args.identifier)
-    dvm = ImageGenerationReplicateSDXL(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    dvm = ImageGenerationMLX(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()

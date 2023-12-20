@@ -43,9 +43,6 @@ def send_file_to_server(filepath, address):
 
     return result
 
-    # headers = {'Content-type': 'application/x-www-form-urlencoded'}
-
-
 """
 check_n_server_status(request_form, address)
 Function that requests the status of the current process with the jobID (we use the Nostr event as jobID).

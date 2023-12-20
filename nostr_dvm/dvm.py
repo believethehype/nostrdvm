@@ -1,5 +1,9 @@
+import importlib
 import json
+import os
+import subprocess
 from datetime import timedelta
+from pathlib import Path
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
     init_logger, LogLevel, Options, nip04_encrypt
@@ -323,7 +327,8 @@ class DVM:
                         except Exception as e:
                             # Zapping back by error in post-processing is a risk for the DVM because work has been done,
                             # but maybe something with parsing/uploading failed. Try to avoid errors here as good as possible
-                            send_job_status_reaction(original_event, "error", content="Error in Post-processing: " + str(e),
+                            send_job_status_reaction(original_event, "error",
+                                                     content="Error in Post-processing: " + str(e),
                                                      dvm_config=self.dvm_config,
                                                      )
                             if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":
@@ -466,11 +471,30 @@ class DVM:
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     try:
                         if task == dvm.TASK:
-                            request_form = dvm.create_request_from_nostr_event(job_event, self.client,
-                                                                               self.dvm_config)
-                            result = dvm.process(request_form)
+
+                            request_form = dvm.create_request_from_nostr_event(job_event, self.client, self.dvm_config)
+
+                            if dvm_config.USE_OWN_VENV:
+                                python_bin = (r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
+                                              + "/bin/python")
+                                retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
+                                                '--request', json.dumps(request_form),
+                                                '--identifier', dvm_config.IDENTIFIER,
+                                                '--output', 'output.txt'])
+                                print("Finished processing, loading data..")
+
+                                with open(os.path.abspath('output.txt')) as f:
+                                    resultall = f.readlines()
+                                    result = ""
+                                    for line in resultall:
+                                        if line != '\n':
+                                            result += line
+                                os.remove(os.path.abspath('output.txt'))
+                            else: #Some components might have issues with running code in otuside venv.
+                                  # We install locally in these cases for now
+                                result = dvm.process(request_form)
                             try:
-                                post_processed = dvm.post_process(result, job_event)
+                                post_processed = dvm.post_process(str(result), job_event)
                                 send_nostr_reply_event(post_processed, job_event.as_json())
                             except Exception as e:
                                 send_job_status_reaction(job_event, "error", content=str(e),
@@ -494,7 +518,6 @@ class DVM:
                                 payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
                             except Exception as e:
                                 print(e)
-
 
                         return
 

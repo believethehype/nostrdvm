@@ -6,10 +6,12 @@ import ffmpegio
 from decord import AudioReader, cpu
 import requests
 from nostr_dvm.utils.nostr_utils import get_event_by_id
+from nostr_dvm.utils.scrapper.media_scrapper import OvercastDownload, XitterDownload, TiktokDownloadAll, \
+    InstagramDownload, YouTubeDownload
 
 
 def input_data_file_duration(event, dvm_config, client, start=0, end=0):
-    #print("[" + dvm_config.NIP89.NAME + "] Getting Duration of the Media file..")
+    # print("[" + dvm_config.NIP89.NAME + "] Getting Duration of the Media file..")
     input_value = ""
     input_type = ""
     for tag in event.tags():
@@ -18,7 +20,7 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
             input_type = tag.as_vec()[2]
 
     if input_type == "text":
-        #For now, ingore length of any text, just return 1.
+        # For now, ignore length of any text, just return 1.
         return 1
 
     if input_type == "event":  # NIP94 event
@@ -52,7 +54,8 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     return 1
 
 
-def organize_input_media_data(input_value, input_type, start, end, dvm_config, client, process=True, media_format="audio/mp3") -> str:
+def organize_input_media_data(input_value, input_type, start, end, dvm_config, client, process=True,
+                              media_format="audio/mp3") -> str:
     if input_type == "event":  # NIP94 event
         evt = get_event_by_id(input_value, client=client, config=dvm_config)
         if evt is not None:
@@ -209,7 +212,7 @@ def get_overcast(input_value, start, end):
     print("Found overcast.fm Link.. downloading")
     start_time = start
     end_time = end
-    downloadOvercast(input_value, filename)
+    download_overcast(input_value, filename)
     finaltag = str(input_value).replace("https://overcast.fm/", "").split('/')
     if start == 0.0:
         if len(finaltag) > 1:
@@ -227,7 +230,7 @@ def get_overcast(input_value, start, end):
 def get_TikTok(input_value, start, end):
     filepath = os.path.abspath(os.curdir + r'/outputs/')
     try:
-        filename = downloadTikTok(input_value, filepath)
+        filename = download_tik_tok(input_value, filepath)
         print(filename)
     except Exception as e:
         print(e)
@@ -238,7 +241,7 @@ def get_TikTok(input_value, start, end):
 def get_Instagram(input_value, start, end):
     filepath = os.path.abspath(os.curdir + r'/outputs/')
     try:
-        filename = downloadInstagram(input_value, filepath)
+        filename = download_instagram(input_value, filepath)
         print(filename)
     except Exception as e:
         print(e)
@@ -250,7 +253,7 @@ def get_Twitter(input_value, start, end):
     filepath = os.path.abspath(os.curdir) + r'/outputs/'
     cleanlink = str(input_value).replace("twitter.com", "x.com")
     try:
-        filename = downloadTwitter(cleanlink, filepath)
+        filename = download_twitter(cleanlink, filepath)
     except Exception as e:
         print(e)
         return "", start, end
@@ -259,12 +262,13 @@ def get_Twitter(input_value, start, end):
 
 def get_youtube(input_value, start, end, audioonly=True):
     filepath = os.path.abspath(os.curdir) + r'/outputs/'
+    print(filepath)
     filename = ""
     try:
-        filename = downloadYouTube(input_value, filepath, audioonly)
+        filename = download_youtube(input_value, filepath, audioonly)
 
     except Exception as e:
-        print("Youtube" + str(e))
+        print("Youtube " + str(e))
         return filename, start, end
     try:
         o = urlparse(input_value)
@@ -331,31 +335,25 @@ def get_media_link(url) -> (str, str):
         return None, None
 
 
-def downloadOvercast(source_url, target_location):
-    from scrapper.media_scrapper import OvercastDownload
+def download_overcast(source_url, target_location):
     result = OvercastDownload(source_url, target_location)
     return result
 
 
-def downloadTwitter(videourl, path):
-    from scrapper.media_scrapper import XitterDownload
+def download_twitter(videourl, path):
     result = XitterDownload(videourl, path + "x.mp4")
     return result
 
 
-def downloadTikTok(videourl, path):
-    from scrapper.media_scrapper import TiktokDownloadAll
+def download_tik_tok(videourl, path):
     result = TiktokDownloadAll([videourl], path)
     return result
 
 
-def downloadInstagram(videourl, path):
-    from scrapper.media_scrapper import InstagramDownload
+def download_instagram(videourl, path):
     result = InstagramDownload(videourl, "insta", path)
     return result
 
 
-def downloadYouTube(link, path, audioonly=True):
-    from scrapper.media_scrapper import YouTubeDownload
-    result = YouTubeDownload(link, path, audio_only=audioonly)
-    return result
+def download_youtube(link, path, audioonly=True):
+    return YouTubeDownload(link, path, audio_only=audioonly)
