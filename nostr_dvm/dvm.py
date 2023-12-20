@@ -1,9 +1,8 @@
-import importlib
 import json
 import os
 import subprocess
 from datetime import timedelta
-from pathlib import Path
+from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
     init_logger, LogLevel, Options, nip04_encrypt
@@ -475,8 +474,11 @@ class DVM:
                             request_form = dvm.create_request_from_nostr_event(job_event, self.client, self.dvm_config)
 
                             if dvm_config.USE_OWN_VENV:
-                                python_bin = (r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
-                                              + "/bin/python")
+                                python_location = "/bin/python"
+                                if platform == "win32":
+                                    python_location = "/Scripts/python"
+                                python_bin = ( r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
+                                                + python_location)
                                 retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
                                                 '--request', json.dumps(request_form),
                                                 '--identifier', dvm_config.IDENTIFIER,
