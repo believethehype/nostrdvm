@@ -9,11 +9,11 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
 from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys
+
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
 import lnurl
 from hashlib import sha256
 import dotenv
-
 
 # TODO tor connection to lnbits
 # proxies = {
@@ -22,6 +22,7 @@ import dotenv
 # }
 
 proxies = {}
+
 
 def parse_zap_event_tags(zap_event, keys, name, client, config):
     zapped_event = None
@@ -126,10 +127,11 @@ def create_bolt11_lud16(lud16, amount):
     except:
         return None
 
+
 def create_lnbits_account(name):
     if os.getenv("LNBITS_ADMIN_ID") is None or os.getenv("LNBITS_ADMIN_ID") == "":
         print("No admin id set, no wallet created.")
-        return
+        return "","","","", "failed"
     data = {
         'admin_id': os.getenv("LNBITS_ADMIN_ID"),
         'wallet_name': name,
@@ -144,9 +146,11 @@ def create_lnbits_account(name):
         walletjson = json.loads(r.text)
         print(walletjson)
         if walletjson.get("wallets"):
-            return walletjson['wallets'][0]['inkey'], walletjson['wallets'][0]['adminkey'], walletjson['wallets'][0]['id'], walletjson['id'], "success"
+            return walletjson['wallets'][0]['inkey'], walletjson['wallets'][0]['adminkey'], walletjson['wallets'][0][
+                'id'], walletjson['id'], "success"
     except:
         print("error creating wallet")
+        return "", "", "", "", "failed"
 
 
 def check_bolt11_ln_bits_is_paid(payment_hash: str, config):
@@ -278,9 +282,6 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
         return None
 
 
-
-
-
 def get_price_per_sat(currency):
     import requests
 
@@ -298,13 +299,7 @@ def get_price_per_sat(currency):
     return price_currency_per_sat
 
 
-
 def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
-    #env_path = Path('.env')
-    #if env_path.is_file():
-    #    dotenv.load_dotenv(env_path, verbose=True, override=True)
-
-
     print(os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()))
     data = {
         'name': identifier,
@@ -314,9 +309,8 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
         'key': os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()),
         'pin': pin,
         'npub': npub,
-        'currentname':  " "
+        'currentname': " "
     }
-
 
     try:
         url = "https://" + nostdressdomain + "/api/easy/"
@@ -330,8 +324,8 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
         print(e)
         return "", ""
 
-def check_and_set_ln_bits_keys(identifier, npub):
 
+def check_and_set_ln_bits_keys(identifier, npub):
     if not os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()):
         invoicekey, adminkey, walletid, userid, success = create_lnbits_account(identifier)
         add_key_to_env_file("LNBITS_INVOICE_KEY_" + identifier.upper(), invoicekey)
@@ -341,7 +335,7 @@ def check_and_set_ln_bits_keys(identifier, npub):
 
         lnaddress = ""
         pin = ""
-        if os.getenv("NOSTDRESS_DOMAIN"):
+        if os.getenv("NOSTDRESS_DOMAIN") and success != "failed":
             print(os.getenv("NOSTDRESS_DOMAIN"))
             lnaddress, pin = make_ln_address_nostdress(identifier, npub, " ", os.getenv("NOSTDRESS_DOMAIN"))
         add_key_to_env_file("LNADDRESS_" + identifier.upper(), lnaddress)
@@ -356,14 +350,8 @@ def check_and_set_ln_bits_keys(identifier, npub):
                 os.getenv("LNADDRESS_" + identifier.upper()))
 
 
-
-
-
-
 def add_key_to_env_file(value, oskey):
     env_path = Path('.env')
     if env_path.is_file():
         dotenv.load_dotenv(env_path, verbose=True, override=True)
         dotenv.set_key(env_path, value, oskey)
-
-

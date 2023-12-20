@@ -26,8 +26,10 @@ class User:
 def create_sql_table(db):
     try:
         import os
-        if not os.path.exists(r'.\db'):
-            os.makedirs(r'.\db')
+        if not os.path.exists(r'db'):
+            os.makedirs(r'db')
+        if not os.path.exists(r'outputs'):
+            os.makedirs(r'outputs')
         con = sqlite3.connect(db)
         cur = con.cursor()
         cur.execute(""" CREATE TABLE IF NOT EXISTS users (

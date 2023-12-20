@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 from io import BytesIO
 from pathlib import Path
 
@@ -30,11 +31,16 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_VIDEO
     TASK: str = "image-to-video"
     FIX_COST: float = 120
-    dependencies = [("replicate", "replicate==0.21.1")]
+    dependencies = [("nostr-dvm", "nostr-dvm"),
+                    ("replicate", "replicate==0.21.1")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
+        dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options)
+
+
+
 
     def is_input_supported(self, tags):
         for tag in tags:
@@ -134,20 +140,13 @@ def build_example(name, identifier, admin_config):
     return VideoGenerationReplicateSVD(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                        admin_config=admin_config)
 
+def process_venv():
+    args = DVMTaskInterface.process_args()
+    dvm_config = build_default_config(args.identifier)
+    dvm = VideoGenerationReplicateSVD(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    result = dvm.process(json.loads(args.request))
+    DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-    else:
-        raise FileNotFoundError(f'.env file not found at {env_path} ')
-
-    admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP89 = False
-    admin_config.UPDATE_PROFILE = False
-
-    dvm = build_example("Stable Video Diffusion", "replicate_svd", admin_config)
-    dvm.run()
-
-    keep_alive()
+    process_venv()
