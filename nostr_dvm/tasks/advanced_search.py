@@ -47,8 +47,8 @@ class AdvancedSearch(DVMTaskInterface):
 
         # default values
         user = ""
-        since_days = 800 #days ago
-        until_days = 0 #days ago
+        since_days = 800  # days ago
+        until_days = 0  # days ago
         search = ""
         max_results = 20
 
@@ -98,11 +98,14 @@ class AdvancedSearch(DVMTaskInterface):
         search_until = Timestamp.from_secs(dif)
 
         if options["user"] == "":
-            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(
+                options["max_results"])
         elif options["search"] == "":
-            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).since(search_since).until(search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).since(search_since).until(
+                search_until).limit(options["max_results"])
         else:
-            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).search(options["search"]).since(
+                search_since).until(search_until).limit(options["max_results"])
 
         events = cli.get_events_of([notes_filter], timedelta(seconds=5))
 
@@ -115,8 +118,6 @@ class AdvancedSearch(DVMTaskInterface):
                 result_list.append(e_tag.as_vec())
 
         return json.dumps(result_list)
-
-
 
     def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
@@ -170,9 +171,9 @@ def build_example(name, identifier, admin_config):
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    
+
     return AdvancedSearch(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                   admin_config=admin_config)
+                          admin_config=admin_config)
 
 
 def process_venv():
@@ -181,6 +182,7 @@ def process_venv():
     dvm = AdvancedSearch(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()

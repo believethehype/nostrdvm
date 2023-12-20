@@ -1,5 +1,6 @@
 import json
 import os
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 from pathlib import Path
 import urllib.request
@@ -79,7 +80,7 @@ class TextToSpeech(DVMTaskInterface):
         from TTS.api import TTS
         options = DVMTaskInterface.set_options(request_form)
         device = "cuda" if torch.cuda.is_available() else "cpu"
-            #else "mps" if torch.backends.mps.is_available() \
+        # else "mps" if torch.backends.mps.is_available() \
 
         print(TTS().list_models())
         try:
@@ -102,7 +103,7 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    #use an alternative local wav file you want to use for cloning
+    # use an alternative local wav file you want to use for cloning
     options = {'input_file': ""}
 
     nip89info = {
@@ -133,6 +134,7 @@ def process_venv():
     dvm = TextToSpeech(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
     result = dvm.process(json.loads(args.request))
     DVMTaskInterface.write_output(result, args.output)
+
 
 if __name__ == '__main__':
     process_venv()

@@ -8,7 +8,6 @@ from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
-
 """
 This File contains a Module convert media locally
 
@@ -98,9 +97,9 @@ def build_example(name, identifier, admin_config):
 
     nip89config = NIP89Config()
 
-
     return MediaConverter(name=name, dvm_config=dvm_config, nip89config=nip89config,
                           admin_config=admin_config)
+
 
 def process_venv():
     args = DVMTaskInterface.process_args()

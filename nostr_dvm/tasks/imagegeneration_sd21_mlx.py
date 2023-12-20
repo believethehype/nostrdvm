@@ -12,7 +12,7 @@ from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.zap_utils import get_price_per_sat
 
 """
-This File contains a Module to generate an Image on replicate and receive results back. 
+This File contains a Module to generate an Image on Macs with M1/M2/M3 chips and receive results back. 
 
 Accepted Inputs: Prompt (text)
 Outputs: An url to an Image
@@ -95,7 +95,7 @@ class ImageGenerationMLX(DVMTaskInterface):
     def process(self, request_form):
         try:
             import mlx.core as mx
-            from backends.mlx.stable_diffusion import StableDiffusion
+            from nostr_dvm.backends.mlx.modules.stable_diffusion import StableDiffusion
             options = DVMTaskInterface.set_options(request_form)
 
             sd = StableDiffusion()
