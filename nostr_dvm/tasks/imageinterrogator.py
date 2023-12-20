@@ -113,6 +113,7 @@ class ImageInterrogator(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config, server_address):
     dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     nip89info = {
@@ -144,18 +145,13 @@ def build_example(name, identifier, admin_config, server_address):
                                       admin_config=admin_config, options=options)
 
 
+def process_venv():
+    args = DVMTaskInterface.process_args()
+    dvm_config = build_default_config(args.identifier)
+    dvm = ImageInterrogator(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    result = dvm.process(json.loads(args.request))
+    DVMTaskInterface.write_output(result, args.output)
+
+
 if __name__ == '__main__':
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-    else:
-        raise FileNotFoundError(f'.env file not found at {env_path} ')
-
-    admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP89 = False
-    admin_config.UPDATE_PROFILE = False
-    dvm = build_example("Image Interrogator", "imageinterrogator", admin_config, os.getenv("N_SERVER"))
-    dvm.run()
-
-    keep_alive()
+    process_venv()
