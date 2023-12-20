@@ -71,7 +71,7 @@ class DVMTaskInterface:
                     self.dependencies.append(("nostr-dvm", "nostr-dvm"))
                     for (module, package) in self.dependencies:
                         print("Installing Venv Module: " + module)
-                        run([pip_location, "install", "--force-reinstall", package], cwd=dir)
+                        run([pip_location, "install", "--upgrade", package], cwd=dir)
             else:
                 for module, package in self.dependencies:
                     if module != "nostr-dvm":
