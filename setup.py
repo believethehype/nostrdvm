@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.9'
+VERSION = '0.1.0'
 DESCRIPTION = 'A framework to build and run Nostr NIP90 Data Vending Machines'
 LONG_DESCRIPTION = ('A framework to build and run Nostr NIP90 Data Vending Machines. '
                     'This is an early stage release. Interfaces might change/brick')
@@ -13,8 +13,10 @@ setup(
     author_email="believethehypeonnostr@proton.me",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
-    packages=find_packages(include=['nostr_dvm', 'nostr_dvm.backends', 'nostr_dvm.interfaces', 'nostr_dvm.tasks',
-                                    'nostr_dvm.utils', 'nostr_dvm.utils.scrapper']),
+    packages=find_packages(include=['nostr_dvm', 'nostr_dvm.interfaces', 'nostr_dvm.tasks',
+                                    'nostr_dvm.utils', 'nostr_dvm.utils.scrapper',
+                                    'nostr_dvm.backends', 'nostr_dvm.backends.mlx',
+                                    'nostr_dvm.backends.mlx.stablediffusion']),
     install_requires=["nostr-sdk==0.0.5",
                       "bech32==1.2.0",
                       "pycryptodome==3.19.0",
@@ -32,7 +34,7 @@ setup(
                       "moviepy==2.0.0.dev2",
                       "zipp==3.17.0",
                       "urllib3==2.1.0",
-                      "typing_extensions==4.8.0"
+                      "typing_extensions>=4.9.0"
                       ],
     keywords=['nostr', 'nip90', 'dvm', 'data vending machine'],
     url="https://github.com/believethehype/nostrdvm",

@@ -300,10 +300,6 @@ def get_price_per_sat(currency):
 
 
 def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
-    # env_path = Path('.env')
-    # if env_path.is_file():
-    #    dotenv.load_dotenv(env_path, verbose=True, override=True)
-
     print(os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()))
     data = {
         'name': identifier,
