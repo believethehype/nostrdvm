@@ -140,6 +140,14 @@ def playground():
     bot_config.SUPPORTED_DVMS.append(tts)
     tts.run()
 
+    search = advanced_search.build_example("Advanced Search", "discovery_content_search", admin_config)
+    bot_config.SUPPORTED_DVMS.append(search)
+    search.run()
+
+
+    inactive = discovery_inactive_follows.build_example("Inactive People you follow", "discovery_inactive_follows", admin_config)
+    bot_config.SUPPORTED_DVMS.append(inactive)
+    inactive.run()
 
     if platform == "darwin":
         # Test with MLX for OSX M1/M2/M3 chips

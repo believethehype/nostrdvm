@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -38,7 +38,6 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         return True
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
-        self.client = client
         self.dvm_config = dvm_config
 
         request_form = {"jobID": event.id().to_hex()}
@@ -67,11 +66,19 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        keys = Keys.from_sk_str(sk.to_hex())
+        cli = Client.with_opts(keys, opts)
+        for relay in self.dvm_config.RELAY_LIST:
+            cli.add_relay(relay)
+        cli.connect()
+
         options = DVMTaskInterface.set_options(request_form)
         step = 20
 
         followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(3).limit(1)
-        followers = self.client.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         if len(followers) > 0:
             result_list = []
