@@ -8,7 +8,7 @@ import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
-from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys
+from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
 import lnurl
@@ -200,7 +200,7 @@ def check_for_zapplepay(pubkey_hex: str, content: str):
 
 def enrypt_private_zap_message(message, privatekey, publickey):
     # Generate a random IV
-    shared_secret = nostr_sdk.generate_shared_key(privatekey, publickey)
+    shared_secret = generate_shared_key(privatekey, publickey)
     iv = os.urandom(16)
 
     # Encrypt the message
@@ -215,7 +215,7 @@ def enrypt_private_zap_message(message, privatekey, publickey):
 
 
 def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey):
-    shared_secret = nostr_sdk.generate_shared_key(privkey, pubkey)
+    shared_secret = generate_shared_key(privkey, pubkey)
     if len(shared_secret) != 16 and len(shared_secret) != 32:
         return "invalid shared secret size"
     parts = msg.split("_")
