@@ -14,7 +14,7 @@ setup(
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     packages=find_packages(include=['nostr_dvm/**']),
-    install_requires=["nostr-sdk==0.0.5",
+    install_requires=["nostr-sdk==0.6.0",
                       "bech32==1.2.0",
                       "pycryptodome==3.19.0",
                       "python-dotenv==1.0.0",

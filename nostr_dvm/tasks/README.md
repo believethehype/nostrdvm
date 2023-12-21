@@ -23,7 +23,7 @@ Current List of Tasks:
 | ImageUpscale                 | 5100         | Upscales an Image                                          | nserver          |
 | MediaConverter               | 5200         | Converts a link of a media file and uploads it             | openAI           |
 | VideoGenerationReplicateSVD  | 5202 (inoff) | Generates a Video from an Image                            | replicate        |
-| TextToSpeech                 | 5250 (inoff) | Generate Audio from a prompt                               | local            |
+| TextToSpeech                 | 5250         | Generate Audio from a prompt                               | local            |
 | TrendingNotesNostrBand       | 5300         | Show trending notes on nostr.band                          | nostr.band api   |
 | DiscoverInactiveFollows      | 5301         | Find inactive Nostr users                                  | local            |
 | AdvancedSearch               | 5302 (inoff) | Search Content on nostr.band                               | local            |
