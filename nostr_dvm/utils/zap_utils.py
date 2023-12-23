@@ -238,7 +238,7 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
         return str(ex)
 
 
-def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config, zaptype="public"):
+def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys, relay_list, zaptype="public"):
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
         url = lnurl.decode(lud16)
     elif '@' in lud16:  # LNaddress
@@ -251,11 +251,16 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
         callback = ob["callback"]
         encoded_lnurl = lnurl.encode(url)
         amount_tag = Tag.parse(['amount', str(amount * 1000)])
-        relays_tag = Tag.parse(['relays', str(dvm_config.RELAY_LIST)])
-        p_tag = Tag.parse(['p', zapped_event.pubkey().to_hex()])
-        e_tag = Tag.parse(['e', zapped_event.id().to_hex()])
+        relays_tag = Tag.parse(['relays', str(relay_list)])
         lnurl_tag = Tag.parse(['lnurl', encoded_lnurl])
-        tags = [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]
+        if zapped_event is not None:
+            p_tag = Tag.parse(['p', zapped_event.pubkey().to_hex()])
+            e_tag = Tag.parse(['e', zapped_event.id().to_hex()])
+            tags = [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]
+        else:
+            p_tag = Tag.parse(['p', zapped_user.to_hex()])
+            tags = [amount_tag, relays_tag, p_tag, lnurl_tag]
+
 
         if zaptype == "private":
             key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(zapped_event.created_at().as_secs())
@@ -280,7 +285,6 @@ def zap(lud16: str, amount: int, content, zapped_event: Event, keys, dvm_config,
     except Exception as e:
         print(e)
         return None
-
 
 def get_price_per_sat(currency):
     import requests
@@ -323,6 +327,8 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
     except Exception as e:
         print(e)
         return "", ""
+
+
 
 
 def check_and_set_ln_bits_keys(identifier, npub):
