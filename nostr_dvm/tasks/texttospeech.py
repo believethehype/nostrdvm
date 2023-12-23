@@ -11,6 +11,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
+from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id
 
 """
 This File contains a Module to generate Audio based on an input and a voice
@@ -57,8 +58,18 @@ class TextToSpeech(DVMTaskInterface):
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
-                if input_type == "text":
+                if input_type == "event":
+                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    prompt = evt.content()
+                elif input_type == "text":
                     prompt = tag.as_vec()[1]
+                elif input_type == "job":
+                    evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
+                                                     kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                            EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                            EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
+                                                     dvm_config=dvm_config)
+                    prompt = evt.content()
                 if input_type == "url":
                     input_file = tag.as_vec()[1]
             elif tag.as_vec()[0] == 'param':
