@@ -18,7 +18,7 @@ from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
 from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
-    parse_amount_from_bolt11_invoice, zap, pay_bolt11_ln_bits
+    parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
 use_logger = False
@@ -334,8 +334,8 @@ class DVM:
                                 user = get_or_add_user(self.dvm_config.DB, original_event.pubkey().to_hex(),
                                                        client=self.client, config=self.dvm_config)
                                 print(user.lud16 + " " + str(amount))
-                                bolt11 = zap(user.lud16, amount, "Couldn't finish job, returning sats", original_event,
-                                             self.keys, self.dvm_config, zaptype="private")
+                                bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", original_event,
+                                                    self.keys, self.dvm_config, zaptype="private")
                                 if bolt11 is None:
                                     print("Receiver has no Lightning address, can't zap back.")
                                     return
@@ -511,8 +511,8 @@ class DVM:
                             user = get_or_add_user(self.dvm_config.DB, job_event.pubkey().to_hex(),
                                                    client=self.client, config=self.dvm_config)
                             print(user.lud16 + " " + str(amount))
-                            bolt11 = zap(user.lud16, amount, "Couldn't finish job, returning sats", job_event,
-                                         self.keys, self.dvm_config, zaptype="private")
+                            bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", job_event,
+                                                self.keys, self.dvm_config, zaptype="private")
                             if bolt11 is None:
                                 print("Receiver has no Lightning address, can't zap back.")
                                 return

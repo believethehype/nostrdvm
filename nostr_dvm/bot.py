@@ -13,7 +13,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nip89_utils import nip89_fetch_events_pubkey, NIP89Config
 from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.output_utils import PostProcessFunctionType, post_process_list_to_users, post_process_list_to_events
-from nostr_dvm.utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zap
+from nostr_dvm.utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zaprequest
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
 
@@ -294,7 +294,7 @@ class Bot:
                                     user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
                                                            client=self.client, config=self.dvm_config)
                                     print("Paying: " + user.name)
-                                    bolt11 = zap(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config,
+                                    bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config,
                                                  "private")
                                     if bolt11 == None:
                                         print("Receiver has no Lightning address")
