@@ -40,6 +40,11 @@ class TextToSpeech(DVMTaskInterface):
                 input_type = tag.as_vec()[2]
                 if input_type != "text":
                     return False
+            elif tag.as_vec()[0] == 'param':
+                param = tag.as_vec()[1]
+                if param == "language":  # check for param type
+                    if tag.as_vec()[2] != "en": # todo add other available languages
+                        return False
 
         return True
 
