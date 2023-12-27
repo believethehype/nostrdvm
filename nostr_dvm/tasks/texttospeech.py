@@ -109,6 +109,7 @@ class TextToSpeech(DVMTaskInterface):
                 text=options["prompt"],
                 speaker_wav=options["input_wav"], language=options["language"], file_path="outputs/output.wav")
             result = upload_media_to_hoster("outputs/output.wav")
+            print(result)
             return result
         except Exception as e:
             print("Error in Module: " + str(e))
