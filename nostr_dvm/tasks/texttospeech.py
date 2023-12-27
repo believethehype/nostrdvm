@@ -100,7 +100,9 @@ class TextToSpeech(DVMTaskInterface):
 
         print(TTS().list_models())
         try:
-            tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+            model = "tts_models/multilingual/multi-dataset/your_tts"
+            #model = "tts_models/multilingual/multi-dataset/xtts_v2"
+            tts = TTS(model).to(device)
 
             tts.tts_to_file(
                 text=options["prompt"],
