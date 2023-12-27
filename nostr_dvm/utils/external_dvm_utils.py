@@ -33,8 +33,9 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
     nip90params = {}
     encryption_supported = False
     cashu_accepted = False
-    print(nip89content_str)
+
     if nip89content_str is not None:
+        print(nip89content_str)
         nip89content = json.loads(nip89content_str)
         if nip89content.get("name"):
             name = nip89content.get("name")
@@ -48,7 +49,8 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
             encryption_supported = nip89content["encryptionSupported"]
         if nip89content.get("cashuAccepted"):
             cashu_accepted = nip89content["cashuAccepted"]
-
+    else:
+        print("No NIP89 set for "+ name)
     nip89info = {
         "name": name,
         "image": image,
