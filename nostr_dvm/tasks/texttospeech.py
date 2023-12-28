@@ -5,7 +5,7 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 from pathlib import Path
 import urllib.request
 
-from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
+from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
@@ -106,8 +106,8 @@ class TextToSpeech(DVMTaskInterface):
 
         print(TTS().list_models())
         try:
-            #model = "tts_models/deu/fairseq/vits"
-            #model = "tts_models/multilingual/multi-dataset/your_tts"
+            # model = "tts_models/deu/fairseq/vits"
+            # model = "tts_models/multilingual/multi-dataset/your_tts"
             model = "tts_models/multilingual/multi-dataset/xtts_v2"
             tts = TTS(model).to(device)
 
@@ -154,13 +154,5 @@ def build_example(name, identifier, admin_config):
                         options=options)
 
 
-def process_venv():
-    args = DVMTaskInterface.process_args()
-    dvm_config = build_default_config(args.identifier)
-    dvm = TextToSpeech(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
-    result = dvm.process(json.loads(args.request))
-    DVMTaskInterface.write_output(result, args.output)
-
-
 if __name__ == '__main__':
-    process_venv()
+    process_venv(TextToSpeech)

@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import time
 from subprocess import run
 import sys
 from sys import platform
@@ -9,7 +10,7 @@ from venv import create
 from nostr_sdk import Keys
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_result
 
@@ -134,3 +135,11 @@ class DVMTaskInterface:
         with open(os.path.abspath(output), 'w') as f:
             f.write(result)
         # f.close()
+
+
+def process_venv(identifier):
+    args = DVMTaskInterface.process_args()
+    dvm_config = build_default_config(args.identifier)
+    dvm = identifier(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
+    result = dvm.process(json.loads(args.request))
+    DVMTaskInterface.write_output(result, args.output)

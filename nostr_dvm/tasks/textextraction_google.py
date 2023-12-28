@@ -2,7 +2,7 @@ import json
 import os
 import time
 
-from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
+from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
@@ -156,13 +156,5 @@ def build_example(name, identifier, admin_config):
                               admin_config=admin_config, options=options)
 
 
-def process_venv():
-    args = DVMTaskInterface.process_args()
-    dvm_config = build_default_config(args.identifier)
-    dvm = SpeechToTextGoogle(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
-    result = dvm.process(json.loads(args.request))
-    DVMTaskInterface.write_output(result, args.output)
-
-
 if __name__ == '__main__':
-    process_venv()
+    process_venv(SpeechToTextGoogle)
