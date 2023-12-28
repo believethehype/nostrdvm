@@ -169,7 +169,7 @@ def redeem_cashu(cashu, config, client, required_amount=0, update_self=False) ->
         else:
             msg = tree.get("detail").split('.')[0].strip() if tree.get("detail") else None
             print(msg)
-            return False, msg
+            return False, msg, redeem_invoice_amount, fees
     except Exception as e:
         print(e)
 
