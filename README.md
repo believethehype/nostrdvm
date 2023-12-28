@@ -7,7 +7,6 @@ This means the project is in alpha status, interfaces might still change/break a
 
 
 ## To get started:
-(Tested on Python 3.10)
 
 Create a new venv by running `"python -m venv venv"`
   - Place .env file (based on .env_example) in main folder.
