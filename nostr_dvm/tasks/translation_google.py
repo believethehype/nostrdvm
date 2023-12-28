@@ -1,6 +1,6 @@
 import json
 import os
-from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
+from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
@@ -146,13 +146,5 @@ def build_example(name, identifier, admin_config):
     return TranslationGoogle(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config)
 
 
-def process_venv():
-    args = DVMTaskInterface.process_args()
-    dvm_config = build_default_config(args.identifier)
-    dvm = TranslationGoogle(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
-    result = dvm.process(json.loads(args.request))
-    DVMTaskInterface.write_output(result, args.output)
-
-
 if __name__ == '__main__':
-    process_venv()
+    process_venv(TranslationGoogle)

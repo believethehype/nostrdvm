@@ -1,7 +1,7 @@
 import json
 import os
 
-from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
+from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
@@ -43,11 +43,11 @@ class TextGenerationLLMLite(DVMTaskInterface):
         if self.options.get("default_model") and self.options.get("default_model") != "":
             model = self.options['default_model']
         else:
-            model = "gpt-3.5-turbo" #"gpt-4-1106-preview" # This will call chatgpt and requires an OpenAI API Key set in .env
+            model = "gpt-3.5-turbo"  # "gpt-4-1106-preview" # This will call chatgpt and requires an OpenAI API Key set in .env
         if self.options.get("server") and self.options.get("server") != "":
             server = self.options['server']
         else:
-            server = "http://localhost:11434" #default ollama server. This will only be used for ollama models.
+            server = "http://localhost:11434"  # default ollama server. This will only be used for ollama models.
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -114,16 +114,9 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return TextGenerationLLMLite(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config, options=options)
-
-
-def process_venv():
-    args = DVMTaskInterface.process_args()
-    dvm_config = build_default_config(args.identifier)
-    dvm = TextGenerationLLMLite(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
-    result = dvm.process(json.loads(args.request))
-    DVMTaskInterface.write_output(result, args.output)
+    return TextGenerationLLMLite(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config,
+                                 options=options)
 
 
 if __name__ == '__main__':
-    process_venv()
+    process_venv(TextGenerationLLMLite)

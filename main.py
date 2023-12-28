@@ -7,7 +7,7 @@ from nostr_dvm.bot import Bot
 from nostr_dvm.tasks import videogeneration_replicate_svd, imagegeneration_replicate_sdxl, textgeneration_llmlite, \
     trending_notes_nostrband, discovery_inactive_follows, translation_google, textextraction_pdf, \
     translation_libretranslate, textextraction_google, convert_media, imagegeneration_openai_dalle, texttospeech, \
-    imagegeneration_sd21_mlx, advanced_search
+    imagegeneration_sd21_mlx, advanced_search, textgeneration_huggingchat
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -155,6 +155,10 @@ def playground():
         bot_config.SUPPORTED_DVMS.append(mlx)
         mlx.run()
 
+
+    hugginchat = textgeneration_huggingchat.build_example("Huggingchat", "hugginchat", admin_config)
+    bot_config.SUPPORTED_DVMS.append(hugginchat)
+    hugginchat.run()
 
     # Run the bot
     Bot(bot_config)

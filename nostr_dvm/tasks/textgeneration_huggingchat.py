@@ -1,29 +1,26 @@
 import json
 import os
-import re
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.nostr_utils import get_event_by_id
 
 """
-This File contains a Module to extract Text from a PDF file locally on the DVM Machine
+This File contains a Module to generate Text, based on a prompt using a LLM (local or API) (Ollama, custom model, chatgpt)
 
-Accepted Inputs: Url to pdf file, Event containing an URL to a PDF file
-Outputs: Text containing the extracted contents of the PDF file
-Params:  None
+Accepted Inputs: Prompt (text)
+Outputs: Generated text
 """
 
 
-class TextExtractionPDF(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
-    TASK: str = "pdf-to-text"
+class TextGenerationHuggingChat(DVMTaskInterface):
+    KIND: int = EventDefinitions.KIND_NIP90_GENERATE_TEXT
+    TASK: str = "text-to-text"
     FIX_COST: float = 0
     dependencies = [("nostr-dvm", "nostr-dvm"),
-                    ("pypdf", "pypdf==3.17.1")]
+                    ("hugchat", "hugchat")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
@@ -35,57 +32,51 @@ class TextExtractionPDF(DVMTaskInterface):
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
                 input_type = tag.as_vec()[2]
-                if input_type != "url" and input_type != "event":
+                if input_type != "text":
                     return False
+
         return True
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
-        request_form = {"jobID": event.id().to_hex()}
-
-        # default values
-        input_type = "url"
-        input_content = ""
-        url = ""
+        request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
+        prompt = ""
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
-                input_content = tag.as_vec()[1]
-
-        if input_type == "url":
-            url = input_content
-        # if event contains url to pdf, we checked for a pdf link before
-        elif input_type == "event":
-            evt = get_event_by_id(input_content, client=client, config=dvm_config)
-            url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
+                if input_type == "text":
+                    prompt = tag.as_vec()[1]
 
         options = {
-            "url": url,
+            "prompt": prompt,
         }
         request_form['options'] = json.dumps(options)
+
         return request_form
 
     def process(self, request_form):
-        from pypdf import PdfReader
-        from pathlib import Path
-        import requests
+        from hugchat import hugchat
+        from hugchat.login import Login
+        sign = Login(os.getenv("HUGGINGFACE_EMAIL"), os.getenv("HUGGINGFACE_PASSWORD"))
+        cookie_path_dir = "./cookies_snapshot"
+        try:
+            cookies = sign.loadCookiesFromDir(
+                cookie_path_dir)  # This will detect if the JSON file exists, return cookies if it does and raise an Exception if it's not.
+        except:
+            cookies = sign.login()
+            sign.saveCookiesToDir(cookie_path_dir)
+
 
         options = DVMTaskInterface.set_options(request_form)
 
         try:
-            file_path = Path('temp.pdf')
-            response = requests.get(options["url"])
-            file_path.write_bytes(response.content)
-            reader = PdfReader(file_path)
-            number_of_pages = len(reader.pages)
-            text = ""
-            for page_num in range(number_of_pages):
-                page = reader.pages[page_num]
-                text = text + page.extract_text()
+            chatbot = hugchat.ChatBot(cookies=cookies.get_dict())  # or cookie_path="usercookies/<email>.json"
+            query_result = chatbot.query(options["prompt"])
+            print(query_result["text"])  # or query_result.text or query_result["text"]
+            return str(query_result["text"]).lstrip()
 
-            os.remove('temp.pdf')
-            return text
         except Exception as e:
+            print("Error in Module: " + str(e))
             raise Exception(e)
 
 
@@ -95,11 +86,11 @@ class TextExtractionPDF(DVMTaskInterface):
 def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     admin_config.LUD16 = dvm_config.LN_ADDRESS
-    # Add NIP89
+
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I extract text from pdf documents. I only support Latin letters",
+        "about": "I use a LLM connected via Huggingchat",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {}
@@ -108,9 +99,10 @@ def build_example(name, identifier, admin_config):
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    return TextExtractionPDF(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                             admin_config=admin_config)
+
+    return TextGenerationHuggingChat(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                     admin_config=admin_config)
 
 
 if __name__ == '__main__':
-    process_venv(TextExtractionPDF)
+    process_venv(TextGenerationHuggingChat)
