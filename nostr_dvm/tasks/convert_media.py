@@ -28,7 +28,7 @@ class MediaConverter(DVMTaskInterface):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-    def is_input_supported(self, tags):
+    def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]

@@ -33,17 +33,23 @@ class TextToSpeech(DVMTaskInterface):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-    def is_input_supported(self, tags):
+    def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
                 input_type = tag.as_vec()[2]
                 if input_type != "event" and input_type != "job" and input_type != "text":
                     return False
+                if input_type == "text" and len(input_value) > 250:
+                    return False
+                if input_type == "event":
+                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    if len(evt.content()) > 250:
+                        return False
             elif tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "language":  # check for param type
-                    if tag.as_vec()[2] != "en": # todo add other available languages
+                    if tag.as_vec()[2] != "en":  # todo add other available languages
                         return False
 
         return True

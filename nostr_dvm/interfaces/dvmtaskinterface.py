@@ -94,7 +94,7 @@ class DVMTaskInterface:
         nip89.CONTENT = nip89config.CONTENT
         return nip89
 
-    def is_input_supported(self, tags) -> bool:
+    def is_input_supported(self, tags, client=None, dvm_config=None) -> bool:
         """Check if input is supported for current Task."""
         pass
 

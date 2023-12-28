@@ -33,7 +33,7 @@ class SpeechToTextGoogle(DVMTaskInterface):
         if options is None:
             options = {}
 
-    def is_input_supported(self, tags):
+    def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
