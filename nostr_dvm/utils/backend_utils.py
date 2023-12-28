@@ -140,7 +140,7 @@ def check_task_is_supported(event: Event, client, config=None):
         # See if current dvm can handle input for given task
         for dvm in dvm_config.SUPPORTED_DVMS:
             if dvm.TASK == task:
-                if not dvm.is_input_supported(event.tags()):
+                if not dvm.is_input_supported(event.tags(), client, config):
                     return False, task
         return True, task
 

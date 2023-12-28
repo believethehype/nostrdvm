@@ -27,7 +27,7 @@ class ImageGenerationSDXLIMG2IMG(DVMTaskInterface):
                  admin_config: AdminConfig = None, options=None):
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-    def is_input_supported(self, tags):
+    def is_input_supported(self, tags, client=None, dvm_config=None):
         hasurl = False
         hasprompt = False
         for tag in tags:
