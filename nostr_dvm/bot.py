@@ -82,6 +82,8 @@ class Bot:
 
         def handle_dm(nostr_event):
             sender = nostr_event.pubkey().to_hex()
+            if sender == self.keys.public_key().to_hex():
+                return
 
             try:
                 decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), nostr_event.content())
