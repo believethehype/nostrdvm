@@ -493,6 +493,8 @@ class DVM:
                                         if line != '\n':
                                             result += line
                                 os.remove(os.path.abspath('output.txt'))
+                                if result.startswith("Error:"):
+                                    raise Exception
                             else:  # Some components might have issues with running code in otuside venv.
                                 # We install locally in these cases for now
                                 result = dvm.process(request_form)

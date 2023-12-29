@@ -145,5 +145,6 @@ def process_venv(identifier):
         result = dvm.process(json.loads(args.request))
         DVMTaskInterface.write_output(result, args.output)
     except Exception as e:
-        DVMTaskInterface.write_output(str(e), args.output)
+        DVMTaskInterface.write_output("Error: " + str(e), args.output)
+        raise Exception
 
