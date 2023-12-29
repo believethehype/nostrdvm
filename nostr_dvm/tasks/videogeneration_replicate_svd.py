@@ -60,7 +60,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "url":
-                    url = tag.as_vec()[1]
+                    url = str(tag.as_vec()[1]).split('#')[0]
         # TODO add params as defined above
 
         options = {
