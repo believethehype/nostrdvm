@@ -334,7 +334,8 @@ class DVM:
                                 user = get_or_add_user(self.dvm_config.DB, original_event.pubkey().to_hex(),
                                                        client=self.client, config=self.dvm_config)
                                 print(user.lud16 + " " + str(amount))
-                                bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", original_event,
+                                bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats",
+                                                    original_event,
                                                     self.keys, self.dvm_config, zaptype="private")
                                 if bolt11 is None:
                                     print("Receiver has no Lightning address, can't zap back.")
@@ -477,12 +478,12 @@ class DVM:
                                 python_location = "/bin/python"
                                 if platform == "win32":
                                     python_location = "/Scripts/python"
-                                python_bin = ( r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
-                                                + python_location)
+                                python_bin = (r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
+                                              + python_location)
                                 retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
-                                                '--request', json.dumps(request_form),
-                                                '--identifier', dvm_config.IDENTIFIER,
-                                                '--output', 'output.txt'])
+                                                           '--request', json.dumps(request_form),
+                                                           '--identifier', dvm_config.IDENTIFIER,
+                                                           '--output', 'output.txt'])
                                 print("Finished processing, loading data..")
 
                                 with open(os.path.abspath('output.txt')) as f:
@@ -492,8 +493,8 @@ class DVM:
                                         if line != '\n':
                                             result += line
                                 os.remove(os.path.abspath('output.txt'))
-                            else: #Some components might have issues with running code in otuside venv.
-                                  # We install locally in these cases for now
+                            else:  # Some components might have issues with running code in otuside venv.
+                                # We install locally in these cases for now
                                 result = dvm.process(request_form)
                             try:
                                 post_processed = dvm.post_process(str(result), job_event)
