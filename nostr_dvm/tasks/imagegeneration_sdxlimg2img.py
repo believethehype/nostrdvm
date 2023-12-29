@@ -89,7 +89,8 @@ class ImageGenerationSDXLIMG2IMG(DVMTaskInterface):
                 if input_type == "text":
                     prompt = tag.as_vec()[1]
                 elif input_type == "url":
-                    url = tag.as_vec()[1]
+                    url = str(tag.as_vec()[1]).split('#')[0]
+
 
             elif tag.as_vec()[0] == 'param':
                 print("Param: " + tag.as_vec()[1] + ": " + tag.as_vec()[2])
