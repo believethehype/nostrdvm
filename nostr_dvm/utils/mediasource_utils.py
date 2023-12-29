@@ -20,8 +20,7 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
             input_type = tag.as_vec()[2]
 
     if input_type == "text":
-        # For now, ignore length of any text, just return 1.
-        return 1
+        return len(input_value)
 
     if input_type == "event":  # NIP94 event
         evt = get_event_by_id(input_value, client=client, config=dvm_config)
@@ -29,7 +28,7 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
             input_value, input_type = check_nip94_event_for_media(evt, input_value, input_type)
             if input_type == "text":
                 # For now, ingore length of any text, just return 1.
-                return 1
+                return len(input_value)
 
     if input_type == "url":
         source_type = check_source_type(input_value)
