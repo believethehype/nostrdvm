@@ -512,8 +512,8 @@ class DVM:
                             user = get_or_add_user(self.dvm_config.DB, job_event.pubkey().to_hex(),
                                                    client=self.client, config=self.dvm_config)
                             print(user.lud16 + " " + str(amount))
-                            bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", job_event,
-                                                self.keys, self.dvm_config, zaptype="private")
+                            bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", job_event, user.npub,
+                                                self.keys, self.dvm_config.RELAY_LIST, zaptype="private")
                             if bolt11 is None:
                                 print("Receiver has no Lightning address, can't zap back.")
                                 return
