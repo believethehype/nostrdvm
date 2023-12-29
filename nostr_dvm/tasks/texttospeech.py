@@ -24,7 +24,7 @@ Outputs: Generated Audiofile
 class TextToSpeech(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH
     TASK: str = "text-to-speech"
-    FIX_COST: float = 0
+    FIX_COST: float = 50
     PER_UNIT_COST = 0.5
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("TTS", "TTS==0.22.0")]
