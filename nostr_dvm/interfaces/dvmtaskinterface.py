@@ -146,5 +146,4 @@ def process_venv(identifier):
         DVMTaskInterface.write_output(result, args.output)
     except Exception as e:
         DVMTaskInterface.write_output("Error: " + str(e), args.output)
-        raise Exception
 
