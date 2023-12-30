@@ -469,6 +469,7 @@ class DVM:
                 task = get_task(job_event, client=self.client, dvm_config=self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
+                    result = ""
                     try:
                         if task == dvm.TASK:
 
@@ -488,13 +489,13 @@ class DVM:
 
                                 with open(os.path.abspath('output.txt')) as f:
                                     resultall = f.readlines()
-                                    result = ""
                                     for line in resultall:
                                         if line != '\n':
                                             result += line
                                 os.remove(os.path.abspath('output.txt'))
-                                if result.startswith("Error:"):
-                                    raise Exception
+                                assert not result.startswith("Error:")
+                                print(result)
+
                             else:  # Some components might have issues with running code in otuside venv.
                                 # We install locally in these cases for now
                                 result = dvm.process(request_form)
@@ -505,9 +506,8 @@ class DVM:
                                 send_job_status_reaction(job_event, "error", content=str(e),
                                                          dvm_config=self.dvm_config)
                     except Exception as e:
-                        print(e)
                         # we could send the exception here to the user, but maybe that's not a good idea after all.
-                        send_job_status_reaction(job_event, "error", content="An error occurred",
+                        send_job_status_reaction(job_event, "error", content=result,
                                                  dvm_config=self.dvm_config)
                         # Zapping back the user on error
                         if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":

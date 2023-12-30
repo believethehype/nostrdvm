@@ -239,7 +239,7 @@ class Bot:
                                                client=self.client, config=self.dvm_config)
                         time.sleep(2.0)
                         reply_event = EventBuilder.new_encrypted_direct_msg(self.keys,
-                                                                            PublicKey.from_hex(user.npub),
+                                                                            PublicKey.from_hex(entry['npub']),
                                                                             content,
                                                                             None).to_event(self.keys)
                         print(status + ": " + content)
