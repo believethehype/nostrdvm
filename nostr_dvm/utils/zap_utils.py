@@ -92,7 +92,7 @@ def parse_amount_from_bolt11_invoice(bolt11_invoice: str) -> int:
 
 def create_bolt11_ln_bits(sats: int, config) -> (str, str):
     if config.LNBITS_URL == "":
-        return None
+        return None, None
     url = config.LNBITS_URL + "/api/v1/payments"
     data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM " + config.NIP89.NAME}
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
@@ -102,7 +102,7 @@ def create_bolt11_ln_bits(sats: int, config) -> (str, str):
         if obj.get("payment_request") and obj.get("payment_hash"):
             return obj["payment_request"], obj["payment_hash"]  #
         else:
-            print(res.text)
+            print("LNBITS: " + res.text)
             return None, None
     except Exception as e:
         print("LNBITS: " + str(e))
@@ -124,7 +124,8 @@ def create_bolt11_lud16(lud16, amount):
         response = requests.get(callback + "?amount=" + str(int(amount) * 1000))
         ob = json.loads(response.content)
         return ob["pr"]
-    except:
+    except Exception as e:
+        print("LUD16: " + e)
         return None
 
 
@@ -283,7 +284,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
         return ob["pr"]
 
     except Exception as e:
-        print(e)
+        print("ZAP REQUEST: " + e)
         return None
 
 def get_price_per_sat(currency):
