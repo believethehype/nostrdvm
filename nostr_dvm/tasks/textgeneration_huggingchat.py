@@ -8,7 +8,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 
 """
-This File contains a Module to generate Text, based on a prompt using a LLM (local or API) (Ollama, custom model, chatgpt)
+This File contains a Module to generate Text, based on a prompt using a the HuggingChat LLM on Huggingface
 
 Accepted Inputs: Prompt (text)
 Outputs: Generated text
