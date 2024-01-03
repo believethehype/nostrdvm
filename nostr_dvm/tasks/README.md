@@ -12,9 +12,11 @@ Current List of Tasks:
 | SpeechToTextGoogle           | 5000         | Extracts Speech from Media files via Google Services       | googleAPI        |
 | SpeechToTextWhisperX         | 5000         | Extracts Speech from Media files via local WhisperX        | nserver          |
 | ImageInterrogator            | 5000         | Extracts Prompts from Images                               | nserver          |
+| TextSummarizationHuggingChat | 5001         | Summarizes given Input                                     | huggingface      |
 | TranslationGoogle            | 5002         | Translates Inputs to another language                      | googleAPI        |
 | TranslationLibre             | 5002         | Translates Inputs to another language                      | libreAPI         |
 | TextGenerationLLMLite        | 5050         | Chat with LLM backends like Ollama, ChatGPT etc            | local/api/openai |
+| TextGenerationHuggingChat    | 5050         | Chat with LLM backend on Huggingface                       | huggingface      |
 | ImageGenerationSDXL          | 5100         | Generates an Image from Prompt with Stable Diffusion XL    | nserver          |
 | ImageGenerationSDXLIMG2IMG   | 5100         | Generates an Image from an Image with Stable Diffusion XL  | nserver          |
 | ImageGenerationReplicateSDXL | 5100         | Generates an Image from Prompt with Stable Diffusion XL    | replicate        |
@@ -26,7 +28,7 @@ Current List of Tasks:
 | TextToSpeech                 | 5250         | Generate Audio from a prompt                               | local            |
 | TrendingNotesNostrBand       | 5300         | Show trending notes on nostr.band                          | nostr.band api   |
 | DiscoverInactiveFollows      | 5301         | Find inactive Nostr users                                  | local            |
-| AdvancedSearch               | 5302 (inoff) | Search Content on nostr.band                               | local            |
+| AdvancedSearch               | 5302 (inoff) | Search Content on nostr.band                               | local/nostr.band |
 
 Kinds with (inoff) are suggestions and not merged yet and might change in the future.
 Backends might require to add an API key to the .env file or run an external server/framework the dvm will communicate with.

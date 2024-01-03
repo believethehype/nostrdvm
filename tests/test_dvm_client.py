@@ -51,7 +51,7 @@ def nostr_client_test_image(prompt):
     bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
     relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
-    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate an Image from a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, str("Generate an Image."),
                          [iTag, outTag, tTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
 

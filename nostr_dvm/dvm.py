@@ -347,7 +347,7 @@ class DVM:
 
         def send_nostr_reply_event(content, original_event_as_str):
             original_event = Event.from_json(original_event_as_str)
-            request_tag = Tag.parse(["request", original_event_as_str.replace("\\", "")])
+            request_tag = Tag.parse(["request", original_event_as_str])
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
             p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
             alt_tag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
@@ -368,6 +368,7 @@ class DVM:
                         reply_tags.append(i_tag)
 
             if encrypted:
+                print(content)
                 content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.pubkey().to_hex()),
                                         content)
 
