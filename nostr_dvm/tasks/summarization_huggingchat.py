@@ -58,6 +58,10 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
                                                             EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY],
                                                      dvm_config=dvm_config)
+                    if evt is None:
+                        print("Event not found")
+                        raise Exception
+                    
                     if evt.kind() == EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY:
                         result_list = json.loads(evt.content())
                         prompt = ""
