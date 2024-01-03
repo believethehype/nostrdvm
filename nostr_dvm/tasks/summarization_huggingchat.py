@@ -10,7 +10,7 @@ from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by
 from nostr_sdk import Tag
 
 """
-This File contains a Module to generate Text, based on a prompt using a LLM (local or API) (Ollama, custom model, chatgpt)
+This File contains a Module to summarize Text, based on a prompt using a the HuggingChat LLM on Huggingface
 
 Accepted Inputs: Prompt (text)
 Outputs: Generated text
