@@ -97,6 +97,8 @@ def post_process_result(anno, original_event):
 def post_process_list_to_events(result):
     result_list = json.loads(result)
     result_str = ""
+    if len(result_list) == 0:
+        return "No results found"
     for tag in result_list:
         e_tag = Tag.parse(tag)
         result_str = result_str + "nostr:" + EventId.from_hex(
@@ -107,6 +109,8 @@ def post_process_list_to_events(result):
 def post_process_list_to_users(result):
     result_list = json.loads(result)
     result_str = ""
+    if len(result_list) == 0:
+        return "No results found"
     for tag in result_list:
         p_tag = Tag.parse(tag)
         result_str = result_str + "nostr:" + PublicKey.from_hex(
