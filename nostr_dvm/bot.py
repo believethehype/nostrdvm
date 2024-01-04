@@ -12,7 +12,8 @@ from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance,
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nip89_utils import nip89_fetch_events_pubkey, NIP89Config
 from nostr_dvm.utils.nostr_utils import send_event
-from nostr_dvm.utils.output_utils import PostProcessFunctionType, post_process_list_to_users, post_process_list_to_events
+from nostr_dvm.utils.output_utils import PostProcessFunctionType, post_process_list_to_users, \
+    post_process_list_to_events
 from nostr_dvm.utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zaprequest
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
@@ -296,8 +297,9 @@ class Bot:
                                     user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
                                                            client=self.client, config=self.dvm_config)
                                     print("Paying: " + user.name)
-                                    bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys, self.dvm_config,
-                                                 "private")
+                                    bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys,
+                                                        self.dvm_config,
+                                                        "private")
                                     if bolt11 == None:
                                         print("Receiver has no Lightning address")
                                         return
@@ -414,11 +416,11 @@ class Bot:
             index = 1
             for p in self.dvm_config.SUPPORTED_DVMS:
                 if p.PER_UNIT_COST != 0 and p.PER_UNIT_COST is not None:
-                    message += (str(index) + " " + p.NAME + " " + p.TASK + " " + str(p.FIX_COST) +
-                                " Sats + " + str(p.PER_UNIT_COST) + " Sats per Second\n")
+                    message += (str(index) + " " + p.NAME + " " + p.TASK + "\n\t" + str(p.FIX_COST) +
+                                " Sats + " + str(p.PER_UNIT_COST) + " Sats per Second\n\n")
                 else:
-                    message += (str(index) + " " + p.NAME + " " + p.TASK + " " + str(p.FIX_COST) +
-                                " Sats\n")
+                    message += (str(index) + " " + p.NAME + " " + p.TASK + "\n\t" + str(p.FIX_COST) +
+                                " Sats\n\n")
                 index += 1
 
             time.sleep(3.0)
@@ -454,19 +456,45 @@ class Bot:
 
         def build_params(decrypted_text, nostr_event, index):
             tags = []
-            split = decrypted_text.split(' ')
-
+            splitzero = decrypted_text.split(' -')
+            split = splitzero[0].split(' ')
             # If only a command without parameters is sent, we assume no input is required, and that means the dvm might take in the user as input (e.g. for content discovery)
             if len(split) == 1:
+                remaining_text = decrypted_text.replace(split[0], "")
+                params = remaining_text.split(" -")
                 tag = Tag.parse(["param", "user", nostr_event.pubkey().to_hex()])
                 tags.append(tag)
-                output = Tag.parse(["output", "text/plain"])
-                tags.append(output)
-                relay_list = ["relays"]
-                for relay in self.dvm_config.RELAY_LIST:
-                    relay_list.append(relay)
-                relays = Tag.parse(relay_list)
-                tags.append(relays)
+                for i in params:
+                    print(i)
+                    if i != " ":
+                        try:
+                            split = i.split(" ")
+                            if len(split) > 1:
+                                param = str(split[0])
+                                print(str(param))
+                                value = str(split[1])
+                                print(str(value))
+                                if param == "cashu":
+                                    tag = Tag.parse([param, value])
+                                else:
+                                    if param == "user":
+                                        if value.startswith("@") or value.startswith("nostr:") or value.startswith(
+                                                "npub"):
+                                            value = PublicKey.from_bech32(
+                                                value.replace("@", "").replace("nostr:", "")).to_hex()
+                                    tag = Tag.parse(["param", param, value])
+                                tags.append(tag)
+                        except Exception as e:
+                            print(e)
+                            print("Couldn't add " + str(i))
+                        output = Tag.parse(["output", "text/plain"])
+                        tags.append(output)
+                        relay_list = ["relays"]
+                        for relay in self.dvm_config.RELAY_LIST:
+                            relay_list.append(relay)
+                            relays = Tag.parse(relay_list)
+                            tags.append(relays)
+
                 return tags
 
             tags = []
