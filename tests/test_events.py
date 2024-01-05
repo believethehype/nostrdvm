@@ -2,8 +2,9 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
+import nostr_sdk
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, EventId, Options, PublicKey
+    nip04_encrypt, EventId, Options, PublicKey, Event, ClientSigner
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -16,7 +17,9 @@ skip_disconnected_relays = True
 opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=5))
         .skip_disconnected_relays(skip_disconnected_relays))
 
-client = Client.with_opts(keys, opts)
+signer = ClientSigner.KEYS(keys)
+client = Client.with_opts(signer, opts)
+
 for relay in relay_list:
     client.add_relay(relay)
 client.connect()
@@ -74,4 +77,11 @@ if __name__ == '__main__':
 
     #shows kind 7000 reaction but not kind 6300 result (d05e7ae9271fe2d8968cccb67c01e3458dbafa4a415e306d49b22729b088c8a1)
     test_referred_events("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e", None)
+
+    bech32evnt = EventId.from_hex("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_bech32()
+    print(bech32evnt)
+
+    nostruri = EventId.from_hex("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_nostr_uri()
+    print(nostruri)
+
 
