@@ -1,7 +1,7 @@
 import json
 from datetime import timedelta
 
-from nostr_sdk import PublicKey, Options, Keys, Client
+from nostr_sdk import PublicKey, Options, Keys, Client, ClientSigner
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -20,10 +20,12 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
     opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=config.RELAY_TIMEOUT))
             .skip_disconnected_relays(True))
     keys = Keys.from_sk_str(config.PRIVATE_KEY)
-    client = Client.with_opts(keys, opts)
+    signer = ClientSigner.KEYS(keys)
+    client = Client.with_opts(signer, opts)
+
 
     for relay in config.RELAY_LIST:
-        client.add_relay(relay)
+            client.add_relay(relay)
     client.connect()
 
     nip89content_str = nip89_fetch_events_pubkey(client, pubkey, kind)

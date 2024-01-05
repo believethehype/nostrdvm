@@ -5,7 +5,7 @@ from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, Options, nip04_encrypt
+    init_logger, LogLevel, Options, nip04_encrypt, ClientSigner
 
 import time
 
@@ -43,7 +43,10 @@ class DVM:
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
 
-        self.client = Client.with_opts(self.keys, opts)
+        signer = ClientSigner.KEYS(self.keys)
+        self.client = Client.with_opts(signer,opts)
+
+
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()

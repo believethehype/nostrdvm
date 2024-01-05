@@ -2,7 +2,7 @@ import json
 import os
 
 import requests
-from nostr_sdk import Keys, PublicKey, Client, nip04_encrypt, EventBuilder, Tag
+from nostr_sdk import Keys, PublicKey, Client, nip04_encrypt, EventBuilder, Tag, ClientSigner
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -20,7 +20,8 @@ def nwc_zap(connectionstr, bolt11, keys):
         }
     }
 
-    client = Client(keys)
+    signer = ClientSigner.KEYS(keys)
+    client = Client(signer)
     client.add_relay(relay)
     client.connect()
 

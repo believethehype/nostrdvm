@@ -4,7 +4,7 @@ from pathlib import Path
 from threading import Thread
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt
+from nostr_sdk import Keys, Client, ClientSigner, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -24,7 +24,9 @@ def nostr_client_test_llm(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    client = Client(keys)
+    signer = ClientSigner.KEYS(keys)
+    client = Client(signer)
+
     for relay in relay_list:
         client.add_relay(relay)
     client.connect()

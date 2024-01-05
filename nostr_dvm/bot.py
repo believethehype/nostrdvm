@@ -5,7 +5,7 @@ import time
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt)
+                       Options, Tag, Event, nip04_encrypt, ClientSigner)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
@@ -35,7 +35,8 @@ class Bot:
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
-        self.client = Client.with_opts(self.keys, opts)
+        signer = ClientSigner.KEYS(self.keys)
+        self.client = Client.with_opts(signer, opts)
 
         pk = self.keys.public_key()
 

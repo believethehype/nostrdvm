@@ -4,7 +4,8 @@ from pathlib import Path
 from threading import Thread
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt
+from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
+    ClientSigner
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -41,7 +42,9 @@ def nostr_client():
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Test Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(keys)
+    signer = ClientSigner.KEYS(keys)
+    client = Client(signer)
+
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
         client.add_relay(relay)
