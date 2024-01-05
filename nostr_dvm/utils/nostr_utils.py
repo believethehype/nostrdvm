@@ -4,7 +4,8 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options
+from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
+    Nip19Event
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
@@ -16,6 +17,13 @@ def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
     else:
         if str(event_id).startswith('note'):
             event_id = EventId.from_bech32(event_id)
+        elif str(event_id).startswith("nevent"):
+            event_id = Nip19Event.from_bech32(event_id).event_id()
+        elif str(event_id).startswith('nostr:note'):
+            event_id = EventId.from_nostr_uri(event_id)
+        elif str(event_id).startswith("nostr:nevent"):
+            event_id = Nip19Event.from_nostr_uri(event_id).event_id()
+
         else:
             event_id = EventId.from_hex(event_id)
 
@@ -31,11 +39,21 @@ def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
 def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | None:
     if kinds is None:
         kinds = []
+    if str(event_id).startswith('note'):
+        event_id = EventId.from_bech32(event_id)
+    elif str(event_id).startswith("nevent"):
+        event_id = Nip19Event.from_bech32(event_id).event_id()
+    elif str(event_id).startswith('nostr:note'):
+        event_id = EventId.from_nostr_uri(event_id)
+    elif str(event_id).startswith("nostr:nevent"):
+        event_id = Nip19Event.from_nostr_uri(event_id).event_id()
+    else:
+        event_id = EventId.from_hex(event_id)
 
     if len(kinds) > 0:
-        job_id_filter = Filter().kinds(kinds).event(EventId.from_hex(event_id)).limit(1)
+        job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
     else:
-        job_id_filter = Filter().event(EventId.from_hex(event_id)).limit(1)
+        job_id_filter = Filter().event(event_id).limit(1)
 
     events = client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
 

@@ -4,7 +4,7 @@ from pathlib import Path
 import dotenv
 import nostr_sdk
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, EventId, Options, PublicKey, Event, ClientSigner
+    nip04_encrypt, EventId, Options, PublicKey, Event, ClientSigner, Nip19Event
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -76,10 +76,13 @@ if __name__ == '__main__':
     test_referred_events("c70fbd4dbaad22c427d4359981d3bdddd3971ed1a38227ca2f8e5e760f58103c", definitions.EventDefinitions.ANY_RESULT)
 
     #shows kind 7000 reaction but not kind 6300 result (d05e7ae9271fe2d8968cccb67c01e3458dbafa4a415e306d49b22729b088c8a1)
-    test_referred_events("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e", None)
+    test_referred_events("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e", definitions.EventDefinitions.ANY_RESULT)
 
     bech32evnt = EventId.from_hex("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_bech32()
     print(bech32evnt)
+
+    test = Nip19Event.from_bech32("nevent1qqsrjcpejsrlt3u7dy42y6rc97svrq9ver08xy4jr2ll55ynq3sxafcppamhxue69uhkummnw3ezumt0d5pzpmnqx2pla0zvxxcfjqeeysy29ll3mtmf4s3yff0y45r7egau080vqvzqqqqqqyu4q839")
+    print(test.event_id().to_hex())
 
     nostruri = EventId.from_hex("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_nostr_uri()
     print(nostruri)
