@@ -18,7 +18,7 @@ from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
 from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
-    parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits
+    parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
 use_logger = False
@@ -419,10 +419,23 @@ class DVM:
             expires = original_event.created_at().as_secs() + (60 * 60 * 24)
             if status == "payment-required" or (status == "processing" and not is_paid):
                 if dvm_config.LNBITS_INVOICE_KEY != "":
+                    if dvm_config.LNBITS_INVOICE_KEY != "":  
                     try:
-                        bolt11, payment_hash = create_bolt11_ln_bits(amount, dvm_config)
+                        bolt11, payment_hash = create_bolt11_ln_bits(amount,dvm_config)
                     except Exception as e:
                         print(e)
+                        try:
+                            bolt11, payment_hash = create_bolt11_lud16(dvm_config.LN_ADDRESS,
+                                                                   amount)
+                        except Exception as e:
+                             print(e)
+                             bolt11 = None
+                elif dvm_config.LN_ADDRESS != "":
+                    try:
+                        bolt11, payment_hash = create_bolt11_lud16(dvm_config.LN_ADDRESS, amount)
+                    except Exception as e:
+                        print(e)
+                        bolt11 = None
 
             if not any(x.event == original_event for x in self.job_list):
                 self.job_list.append(
