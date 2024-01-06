@@ -419,7 +419,6 @@ class DVM:
             expires = original_event.created_at().as_secs() + (60 * 60 * 24)
             if status == "payment-required" or (status == "processing" and not is_paid):
                 if dvm_config.LNBITS_INVOICE_KEY != "":
-                    if dvm_config.LNBITS_INVOICE_KEY != "":  
                     try:
                         bolt11, payment_hash = create_bolt11_ln_bits(amount,dvm_config)
                     except Exception as e:
