@@ -5,7 +5,7 @@ import time
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, ClientSigner)
+                       Options, Tag, Event, nip04_encrypt, ClientSigner, EventId, Nip19Event)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
@@ -515,6 +515,21 @@ class Bot:
                     input_type = "url"
                     i_tag = Tag.parse(["i", input, input_type])
                     tags.append(i_tag)
+            elif (input.startswith("nevent") or input.startswith("nostr:nevent") or input.startswith("note") or
+                  input.startswith("nostr:note")):
+                input_type = "event"
+                if str(input).startswith('note'):
+                    event_id = EventId.from_bech32(input)
+                elif str(input).startswith("nevent"):
+                    event_id = Nip19Event.from_bech32(input).event_id()
+                elif str(input).startswith('nostr:note'):
+                    event_id = EventId.from_nostr_uri(input)
+                elif str(input).startswith("nostr:nevent"):
+                    event_id = Nip19Event.from_nostr_uri(input).event_id()
+                else:
+                    event_id = EventId.from_hex(input)
+                i_tag = Tag.parse(["i", event_id.to_hex(), input_type])
+                tags.append(i_tag)
             else:
                 print(input)
                 input_type = "text"
