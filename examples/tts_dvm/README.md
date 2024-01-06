@@ -3,7 +3,7 @@
 Projects in this folder contain ready-to-use DVMs. To tun the DVM following the next steps:
 
 ## To get started:
-- Install Python 3.10
+- Install Python (tested on 3.10/3.11)
 
 
 Create a new venv in this directory by opening the terminal here, or navigate to this directory and type: `"python -m venv venv"`
