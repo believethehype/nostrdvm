@@ -181,7 +181,7 @@ def pay_bolt11_ln_bits(bolt11: str, config):
             return "Error"
     except Exception as e:
         print("LNBITS: " + str(e))
-        return None, None
+        return "Error"
 
 
 # DECRYPT ZAPS
