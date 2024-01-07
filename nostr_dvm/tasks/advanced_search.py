@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, ClientSigner
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -85,7 +85,9 @@ class AdvancedSearch(DVMTaskInterface):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.from_sk_str(sk.to_hex())
-        cli = Client.with_opts(keys, opts)
+        signer = ClientSigner.KEYS(keys)
+        cli = Client.with_opts(signer, opts)
+
         cli.add_relay("wss://relay.nostr.band")
         cli.connect()
 
