@@ -5,7 +5,7 @@ from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, Options, nip04_encrypt
+    init_logger, LogLevel, Options, nip04_encrypt, ClientSigner
 
 import time
 
@@ -18,7 +18,7 @@ from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
 from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
-    parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits
+    parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
 use_logger = False
@@ -43,7 +43,10 @@ class DVM:
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
 
-        self.client = Client.with_opts(self.keys, opts)
+        signer = ClientSigner.KEYS(self.keys)
+        self.client = Client.with_opts(signer,opts)
+
+
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
@@ -347,7 +350,7 @@ class DVM:
 
         def send_nostr_reply_event(content, original_event_as_str):
             original_event = Event.from_json(original_event_as_str)
-            request_tag = Tag.parse(["request", original_event_as_str.replace("\\", "")])
+            request_tag = Tag.parse(["request", original_event_as_str])
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
             p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
             alt_tag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
@@ -368,6 +371,7 @@ class DVM:
                         reply_tags.append(i_tag)
 
             if encrypted:
+                print(content)
                 content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.pubkey().to_hex()),
                                         content)
 
@@ -416,9 +420,21 @@ class DVM:
             if status == "payment-required" or (status == "processing" and not is_paid):
                 if dvm_config.LNBITS_INVOICE_KEY != "":
                     try:
-                        bolt11, payment_hash = create_bolt11_ln_bits(amount, dvm_config)
+                        bolt11, payment_hash = create_bolt11_ln_bits(amount,dvm_config)
                     except Exception as e:
                         print(e)
+                        try:
+                            bolt11, payment_hash = create_bolt11_lud16(dvm_config.LN_ADDRESS,
+                                                                   amount)
+                        except Exception as e:
+                             print(e)
+                             bolt11 = None
+                elif dvm_config.LN_ADDRESS != "":
+                    try:
+                        bolt11, payment_hash = create_bolt11_lud16(dvm_config.LN_ADDRESS, amount)
+                    except Exception as e:
+                        print(e)
+                        bolt11 = None
 
             if not any(x.event == original_event for x in self.job_list):
                 self.job_list.append(

@@ -108,14 +108,14 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
                 keys = Keys.from_sk_str(self.dvm_config.PRIVATE_KEY)
                 opts = Options().wait_for_send(True).send_timeout(
-                    timedelta(seconds=10)).skip_disconnected_relays(False)
+                    timedelta(seconds=5)).skip_disconnected_relays(True)
                 cli = Client.with_opts(keys, opts)
                 for relay in self.dvm_config.RELAY_LIST:
                     cli.add_relay(relay)
                 cli.connect()
 
                 filters = []
-                for i in range(i + st):
+                for i in range(i, i + st):
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).since(notactivesince).limit(1)
                     filters.append(filter1)
                 event_from_authors = cli.get_events_of(filters, timedelta(seconds=10))
@@ -131,7 +131,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 args = [followings, ns, begin, step, not_active_since]
                 t = Thread(target=scanList, args=args)
                 threads.append(t)
-                begin = begin + step
+                begin = begin + step -1
 
             # last to step size
             missing_scans = (len(followings) - begin)
@@ -149,9 +149,6 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
             result = {k for (k, v) in ns.dic.items() if v == "False"}
 
-            if len(result) == 0:
-                print("Not found")
-                return "No inactive followers found on relays."
             print("Inactive accounts found: " + str(len(result)))
             for k in result:
                 p_tag = Tag.parse(["p", k])
