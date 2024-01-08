@@ -2,6 +2,7 @@ import json
 import os
 from datetime import timedelta
 from pathlib import Path
+from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
@@ -32,6 +33,15 @@ def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
     if len(events) > 0:
 
         return events[0]
+    else:
+        return None
+
+
+def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
+    id_filter = Filter().ids(event_ids)
+    events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+    if len(events) > 0:
+        return events
     else:
         return None
 
@@ -161,7 +171,6 @@ def update_profile(dvm_config, client, lud16=""):
         about = nip89content.get("about")
         image = nip89content.get("image")
 
-
         # Set metadata
         metadata = Metadata() \
             .set_name(name) \
@@ -170,7 +179,7 @@ def update_profile(dvm_config, client, lud16=""):
             .set_picture(image) \
             .set_lud16(lud16) \
             .set_nip05(lud16)
-            # .set_banner("https://example.com/banner.png") \
+        # .set_banner("https://example.com/banner.png") \
 
         print(f"Setting profile metadata for {keys.public_key().to_bech32()}...")
         print(metadata.as_json())
@@ -192,4 +201,3 @@ def add_pk_to_env_file(dtag, oskey):
         print(f'loading environment from {env_path.resolve()}')
         dotenv.load_dotenv(env_path, verbose=True, override=True)
         dotenv.set_key(env_path, dtag, oskey)
-

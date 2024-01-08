@@ -47,6 +47,7 @@ class AdvancedSearch(DVMTaskInterface):
 
         # default values
         user = ""
+        users = []
         since_days = 800  # days ago
         until_days = 0  # days ago
         search = ""
@@ -61,7 +62,9 @@ class AdvancedSearch(DVMTaskInterface):
                 param = tag.as_vec()[1]
                 if param == "user":  # check for param type
                     user = tag.as_vec()[2]
-                if param == "since":  # check for param type
+                elif param == "users":  # check for param type
+                    user = json.loads(tag.as_vec()[2])
+                elif param == "since":  # check for param type
                     since_days = int(tag.as_vec()[2])
                 elif param == "until":  # check for param type
                     until_days = int(tag.as_vec()[2])
@@ -71,6 +74,7 @@ class AdvancedSearch(DVMTaskInterface):
         options = {
             "search": search,
             "user": user,
+            "users": users,
             "since": since_days,
             "until": until_days,
             "max_results": max_results
@@ -98,16 +102,37 @@ class AdvancedSearch(DVMTaskInterface):
         search_until_seconds = int(options["until"]) * 24 * 60 * 60
         dif = Timestamp.now().as_secs() - search_until_seconds
         search_until = Timestamp.from_secs(dif)
+        userkeys = []
+        for user in options["users"]:
+            user = user.as_json()[1]
+            user = str(user).lstrip("@")
+            if str(user).startswith('npub'):
+                userkey = PublicKey.from_bech32(user)
+            elif str(user).startswith("nostr:npub"):
+                userkey = PublicKey.from_nostr_uri(user)
+            else:
+                userkey = PublicKey.from_hex(user)
 
-        if options["user"] == "":
+            userkeys.append(userkey)
+
+        if not options["users"] and options["user"] == "":
             notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(
                 options["max_results"])
         elif options["search"] == "":
-            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).since(search_since).until(
-                search_until).limit(options["max_results"])
+            if options["users"]:
+                notes_filter = Filter().kind(1).authors(userkeys).since(search_since).until(
+                    search_until).limit(options["max_results"])
+            else:
+                notes_filter = Filter().kind(1).authors([PublicKey.from_hex(options["user"])]).since(search_since).until(
+                    search_until).limit(options["max_results"])
         else:
-            notes_filter = Filter().kind(1).author(PublicKey.from_hex(options["user"])).search(options["search"]).since(
-                search_since).until(search_until).limit(options["max_results"])
+            if options["users"]:
+                notes_filter = Filter().kind(1).authors(userkeys).search(options["search"]).since(
+                    search_since).until(search_until).limit(options["max_results"])
+            else:
+                notes_filter = Filter().kind(1).authors([PublicKey.from_hex(options["user"])]).search(options["search"]).since(
+                    search_since).until(search_until).limit(options["max_results"])
+
 
         events = cli.get_events_of([notes_filter], timedelta(seconds=5))
 

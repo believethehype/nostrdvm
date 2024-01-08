@@ -46,13 +46,13 @@ def test_referred_events(event_id, kinds=None):
         return None
 
 
-def test_all_reposts_by_user_since_days(pubkey, days):
+def test_search_by_user_since_days(pubkey, days, prompt):
     since_seconds = int(days) * 24 * 60 * 60
     dif = Timestamp.now().as_secs() - since_seconds
     since = Timestamp.from_secs(dif)
 
-    filter = Filter().author(PublicKey.from_hex(pubkey)).kinds([6]).since(since)
-    events = client.get_events_of([filter], timedelta(seconds=5))
+    filterts = Filter().search(prompt).author(pubkey).kinds([1]).since(since)
+    events = client.get_events_of([filterts], timedelta(seconds=5))
 
     if len(events) > 0:
         for event in events:
@@ -86,5 +86,7 @@ if __name__ == '__main__':
 
     nostruri = EventId.from_hex("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_nostr_uri()
     print(nostruri)
+
+    test_search_by_user_since_days(PublicKey.from_bech32("npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8"), 60, "Bitcoin")
 
 
