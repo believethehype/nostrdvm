@@ -217,7 +217,7 @@ def fetch_user_metadata(npub, client):
     pk = PublicKey.from_hex(npub)
     print(f"\nGetting profile metadata for {pk.to_bech32()}...")
     profile_filter = Filter().kind(0).author(pk).limit(1)
-    events = client.get_events_of([profile_filter], timedelta(seconds=5))
+    events = client.get_events_of([profile_filter], timedelta(seconds=1))
     if len(events) > 0:
         latest_entry = events[0]
         latest_time = 0
