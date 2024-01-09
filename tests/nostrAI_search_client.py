@@ -19,7 +19,7 @@ keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
 opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=2))
         .skip_disconnected_relays(True))
 
-signer = ClientSigner.KEYS(keys)
+signer = ClientSigner.keys(keys)
 client = Client.with_opts(signer, opts)
 relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org", "wss://nostr-pub.wellorder.net"]
 
@@ -65,6 +65,16 @@ def nostr_client_test_search(prompt, users=None, since="", until=""):
 
 def handledvm(now):
     response = False
+
+    signer = ClientSigner.keys(keys)
+    cli = Client.with_opts(signer, opts)
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                  "wss://nostr-pub.wellorder.net"]
+
+    for relay in relay_list:
+        cli.add_relay(relay)
+    cli.connect()
+
     feedbackfilter = Filter().pubkey(keys.public_key()).kinds(
         [EventDefinitions.KIND_NIP90_RESULTS_CONTENT_SEARCH]).since(now)
     feedbackfilter2 = Filter().pubkey(keys.public_key()).kinds(
@@ -72,8 +82,8 @@ def handledvm(now):
     events = []
     fevents = []
     while not response:
-        events = client.get_events_of([feedbackfilter], timedelta(seconds=3))
-        fevents = client.get_events_of([feedbackfilter2], timedelta(seconds=3))
+        events = cli.get_events_of([feedbackfilter], timedelta(seconds=3))
+        fevents = cli.get_events_of([feedbackfilter2], timedelta(seconds=3))
         if len(fevents) > 0:
             print(fevents[0].content())
            # ui.notify(fevents[0].content())
@@ -89,7 +99,8 @@ def handledvm(now):
                 event_ids.append(eventidob)
 
             config = DVMConfig()
-            events = get_events_by_id(event_ids, client, config)
+            events = get_events_by_id(event_ids, cli, config)
+            print("HELLO")
             listui = []
             for event in events:
                 nip19event = Nip19Event(event.id(), event.pubkey(), dvmconfig.DVMConfig.RELAY_LIST)
@@ -104,11 +115,13 @@ def handledvm(now):
                 listui.append(new)
                 print(event.as_json())
             # ui.update(table)
+            response = True
+            cli.disconnect()
+            cli.shutdown()
             return listui
 
 async def search():
-    data.clear()
-    table.clear()
+
     table.visible = False
     now = Timestamp.now()
     taggedusersfrom = [str(word).lstrip('from:@') for word in prompt.value.split() if word.startswith('from:@')]
@@ -129,6 +142,8 @@ async def search():
     print("Sent: " + ev)
     listui = []
     print(str(now.to_human_datetime()))
+    data.clear()
+    table.clear()
     listui = await run.cpu_bound(handledvm, now)
     ui.notify("Received results from DVM")
 

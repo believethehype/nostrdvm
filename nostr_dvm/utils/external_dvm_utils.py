@@ -20,7 +20,7 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
     opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=config.RELAY_TIMEOUT))
             .skip_disconnected_relays(True))
     keys = Keys.from_sk_str(config.PRIVATE_KEY)
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client.with_opts(signer, opts)
 
 
