@@ -11,7 +11,6 @@ from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotificatio
 from nostr_dvm.utils import dvmconfig
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.nip89_utils import nip89_fetch_events_pubkey
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key, get_event_by_id, get_events_by_id
 from nostr_dvm.utils.definitions import EventDefinitions
 
@@ -21,7 +20,7 @@ opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=2))
 
 signer = ClientSigner.keys(keys)
 client = Client.with_opts(signer, opts)
-relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org", "wss://nostr-pub.wellorder.net"]
+relay_list = dvmconfig.DVMConfig.RELAY_LIST
 
 for relay in relay_list:
     client.add_relay(relay)
@@ -60,30 +59,21 @@ def nostr_client_test_search(prompt, users=None, since="", until=""):
     config = DVMConfig
     config.RELAY_LIST = relay_list
     send_event(event, client=client, dvm_config=config)
-    return event.as_json()
+    return event
 
 
-def handledvm(now):
+def handledvm(now, eventid):
     response = False
 
-    signer = ClientSigner.keys(keys)
-    cli = Client.with_opts(signer, opts)
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
-                  "wss://nostr-pub.wellorder.net"]
-
-    for relay in relay_list:
-        cli.add_relay(relay)
-    cli.connect()
-
     feedbackfilter = Filter().pubkey(keys.public_key()).kinds(
-        [EventDefinitions.KIND_NIP90_RESULTS_CONTENT_SEARCH]).since(now)
+        [EventDefinitions.KIND_NIP90_RESULTS_CONTENT_SEARCH]).since(now).event(eventid)
     feedbackfilter2 = Filter().pubkey(keys.public_key()).kinds(
-        [EventDefinitions.KIND_FEEDBACK]).since(now)
+        [EventDefinitions.KIND_FEEDBACK]).since(now).event(eventid)
     events = []
     fevents = []
     while not response:
-        events = cli.get_events_of([feedbackfilter], timedelta(seconds=3))
-        fevents = cli.get_events_of([feedbackfilter2], timedelta(seconds=3))
+        events = client.get_events_of([feedbackfilter], timedelta(seconds=3))
+        fevents = client.get_events_of([feedbackfilter2], timedelta(seconds=3))
         if len(fevents) > 0:
             print(fevents[0].content())
            # ui.notify(fevents[0].content())
@@ -92,6 +82,9 @@ def handledvm(now):
             time.sleep(1.0)
             continue
         else:
+            if events[0].content() == "[]":
+                return []
+
             event_etags = json.loads(events[0].content())
             event_ids = []
             for etag in event_etags:
@@ -99,8 +92,10 @@ def handledvm(now):
                 event_ids.append(eventidob)
 
             config = DVMConfig()
-            events = get_events_by_id(event_ids, cli, config)
-            print("HELLO")
+            events = get_events_by_id(event_ids, client, config)
+            if events is None:
+                return []
+
             listui = []
             for event in events:
                 nip19event = Nip19Event(event.id(), event.pubkey(), dvmconfig.DVMConfig.RELAY_LIST)
@@ -114,39 +109,35 @@ def handledvm(now):
                        }
                 listui.append(new)
                 print(event.as_json())
-            # ui.update(table)
-            response = True
-            cli.disconnect()
-            cli.shutdown()
             return listui
 
-async def search():
 
+async def search():
     table.visible = False
     now = Timestamp.now()
-    taggedusersfrom = [str(word).lstrip('from:@') for word in prompt.value.split() if word.startswith('from:@')]
-    taggedusersto = [str(word).lstrip('to:@') for word in prompt.value.split() if word.startswith('to:@')]
+    taggedusersfrom = [str(word).lstrip('from:') for word in prompt.value.split() if word.startswith('from:')]
+    taggedusersto = [str(word).lstrip('to:') for word in prompt.value.split() if word.startswith('to:')]
 
     search = prompt.value
+
     tags = []
     for word in taggedusersfrom:
         search = str(search).replace(word, "")
-        user_pubkey = PublicKey.from_bech32(word).to_hex()
+        user_pubkey = PublicKey.from_bech32(word.replace("@", "")).to_hex()
         pTag = ["p", user_pubkey]
         tags.append(pTag)
-    search = str(search).replace("from:@", "").replace("to:@", "").lstrip().rstrip()
-
+    search = str(search).replace("from:", "").replace("to:", "").replace("@", "").lstrip().rstrip()
+    print(search)
     ev = nostr_client_test_search(search, tags)
     ui.notify('Request sent to DVM, awaiting results..')
 
-    print("Sent: " + ev)
-    listui = []
+    print("Sent: " + ev.as_json())
     print(str(now.to_human_datetime()))
     data.clear()
-    table.clear()
-    listui = await run.cpu_bound(handledvm, now)
+    #table.clear()
+    listui = await run.io_bound(handledvm, now, ev.id())
     ui.notify("Received results from DVM")
-
+    table.clear()
     for element in listui:
         table.add_rows(element)
 
@@ -178,35 +169,34 @@ if __name__ in {"__main__", "__mp_main__"}:
 
             # table = ui.table(columns, rows=data).classes('w-full bordered')
             table = ui.table(columns=columns, rows=data, row_key='result',
-                             pagination={'rowsPerPage': 10, 'sortBy': 'time', 'descending': True, 'page': 1}).style(
-                'width: 80em')
+             pagination={'rowsPerPage': 10, 'sortBy': 'time', 'descending': True, 'page': 1}).style('width: 80em')
             table.add_slot('header', r'''
-                <q-tr :props="props">
-                    <q-th auto-width />
-                    <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                        {{ col.label }}
-                    </q-th>
-                </q-tr>
-            ''')
+                            <q-tr :props="props">
+                                <q-th auto-width />
+                                <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                                    {{ col.label }}
+                                </q-th>
+                            </q-tr>
+                        ''')
             table.add_slot('body', r'''
-                <q-tr :props="props">
-                    <q-td auto-width>
-                        <q-btn size="sm" color="accent" round dense
-                            @click="props.expand = !props.expand"
-                            :icon="props.expand ? 'remove' : 'add'" />
-                    </q-td>
-                    <q-td v-for="col in props.cols" :key="col.name" :props="props" width="200px">
-                        {{ col.value }}
-                    </q-td>
-                </q-tr>
-                <q-tr v-show="props.expand" :props="props">
-                    <q-td colspan="50%">
-                        <a v-bind:href="props.row.njump">Njump </a>
-                        <a v-bind:href="props.row.highlighter">Highlighter </a>
-                        <a v-bind:href="props.row.nostrudel">NoStrudel</a>
-                    </q-td>
-                </q-tr>
-            ''')
+                            <q-tr :props="props">
+                                <q-td auto-width>
+                                    <q-btn size="sm" color="accent" round dense
+                                        @click="props.expand = !props.expand"
+                                        :icon="props.expand ? 'remove' : 'add'" />
+                                </q-td>
+                                <q-td v-for="col in props.cols" :key="col.name" :props="props" width="200px">
+                                    {{ col.value }}
+                                </q-td>
+                            </q-tr>
+                            <q-tr v-show="props.expand" :props="props">
+                                <q-td colspan="50%">
+                                    <a v-bind:href="props.row.njump">Njump </a>
+                                    <a v-bind:href="props.row.highlighter">Highlighter </a>
+                                    <a v-bind:href="props.row.nostrudel">NoStrudel</a>
+                                </q-td>
+                            </q-tr>
+                        ''')
 
             table.on('action', lambda msg: print(msg))
             table.visible = False

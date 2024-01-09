@@ -63,7 +63,7 @@ class AdvancedSearch(DVMTaskInterface):
                 if param == "user":  # check for param type
                     user = tag.as_vec()[2]
                 elif param == "users":  # check for param type
-                    user = json.loads(tag.as_vec()[2])
+                    users = json.loads(tag.as_vec()[2])
                 elif param == "since":  # check for param type
                     since_days = int(tag.as_vec()[2])
                 elif param == "until":  # check for param type
@@ -104,7 +104,7 @@ class AdvancedSearch(DVMTaskInterface):
         search_until = Timestamp.from_secs(dif)
         userkeys = []
         for user in options["users"]:
-            user = user.as_json()[1]
+            user = user[1]
             user = str(user).lstrip("@")
             if str(user).startswith('npub'):
                 userkey = PublicKey.from_bech32(user)
