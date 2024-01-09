@@ -31,7 +31,7 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client(signer)
 
     for relay in relay_list:
@@ -60,7 +60,7 @@ def nostr_client_test_image(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -86,7 +86,7 @@ def nostr_client_test_tts(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -125,7 +125,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params,
                                 [pTag, encrypted_tag]).to_event(keys)
 
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -140,7 +140,7 @@ def nostr_client():
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client(signer)
 
     dvmconfig = DVMConfig()

@@ -42,7 +42,7 @@ def nostr_client():
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Test Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client(signer)
 
     dvmconfig = DVMConfig()

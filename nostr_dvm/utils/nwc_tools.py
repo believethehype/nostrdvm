@@ -20,7 +20,7 @@ def nwc_zap(connectionstr, bolt11, keys):
         }
     }
 
-    signer = ClientSigner.KEYS(keys)
+    signer = ClientSigner.keys(keys)
     client = Client(signer)
     client.add_relay(relay)
     client.connect()

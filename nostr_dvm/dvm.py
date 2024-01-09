@@ -43,7 +43,7 @@ class DVM:
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
 
-        signer = ClientSigner.KEYS(self.keys)
+        signer = ClientSigner.keys(self.keys)
         self.client = Client.with_opts(signer,opts)
 
 

@@ -17,7 +17,7 @@ skip_disconnected_relays = True
 opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=5))
         .skip_disconnected_relays(skip_disconnected_relays))
 
-signer = ClientSigner.KEYS(keys)
+signer = ClientSigner.keys(keys)
 client = Client.with_opts(signer, opts)
 
 for relay in relay_list:

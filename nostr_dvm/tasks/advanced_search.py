@@ -89,7 +89,7 @@ class AdvancedSearch(DVMTaskInterface):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.from_sk_str(sk.to_hex())
-        signer = ClientSigner.KEYS(keys)
+        signer = ClientSigner.keys(keys)
         cli = Client.with_opts(signer, opts)
 
         cli.add_relay("wss://relay.nostr.band")
