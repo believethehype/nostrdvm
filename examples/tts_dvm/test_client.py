@@ -29,7 +29,9 @@ def nostr_client_test_tts(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    client = Client(keys)
+
+    signer = ClientSigner.keys(keys)
+    client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
     client.connect()
