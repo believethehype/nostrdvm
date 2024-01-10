@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1.7'
+VERSION = '0.1.8'
 DESCRIPTION = 'A framework to build and run Nostr NIP90 Data Vending Machines'
 LONG_DESCRIPTION = ('A framework to build and run Nostr NIP90 Data Vending Machines. '
                     'This is an early stage release. Interfaces might change/brick')
@@ -15,13 +15,13 @@ setup(
     long_description=LONG_DESCRIPTION,
     packages=find_packages(include=['nostr_dvm/**']),
     install_requires=["nostr-sdk==0.7.1",
-                      "bech32==1.2.0",
+                      "bech32",
                       "pycryptodome==3.19.0",
                       "python-dotenv==1.0.0",
                       "emoji==2.8.0",
                       "eva-decord==0.6.1",
                       "ffmpegio==0.8.5",
-                      "lnurl==0.4.1",
+                      "lnurl",
                       "pandas==2.1.3",
                       "Pillow==10.1.0",
                       "PyUpload==0.1.4",

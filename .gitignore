@@ -176,4 +176,4 @@ backends/nserver/modules/image_upscale/weights
 cache/
 cookies_snapshot/satoshi2077@protonmail.com.json
 Todo.md
-tests/gui/node_modules
+tests/gui/svelte/node_modules
