@@ -1,17 +1,13 @@
-import asyncio
 import json
 import time
 from datetime import timedelta
-from pathlib import Path
 from nicegui import run, ui
-import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, nip04_decrypt, \
-    nip04_encrypt, Options, Timestamp, ZapRequestData, ClientSigner, EventId, Nip19Event, PublicKey
+from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, \
+    Options, Timestamp, ClientSigner, EventId, Nip19Event, PublicKey
 
 from nostr_dvm.utils import dvmconfig
-from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key, get_event_by_id, get_events_by_id
+from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key, get_events_by_id
 from nostr_dvm.utils.definitions import EventDefinitions
 
 
@@ -74,19 +70,18 @@ def init():
                 if lastfeedback != fevents[0].content():
                     for tag in fevents[0].tags():
                         if tag.as_vec()[0] == "status":
-                                if tag.as_vec()[1] == "error":
-                                    with mainrow:
-                                        with maincolumn:
-                                            ui.notify(fevents[0].content(), type="negative")
-                                            lastfeedback = fevents[0].content()
-                                            break
-                                else:
-                                    with mainrow:
-                                        with maincolumn:
-                                            ui.notify(fevents[0].content(), type="info")
-                                            lastfeedback = fevents[0].content()
-                                            break
-
+                            if tag.as_vec()[1] == "error":
+                                with mainrow:
+                                    with maincolumn:
+                                        ui.notify(fevents[0].content(), type="negative")
+                                        lastfeedback = fevents[0].content()
+                                        break
+                            else:
+                                with mainrow:
+                                    with maincolumn:
+                                        ui.notify(fevents[0].content(), type="info")
+                                        lastfeedback = fevents[0].content()
+                                        break
 
             if len(events) == 0:
                 response = False
@@ -135,8 +130,8 @@ def init():
         for word in taggedusersfrom:
             search = str(search).replace(word, "")
             user_pubkey = PublicKey.from_bech32(word.replace("@", "")).to_hex()
-            pTag = ["p", user_pubkey]
-            tags.append(pTag)
+            pTag = Tag.parse(["p", user_pubkey])
+            tags.append(pTag.as_vec())
         search = str(search).replace("from:", "").replace("to:", "").replace("@", "").lstrip().rstrip()
         print(search)
         ev = nostr_client_test_search(search, tags)
@@ -161,21 +156,18 @@ def init():
 
     with mainrow:
         with maincolumn:
-            ui.label('NostrAI Search Page').classes('text-2xl')
+            ui.label('Noogle Search').classes('text-2xl')
             prompt = ui.input('Search').style('width: 20em')
 
             ui.button('Search', on_click=search).style('width: 15em')
-            # image = ui.image().style('width: 60em')
             columns = [
                 {'name': 'result', 'label': 'result', 'field': 'result', 'sortable': True, 'align': 'left', },
                 {'name': 'time', 'label': 'time', 'field': 'time', 'sortable': True, 'align': 'left'},
-                # {'name': 'eventid', 'label': 'eventid', 'field': 'eventid', 'sortable': True, 'align': 'left'},
             ]
 
-            # table = ui.table(columns, rows=data).classes('w-full bordered')
             table = ui.table(columns=columns, rows=data, row_key='result',
                              pagination={'rowsPerPage': 10, 'sortBy': 'time', 'descending': True, 'page': 1}).style(
-                'width: 80em')
+                'width: 50em')
             table.add_slot('header', r'''
                             <q-tr :props="props">
                                 <q-th auto-width />
@@ -191,7 +183,7 @@ def init():
                                         @click="props.expand = !props.expand"
                                         :icon="props.expand ? 'remove' : 'add'" />
                                 </q-td>
-                                <q-td v-for="col in props.cols" :key="col.name" :props="props" width="200px">
+                                <q-td v-for="col in props.cols" :key="col.name" :props="props" colspan="50%">
                                     {{ col.value }}
                                 </q-td>
                             </q-tr>
