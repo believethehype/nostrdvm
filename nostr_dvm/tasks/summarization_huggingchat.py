@@ -34,7 +34,7 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
                 input_type = tag.as_vec()[2]
-                if input_type != "text":
+                if input_type != "event" and input_type != "job" and input_type != "text":
                     return False
 
         return True
