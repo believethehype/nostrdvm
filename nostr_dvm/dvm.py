@@ -516,7 +516,7 @@ class DVM:
                                 # We install locally in these cases for now
                                 result = dvm.process(request_form)
                             try:
-                                post_processed = dvm.post_process(str(result), job_event)
+                                post_processed = dvm.post_process(result, job_event)
                                 send_nostr_reply_event(post_processed, job_event.as_json())
                             except Exception as e:
                                 send_job_status_reaction(job_event, "error", content=str(e),
