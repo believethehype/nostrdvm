@@ -91,9 +91,11 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
             elif content_type == 'video/mp4':
                 with open('./outputs/video.mp4', 'wb') as f:
                    f.write(response.content)
+                f.close()
                 clip = VideoFileClip("./outputs/video.mp4")
                 clip.write_videofile("./outputs/video2.mp4")
                 result = upload_media_to_hoster("./outputs/video2.mp4")
+                clip.close()
                 os.remove("./outputs/video.mp4")
                 os.remove("./outputs/video2.mp4")
                 return result
