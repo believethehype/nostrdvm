@@ -61,7 +61,7 @@ class VideoGenerationSVD(DVMTaskInterface):
         io_output = {
             "id": "output_video",
             "type": "output",
-            "src": "stream:Video"
+            "src": "request:stream:Video"
         }
 
         request_form['data'] = json.dumps([io_input, io_output])
