@@ -1,4 +1,4 @@
-hcai-nova-utils>=1.5.5
+hcai-nova-utils>=1.5.7
 --extra-index-url https://download.pytorch.org/whl/cu118
 torch==2.1.0
 compel~=2.0.2
