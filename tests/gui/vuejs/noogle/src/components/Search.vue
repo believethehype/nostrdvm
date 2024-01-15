@@ -3,57 +3,6 @@ import {Client, Filter, Timestamp, Event, Metadata, PublicKey, EventBuilder, Tag
 import store from '../store';
 
 let items = []
-async function get_some_stuff(message) {
-   try {
-     if (message === undefined){
-       message = "Nostr"
-     }
-
-        //console.log( store.state.test + " " + message)
-        const filter = new Filter().kind(1).limit(20).search(message);
-         //console.log('filter', filter.asJson());
-    let client = store.state.client
-    let events = await client.getEventsOf([filter], 3);
-    //console.log(events.length)
-     let items = []
-    for (const e of events) {
-          let name = e.pubkey.toBech32()
-          let nip05 = ""
-          let lud16 = ""
-          let picture = ""
-          //console.log(e.pubkey.toHex())
-          const profile_filter = new Filter().kind(0).author(e.pubkey).limit(1)
-          let evts = await client.getEventsOf([profile_filter], 5)
-          if (evts.length > 0){
-               let latest_entry = evts[0]
-               let latest_time = 0
-
-                for (const entry of evts){
-                   if (entry.createdAt.asSecs() > latest_time){
-                      latest_time = entry.createdAt.asSecs();
-                      latest_entry = entry
-                   }
-                }
-
-                let profile =  JSON.parse(latest_entry.content);
-                name = profile["name"]
-                picture = profile["picture"]
-
-              }
-
-
-
-          items.push({ content: e.content, author: name, authorurl: "https://njump.me/" + e.pubkey.toBech32(), avatar:
-                picture, indicator: {"time": e.createdAt.toHumanDatetime()}})
-            //console.log(e.asJson())
-          }
-          store.commit('set_search_results', items)
-
-        //await client.publishTextNote("Test from Rust Nostr SDK JavaScript bindings with NIP07 signer!", []);
-      } catch (error) {
-        console.log(error);
-      }
-}
 
 async function send_search_request(message) {
    try {
@@ -134,10 +83,6 @@ defineProps({
   },
 
 })
-
-
-
-
 
 </script>
 
