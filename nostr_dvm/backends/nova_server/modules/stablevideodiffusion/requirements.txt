@@ -1,0 +1,7 @@
+hcai-nova-utils>=1.5.7
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.1.0
+git+https://github.com/huggingface/diffusers.git 
+transformers 
+accelerate
+opencv-python
