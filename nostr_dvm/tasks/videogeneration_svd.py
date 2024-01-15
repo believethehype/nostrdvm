@@ -40,7 +40,7 @@ class VideoGenerationSVD(DVMTaskInterface):
         request_form["trainerFilePath"] = r'modules\stablevideodiffusion\stablevideodiffusion.trainer'
 
         url = ""
-        frames = 14  # 25
+        frames = 7  # 25
         model = "stabilityai/stable-video-diffusion-img2vid-xt" #,stabilityai/stable-video-diffusion-img2vid
 
 
@@ -68,7 +68,7 @@ class VideoGenerationSVD(DVMTaskInterface):
 
         options = {
             "model": model,
-            "fps": 14
+            "fps": frames
 
         }
         request_form['options'] = json.dumps(options)
