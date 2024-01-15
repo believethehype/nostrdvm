@@ -6,6 +6,7 @@ import zipfile
 import pandas as pd
 import requests
 import PIL.Image as Image
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
@@ -86,6 +87,15 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
                 image.save("./outputs/image.jpg")
                 result = upload_media_to_hoster("./outputs/image.jpg")
                 os.remove("./outputs/image.jpg")
+                return result
+            elif content_type == 'video/mp4':
+                with open('./outputs/video.mp4', 'wb') as f:
+                   f.write(response.content)
+                clip = VideoFileClip("./outputs/video.mp4")
+                clip.write_videofile("./outputs/video2.mp4")
+                result = upload_media_to_hoster("./outputs/video2.mp4")
+                os.remove("./outputs/video.mp4")
+                os.remove("./outputs/video2.mp4")
                 return result
             elif content_type == 'text/plain; charset=utf-8':
                 return response.content.decode('utf-8')
