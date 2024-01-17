@@ -40,6 +40,19 @@ async function getEvents(eventids) {
   return await client.getEventsOf([event_filter], 5)
 }
 
+async function get_user_infos(pubkeys){
+        let profiles = []
+        let client = store.state.client
+        const profile_filter = new Filter().kind(0).authors(pubkeys)
+        let evts = await client.getEventsOf([profile_filter], 10)
+        console.log("PROFILES:" + evts.length)
+        for (const entry of evts){
+          profiles.push({profile: JSON.parse(entry.content), author: entry.author.toHex(), createdAt: entry.createdAt});
+        }
+
+        return profiles
+
+    }
 
 async function  listen() {
     listener = true
@@ -80,10 +93,25 @@ async function  listen() {
                 for (const evt of events){
                     authors.push(evt.author)
                 }
+             let profiles = await get_user_infos(authors)
 
 
               for (const evt of events){
-                     items.push({ content: evt.content, author: evt.author.toBech32(), authorurl: "https://njump.me/" + evt.author.toBech32(),  indicator: {"time": evt.createdAt.toHumanDatetime()}})
+              console.log(evt.id.toHex())
+                     let p = profiles.find( record => record.author === evt.author.toHex())
+                      console.log(p)
+                      let bech32id = evt.id.toBech32()
+                      let picture = p["profile"]["picture"]
+                      let highlighterurl = "https://highlighter.com/a/" + bech32id
+                      let njumpurl = "https://njump.me/" + bech32id
+                      let nostrudelurl = "https://nostrudel.ninja/#/n/" + evt.id.toBech32()
+
+
+
+                       items.push({ content: evt.content, author: p["profile"]["name"], authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
+
+
+
                 }
 
                store.commit('set_search_results', items)
