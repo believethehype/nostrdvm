@@ -17,8 +17,31 @@ async function send_search_request(message) {
         store.state.results = []
         let client = store.state.client
         let tags = []
+        let users = [];
+
+        const taggedUsersFrom = message.split(' ')
+          .filter(word => word.startsWith('from:'))
+          .map(word => word.replace('from:', ''));
+
+        // search
+        let search = message;
+
+        // tags
+
+        for (const word of taggedUsersFrom) {
+          search = search.replace(word, "");
+          const userPubkey = PublicKey.fromBech32(word.replace("@", "")).toHex()
+          const pTag = Tag.parse(["p", userPubkey]);
+          users.push(pTag.asVec());
+        }
+
+        message = search.replace(/from:|to:|@/g, '').trim();
+        console.log(search);
+
         tags.push(Tag.parse(["i", message, "text"]))
         tags.push(Tag.parse(["param", "max_results", "100"]))
+        tags.push(Tag.parse(['param', 'users', JSON.stringify(users)]))
+
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
         let res = await client.sendEventBuilder(evt)
         miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
