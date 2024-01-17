@@ -42,6 +42,7 @@ const author_placeholder = ref()
 const author_image_placeholder = ref()
 const author_url_placeholder = ref()
 
+
 onMounted(async () => {
 
 
@@ -52,7 +53,7 @@ onMounted(async () => {
 
 
       content_placeholder.value = props.content //TODO furher parse content
-  console.log(props.author)
+      console.log(props.author)
       const profile = await get_user_info(props.author)
       console.log(profile)
       author_placeholder.value = profile["name"]
