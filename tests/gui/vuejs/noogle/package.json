@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rust-nostr/nostr-sdk": "^0.7.0",
+    "@rust-nostr/nostr-sdk": "^0.8.0",
     "mini-toastr": "^0.8.1",
     "vue": "^3.3.11",
     "vue-notifications": "^1.0.2",

@@ -9,7 +9,6 @@ import ResultsTable from "@/components/ResultTable.vue";
 
   <main>
 
-      <img alt="Nostr logo" class="logo" src="./assets/nostr-purple.svg" width="125" height="125" />
       <Search/>
       <br>
       <ResultsTable></ResultsTable>
