@@ -19,7 +19,7 @@ async function send_search_request(message) {
         let tags = []
         tags.push(Tag.parse(["i", message, "text"]))
         tags.push(Tag.parse(["param", "max_results", "100"]))
-        let evt = new EventBuilder(5302, "Search for me", tags)
+        let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
         let res = await client.sendEventBuilder(evt)
         miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         if (!listener){
