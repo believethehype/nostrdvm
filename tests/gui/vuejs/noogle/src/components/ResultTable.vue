@@ -2,11 +2,19 @@
   <EasyDataTable v-if="store.state.results.length != 0" table-class-name="customize-table"
     :headers="headers"
     :items="store.state.results">
-   <template #item-content="{ content, author, authorurl}">
-      <a :href="authorurl" target="_blank">{{ author }}</a>
+   <template #item-content="{ content, author, authorurl, avatar}">
+   <div class="playeauthor-wrapper">
+      <img class="avatar" :src="avatar" alt="" />
+         <a :href="authorurl" target="_blank">{{ author }}</a> </div>
      <p>{{content}}</p>
-    <!-- <NoteRender :content="content" :author="author"/> -->
      </template>
+    <template #expand="item">
+      <div style="padding: 15px">
+          <a :href="item.links.njump" target="_blank">NJump</a>
+          <a :href="item.links.highlighter" target="_blank">Highlighter</a>
+          <a :href="item.links.nostrudel" target="_blank">Nostrudel</a>
+      </div>
+    </template>
 
       </EasyDataTable>
 </template>
@@ -17,8 +25,6 @@
 
 import type { Header, Item } from "vue3-easy-data-table";
 import store from '../store';
-import NoteRender  from "@/components/NoteRender.vue";
-import {EventId, Filter} from "@rust-nostr/nostr-sdk";
 
 
 const headers: Header[] = [
@@ -28,6 +34,25 @@ const headers: Header[] = [
 </script>
 
 <style>
+.operation-wrapper .operation-icon {
+  width: 20px;
+  cursor: pointer;
+}
+.playeauthor-wrapper {
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-items: center;
+}
+.avatar {
+  margin-right: 10px;
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 10%);
+}
 .customize-table {
   --easy-table-border: 1px solid #445269;
   --easy-table-row-border: 1px solid #445269;
