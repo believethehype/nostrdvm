@@ -21,7 +21,7 @@ async function send_search_request(message) {
         tags.push(Tag.parse(["param", "max_results", "100"]))
         let evt = new EventBuilder(5302, "Search for me", tags)
         let res = await client.sendEventBuilder(evt)
-        miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.info)
+        miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         if (!listener){
                listen()
         }
@@ -97,18 +97,14 @@ async function  listen() {
 
 
               for (const evt of events){
-              console.log(evt.id.toHex())
                      let p = profiles.find( record => record.author === evt.author.toHex())
-                      console.log(p)
                       let bech32id = evt.id.toBech32()
-                      let picture = p["profile"]["picture"]
+                      let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
+                      let name = p === undefined ? bech32id : p["profile"]["name"]
                       let highlighterurl = "https://highlighter.com/a/" + bech32id
                       let njumpurl = "https://njump.me/" + bech32id
                       let nostrudelurl = "https://nostrudel.ninja/#/n/" + evt.id.toBech32()
-
-
-
-                       items.push({ content: evt.content, author: p["profile"]["name"], authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
+                      items.push({ content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
 
 
 
@@ -141,8 +137,14 @@ defineProps({
 <template>
 
   <div class="greetings">
-    <h1 class="purple">Noogle</h1>
+    <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" width="125" height="125" />
+
+       <h1 class="purple">Noogle</h1>
+       <h2>Nostr Search based on Data Vending Machines</h2>
+
     <h3>
+      <br>
+      <br>
     <div>
           <button class="c-Button"  @click="send_search_request(message)">Search the Nostr
           </button> <input class="c-Input" v-model="message" >
@@ -179,6 +181,9 @@ h1 {
   font-size: 2.6rem;
   position: relative;
   top: -10px;
+}
+h2 {
+  font-size: 1.0rem;
 }
 
 h3 {

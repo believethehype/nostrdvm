@@ -2,7 +2,7 @@
   <div>
      <div class="playeauthor-wrapper" v-if="current_user">
         <img class="avatar" :src="this.avatar" alt="" />
-         <p>Current User is: {{ this.current_user }}</p>
+         <p>{{ this.current_user }}</p>
      </div>
     <template v-if="current_user">
      <button class="b-Button" @click="sign_out()">Sign out</button>
@@ -59,6 +59,7 @@ export default {
         let nip07_signer = new Nip07Signer();
             try{
               this.signer = ClientSigner.nip07(nip07_signer);
+              console.log("SIGNER: " + this.signer)
 
             } catch (error) {
             console.log(error);
@@ -75,23 +76,23 @@ export default {
         await client.addRelay("wss://nos.lol");
         await client.addRelay("wss://relay.f7z.io")
         await client.addRelay("wss://pablof7z.nostr1.com")
-        //await client.addRelay("wss://relay.nostr.net")
-        //await client.addRelay("wss://relay.nostr.band");
-        //await client.addRelay("wss://nostr-pub.wellorder.net")
+        await client.addRelay("wss://relay.nostr.net")
+        await client.addRelay("wss://relay.nostr.band");
+        await client.addRelay("wss://nostr-pub.wellorder.net")
 
         const pubkey = await nip07_signer.getPublicKey();
         await client.connect();
 
-
+        /*
         const filter = new Filter().kind(6302).limit(20)
-        //TODO this next line breaks the code
-        //await client.reconcile(filter);
-        /*const filterl = new Filter().author(pubkey)
-        let test = dbclient.database().query([filterl])
+        await client.reconcile(filter);
+        const filterl = new Filter().author(pubkey)
+        let test = await client.database.query([filterl])
         for (let ev of test){
-          console.log(ev.as_json())
-        }
-        */
+          console.log(ev.asJson())
+        }*/
+
+
 
 
         store.commit('set_client', client)
