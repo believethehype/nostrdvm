@@ -24,10 +24,11 @@ import {
   Filter,
   initLogger,
   LogLevel,
-  Timestamp
+  Timestamp, Keys, NostrDatabase, ClientBuilder
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
+import miniToastr from "mini-toastr";
 
 export default {
    data() {
@@ -41,28 +42,7 @@ export default {
   async mounted() {
     await this.sign_in();
   },
-  notifications: {
-    showSuccessMsg: {
-      type: VueNotifications.types.success,
-      title: 'Login',
-      message: 'That\'s the success!'
-    },
-    showInfoMsg: {
-      type: VueNotifications.types.info,
-      title: 'Hey you',
-      message: 'Here is some info for you'
-    },
-    showWarnMsg: {
-      type: VueNotifications.types.warn,
-      title: 'Wow, man',
-      message: 'That\'s the kind of warning'
-    },
-    showErrorMsg: {
-      type: VueNotifications.types.error,
-      title: 'Wow-wow',
-      message: 'That\'s the error'
-    }
-  },
+
   methods: {
     async sign_in() {
 
@@ -77,27 +57,50 @@ export default {
             }
 
         let nip07_signer = new Nip07Signer();
-        this.signer = ClientSigner.nip07(nip07_signer);
+            try{
+              this.signer = ClientSigner.nip07(nip07_signer);
 
-        let client = new Client(this.signer);
+            } catch (error) {
+            console.log(error);
+             this.signer = ClientSigner.keys(Keys.generate())
+          }
+
+
+
+        let database =  await NostrDatabase.open("test.db")
+        let client = new ClientBuilder().database(database).signer(this.signer).build()
+
 
         //await client.addRelay("wss://relay.damus.io");
         //await client.addRelay("wss://nos.lol");
         await client.addRelay("wss://relay.nostr.band");
         await client.addRelay("wss://nostr-pub.wellorder.net")
 
-        const pubkey = await nip07_signer.getPublicKey()
+        const pubkey = await nip07_signer.getPublicKey();
         await client.connect();
 
 
+        const filter = new Filter().kind(6302).limit(20)
+        //TODO this next line breaks the code
+        //await client.reconcile(filter);
+        /*const filterl = new Filter().author(pubkey)
+        let test = dbclient.database().query([filterl])
+        for (let ev of test){
+          console.log(ev.as_json())
+        }
+        */
+
+
         store.commit('set_client', client)
+        store.commit('set_pubkey', pubkey)
         console.log("Client connected")
 
-        await this.get_user_info(pubkey)
 
-        //this.current_user =  (await nip07_signer.getPublicKey()).toBech32()
-        //console.log( this.current_user)
-        this.showSuccessMsg()
+
+        await this.get_user_info(pubkey)
+        miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
+
+
 
 
 

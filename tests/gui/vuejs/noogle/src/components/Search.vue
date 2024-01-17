@@ -1,8 +1,12 @@
 <script setup>
 import {Client, Filter, Timestamp, Event, Metadata, PublicKey, EventBuilder, Tag, EventId} from "@rust-nostr/nostr-sdk";
 import store from '../store';
+import miniToastr from "mini-toastr";
+import VueNotifications from "vue-notifications";
 
 let items = []
+
+let listener = false
 
 async function send_search_request(message) {
    try {
@@ -10,13 +14,20 @@ async function send_search_request(message) {
        message = "Nostr"
      }
         items = []
+        store.state.results = []
         let client = store.state.client
         let tags = []
         tags.push(Tag.parse(["i", message, "text"]))
+        tags.push(Tag.parse(["param", "max_results", "100"]))
         let evt = new EventBuilder(5302, "Search for me", tags)
         let res = await client.sendEventBuilder(evt)
+        miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.info)
+        if (!listener){
+               listen()
+        }
+
         console.log(res)
-        await this.listen()
+
 
       } catch (error) {
         console.log(error);
@@ -29,10 +40,13 @@ async function getEvents(eventids) {
   return await client.getEventsOf([event_filter], 5)
 }
 
-async function  listen() {
-    let client = store.state.client
 
-    const filter = new Filter().kinds([7000, 6302]).since(Timestamp.now());
+async function  listen() {
+    listener = true
+    let client = store.state.client
+    let pubkey = store.state.pubkey
+
+    const filter = new Filter().kinds([7000, 6302]).pubkey(pubkey).since(Timestamp.now());
     await client.subscribe([filter]);
 
     const handle = {
@@ -42,6 +56,7 @@ async function  listen() {
             if (event.kind === 7000) {
                 try {
                     console.log("7000:", event.content);
+                    miniToastr.showMessage("DVM replied", event.content, VueNotifications.types.info)
 
 
                     //if (content === "stop") {
@@ -54,14 +69,21 @@ async function  listen() {
             else if(event.kind === 6302) {
               let entries = []
               console.log("6302:", event.content);
+              miniToastr.showMessage("DVM replied", "Received Results", VueNotifications.types.success)
                let event_etags = JSON.parse(event.content)
                 for (let etag of event_etags){
                   const eventid = EventId.fromHex(etag[1])
                   entries.push(eventid)
                 }
                 const events = await getEvents(entries)
+                let authors = []
                 for (const evt of events){
-                     items.push({ content: evt.content, author: evt.author.toHex(), indicator: {"time": evt.createdAt.toHumanDatetime()}})
+                    authors.push(evt.author)
+                }
+
+
+              for (const evt of events){
+                     items.push({ content: evt.content, author: evt.author.toBech32(), authorurl: "https://njump.me/" + evt.author.toBech32(),  indicator: {"time": evt.createdAt.toHumanDatetime()}})
                 }
 
                store.commit('set_search_results', items)
@@ -75,6 +97,7 @@ async function  listen() {
 
     client.handleNotifications(handle);
 }
+
 
 defineProps({
   msg: {

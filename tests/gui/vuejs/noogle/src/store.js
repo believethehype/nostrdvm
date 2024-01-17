@@ -1,5 +1,5 @@
 import {createStore} from "vuex";
-import {Client} from "@rust-nostr/nostr-sdk";
+import {Client, ClientSigner, PublicKey} from "@rust-nostr/nostr-sdk";
 
 const store = createStore({
   state () {
@@ -7,6 +7,7 @@ const store = createStore({
       count: 0,
       test: "hello",
       client: Client,
+      pubkey: PublicKey,
       results:  []
     }
   },
@@ -16,6 +17,9 @@ const store = createStore({
     },
      set_client (state, client) {
       state.client = client
+    },
+     set_pubkey(state, pubkey) {
+      state.pubkey = pubkey
     },
     set_search_results(state, results){
       state.results = results

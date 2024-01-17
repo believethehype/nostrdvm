@@ -2,22 +2,28 @@
   <EasyDataTable v-if="store.state.results.length != 0" table-class-name="customize-table"
     :headers="headers"
     :items="store.state.results">
-     <template #item-content="{ content, author}">
-     <NoteRender :content="content" :author="author"/>
+   <template #item-content="{ content, author, authorurl}">
+      <a :href="authorurl" target="_blank">{{ author }}</a>
+     <p>{{content}}</p>
+    <!-- <NoteRender :content="content" :author="author"/> -->
      </template>
 
       </EasyDataTable>
 </template>
 
 <script lang="ts" setup>
+
+
+
 import type { Header, Item } from "vue3-easy-data-table";
 import store from '../store';
 import NoteRender  from "@/components/NoteRender.vue";
 import {EventId, Filter} from "@rust-nostr/nostr-sdk";
 
+
 const headers: Header[] = [
   { text: "Results:", value: "content",  width: 400},
-  { text: "Time", value: "indicator.time", sortable: true},
+  { text: "Time", value: "indicator.time", sortable: true, width:100},
 ];
 </script>
 
