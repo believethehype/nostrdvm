@@ -77,8 +77,8 @@ export default {
         await client.addRelay("wss://relay.f7z.io")
         await client.addRelay("wss://pablof7z.nostr1.com")
         await client.addRelay("wss://relay.nostr.net")
-        await client.addRelay("wss://relay.nostr.band");
-        await client.addRelay("wss://nostr-pub.wellorder.net")
+        //await client.addRelay("wss://relay.nostr.band");
+        //await client.addRelay("wss://nostr-pub.wellorder.net")
 
         const pubkey = await nip07_signer.getPublicKey();
         await client.connect();

@@ -28,7 +28,7 @@ import store from '../store';
 
 
 const headers: Header[] = [
-  { text: "Results:", value: "content",  width: 400},
+  { text: "Results:", value: "content", fixed: true,  width: 800},
   { text: "Time", value: "indicator.time", sortable: true, width:100},
 ];
 </script>
