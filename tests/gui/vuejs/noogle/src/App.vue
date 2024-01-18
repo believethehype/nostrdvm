@@ -2,19 +2,19 @@
 import Search from './components/Search.vue'
 import Nip07 from './components/Nip07.vue'
 import ResultsTable from "@/components/ResultTable.vue";
+import Donate from "@/components/Donate.vue";
 </script>
 
 <template>
 
 
   <main>
-
       <Search/>
       <br>
       <ResultsTable></ResultsTable>
      <Nip07>
      </Nip07>
-
+  <Donate/>
   </main>
 </template>
 
