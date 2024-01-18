@@ -1,16 +1,19 @@
-import './assets/main.css'
+//import './assets/main.css'
 import { createApp } from 'vue'
 
 import App from './App.vue'
 import store from './store';
+import "./app.css"
 
 import Vue3EasyDataTable from 'vue3-easy-data-table';
 import 'vue3-easy-data-table/dist/style.css';
+import { createRouter, createWebHashHistory } from "vue-router";
 
 //This is all for notifications
 import VueNotifications from 'vue-notifications'
 import miniToastr from 'mini-toastr'
 miniToastr.init()
+
 
 function toast ({title, message, type, timeout, cb}) {
   return miniToastr[type](message, title, timeout, cb)
@@ -27,4 +30,7 @@ const options = {
 
 
 
-createApp(App).use(VueNotifications, options).use(store).component('EasyDataTable', Vue3EasyDataTable).mount('#app')
+createApp(App)
+    .use(VueNotifications, options)
+    .use(store).component('EasyDataTable', Vue3EasyDataTable)
+    .mount('#app')

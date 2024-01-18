@@ -8,6 +8,7 @@ const store = createStore({
       test: "hello",
       client: Client,
       pubkey: PublicKey,
+      hasEventListener: false,
       results:  []
     }
   },
@@ -20,6 +21,9 @@ const store = createStore({
     },
      set_pubkey(state, pubkey) {
       state.pubkey = pubkey
+    },
+    set_hasEventListener(state, hasEventListener) {
+      state.hasEventListener = hasEventListener
     },
     set_search_results(state, results){
       state.results = results

@@ -51,13 +51,21 @@ export default {
 
 <template>
 
-<button class="c-Button" @click="zap()">Donate</button>
+
+<button class="v-Button" @click="zap()"><svg class="relative w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+Donate</button>
+
+
+
 </template>
 
 <style scoped>
-.c-Button {
-  height: 20px;
-  color: white;
-  background: #000000;
+
+
+.v-Button {
+ @apply bg-black hover:bg-amber-400 focus:ring-purple-950 mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+   height: 24px;
+
+
 }
 </style>

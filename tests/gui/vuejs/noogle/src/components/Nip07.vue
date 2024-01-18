@@ -1,14 +1,15 @@
 <template>
   <div>
      <div class="playeauthor-wrapper" v-if="current_user">
-        <img class="avatar" :src="this.avatar" alt="" />
+        <img class="avatar" @click="sign_out()" :src="this.avatar" alt="" />
          <p>{{ this.current_user }}</p>
      </div>
-    <template v-if="current_user">
-     <button class="b-Button" @click="sign_out()">Sign out</button>
-    </template>
+   <!-- <template v-if="current_user">
+     <button class="v-Button" @click="sign_out()">Sign out</button>
+    </template> -->
     <template v-if="!current_user">
-     <button class="c-Button" @click="sign_in()">Sign in</button>
+     <button class="v-Button" @click="sign_in()">Sign in</button>
+      <p>Use a Browser Nip07 Extension like getalby or nos2x to login</p>
     </template>
 
 
@@ -168,14 +169,15 @@ export default {
   color: white;
   background: purple;
 
-
+}
+.v-Button {
+  @apply bg-black hover:bg-nostr focus:ring-nostr mb-2 inline-flex flex-none items-center rounded-lg border border-nostr px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+   height: 44px;
 }
 
 .c-Button {
   height: 30px;
   color: white;
   background: #8e30eb;
-
-
 }
 </style>

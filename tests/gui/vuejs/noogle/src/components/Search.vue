@@ -13,6 +13,11 @@ async function send_search_request(message) {
      if (message === undefined){
        message = "Nostr"
      }
+
+     if(store.state.pubkey === undefined){
+               miniToastr.showMessage("Please login first", "No pubkey set", VueNotifications.types.warn)
+          return
+     }
         items = []
         store.state.results = []
         let client = store.state.client
@@ -45,8 +50,12 @@ async function send_search_request(message) {
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
         let res = await client.sendEventBuilder(evt)
         miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
-        if (!listener){
+        if (!store.state.hasEventListener){
                listen()
+           store.commit('set_hasEventListener', true)
+        }
+        else{
+          console.log("Already has event listener")
         }
 
         console.log(res)
@@ -160,18 +169,24 @@ defineProps({
 <template>
 
   <div class="greetings">
-    <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" width="125" height="125" />
+    <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
 
-       <h1 class="purple">Noogle</h1>
-       <h2>Nostr Search based on Data Vending Machines</h2>
+      <h1
+				class="text-center text-5xl md:text-6xl font-extrabold tracking-wider sm:text-start sm:text-6xl lg:text-8xl">
+				<span class="bg">Noogle</span>
+
+			</h1>
+       <h2 class="text-base-200-content text-center text-2xl font-thin sm:text-start">
+				Search the Nostr with Data Vending Machines
+			</h2>
 
     <h3>
+
       <br>
-      <br>
-    <div>
-          <button class="c-Button"  @click="send_search_request(message)">Search the Nostr
-          </button> <input class="c-Input" v-model="message" >
-    </div>
+          <input class="c-Input" v-model="message">
+          <button class="v-Button"  @click="send_search_request(message)">Search the Nostr
+          </button>
+
 <!--
       <a href="https://vitejs.dev/" target="_blank" rel="noopener">Vite</a> +
       <a href="https://vuejs.org/" target="_blank" rel="noopener">Vue 3</a>. -->
@@ -182,16 +197,16 @@ defineProps({
 
 <style scoped>
 
-.c-Button {
-  height: 50px;
-  color: white;
-  background: #8e30eb;
-
-
+.v-Button {
+  @apply bg-nostr hover:bg-nostr2 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-black px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+   height: 48px;
+   margin: 5px;
 }
 
 .c-Input {
-  margin: -5px;
+    @apply bg-black hover:bg-gray-900 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+
+
   width: 400px;
   height: 48px;
    color: white;
@@ -205,8 +220,13 @@ h1 {
   position: relative;
   top: -10px;
 }
-h2 {
-  font-size: 1.0rem;
+
+.logo {
+     display: flex;
+    width:100%;
+    height:125px;
+    justify-content: center;
+    align-items: center;
 }
 
 h3 {
@@ -216,12 +236,15 @@ h3 {
 .greetings h1,
 .greetings h3 {
   text-align: center;
+
 }
 
 @media (min-width: 1024px) {
+
   .greetings h1,
   .greetings h3 {
-    text-align: left;
+    text-align: center;
+
   }
 }
 </style>
