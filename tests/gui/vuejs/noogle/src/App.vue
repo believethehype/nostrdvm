@@ -1,20 +1,21 @@
 <script setup>
-import Search from './components/Search.vue'
-import Nip07 from './components/Nip07.vue'
-import ResultsTable from "@/components/ResultTable.vue";
-import Donate from "@/components/Donate.vue";
+import Home from './components/Home.vue'
+import ThreeColumnLayout from "./layouts/ThreeColumnLayout.vue";
+import Nip07 from "@/components/Nip07.vue";
 </script>
 
 <template>
 
 
   <main>
-      <Search/>
-      <br>
-      <ResultsTable></ResultsTable>
-     <Nip07>
-     </Nip07>
-  <Donate/>
+    <ThreeColumnLayout>
+      <Home></Home>
+
+      <template #aside>
+          <Nip07/>
+    </template>
+    </ThreeColumnLayout>
+
   </main>
 </template>
 
@@ -32,7 +33,7 @@ header {
   header {
     display: flex;
     place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
+
   }
 
   .logo {

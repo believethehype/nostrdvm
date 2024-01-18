@@ -9,7 +9,7 @@
      <p>{{content}}</p>
      </template>
     <template #expand="item">
-      <div style="padding: 15px">
+      <div style="padding: 15px; text-align: left;" >
           <a :href="item.links.njump" target="_blank">NJump</a>
           <a :href="item.links.highlighter" target="_blank">Highlighter</a>
           <a :href="item.links.nostrudel" target="_blank">Nostrudel</a>
