@@ -179,7 +179,7 @@ def update_user_balance(db, npub, additional_sats, client, config):
 
             message = ("Added " + str(additional_sats) + " Sats to balance. New balance is " + str(new_balance) + " Sats.")
 
-            evt = EventBuilder.new_encrypted_direct_msg(keys, PublicKey.from_hex(npub), message,
+            evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.from_hex(npub), message,
                                                         None).to_event(keys)
             send_event(evt, client=client, dvm_config=config)
 
