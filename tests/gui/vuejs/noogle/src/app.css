@@ -21,3 +21,11 @@ a,
   transition: 0.4s;
   padding: 3px;
 }
+.menu {
+color: white;
+    @apply btn bg-transparent border-transparent;
+
+  }
+
+
+

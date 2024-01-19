@@ -5,13 +5,18 @@ import App from './App.vue'
 import store from './store';
 import "./app.css"
 
-import Vue3EasyDataTable from 'vue3-easy-data-table';
 import 'vue3-easy-data-table/dist/style.css';
-import { createRouter, createWebHashHistory } from "vue-router";
+import router from './router'
+import Vue3EasyDataTable from 'vue3-easy-data-table';
+
+
+
+
 
 //This is all for notifications
-import VueNotifications from 'vue-notifications'
+import VueNotifications from "vue-notifications";
 import miniToastr from 'mini-toastr'
+
 miniToastr.init()
 
 
@@ -32,5 +37,8 @@ const options = {
 
 createApp(App)
     .use(VueNotifications, options)
-    .use(store).component('EasyDataTable', Vue3EasyDataTable)
+    .use(store)
+    .use(router)
+
+    .component('EasyDataTable', Vue3EasyDataTable)
     .mount('#app')

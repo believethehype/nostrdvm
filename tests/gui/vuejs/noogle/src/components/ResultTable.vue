@@ -1,5 +1,5 @@
 <template>
-  <EasyDataTable v-if="store.state.results.length != 0" table-class-name="customize-table"
+  <EasyDataTable class="customize-table" v-if="store.state.results.length != 0" table-class-name="customize-table"
     :headers="headers"
     :items="store.state.results">
    <template #item-content="{ content, author, authorurl, avatar}">
@@ -33,7 +33,7 @@ const headers: Header[] = [
 ];
 </script>
 
-<style>
+<style scoped>
 .operation-wrapper .operation-icon {
   width: 20px;
   cursor: pointer;
@@ -60,24 +60,24 @@ const headers: Header[] = [
   --easy-table-header-font-size: 14px;
   --easy-table-header-height: 50px;
   --easy-table-header-font-color: #c1cad4;
-  --easy-table-header-background-color: #2d3a4f;
+  --easy-table-header-background-color: #242424;
 
   --easy-table-header-item-padding: 10px 15px;
 
   --easy-table-body-even-row-font-color: #fff;
-  --easy-table-body-even-row-background-color: #4c5d7a;
+  --easy-table-body-even-row-background-color: #242424;
 
   --easy-table-body-row-font-color: #c0c7d2;
-  --easy-table-body-row-background-color: #2d3a4f;
+  --easy-table-body-row-background-color: #242424;
   --easy-table-body-row-height: 50px;
   --easy-table-body-row-font-size: 14px;
 
   --easy-table-body-row-hover-font-color: #2d3a4f;
-  --easy-table-body-row-hover-background-color: #eee;
+  --easy-table-body-row-hover-background-color: #242424;
 
   --easy-table-body-item-padding: 10px 15px;
 
-  --easy-table-footer-background-color: #2d3a4f;
+  --easy-table-footer-background-color: #242424;
   --easy-table-footer-font-color: #c0c7d2;
   --easy-table-footer-font-size: 14px;
   --easy-table-footer-padding: 0px 10px;

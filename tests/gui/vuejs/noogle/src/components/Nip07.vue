@@ -8,10 +8,19 @@
      <button class="v-Button" @click="sign_out()">Sign out</button>
     </template> -->
     <template v-if="!current_user">
-     <button class="v-Button" @click="sign_in()">Sign in</button>
-      <p>Use a Browser Nip07 Extension like getalby or nos2x to login</p>
-    </template>
+          <div className="dropdown">
+      <div tabIndex={0} role="button" class="v-Button" >Sign in</div>
+      <div tabIndex={0} className="dropdown-content z-[1] card card-compact w-64 p-2 shadow bg-primary text-primary-content">
+        <div className="card-body">
+          <h3 className="card-title">Nip07 Login</h3>
+          <p>Use a Browser Nip07 Extension like getalby or nos2x to login</p>
+          <button className="btn" @click="sign_in()">Nip07 Sign in</button>
+        </div>
+      </div>
+    </div>
 
+
+    </template>
 
   </div>
 </template>
@@ -41,7 +50,15 @@ export default {
     };
   },
   async mounted() {
-    await this.sign_in();
+     try{
+       //let testsginer = new Nip07Signer()
+      await this.sign_in()
+     }
+    catch (error){
+       console.log(error);
+        console.log("nah");
+    }
+
   },
 
   methods: {
@@ -172,7 +189,8 @@ export default {
 }
 .v-Button {
   @apply bg-black hover:bg-nostr focus:ring-nostr mb-2 inline-flex flex-none items-center rounded-lg border border-nostr px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
-   height: 44px;
+  margin-right: 200px;
+  height: 44px;
 }
 
 .c-Button {

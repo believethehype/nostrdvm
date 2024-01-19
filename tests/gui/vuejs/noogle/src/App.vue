@@ -9,10 +9,8 @@ import Nip07 from "@/components/Nip07.vue";
 
   <main>
     <ThreeColumnLayout>
-      <Home></Home>
-
       <template #aside>
-          <Nip07/>
+
     </template>
     </ThreeColumnLayout>
 
