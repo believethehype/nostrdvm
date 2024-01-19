@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, ClientSigner
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -69,7 +69,8 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.from_sk_str(sk.to_hex())
-        cli = Client.with_opts(keys, opts)
+        signer = ClientSigner.keys(keys)
+        cli = Client.with_opts(signer, opts)
         for relay in self.dvm_config.RELAY_LIST:
             cli.add_relay(relay)
         cli.connect()
@@ -109,7 +110,8 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 keys = Keys.from_sk_str(self.dvm_config.PRIVATE_KEY)
                 opts = Options().wait_for_send(True).send_timeout(
                     timedelta(seconds=5)).skip_disconnected_relays(True)
-                cli = Client.with_opts(keys, opts)
+                signer = ClientSigner.keys(keys)
+                cli = Client.with_opts(signer, opts)
                 for relay in self.dvm_config.RELAY_LIST:
                     cli.add_relay(relay)
                 cli.connect()
