@@ -117,7 +117,7 @@ def check_and_decrypt_tags(event, dvm_config):
 
             elif p == dvm_config.PUBLIC_KEY:
                 tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
-                                         event.pubkey(), event.content())
+                                         event.author(), event.content())
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
                 params.append(Tag.parse(["encrypted"]).as_vec())
@@ -142,12 +142,12 @@ def check_and_decrypt_own_tags(event, dvm_config):
                 p = tag.as_vec()[1]
 
         if is_encrypted:
-            if dvm_config.PUBLIC_KEY != event.pubkey().to_hex():
+            if dvm_config.PUBLIC_KEY != event.author().to_hex():
                 print("[" + dvm_config.NIP89.NAME + "] Task encrypted and not addressed to this DVM, "
                                                     "skipping..")
                 return None
 
-            elif event.pubkey().to_hex() == dvm_config.PUBLIC_KEY:
+            elif event.author().to_hex() == dvm_config.PUBLIC_KEY:
                 tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
                                          PublicKey.from_hex(p), event.content())
                 params = json.loads(tags_str)
