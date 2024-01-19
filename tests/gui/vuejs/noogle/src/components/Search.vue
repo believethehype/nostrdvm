@@ -170,13 +170,13 @@ defineProps({
 
   <div class="greetings">
     <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
-
+<br>
       <h1
-				class="text-center text-5xl md:text-6xl font-extrabold tracking-wider sm:text-start sm:text-6xl lg:text-8xl">
+				class="text-center font-thin text-5xl md:text-6xl font-extrabold tracking-wider sm:text-start sm:text-6xl lg:text-8xl">
 				<span class="bg">Noogle</span>
 
 			</h1>
-       <h2 class="text-base-200-content text-center text-2xl font-thin sm:text-start">
+       <h2 class="text-base-200-content text-center text-2xl font-thin">
 				Search the Nostr with Data Vending Machines
 			</h2>
 
