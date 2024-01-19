@@ -75,7 +75,7 @@ def nostr_client():
                 print("[Nostr Client]: " + event.content())
 
             elif event.kind() == 4:
-                dec_text = nip04_decrypt(sk, event.pubkey(), event.content())
+                dec_text = nip04_decrypt(sk, event.author(), event.content())
                 print("[Nostr Client]: " + f"Received new msg: {dec_text}")
 
             elif event.kind() == 9735:

@@ -83,12 +83,12 @@ class Bot:
                 return
 
         def handle_dm(nostr_event):
-            sender = nostr_event.pubkey().to_hex()
+            sender = nostr_event.author().to_hex()
             if sender == self.keys.public_key().to_hex():
                 return
 
             try:
-                decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), nostr_event.content())
+                decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
                 print("[" + self.NAME + "] Message from " + user.name + ": " + decrypted_text)
 
@@ -152,7 +152,7 @@ class Bot:
 
                 elif decrypted_text.lower().startswith("balance"):
                     time.sleep(3.0)
-                    evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                    evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
                                                                 "Your current balance is " + str(
                                                                     user.balance) + " Sats. Zap me to add to your balance. I will use your balance interact with the DVMs for you.\n"
                                                                                     "I support both public and private Zaps, as well as Zapplepay.\n"
@@ -172,12 +172,12 @@ class Bot:
                     else:
                         time.sleep(2.0)
                         message = "Error: " + cashu_message + ". Token has not been redeemed."
-                        evt = EventBuilder.new_encrypted_direct_msg(self.keys, PublicKey.from_hex(sender), message,
+                        evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.from_hex(sender), message,
                                                                     None).to_event(self.keys)
                         send_event(evt, client=self.client, dvm_config=self.dvm_config)
                 elif decrypted_text.lower().startswith("what's the second best"):
                     time.sleep(3.0)
-                    evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                    evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
                                                                 "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4",
                                                                 nostr_event.id()).to_event(self.keys)
                     send_event(evt, client=self.client, dvm_config=self.dvm_config)
@@ -212,7 +212,7 @@ class Bot:
                 if is_encrypted:
                     if ptag == self.keys.public_key().to_hex():
                         tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
-                                                 nostr_event.pubkey(), nostr_event.content())
+                                                 nostr_event.author(), nostr_event.content())
                         params = json.loads(tags_str)
                         params.append(Tag.parse(["p", ptag]).as_vec())
                         params.append(Tag.parse(["encrypted"]).as_vec())
@@ -236,17 +236,17 @@ class Bot:
 
                 if status == "success" or status == "error" or status == "processing" or status == "partial" and content != "":
                     entry = next((x for x in self.job_list if x['event_id'] == etag), None)
-                    if entry is not None and entry['dvm_key'] == nostr_event.pubkey().to_hex():
+                    if entry is not None and entry['dvm_key'] == nostr_event.author().to_hex():
                         user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                                client=self.client, config=self.dvm_config)
                         time.sleep(2.0)
-                        reply_event = EventBuilder.new_encrypted_direct_msg(self.keys,
+                        reply_event = EventBuilder.encrypted_direct_msg(self.keys,
                                                                             PublicKey.from_hex(entry['npub']),
                                                                             content,
                                                                             None).to_event(self.keys)
                         print(status + ": " + content)
                         print(
-                            "[" + self.NAME + "] Received reaction from " + nostr_event.pubkey().to_hex() + " message to orignal sender " + user.name)
+                            "[" + self.NAME + "] Received reaction from " + nostr_event.author().to_hex() + " message to orignal sender " + user.name)
                         send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
                 elif status == "payment-required" or status == "partial":
@@ -256,7 +256,7 @@ class Bot:
                             amount = int(amount_msats / 1000)
                             entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                             if entry is not None and entry['is_paid'] is False and entry[
-                                'dvm_key'] == nostr_event.pubkey().to_hex():
+                                'dvm_key'] == nostr_event.author().to_hex():
                                 # if we get a bolt11, we pay and move on
                                 user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                                        client=self.client, config=self.dvm_config)
@@ -266,7 +266,7 @@ class Bot:
                                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
                                                      nip05=user.nip05, lud16=user.lud16, name=user.name,
                                                      lastactive=Timestamp.now().as_secs())
-                                    evt = EventBuilder.new_encrypted_direct_msg(self.keys,
+                                    evt = EventBuilder.encrypted_direct_msg(self.keys,
                                                                                 PublicKey.from_hex(entry["npub"]),
                                                                                 "Paid " + str(
                                                                                     amount) + " Sats from balance to DVM. New balance is " +
@@ -280,7 +280,7 @@ class Bot:
                                 else:
                                     print("Bot payment-required")
                                     time.sleep(2.0)
-                                    evt = EventBuilder.new_encrypted_direct_msg(self.keys,
+                                    evt = EventBuilder.encrypted_direct_msg(self.keys,
                                                                                 PublicKey.from_hex(entry["npub"]),
                                                                                 "Current balance: " + str(
                                                                                     user.balance) + " Sats. Balance of " + str(
@@ -295,7 +295,7 @@ class Bot:
                                     bolt11 = tag.as_vec()[2]
                                 # else we create a zap
                                 else:
-                                    user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.pubkey().to_hex(),
+                                    user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.author().to_hex(),
                                                            client=self.client, config=self.dvm_config)
                                     print("Paying: " + user.name)
                                     bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys,
@@ -332,7 +332,7 @@ class Bot:
 
                 entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                 if entry is not None and entry[
-                    'dvm_key'] == nostr_event.pubkey().to_hex():
+                    'dvm_key'] == nostr_event.author().to_hex():
                     print(entry)
                     user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                            client=self.client, config=self.dvm_config)
@@ -341,12 +341,12 @@ class Bot:
                     content = nostr_event.content()
                     if is_encrypted:
                         if ptag == self.keys.public_key().to_hex():
-                            content = nip04_decrypt(self.keys.secret_key(), nostr_event.pubkey(), content)
+                            content = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), content)
                         else:
                             return
 
                     dvms = [x for x in self.dvm_config.SUPPORTED_DVMS if
-                            x.PUBLIC_KEY == nostr_event.pubkey().to_hex() and x.KIND == nostr_event.kind() - 1000]
+                            x.PUBLIC_KEY == nostr_event.author().to_hex() and x.KIND == nostr_event.kind() - 1000]
                     if len(dvms) > 0:
                         dvm = dvms[0]
                         if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE != PostProcessFunctionType.NONE:
@@ -357,7 +357,7 @@ class Bot:
 
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     time.sleep(1.0)
-                    reply_event = EventBuilder.new_encrypted_direct_msg(self.keys,
+                    reply_event = EventBuilder.encrypted_direct_msg(self.keys,
                                                                         PublicKey.from_hex(user.npub),
                                                                         content,
                                                                         None).to_event(self.keys)
@@ -383,8 +383,8 @@ class Bot:
                 entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                 print(entry)
                 # print(entry['dvm_key'])
-                # print(str(zapped_event.pubkey().to_hex()))
-                # print(str(zap_event.pubkey().to_hex()))
+                # print(str(zapped_event.author().to_hex()))
+                # print(str(zap_event.author().to_hex()))
                 print(sender)
                 if entry is not None and entry['is_paid'] is True and entry['dvm_key'] == sender:
                     # if we get a bolt11, we pay and move on
@@ -425,7 +425,7 @@ class Bot:
                 index += 1
 
             time.sleep(3.0)
-            evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+            evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
                                                         message + "\nSelect an Index and provide an input ("
                                                                   "e.g. \"2 A purple ostrich\")\nType \"index info\" to learn "
                                                                   "more about each DVM. (e.g. \"2 info\")\n\n"
@@ -436,7 +436,7 @@ class Bot:
 
         def answer_blacklisted(nostr_event):
             # For some reason an admin might blacklist npubs, e.g. for abusing the service
-            evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+            evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
                                                         "Your are currently blocked from all "
                                                         "services.", None).to_event(self.keys)
             send_event(evt, client=self.client, dvm_config=dvm_config)
@@ -445,10 +445,10 @@ class Bot:
             info = print_dvm_info(self.client, index)
             time.sleep(2.0)
             if info is not None:
-                evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
                                                             info, None).to_event(self.keys)
             else:
-                evt = EventBuilder.new_encrypted_direct_msg(self.keys, nostr_event.pubkey(),
+                evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
                                                             "No NIP89 Info found for " +
                                                             self.dvm_config.SUPPORTED_DVMS[index].NAME,
                                                             None).to_event(self.keys)
@@ -463,7 +463,7 @@ class Bot:
             if len(split) == 1:
                 remaining_text = decrypted_text.replace(split[0], "")
                 params = remaining_text.split(" -")
-                tag = Tag.parse(["param", "user", nostr_event.pubkey().to_hex()])
+                tag = Tag.parse(["param", "user", nostr_event.author().to_hex()])
                 tags.append(tag)
                 for i in params:
                     print(i)

@@ -89,7 +89,7 @@ class DVM:
             if nip90_event is None:
                 return
 
-            user = get_or_add_user(self.dvm_config.DB, nip90_event.pubkey().to_hex(), client=self.client,
+            user = get_or_add_user(self.dvm_config.DB, nip90_event.author().to_hex(), client=self.client,
                                    config=self.dvm_config)
             cashu = ""
             p_tag_str = ""
@@ -334,12 +334,12 @@ class DVM:
                                                      dvm_config=self.dvm_config,
                                                      )
                             if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":
-                                user = get_or_add_user(self.dvm_config.DB, original_event.pubkey().to_hex(),
+                                user = get_or_add_user(self.dvm_config.DB, original_event.author().to_hex(),
                                                        client=self.client, config=self.dvm_config)
                                 print(user.lud16 + " " + str(amount))
                                 bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats",
-                                                    original_event,
-                                                    self.keys, self.dvm_config, zaptype="private")
+                                                    original_event, "",
+                                                    self.keys, self.dvm_config.RELAY_LIST, zaptype="private")
                                 if bolt11 is None:
                                     print("Receiver has no Lightning address, can't zap back.")
                                     return
@@ -352,7 +352,7 @@ class DVM:
             original_event = Event.from_json(original_event_as_str)
             request_tag = Tag.parse(["request", original_event_as_str])
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
-            p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
+            p_tag = Tag.parse(["p", original_event.author().to_hex()])
             alt_tag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
                 original_event.kind()) + ". The task was: " + original_event.content()])
             status_tag = Tag.parse(["status", "success"])
@@ -372,7 +372,7 @@ class DVM:
 
             if encrypted:
                 print(content)
-                content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.pubkey().to_hex()),
+                content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
                                         content)
 
             reply_event = EventBuilder(original_event.kind() + 1000, str(content), reply_tags).to_event(self.keys)
@@ -389,7 +389,7 @@ class DVM:
             alt_description, reaction = build_status_reaction(status, task, amount, content)
 
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
-            p_tag = Tag.parse(["p", original_event.pubkey().to_hex()])
+            p_tag = Tag.parse(["p", original_event.author().to_hex()])
             alt_tag = Tag.parse(["alt", alt_description])
             status_tag = Tag.parse(["status", status])
             reply_tags = [e_tag, alt_tag, status_tag]
@@ -464,7 +464,7 @@ class DVM:
                     str_tags.append(element.as_vec())
 
                 content = json.dumps(str_tags)
-                content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.pubkey().to_hex()),
+                content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
                                         content)
                 reply_tags = encryption_tags
 
@@ -527,7 +527,7 @@ class DVM:
                                                  dvm_config=self.dvm_config)
                         # Zapping back the user on error
                         if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":
-                            user = get_or_add_user(self.dvm_config.DB, job_event.pubkey().to_hex(),
+                            user = get_or_add_user(self.dvm_config.DB, job_event.author().to_hex(),
                                                    client=self.client, config=self.dvm_config)
                             print(user.lud16 + " " + str(amount))
                             bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", job_event, user.npub,

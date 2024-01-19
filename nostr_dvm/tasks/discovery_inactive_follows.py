@@ -43,7 +43,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        user = event.pubkey().to_hex()
+        user = event.author().to_hex()
         since_days = 90
 
         for tag in event.tags():

@@ -29,7 +29,7 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
     invoice_amount = 0
     anon = False
     message = ""
-    sender = zap_event.pubkey()
+    sender = zap_event.author()
     for tag in zap_event.tags():
         if tag.as_vec()[0] == 'bolt11':
             invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
@@ -40,7 +40,7 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
             p_tag = tag.as_vec()[1]
         elif tag.as_vec()[0] == 'description':
             zap_request_event = Event.from_json(tag.as_vec()[1])
-            sender = check_for_zapplepay(zap_request_event.pubkey().to_hex(),
+            sender = check_for_zapplepay(zap_request_event.author().to_hex(),
                                          zap_request_event.content())
             for z_tag in zap_request_event.tags():
                 if z_tag.as_vec()[0] == 'anon':
@@ -48,10 +48,10 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
                         # print("[" + name + "] Private Zap received.")
                         decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
                                                                         keys.secret_key(),
-                                                                        zap_request_event.pubkey())
+                                                                        zap_request_event.author())
                         decrypted_private_event = Event.from_json(decrypted_content)
                         if decrypted_private_event.kind() == 9733:
-                            sender = decrypted_private_event.pubkey().to_hex()
+                            sender = decrypted_private_event.author().to_hex()
                             message = decrypted_private_event.content()
                             # if message != "":
                             #    print("Zap Message: " + message)
@@ -255,7 +255,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
         relays_tag = Tag.parse(['relays', str(relay_list)])
         lnurl_tag = Tag.parse(['lnurl', encoded_lnurl])
         if zapped_event is not None:
-            p_tag = Tag.parse(['p', zapped_event.pubkey().to_hex()])
+            p_tag = Tag.parse(['p', zapped_event.author().to_hex()])
             e_tag = Tag.parse(['e', zapped_event.id().to_hex()])
             tags = [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]
         else:
@@ -270,7 +270,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             zap_request = EventBuilder(9733, content,
                                        [p_tag, e_tag]).to_event(keys).as_json()
             keys = Keys.from_sk_str(encryption_key)
-            encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.pubkey())
+            encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
             anon_tag = Tag.parse(['anon', encrypted_content])
             tags.append(anon_tag)
             content = ""
