@@ -104,9 +104,9 @@ def init():
 
                 listui = []
                 for event in events:
-                    nip19event = Nip19Event(event.id(), event.pubkey(), dvmconfig.DVMConfig.RELAY_LIST)
+                    nip19event = Nip19Event(event.id(), event.author(), dvmconfig.DVMConfig.RELAY_LIST)
                     nip19eventid = nip19event.to_bech32()
-                    new = {'result': event.content(), 'author': event.pubkey().to_hex(),
+                    new = {'result': event.content(), 'author': event.author().to_hex(),
                            'eventid': str(event.id().to_hex()),
                            'time': str(event.created_at().to_human_datetime()),
                            'njump': "https://njump.me/" + nip19eventid,

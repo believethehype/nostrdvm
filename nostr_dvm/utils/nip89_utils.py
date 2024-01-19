@@ -50,7 +50,7 @@ def fetch_nip89_paramters_for_deletion(keys, eventid, client, dvmconfig):
             print("No dtag found")
             return
 
-        if event.pubkey().to_hex() == keys.public_key().to_hex():
+        if event.author().to_hex() == keys.public_key().to_hex():
             nip89_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
             print("NIP89 announcement deleted from known relays!")
         else:
@@ -85,11 +85,11 @@ def nip89_fetch_events_pubkey(client, pubkey, kind):
 
     dvms = {}
     for event in events:
-        if dvms.get(event.pubkey().to_hex()):
-            if dvms.get(event.pubkey().to_hex()).created_at().as_secs() < event.created_at().as_secs():
-                dvms[event.pubkey().to_hex()] = event
+        if dvms.get(event.author().to_hex()):
+            if dvms.get(event.author().to_hex()).created_at().as_secs() < event.created_at().as_secs():
+                dvms[event.author().to_hex()] = event
         else:
-            dvms[event.pubkey().to_hex()] = event
+            dvms[event.author().to_hex()] = event
 
     # should be one element of the kind now
     for dvm in dvms:
