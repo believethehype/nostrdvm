@@ -18,7 +18,7 @@ import Nip07 from "@/components/Nip07.vue";
   <div className="flex-1">
     <router-link  class="menu" to="/">Noogle</router-link>
     <router-link class="menu" to="/about">About</router-link>
-   <!-- <router-link class="menu" to="/donate">Donate</router-link> -->
+     <router-link class="menu" to="/nip89">DVMs</router-link>
 
   <div className="flex-none">
 

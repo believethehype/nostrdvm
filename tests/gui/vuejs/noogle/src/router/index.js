@@ -6,7 +6,7 @@ const routes = [
   { path: "/", component: () => import("@/components/Home.vue") },
   { path: "/about", component: () => import("@/components/AboutPage.vue") },
   { path: "/donate", component: () => import("@/components/Donate.vue") },
-  { path: "/test", component: () => import("@/components/Donate.vue") },
+  { path: "/nip89", component: () => import("@/components/Nip89.vue") },
   { path: "/article/:id", component: () => import("@/components/Home.vue") },
   { path: '/:pathMatch(.*)*', component: () => import("@/components/Home.vue") },
 ];
