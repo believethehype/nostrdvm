@@ -1,6 +1,6 @@
 <script>
 import Search from "@/components/Search.vue";
-import ResultsTable from "@/components/ResultTable.vue";
+import ResultsTable from "@/components/SearchResultTable.vue";
 import Nip07 from "@/components/Nip07.vue";
 import Donate from "@/components/Donate.vue";
 

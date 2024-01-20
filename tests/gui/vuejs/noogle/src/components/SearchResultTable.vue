@@ -5,16 +5,24 @@
    <template #item-content="{ content, author, authorurl, avatar}">
    <div class="playeauthor-wrapper">
       <img class="avatar" :src="avatar" alt="" />
-         <a :href="authorurl" target="_blank">{{ author }}</a> </div>
+         <a class="purple" :href="authorurl" target="_blank">{{ author }}</a> </div>
      <p>{{content}}</p>
      </template>
     <template #expand="item">
       <div style="padding: 15px; text-align: left;" >
-          <a :href="item.links.njump" target="_blank">NJump</a>
-          <a :href="item.links.highlighter" target="_blank">Highlighter</a>
-          <a :href="item.links.nostrudel" target="_blank">Nostrudel</a>
+          <a class="menu" :href="item.links.njump" target="_blank">NJump</a>
+          <a class="menu" :href="item.links.highlighter" target="_blank">Highlighter</a>
+          <a  class="menu":href="item.links.nostrudel" target="_blank">Nostrudel</a>
       </div>
     </template>
+     <template #item-indicator.time="{ indicator}">
+
+        <div className="tooltip" :data-tip="indicator.time">
+          {{indicator.time.split("T")[1].split("Z")[0].trim()}}<br>
+          {{indicator.time.split("T")[0].split("-")[2].trim()}}.{{indicator.time.split("T")[0].split("-")[1].trim()}}.{{indicator.time.split("T")[0].split("-")[0].trim().slice(2)}}
+        </div>
+
+     </template>
 
       </EasyDataTable>
 </template>
@@ -39,7 +47,7 @@ const headers: Header[] = [
   cursor: pointer;
 }
 .playeauthor-wrapper {
-  padding: 5px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-items: center;
@@ -51,11 +59,11 @@ const headers: Header[] = [
   height: 30px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 10%);
+  box-shadow: inset 0 4px 4px 0 rgb(0 0 0 / 10%);
 }
 .customize-table {
-  --easy-table-border: 1px solid #445269;
-  --easy-table-row-border: 1px solid #445269;
+  --easy-table-border: 1px solid #000000;
+  --easy-table-row-border: 1px solid #000000;
 
   --easy-table-header-font-size: 14px;
   --easy-table-header-height: 50px;
@@ -72,7 +80,7 @@ const headers: Header[] = [
   --easy-table-body-row-height: 50px;
   --easy-table-body-row-font-size: 14px;
 
-  --easy-table-body-row-hover-font-color: #2d3a4f;
+  --easy-table-body-row-hover-font-color: #FFFFFF;
   --easy-table-body-row-hover-background-color: #242424;
 
   --easy-table-body-item-padding: 10px 15px;

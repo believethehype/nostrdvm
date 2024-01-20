@@ -1,18 +1,22 @@
 <script>
 import { requestProvider } from "webln";
+import miniToastr from "mini-toastr";
+import VueNotifications from "vue-notifications";
 export default {
 
   methods: {
     async zap() {
       let webln;
+      let invoice = await this.createBolt11Lud16("hype@bitcoinfixesthis.org", 1000)
       try {
         webln = await requestProvider();
       } catch (err) {
-        // Handle users without WebLN
+       await navigator.clipboard.writeText(invoice)
+       miniToastr.showMessage("", "Copied Invoice to clipboard", VueNotifications.types.info)
       }
 
       if (webln) {
-        let invoice = await this.createBolt11Lud16("hype@bitcoinfixesthis.org", 1000)
+
         console.log(invoice)
         let response = await webln.sendPayment(invoice)
         console.log(response)
@@ -63,7 +67,7 @@ Donate</button>
 
 
 .v-Button {
- @apply bg-black hover:bg-amber-400 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+ @apply  tracking-wide bg-black hover:bg-amber-400 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
    height: 24px;
 
 
