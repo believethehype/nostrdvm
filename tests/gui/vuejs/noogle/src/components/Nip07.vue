@@ -14,7 +14,7 @@
         <div className="card-body">
           <h3 className="card-title">Nip07 Login</h3>
           <p>Use a Browser Nip07 Extension like getalby or nos2x to login</p>
-          <button className="btn" @click="sign_in()">Nip07 Sign in</button>
+          <button className="btn" @click="sign_in_nip07()">Nip07 Sign in</button>
         </div>
       </div>
     </div>
@@ -52,7 +52,15 @@ export default {
   async mounted() {
      try{
        //let testsginer = new Nip07Signer()
-      await this.sign_in()
+
+      if (localStorage.getItem('nostr-key-method') === 'nip07')
+      {
+         await this.sign_in_nip07()
+      }
+      else {
+        await this.sign_in_anon()
+      }
+
      }
     catch (error){
        console.log(error);
@@ -62,7 +70,72 @@ export default {
   },
 
   methods: {
-    async sign_in() {
+    async sign_in_anon() {
+
+      try {
+
+        await loadWasmAsync();
+
+             try {
+                initLogger(LogLevel.debug());
+            } catch (error) {
+                console.log(error);
+            }
+
+        let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+        this.signer = ClientSigner.keys(keys) //TODO store keys
+
+
+
+
+        let database =  await NostrDatabase.open("test.db")
+        let client = new ClientBuilder().database(database).signer(this.signer).build()
+
+
+        await client.addRelay("wss://relay.damus.io");
+        await client.addRelay("wss://nos.lol");
+        await client.addRelay("wss://relay.f7z.io")
+        await client.addRelay("wss://pablof7z.nostr1.com")
+        await client.addRelay("wss://relay.nostr.net")
+        await client.addRelay("wss://relay.nostr.band");
+        await client.addRelay("wss://nostr-pub.wellorder.net")
+
+        const pubkey =  keys.publicKey
+        await client.connect();
+
+        /*
+        const filter = new Filter().kind(6302).limit(20)
+        await client.reconcile(filter);
+        const filterl = new Filter().author(pubkey)
+        let test = await client.database.query([filterl])
+        for (let ev of test){
+          console.log(ev.asJson())
+        }*/
+
+
+
+
+        store.commit('set_client', client)
+        store.commit('set_pubkey', pubkey)
+        store.commit('set_hasEventListener', false)
+        localStorage.setItem('nostr-key-method', "anon")
+        localStorage.setItem('nostr-key', "")
+        console.log("Client connected")
+
+
+
+        //await this.get_user_info(pubkey)
+        //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
+
+
+
+
+
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async sign_in_nip07() {
 
       try {
 
@@ -90,13 +163,13 @@ export default {
         let client = new ClientBuilder().database(database).signer(this.signer).build()
 
 
-        //await client.addRelay("wss://relay.damus.io");
+        await client.addRelay("wss://relay.damus.io");
         await client.addRelay("wss://nos.lol");
         await client.addRelay("wss://relay.f7z.io")
         await client.addRelay("wss://pablof7z.nostr1.com")
         await client.addRelay("wss://relay.nostr.net")
-        //await client.addRelay("wss://relay.nostr.band");
-        //await client.addRelay("wss://nostr-pub.wellorder.net")
+        await client.addRelay("wss://relay.nostr.band");
+        await client.addRelay("wss://nostr-pub.wellorder.net")
 
         const pubkey = await nip07_signer.getPublicKey();
         await client.connect();
@@ -115,6 +188,9 @@ export default {
 
         store.commit('set_client', client)
         store.commit('set_pubkey', pubkey)
+        store.commit('set_hasEventListener', false)
+        localStorage.setItem('nostr-key-method', "nip07")
+        localStorage.setItem('nostr-key', "")
         console.log("Client connected")
 
 
@@ -155,6 +231,9 @@ export default {
 
     async sign_out(){
       this.current_user = ""
+      localStorage.setItem('nostr-key-method', "")
+      localStorage.setItem('nostr-key', "")
+      await this.sign_in_anon()
     }
   },
 };

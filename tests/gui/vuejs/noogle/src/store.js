@@ -9,6 +9,7 @@ const store = createStore({
       client: Client,
       pubkey: PublicKey,
       hasEventListener: false,
+      nip89dvms: [],
       results:  []
     }
   },
@@ -24,6 +25,9 @@ const store = createStore({
     },
     set_hasEventListener(state, hasEventListener) {
       state.hasEventListener = hasEventListener
+    },
+    set_nip89dvms(state, nip89dvms) {
+      state.nip89dvms = nip89dvms
     },
     set_search_results(state, results){
       state.results = results

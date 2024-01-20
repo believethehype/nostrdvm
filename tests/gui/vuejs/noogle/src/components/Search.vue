@@ -33,8 +33,11 @@ async function send_search_request(message) {
 
         // tags
 
-        for (const word of taggedUsersFrom) {
+        for (let word of taggedUsersFrom) {
           search = search.replace(word, "");
+          if(word === "me"){
+            word = store.state.pubkey.toBech32()
+          }
           const userPubkey = PublicKey.fromBech32(word.replace("@", "")).toHex()
           const pTag = Tag.parse(["p", userPubkey]);
           users.push(pTag.asVec());
@@ -79,7 +82,14 @@ async function get_user_infos(pubkeys){
         let evts = await client.getEventsOf([profile_filter], 10)
         console.log("PROFILES:" + evts.length)
         for (const entry of evts){
-          profiles.push({profile: JSON.parse(entry.content), author: entry.author.toHex(), createdAt: entry.createdAt});
+          try{
+            let contentjson = JSON.parse(entry.content)
+            profiles.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
+          }
+          catch(error){
+            console.log("error")
+          }
+
         }
 
         return profiles
@@ -97,6 +107,9 @@ async function  listen() {
     const handle = {
         // Handle event
         handleEvent: async (relayUrl, event) => {
+              if (store.state.hasEventListener === false){
+                return true
+              }
             console.log("Received new event from", relayUrl);
             if (event.kind === 7000) {
                 try {
@@ -136,8 +149,9 @@ async function  listen() {
                       let highlighterurl = "https://highlighter.com/a/" + bech32id
                       let njumpurl = "https://njump.me/" + bech32id
                       let nostrudelurl = "https://nostrudel.ninja/#/n/" + evt.id.toBech32()
-                      items.push({ content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
-
+                      if (!items.find(e => e.id === evt.id)) {
+                          items.push({id:evt.id,  content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
+                      }
 
 
                 }
@@ -171,12 +185,8 @@ defineProps({
   <div class="greetings">
     <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
 <br>
-      <h1
-				class="text-center font-thin text-5xl md:text-6xl font-extrabold tracking-wider sm:text-start sm:text-6xl lg:text-8xl">
-				<span class="bg">Noogle</span>
-
-			</h1>
-       <h2 class="text-base-200-content text-center text-2xl font-thin">
+      <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
+       <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin">
 				Search the Nostr with Data Vending Machines
 			</h2>
 
@@ -213,13 +223,7 @@ defineProps({
   background: black;
 }
 
-h1 {
 
-  font-weight: 500;
-  font-size: 2.6rem;
-  position: relative;
-  top: -10px;
-}
 
 .logo {
      display: flex;
