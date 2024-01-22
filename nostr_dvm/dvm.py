@@ -135,8 +135,9 @@ class DVM:
                         "[" + self.dvm_config.NIP89.NAME + "] Free task or Whitelisted for task " + task +
                         ". Starting processing..")
 
-                    send_job_status_reaction(nip90_event, "processing", True, 0,
-                                             client=self.client, dvm_config=self.dvm_config)
+                    if dvm_config.SEND_FEEDBACK_EVENTS:
+                        send_job_status_reaction(nip90_event, "processing", True, 0,
+                                                 client=self.client, dvm_config=self.dvm_config)
 
                     #  when we reimburse users on error make sure to not send anything if it was free
                     if user.iswhitelisted or task_is_free:

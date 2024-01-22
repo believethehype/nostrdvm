@@ -32,6 +32,7 @@ class DVMConfig:
     DB: str
     NEW_USER_BALANCE: int = 0  # Free credits for new users
     NIP89: NIP89Config
+    SEND_FEEDBACK_EVENTS = True
     SHOW_RESULT_BEFORE_PAYMENT: bool = False  # if this is true show results even when not paid right after autoprocess
 
 
