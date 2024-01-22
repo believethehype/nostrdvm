@@ -1,28 +1,35 @@
 <template>
-  <EasyDataTable class="customize-table" v-if="store.state.results.length != 0" table-class-name="customize-table"
+  <EasyDataTable class="customize-table" alternating  header-text-direction="left" expand  v-if="store.state.results.length != 0" table-class-name="customize-table"
     :headers="headers"
     :items="store.state.results">
-   <template #item-content="{ content, author, authorurl, avatar}">
+   <template #item-content="{ content, author, authorurl, avatar, indicator, links}">
    <div class="playeauthor-wrapper">
       <img class="avatar" :src="avatar" alt="" />
-         <a class="purple" :href="authorurl" target="_blank">{{ author }}</a> </div>
-     <p>{{content}}</p>
-     </template>
-    <template #expand="item">
-      <div style="padding: 15px; text-align: left;" >
-          <a class="menu" :href="item.links.njump" target="_blank">NJump</a>
-          <a class="menu" :href="item.links.highlighter" target="_blank">Highlighter</a>
-          <a  class="menu":href="item.links.nostrudel" target="_blank">Nostrudel</a>
-      </div>
-    </template>
-     <template #item-indicator.time="{ indicator}">
-
-        <div className="tooltip" :data-tip="indicator.time">
-          {{indicator.time.split("T")[1].split("Z")[0].trim()}}<br>
+         <a class="purple" :href="authorurl" target="_blank">{{ author }}</a>
+     <div class="time"  :data-tip="indicator.time">
+          {{indicator.time.split("T")[1].split("Z")[0].trim()}}
           {{indicator.time.split("T")[0].split("-")[2].trim()}}.{{indicator.time.split("T")[0].split("-")[1].trim()}}.{{indicator.time.split("T")[0].split("-")[0].trim().slice(2)}}
         </div>
+   </div>
 
+     <p>{{content.substr(0, 320) + "\u2026"}}</p>
+        <div style="padding: 2px; text-align: left;" >
+          <a class="menusmall" :href="links.uri" target="_blank">Nostr Client</a>
+          <a class="menusmall" :href="links.njump" target="_blank">NJump</a>
+          <a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a>
+          <!-- <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a> -->
+      </div>
+   <!--   <p>{{content}}</p> -->
      </template>
+    <!--<template #expand="item">
+      <div style="padding: 15px; text-align: left;" >
+          <a class="menu" :href="item.links.uri" target="_blank">Nostr Client</a>
+          <a class="menu" :href="item.links.njump" target="_blank">NJump</a>
+          <a class="menu" :href="item.links.highlighter" target="_blank">Highlighter</a>
+          <a class="menu":href="item.links.nostrudel" target="_blank">Nostrudel</a>
+      </div>
+    </template> -->
+
 
       </EasyDataTable>
 </template>
@@ -36,8 +43,8 @@ import store from '../store';
 
 
 const headers: Header[] = [
-  { text: "Results:", value: "content", fixed: true,  width: 800},
-  { text: "Time", value: "indicator.time", sortable: true, width:100},
+  { text: "Results:", value: "content", fixed:true},
+ // { text: "Time", value: "indicator.time", sortable: true, },
 ];
 </script>
 
@@ -52,6 +59,24 @@ const headers: Header[] = [
   align-items: center;
   justify-items: center;
 }
+
+.menusmall {
+  @apply btn text-gray-600 bg-transparent border-transparent tracking-wide;
+
+
+  }
+
+.vue3-easy-data-table__footer.previous-page__click-button{
+  height:100px
+}
+
+.time {
+  padding: 6px;
+  display: flex;
+  font-size: 1em;
+  align-items: center;
+  justify-items: center;
+}
 .avatar {
   margin-right: 10px;
   display: inline-block;
@@ -62,6 +87,7 @@ const headers: Header[] = [
   box-shadow: inset 0 4px 4px 0 rgb(0 0 0 / 10%);
 }
 .customize-table {
+
   --easy-table-border: 1px solid #000000;
   --easy-table-row-border: 1px solid #000000;
 
@@ -94,6 +120,12 @@ const headers: Header[] = [
   --easy-table-rows-per-page-selector-width: 70px;
   --easy-table-rows-per-page-selector-option-padding: 10px;
   --easy-table-rows-per-page-selector-z-index: 1;
+
+
+  --next-page__click-button : #c0c7d2;
+
+
+
 
 
   --easy-table-scrollbar-track-color: #2d3a4f;

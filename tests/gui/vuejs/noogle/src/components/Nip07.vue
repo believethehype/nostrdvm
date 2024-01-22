@@ -10,7 +10,7 @@
     <template v-if="!current_user">
           <div className="dropdown">
       <div tabIndex={0} role="button" class="v-Button" >Sign in</div>
-      <div tabIndex={0} className="dropdown-content z-[1] card card-compact w-64 p-2 shadow bg-primary text-primary-content">
+      <div tabIndex={0} className="dropdown-content -start-44 z-[1] horizontal card card-compact w-64 p-2 shadow bg-primary text-primary-content">
         <div className="card-body">
           <h3 className="card-title">Nip07 Login</h3>
           <p>Use a Browser Nip07 Extension like getalby or nos2x to login</p>
@@ -91,14 +91,9 @@ export default {
         let database =  await NostrDatabase.open("test.db")
         let client = new ClientBuilder().database(database).signer(this.signer).build()
 
-
-        await client.addRelay("wss://relay.damus.io");
-        await client.addRelay("wss://nos.lol");
-        await client.addRelay("wss://relay.f7z.io")
-        await client.addRelay("wss://pablof7z.nostr1.com")
-        await client.addRelay("wss://relay.nostr.net")
-        await client.addRelay("wss://relay.nostr.band");
-        await client.addRelay("wss://nostr-pub.wellorder.net")
+        for (const relay of store.state.relays){
+           await client.addRelay(relay);
+        }
 
         const pubkey =  keys.publicKey
         await client.connect();
@@ -162,14 +157,9 @@ export default {
         let database =  await NostrDatabase.open("test.db")
         let client = new ClientBuilder().database(database).signer(this.signer).build()
 
-
-        await client.addRelay("wss://relay.damus.io");
-        await client.addRelay("wss://nos.lol");
-        await client.addRelay("wss://relay.f7z.io")
-        await client.addRelay("wss://pablof7z.nostr1.com")
-        await client.addRelay("wss://relay.nostr.net")
-        await client.addRelay("wss://relay.nostr.band");
-        await client.addRelay("wss://nostr-pub.wellorder.net")
+        for (const relay of store.state.relays){
+                 await client.addRelay(relay);
+              }
 
         const pubkey = await nip07_signer.getPublicKey();
         await client.connect();
@@ -196,7 +186,7 @@ export default {
 
 
         await this.get_user_info(pubkey)
-        miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
+        //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
 
 
 
@@ -267,9 +257,10 @@ export default {
 
 }
 .v-Button {
-  @apply bg-black hover:bg-nostr focus:ring-nostr mb-2 inline-flex flex-none items-center rounded-lg border border-nostr px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
-  margin-right: 200px;
+  @apply bg-black  text-center hover:bg-nostr focus:ring-nostr mb-2 inline-flex flex-none items-center rounded-lg border border-nostr px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+  margin-right: 14px;
   height: 44px;
+  width: 70px
 }
 
 .c-Button {

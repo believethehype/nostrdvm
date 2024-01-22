@@ -5,7 +5,7 @@
       <p>Loading Nip89s.. </p>
        <span className="loading loading-dots loading-lg"  ></span>
     </div>
-    <div class="grid grid-cols-3 gap-6">
+    <div class="grid grid-cols-2 gap-6">
         <div className="card w-70 bg-base-100 shadow-xl"  v-for="dvm in store.state.nip89dvms"
             :key="dvm.name">
         <figure><img :src="dvm.image" alt="DVM Picture" /></figure>
