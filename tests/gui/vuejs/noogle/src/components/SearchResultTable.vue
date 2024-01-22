@@ -1,5 +1,5 @@
 <template>
-  <EasyDataTable class="customize-table" alternating  header-text-direction="left" expand  v-if="store.state.results.length != 0" table-class-name="customize-table"
+  <EasyDataTable class="customize-table"   header-text-direction="left" expand  v-if="store.state.results.length != 0" table-class-name="customize-table"
     :headers="headers"
     :items="store.state.results">
    <template #item-content="{ content, author, authorurl, avatar, indicator, links}">
@@ -122,7 +122,6 @@ const headers: Header[] = [
   --easy-table-rows-per-page-selector-z-index: 1;
 
 
-  --next-page__click-button : #c0c7d2;
 
 
 

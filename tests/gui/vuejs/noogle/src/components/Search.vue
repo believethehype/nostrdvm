@@ -129,11 +129,6 @@ async function  listen() {
                 try {
                     console.log("7000:", event.content);
                     miniToastr.showMessage("DVM replied", event.content, VueNotifications.types.info)
-
-
-                    //if (content === "stop") {
-                    //    return true
-                    //}
                 } catch (error) {
                     console.log("Error: ", error);
                 }
@@ -194,21 +189,12 @@ function nextInput(e) {
 
   }
 }
-function prevInput(e) {
-  const prev = e.currentTarget.previousElementSibling;
-  if (prev) {
-    prev.focus();
-  }
-}
-
 
 defineProps({
   msg: {
     type: String,
     required: false
   },
-
-
 })
 
 </script>
@@ -218,25 +204,14 @@ defineProps({
 
   <div class="greetings">
     <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
-<br>
-      <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
-       <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin">
-				Search the Nostr with Data Vending Machines
-			</h2>
-
+    <br>
+    <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
+    <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin">
+    Search the Nostr with Data Vending Machines</h2>
     <h3>
-
-      <br>
-
-          <!-- <input class="c-Input" v-model="message"  @keyup.enter="send_search_request(message)"> -->
-        <input class="c-Input" v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
-
-          <button class="v-Button"  @click="send_search_request(message)">Search the Nostr
-          </button>
-
-<!--
-      <a href="https://vitejs.dev/" target="_blank" rel="noopener">Vite</a> +
-      <a href="https://vuejs.org/" target="_blank" rel="noopener">Vue 3</a>. -->
+     <br>
+     <input class="c-Input" placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
+     <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
     </h3>
 
   </div>
@@ -253,14 +228,11 @@ defineProps({
 .c-Input {
     @apply bg-black hover:bg-gray-900 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
 
-
   width: 350px;
   height: 48px;
-   color: white;
+  color: white;
   background: black;
 }
-
-
 
 .logo {
      display: flex;
@@ -285,7 +257,6 @@ h3 {
   .greetings h1,
   .greetings h3 {
     text-align: center;
-
   }
 }
 </style>

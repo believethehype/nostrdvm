@@ -21,11 +21,8 @@
         </div>
           <br>
       </div>
-            </div>
-
-
-
     </div>
+  </div>
 
 </template>
 
@@ -45,8 +42,7 @@ async function getnip89s(){
         let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
 
         let signer = ClientSigner.keys(keys) //TODO store keys
-        let database =  await NostrDatabase.open("nip89.db")
-        let client = new ClientBuilder().database(database).signer(signer).build()
+        let client = new ClientBuilder().signer(signer).build()
         //await client.addRelay("wss://nos.lol");
         await client.addRelay("wss://relay.f7z.io")
         await client.addRelay("wss://pablof7z.nostr1.com")
@@ -112,9 +108,6 @@ export default {
 
 async mounted(){
       await getnip89s()
-
-
-
     },
 
   setup() {

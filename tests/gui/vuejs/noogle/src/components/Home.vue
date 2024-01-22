@@ -11,15 +11,11 @@ export default {
 </script>
 
 <template>
-<div class="center">
-  <br>
-
+  <div class="center">
+    <br>
     <Search/>
-      <br>
-      <ResultsTable/>
-  <br>
-  <br>
-<Donate/>
+    <br>
+    <ResultsTable/>
   </div>
 </template>
 
@@ -27,11 +23,6 @@ export default {
 
 .center {
   text-align: center;
-
-  justify-content: center;
-}
-.containertwo {
-  display: flex;
   justify-content: center;
 }
 

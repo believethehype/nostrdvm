@@ -14,6 +14,7 @@ import Nip07 from "@/components/Nip07.vue";
     </template>
     </ThreeColumnLayout>
 
+
   </main>
 </template>
 
@@ -22,10 +23,7 @@ header {
   line-height: 1.5;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
+
 
 @media (min-width: 768px) {
   header {
