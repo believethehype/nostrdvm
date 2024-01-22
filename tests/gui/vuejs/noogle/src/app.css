@@ -23,8 +23,8 @@ a,
 }
 
 .purple {
+  @apply  text-nostr;
   text-decoration: none;
-  color: #8453f1;
   transition: 0.4s;
   padding: 3px;
 }

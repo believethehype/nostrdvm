@@ -1,5 +1,16 @@
 <script setup>
-import {Client, Filter, Timestamp, Event, Metadata, PublicKey, EventBuilder, Tag, EventId} from "@rust-nostr/nostr-sdk";
+import {
+  Client,
+  Filter,
+  Timestamp,
+  Event,
+  Metadata,
+  PublicKey,
+  EventBuilder,
+  Tag,
+  EventId,
+  Nip19Event
+} from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
@@ -7,6 +18,9 @@ import VueNotifications from "vue-notifications";
 let items = []
 
 let listener = false
+
+
+
 
 async function send_search_request(message) {
    try {
@@ -144,13 +158,17 @@ async function  listen() {
               for (const evt of events){
                      let p = profiles.find( record => record.author === evt.author.toHex())
                       let bech32id = evt.id.toBech32()
+                      let nip19 = new Nip19Event(event.id, event.author, store.state.relays)
+                      let nip19bech32 = nip19.toBech32()
                       let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
                       let name = p === undefined ? bech32id : p["profile"]["name"]
                       let highlighterurl = "https://highlighter.com/a/" + bech32id
                       let njumpurl = "https://njump.me/" + bech32id
-                      let nostrudelurl = "https://nostrudel.ninja/#/n/" + evt.id.toBech32()
+                      let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
+                      let uri =  "nostr:" + bech32id //  nip19.toNostrUri()
+
                       if (!items.find(e => e.id === evt.id)) {
-                          items.push({id:evt.id,  content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
+                          items.push({id:evt.id,  content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"uri": uri, "highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
                       }
 
 
@@ -169,11 +187,27 @@ async function  listen() {
 }
 
 
+function nextInput(e) {
+  const next = e.currentTarget.nextElementSibling;
+  if (next) {
+    next.focus();
+
+  }
+}
+function prevInput(e) {
+  const prev = e.currentTarget.previousElementSibling;
+  if (prev) {
+    prev.focus();
+  }
+}
+
+
 defineProps({
   msg: {
     type: String,
     required: false
   },
+
 
 })
 
@@ -193,7 +227,10 @@ defineProps({
     <h3>
 
       <br>
-          <input class="c-Input" v-model="message">
+
+          <!-- <input class="c-Input" v-model="message"  @keyup.enter="send_search_request(message)"> -->
+        <input class="c-Input" v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
+
           <button class="v-Button"  @click="send_search_request(message)">Search the Nostr
           </button>
 
@@ -217,7 +254,7 @@ defineProps({
     @apply bg-black hover:bg-gray-900 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
 
 
-  width: 400px;
+  width: 350px;
   height: 48px;
    color: white;
   background: black;

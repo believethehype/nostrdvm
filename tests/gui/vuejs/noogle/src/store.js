@@ -10,7 +10,8 @@ const store = createStore({
       pubkey: PublicKey,
       hasEventListener: false,
       nip89dvms: [],
-      results:  []
+      results:  [],
+      relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://relay.f7z.io", "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://relay.nostr.net", "wss://relay.nostr.band", "wss://nostr-pub.wellorder.net"],
     }
   },
   mutations: {
