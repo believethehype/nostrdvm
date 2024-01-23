@@ -1,7 +1,8 @@
 <template>
-  <EasyDataTable class="customize-table"   header-text-direction="left" expand  v-if="store.state.results.length != 0" table-class-name="customize-table"
+  <EasyDataTable class="customize-table"  header-text-direction="left"  v-if="store.state.results.length != 0" table-class-name="customize-table"
     :headers="headers"
-    :items="store.state.results">
+    :items="store.state.results" :sort-by="sortBy"
+     :sort-type="sortType">
    <template #item-content="{ content, author, authorurl, avatar, indicator, links}">
    <div class="playeauthor-wrapper">
       <img class="avatar" :src="avatar" alt="" />
@@ -37,15 +38,18 @@
 <script lang="ts" setup>
 
 
-
-import type { Header, Item } from "vue3-easy-data-table";
+import type {Header, Item, SortType} from "vue3-easy-data-table";
 import store from '../store';
 
+const sortBy = "indicator.time";
+const sortType: SortType = "desc";
 
 const headers: Header[] = [
   { text: "Results:", value: "content", fixed:true},
  // { text: "Time", value: "indicator.time", sortable: true, },
 ];
+
+
 </script>
 
 <style scoped>

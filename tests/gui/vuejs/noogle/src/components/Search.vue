@@ -128,7 +128,7 @@ async function  listen() {
             if (event.kind === 7000) {
                 try {
                     console.log("7000:", event.content);
-                    miniToastr.showMessage("DVM replied", event.content, VueNotifications.types.info)
+                    miniToastr.showMessage(event.content, event.author.toBech32(), VueNotifications.types.info)
                 } catch (error) {
                     console.log("Error: ", error);
                 }
@@ -136,7 +136,8 @@ async function  listen() {
             else if(event.kind === 6302) {
               let entries = []
               console.log("6302:", event.content);
-              miniToastr.showMessage("DVM replied", "Received Results", VueNotifications.types.success)
+
+              miniToastr.showMessage("Received Results", event.author.toBech32(), VueNotifications.types.success)
                let event_etags = JSON.parse(event.content)
                 for (let etag of event_etags){
                   const eventid = EventId.fromHex(etag[1])
@@ -162,13 +163,14 @@ async function  listen() {
                       let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
                       let uri =  "nostr:" + bech32id //  nip19.toNostrUri()
 
-                      if (!items.find(e => e.id === evt.id)) {
+                      if (items.find(e => e.id === evt.id)  === undefined) {
                           items.push({id:evt.id,  content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"uri": uri, "highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
                       }
 
 
                 }
-
+               console.log("Events from" + event.author.toHex())
+               console.log(items)
                store.commit('set_search_results', items)
             }
         },
