@@ -31,8 +31,12 @@ const store = createStore({
       state.nip89dvms = nip89dvms
     },
     set_search_results(state, results){
-      state.results = results
-      console.log(state.results)
+      state.results.length = 0
+      state.results.push.apply(state.results, results)
+      //state.results = []
+
+          //[].push.apply(state.results, results)
+
     }
 
   }

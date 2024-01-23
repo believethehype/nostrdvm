@@ -180,3 +180,4 @@ tests/gui/svelte/node_modules
 tests/gui/vuejs/noogle/node_modules
 tests/gui/vuejs/noogle/.idea/
 tests/gui/vuejs/noogle/package-lock.json
+search.py
