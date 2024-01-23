@@ -14,6 +14,10 @@ import {
 import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
+import searchdvms from './data/searchdvms.json'
+import {computed} from "vue";
+import countries from "@/components/data/countries.json";
+import deadnip89s from "@/components/data/deadnip89s.json";
 
 let items = []
 
@@ -61,7 +65,7 @@ async function send_search_request(message) {
         console.log(search);
 
         tags.push(Tag.parse(["i", message, "text"]))
-        tags.push(Tag.parse(["param", "max_results", "100"]))
+        tags.push(Tag.parse(["param", "max_results", "150"]))
         tags.push(Tag.parse(['param', 'users', JSON.stringify(users)]))
 
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
@@ -124,11 +128,13 @@ async function  listen() {
               if (store.state.hasEventListener === false){
                 return true
               }
+            const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
             if (event.kind === 7000) {
                 try {
-                    console.log("7000:", event.content);
-                    miniToastr.showMessage(event.content, event.author.toBech32(), VueNotifications.types.info)
+                    console.log("7000: ", event.content);
+                    console.log("DVM: " + event.author.toHex())
+                    miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
                 } catch (error) {
                     console.log("Error: ", error);
                 }
@@ -137,7 +143,7 @@ async function  listen() {
               let entries = []
               console.log("6302:", event.content);
 
-              miniToastr.showMessage("Received Results", event.author.toBech32(), VueNotifications.types.success)
+              miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
                let event_etags = JSON.parse(event.content)
                 for (let etag of event_etags){
                   const eventid = EventId.fromHex(etag[1])
@@ -163,7 +169,7 @@ async function  listen() {
                       let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
                       let uri =  "nostr:" + bech32id //  nip19.toNostrUri()
 
-                      if (items.find(e => e.id === evt.id)  === undefined) {
+                      if (items.find(e => e.id.toHex() === evt.id.toHex())  === undefined) {
                           items.push({id:evt.id,  content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"uri": uri, "highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
                       }
 
@@ -183,6 +189,14 @@ async function  listen() {
     client.handleNotifications(handle);
 }
 
+
+function getNamefromId(id){
+  let elements = searchdvms.filter(i => i.id === id)
+  if (elements.length === 0){
+    return id
+  }
+  else return elements[0].name
+}
 
 function nextInput(e) {
   const next = e.currentTarget.nextElementSibling;
@@ -212,7 +226,7 @@ defineProps({
     Search the Nostr with Data Vending Machines</h2>
     <h3>
      <br>
-     <input class="c-Input" placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
+     <input class="c-Input" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
      <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
     </h3>
 
