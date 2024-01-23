@@ -30,7 +30,7 @@
 
 import '../app.css'
 import store from "@/store.js";
-import {ClientBuilder, ClientSigner, Filter, Keys, NostrDatabase, Tag} from "@rust-nostr/nostr-sdk";
+import {Alphabet, ClientBuilder, ClientSigner, Filter, Keys, NostrDatabase, Tag} from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 
@@ -51,8 +51,13 @@ async function getnip89s(){
         //await client.addRelay("wss://nostr-pub.wellorder.net")
         await client.connect();
 
+        let dvmkinds = []
+        for (let i = 5000; i < 6000; i++) {
+          dvmkinds.push(i.toString())
+        }
+        console.log(dvmkinds)
 
-        const filter = new Filter().kind(31990)
+        const filter = new Filter().kind(31990).customTag(Alphabet.K, dvmkinds)
         //await client.reconcile(filter);
         //const filterl = new Filter().kind(31990)
         //let evts = await client.database.query([filterl])
