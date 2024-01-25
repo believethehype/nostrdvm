@@ -243,7 +243,7 @@ defineProps({
     Generate Images, the decentralized way</h2>
     <h3>
      <br>
-     <input class="c-Input" autofocus placeholder="A purple Ostrich..." v-model="message" @keyup.enter="generate_image(message)" @keydown.enter="nextInput">
+     <input class="c-Input" autofocus placeholder="A purple ostrich..." v-model="message" @keyup.enter="generate_image(message)" @keydown.enter="nextInput">
      <button class="v-Button"  @click="generate_image(message)">Generate Image</button>
     </h3>
 
