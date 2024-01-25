@@ -169,8 +169,8 @@ function nextInput(e) {
     async function zap(invoice) {
       let webln;
 
-        this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
-        this.dvminvoice = invoice
+        //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
+        //this.dvminvoice = invoice
 
 
       try {
