@@ -34,6 +34,7 @@ export default {
 
     async copyinvoice(invoice){
        await navigator.clipboard.writeText(invoice)
+        window.open("lightning:" + invoice,"_blank")
        miniToastr.showMessage("", "Copied Invoice to clipboard", VueNotifications.types.info)
     },
 

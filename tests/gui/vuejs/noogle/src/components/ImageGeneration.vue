@@ -166,6 +166,13 @@ function nextInput(e) {
   }
 }
 
+
+    async function copyinvoice(invoice){
+       await navigator.clipboard.writeText(invoice)
+        window.open("lightning:" + invoice,"_blank")
+       miniToastr.showMessage("", "Copied Invoice to clipboard", VueNotifications.types.info)
+    }
+
     async function zap(invoice) {
       let webln;
 
@@ -190,6 +197,8 @@ function nextInput(e) {
         dvms.find(i => i.bolt11 === invoice).status = "paid"
         store.commit('set_imagedvm_results', dvms)
       }
+
+
     }
 
     async function createBolt11Lud16(lud16, amount) {
