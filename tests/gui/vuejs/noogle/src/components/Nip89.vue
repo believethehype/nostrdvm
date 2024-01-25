@@ -1,42 +1,37 @@
 <template>
-
-  <div class="max-w-5xl relative space-y-3">
-    <div v-if="store.state.nip89dvms.length === 0">
-      <p>Loading Nip89s.. </p>
-       <span className="loading loading-dots loading-lg"  ></span>
-    </div>
-    <div class="grid grid-cols-2 gap-6">
-        <div className="card w-70 bg-base-100 shadow-xl"  v-for="dvm in store.state.nip89dvms"
-            :key="dvm.name">
-        <figure><img :src="dvm.image" alt="DVM Picture" /></figure>
-        <div className="card-body">
-          <h2 className="card-title">{{ dvm.name }}</h2>
-          <p>  {{ dvm.about }}</p>
-           <p>Kind: {{ dvm.kind }}</p>
-          <div className="card-actions justify-end">
-        <div className="tooltip" :data-tip="dvm.event">
-         <button className="btn" @click="copyDoiToClipboard(dvm.event);">Copy Event</button>
-        </div>
-          </div>
-        </div>
-          <br>
-      </div>
-    </div>
-  </div>
-
 </template>
 
 <script>
-
-import '../app.css'
-import store from "@/store.js";
-import {Alphabet, ClientBuilder, ClientSigner, Filter, Keys, NostrDatabase, Tag} from "@rust-nostr/nostr-sdk";
+import {
+  ClientSigner,
+  Filter,
+  Keys, ClientBuilder, Alphabet
+} from "@rust-nostr/nostr-sdk";
+import store from '../store';
 import miniToastr from "mini-toastr";
-import VueNotifications from "vue-notifications";
+import deadnip89s from "@/components/data/deadnip89s.json";
+let nip89dvms = []
+export default {
+   data() {
+    return {
+      current_user: "",
+      avatar: "",
+      signer: "",
 
-import deadnip89s from './data/deadnip89s.json'
+    };
+  },
+  async mounted() {
+     try{
+        await this.getnip89s()
+     }
+    catch (error){
+       console.log(error);
+    }
 
-async function getnip89s(){
+  },
+
+  methods: {
+    async getnip89s(){
 
         //let keys = Keys.generate()
         let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
@@ -53,7 +48,7 @@ async function getnip89s(){
 
         let dvmkinds = []
         for (let i = 5000; i < 6000; i++) {
-          dvmkinds.push(i.toString())
+          dvmkinds.push((i.toString()))
         }
         console.log(dvmkinds)
 
@@ -65,18 +60,14 @@ async function getnip89s(){
         for (const entry of evts){
           for (const tag in entry.tags){
             if (entry.tags[tag].asVec()[0] === "k")
-              console.log(entry.id.toHex())
+
               if(entry.tags[tag].asVec()[1] >= 5000 && entry.tags[tag].asVec()[1] <= 5999 &&  deadnip89s.filter(i => i.id === entry.id.toHex() ).length === 0) {   // blocklist.indexOf(entry.id.toHex()) < 0){
-
-                console.log(entry.tags[tag].asVec()[1])
-
                 try {
-
                     let jsonentry = JSON.parse(entry.content)
                       if (jsonentry.picture){
                         jsonentry.image = jsonentry.picture
                       }
-                      jsonentry.event = entry.asJson()
+                    jsonentry.event = entry.asJson()
                     jsonentry.kind = entry.tags[tag].asVec()[1]
                    nip89dvms.push(jsonentry);
                 }
@@ -92,31 +83,12 @@ async function getnip89s(){
         return nip89dvms
 
 
-    }
-let nip89dvms = []
-
-
-export default {
-  computed: {
-    store() {
-      return store
-    }
-  },
-  methods: {
-  copyDoiToClipboard (doi) {
-    navigator.clipboard.writeText(doi)
-    miniToastr.showMessage("", "Copied Nip89 Event to clipboard", VueNotifications.types.info)
-
-  },
-  },
-
-
-async mounted(){
-      await getnip89s()
     },
 
-  setup() {
-
-  }
-}
+  },
+};
 </script>
+
+<style scoped>
+
+</style>

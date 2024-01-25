@@ -37,7 +37,7 @@ async function send_search_request(message) {
           return
      }
         items = []
-        store.state.results = []
+        store.commit('set_search_results', items)
         let client = store.state.client
         let tags = []
         let users = [];
