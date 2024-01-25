@@ -50,7 +50,7 @@ export default {
         for (let i = 5000; i < 6000; i++) {
           dvmkinds.push((i.toString()))
         }
-        console.log(dvmkinds)
+
 
         const filter = new Filter().kind(31990).customTag(Alphabet.K, dvmkinds)
         //await client.reconcile(filter);
