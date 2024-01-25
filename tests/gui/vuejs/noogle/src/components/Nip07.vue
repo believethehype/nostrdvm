@@ -193,7 +193,6 @@ export default {
         for (const entry of evts){
           for (const tag in entry.tags){
             if (entry.tags[tag].asVec()[0] === "k")
-              console.log(entry.id.toHex())
               if(entry.tags[tag].asVec()[1] >= 5000 && entry.tags[tag].asVec()[1] <= 5999 &&  deadnip89s.filter(i => i.id === entry.id.toHex() ).length === 0) {   // blocklist.indexOf(entry.id.toHex()) < 0){
 
                 console.log(entry.tags[tag].asVec()[1])

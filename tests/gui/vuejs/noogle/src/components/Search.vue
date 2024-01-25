@@ -70,6 +70,7 @@ async function send_search_request(message) {
 
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
         let res = await client.sendEventBuilder(evt)
+        store.commit('set_current_request_id', res.toHex())
         miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         if (!store.state.hasEventListener){
                listen()
@@ -130,6 +131,19 @@ async function  listen() {
               }
             const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
+               let resonsetorequest = false
+               for (let tag in event.tags) {
+
+                  if (event.tags[tag].asVec()[0] === "e") {
+                    console.log("ETAG: " + event.tags[tag].asVec()[1])
+                    if (event.tags[tag].asVec()[1] ===  store.state.requestid) {
+                      resonsetorequest = true
+                    }
+                  }
+
+                }
+          if(resonsetorequest){
+
             if (event.kind === 7000) {
                 try {
                     console.log("7000: ", event.content);
@@ -179,6 +193,7 @@ async function  listen() {
                console.log(items)
                store.commit('set_search_results', items)
             }
+              }
         },
         // Handle relay message
         handleMsg: async (relayUrl, message) => {
