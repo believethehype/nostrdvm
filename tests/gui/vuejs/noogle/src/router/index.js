@@ -4,7 +4,7 @@ import { createWebHistory, createRouter } from "vue-router";
 
 const routes = [
   { path: "/", component: () => import("@/components/Home.vue") },
-  { path: "/about", component: () => import("@/components/modaltest.vue") },
+  { path: "/about", component: () => import("@/components/AboutPage.vue") },
   { path: "/donate", component: () => import("@/components/Donate.vue") },
   { path: "/nip89", component: () => import("@/components/Nip89view.vue") },
   { path: "/image", component: () => import("@/components/Image.vue") },

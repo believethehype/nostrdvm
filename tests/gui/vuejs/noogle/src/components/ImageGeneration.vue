@@ -32,7 +32,9 @@ let listener = false
 
 
 
+
 async function generate_image(message) {
+
    try {
      if (message === undefined){
        message = "A purple Ostrich"
@@ -52,7 +54,9 @@ async function generate_image(message) {
 
         let evt = new EventBuilder(5100, "NIP 90 Image Generation request", tags)
         let res = await client.sendEventBuilder(evt)
-        miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
+        store.commit('set_current_request_id', res.toHex())
+
+        //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         searching = true
         if (!store.state.imagehasEventListener){
                listen()
@@ -72,6 +76,7 @@ async function generate_image(message) {
 
 async function  listen() {
     listener = true
+
     let client = store.state.client
     let pubkey = store.state.pubkey
 
@@ -86,55 +91,86 @@ async function  listen() {
               }
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
-            if (event.kind === 7000) {
-                try {
+           let resonsetorequest = false
+
+
+
+           if (event.kind === 7000) {
+
+              for (let tag in event.tags) {
+
+                  if (event.tags[tag].asVec()[0] === "e") {
+                    console.log("ETAG: " + event.tags[tag].asVec()[1])
+                    if (event.tags[tag].asVec()[1] ===  store.state.requestid) {
+                      resonsetorequest = true
+                    }
+                  }
+
+                }
+                if (resonsetorequest === true) {
+
+
+                  try {
                     console.log("7000: ", event.content);
                     console.log("DVM: " + event.author.toHex())
                     searching = false
                     //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
 
-                  let status = "unknown"
-                   let jsonentry = {id: event.author.toHex(), kind: "", status: status, result: "", name: event.author.toBech32(), about: "", image: "", amount: 0, bolt11: ""}
+                    let status = "unknown"
+                    let jsonentry = {
+                      id: event.author.toHex(),
+                      kind: "",
+                      status: status,
+                      result: "",
+                      name: event.author.toBech32(),
+                      about: "",
+                      image: "",
+                      amount: 0,
+                      bolt11: ""
+                    }
 
-                   for (const tag in event.tags){
-                     if (event.tags[tag].asVec()[0] === "status"){
-                       status = event.tags[tag].asVec()[1]
-                     }
+                    for (const tag in event.tags) {
+                      if (event.tags[tag].asVec()[0] === "status") {
+                        status = event.tags[tag].asVec()[1]
+                      }
 
-                            if (event.tags[tag].asVec()[0] === "amount"){
-                                jsonentry.amount = event.tags[tag].asVec()[1]
-                              if (event.tags[tag].asVec().length > 2){
-                                jsonentry.bolt11 = event.tags[tag].asVec()[2]
-                              }
-                              // TODO else request invoice
-                            }
-                          }
+                      if (event.tags[tag].asVec()[0] === "amount") {
+                        jsonentry.amount = event.tags[tag].asVec()[1]
+                        if (event.tags[tag].asVec().length > 2) {
+                          jsonentry.bolt11 = event.tags[tag].asVec()[2]
+                        }
+                        // TODO else request invoice
+                      }
+                    }
 
-                  //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
-                  for (const el of store.state.nip89dvms) {
-                    if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
-                      jsonentry.name = el.name
-                      jsonentry.about = el.about
-                      jsonentry.image = el.image
+                    //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
+                    for (const el of store.state.nip89dvms) {
+                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
+                        jsonentry.name = el.name
+                        jsonentry.about = el.about
+                        jsonentry.image = el.image
 
                         console.log(jsonentry)
 
+                      }
                     }
-                  }
-                  if (dvms.filter(i => i.id === jsonentry.id ).length === 0){
+                    if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
                       dvms.push(jsonentry)
+                    }
+
+
+                    dvms.find(i => i.id === jsonentry.id).status = status
+
+                    store.commit('set_imagedvm_results', dvms)
+
+
+                  } catch (error) {
+                    console.log("Error: ", error);
                   }
 
 
-                  dvms.find(i => i.id === jsonentry.id).status = status
-
-                  store.commit('set_imagedvm_results', dvms)
-
-
-
-                } catch (error) {
-                    console.log("Error: ", error);
                 }
+
             }
             else if(event.kind === 6100) {
               let entries = []
@@ -183,7 +219,7 @@ function nextInput(e) {
       try {
         webln = await requestProvider();
       } catch (err) {
-          await this.copyinvoice(invoice)
+          await copyinvoice(invoice)
       }
 
       if (webln) {

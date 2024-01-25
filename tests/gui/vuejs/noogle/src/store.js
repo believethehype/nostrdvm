@@ -8,6 +8,7 @@ const store = createStore({
       test: "hello",
       client: Client,
       pubkey: PublicKey,
+      requestid: String,
       hasEventListener: false,
       imagehasEventListener: false,
       imagedvmreplies: [],
@@ -36,6 +37,9 @@ const store = createStore({
       state.nip89dvms.length = 0
       state.nip89dvms.push.apply(state.nip89dvms, nip89dvms)
     },
+    set_current_request_id(state, requestid){
+       state.requestid = requestid
+    },
     set_search_results(state, results){
       state.results.length = 0
       state.results.push.apply(state.results, results)
@@ -43,10 +47,6 @@ const store = createStore({
     set_imagedvm_results(state, results){
       state.imagedvmreplies.length = 0
       state.imagedvmreplies.push.apply(state.imagedvmreplies, results)
-      //state.results = []
-
-          //[].push.apply(state.results, results)
-
     }
 
   }
