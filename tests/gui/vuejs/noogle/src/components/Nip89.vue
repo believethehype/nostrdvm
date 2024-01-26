@@ -68,8 +68,9 @@ export default {
                         jsonentry.image = jsonentry.picture
                       }
                     jsonentry.event = entry.asJson()
+                    jsonentry.createdAt = entry.createdAt.asSecs()
                     jsonentry.kind = entry.tags[tag].asVec()[1]
-                   nip89dvms.push(jsonentry);
+                    nip89dvms.push(jsonentry);
                 }
                 catch (error){
                   console.log(error)
