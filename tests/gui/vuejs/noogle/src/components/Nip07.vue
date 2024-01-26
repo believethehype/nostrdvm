@@ -195,7 +195,7 @@ export default {
             if (entry.tags[tag].asVec()[0] === "k")
               if(entry.tags[tag].asVec()[1] >= 5000 && entry.tags[tag].asVec()[1] <= 5999 &&  deadnip89s.filter(i => i.id === entry.id.toHex() ).length === 0) {   // blocklist.indexOf(entry.id.toHex()) < 0){
 
-                console.log(entry.tags[tag].asVec()[1])
+              //  console.log(entry.tags[tag].asVec()[1])
 
                 try {
 

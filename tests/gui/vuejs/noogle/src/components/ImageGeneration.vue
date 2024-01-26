@@ -92,22 +92,22 @@ async function  listen() {
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
            let resonsetorequest = false
+           for (let tag in event.tags) {
+            if (event.tags[tag].asVec()[0] === "e") {
+              console.log("ETAG: " + event.tags[tag].asVec()[1])
+              console.log("LISTEN TO : " + store.state.requestid)
+              if (event.tags[tag].asVec()[1] ===  store.state.requestid) {
+                resonsetorequest = true
+              }
+            }
+
+          }
+          if (resonsetorequest === true) {
 
 
 
            if (event.kind === 7000) {
 
-              for (let tag in event.tags) {
-
-                  if (event.tags[tag].asVec()[0] === "e") {
-                    console.log("ETAG: " + event.tags[tag].asVec()[1])
-                    if (event.tags[tag].asVec()[1] ===  store.state.requestid) {
-                      resonsetorequest = true
-                    }
-                  }
-
-                }
-                if (resonsetorequest === true) {
 
 
                   try {
@@ -171,8 +171,8 @@ async function  listen() {
 
                 }
 
-            }
-            else if(event.kind === 6100) {
+
+           else if(event.kind === 6100) {
               let entries = []
               console.log("6100:", event.content);
 
@@ -181,6 +181,7 @@ async function  listen() {
               dvms.find(i => i.id === event.author.toHex()).status = "finished"
               store.commit('set_imagedvm_results', dvms)
             }
+           }
         },
         // Handle relay message
         handleMsg: async (relayUrl, message) => {
@@ -209,6 +210,12 @@ function nextInput(e) {
        miniToastr.showMessage("", "Copied Invoice to clipboard", VueNotifications.types.info)
     }
 
+    async function copyurl(url){
+       await navigator.clipboard.writeText(url)
+       miniToastr.showMessage("", "Copied link to clipboard", VueNotifications.types.info)
+    }
+
+
     async function zap(invoice) {
       let webln;
 
@@ -225,10 +232,10 @@ function nextInput(e) {
       if (webln) {
 
         let response = await webln.sendPayment(invoice)
-        console.log(response)
-        for (const dvm of dvms){
-          console.log(dvm.bolt11 + "   " + invoice)
-        }
+        //console.log(response)
+        //for (const dvm of dvms){
+        //  console.log(dvm.bolt11 + "   " + invoice)
+        //}
 
         dvms.find(i => i.bolt11 === invoice).status = "paid"
         store.commit('set_imagedvm_results', dvms)
@@ -301,7 +308,7 @@ defineProps({
             :key="dvm.id">
 
         <figure class="w-full">
-          <img v-if="dvm.result" :src="dvm.result" height="200" alt="DVM Picture" />
+          <img v-if="dvm.result" :src="dvm.result" height="200" alt="DVM Picture"  @click="copyurl(dvm.result)"/>
           <img v-if="!dvm.result" :src="dvm.image" height="200" alt="DVM Picture" />
         </figure>
 
