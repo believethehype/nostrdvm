@@ -38,12 +38,9 @@ export default {
 
         let signer = ClientSigner.keys(keys) //TODO store keys
         let client = new ClientBuilder().signer(signer).build()
-        //await client.addRelay("wss://nos.lol");
-        await client.addRelay("wss://relay.f7z.io")
-        await client.addRelay("wss://pablof7z.nostr1.com")
-        //await client.addRelay("wss://relay.nostr.net")
-        await client.addRelay("wss://relay.nostr.band");
-        //await client.addRelay("wss://nostr-pub.wellorder.net")
+       for (const relay of store.state.relays){
+           await client.addRelay(relay);
+        }
         await client.connect();
 
         let dvmkinds = []
