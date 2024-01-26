@@ -14,6 +14,7 @@ const store = createStore({
       imagehasEventListener: false,
       imagedvmreplies: [],
       nip89dvms: [],
+      activesearchdvms: [],
       results:  [],
       relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://relay.nostr.net", "wss://relay.nostr.band", "wss://nostr-pub.wellorder.net"],
     }
@@ -44,7 +45,11 @@ const store = createStore({
       state.nip89dvms.push.apply(state.nip89dvms, nip89dvmssorted)
     },
     set_current_request_id_search(state, requestid){
-       state.requestidSearch = requestid
+      state.requestidSearch = String(requestid)
+    },
+    set_active_search_dvms(state, dvms) {
+      state.activesearchdvms.length = 0
+      state.activesearchdvms.push.apply(state.activesearchdvms, dvms)
     },
     set_current_request_id_image(state, requestid){
        state.requestidImage = requestid

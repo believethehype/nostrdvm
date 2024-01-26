@@ -20,8 +20,9 @@ import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
 
 let items = []
-
+let dvms =[]
 let listener = false
+let searching = false
 
 
 
@@ -37,6 +38,7 @@ async function send_search_request(message) {
           return
      }
         items = []
+        dvms =[]
         store.commit('set_search_results', items)
         let client = store.state.client
         let tags = []
@@ -70,9 +72,11 @@ async function send_search_request(message) {
 
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
         let res = await client.sendEventBuilder(evt)
-        store.commit('set_current_request_id_search', res.toHex())
-        console.log("SEARCH EVENT SENT: " + res.toHex())
-        miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
+        let requestid = res.toHex()
+        store.commit('set_current_request_id_search', requestid)
+
+
+        //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         if (!store.state.hasEventListener){
                listen()
            store.commit('set_hasEventListener', true)
@@ -89,6 +93,9 @@ async function send_search_request(message) {
       }
 }
 
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 async function getEvents(eventids) {
   const event_filter = new Filter().ids(eventids)
   let client = store.state.client
@@ -135,30 +142,109 @@ async function  listen() {
             let resonsetorequest = false
             for (let tag in event.tags) {
               if (event.tags[tag].asVec()[0] === "e") {
-                //console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
-                // console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
-                if (event.tags[tag].asVec()[1] ===  store.state.requestidSearch) {
+                 console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
+                 console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
+                //if (event.tags[tag].asVec()[1] === store.state.requestidSearch) {
                   resonsetorequest = true
-                }
+                //}
               }
 
             }
           if(resonsetorequest){
 
             if (event.kind === 7000) {
-                try {
+              try {
                     console.log("7000: ", event.content);
                     console.log("DVM: " + event.author.toHex())
+                    searching = false
+                    //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
+
+                    let status = "unknown"
+                    let jsonentry = {
+                      id: event.author.toHex(),
+                      kind: "",
+                      status: status,
+                      result: "",
+                      name: event.author.toBech32(),
+                      about: "",
+                      image: "",
+                      amount: 0,
+                      bolt11: ""
+                    }
+
+                    for (const tag in event.tags) {
+                      if (event.tags[tag].asVec()[0] === "status") {
+                        status = event.tags[tag].asVec()[1]
+                        if (event.tags[tag].asVec().length > 2) {
+                          jsonentry.about = event.tags[tag].asVec()[2]
+                        }
+                      }
+
+                      if (event.tags[tag].asVec()[0] === "amount") {
+                        jsonentry.amount = event.tags[tag].asVec()[1]
+                        if (event.tags[tag].asVec().length > 2) {
+                          jsonentry.bolt11 = event.tags[tag].asVec()[2]
+                        }
+                        // TODO else request invoice
+                      }
+                    }
+
+                    //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
+                    for (const el of store.state.nip89dvms) {
+                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
+                        jsonentry.name = el.name
+                        jsonentry.about = event.content
+                        jsonentry.image = el.image
+
+                        console.log(jsonentry)
+
+                      }
+                    }
+                    if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
+                      dvms.push(jsonentry)
+                    }
+
+
+                    dvms.find(i => i.id === jsonentry.id).status = status
+                    if(status === "error"){
+                      const index = dvms.indexOf((dvms.find(i => i.id === event.author.toHex())));
+                      if (index > -1) {
+                        dvms.splice(index, 1);
+                      }
+                    }
+
+                    store.commit('set_active_search_dvms', dvms)
+
+
+                  } catch (error) {
+                    console.log("Error: ", error);
+                  }
+
+
+                }
+
+
+
+
+
+
+
+
+             /*   try {
+                    console.log("7000: ", event.content);
+                    console.log("DVM: " + event.author.toHex())
+
+
                     miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
                 } catch (error) {
                     console.log("Error: ", error);
-                }
-            }
+                } */
+
             else if(event.kind === 6302) {
               let entries = []
               console.log("6302:", event.content);
 
-              miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
+              //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
                let event_etags = JSON.parse(event.content)
                 for (let etag of event_etags){
                   const eventid = EventId.fromHex(etag[1])
@@ -190,6 +276,13 @@ async function  listen() {
 
 
                 }
+
+                const index = dvms.indexOf((dvms.find(i => i.id === event.author.toHex())));
+                if (index > -1) {
+                  dvms.splice(index, 1);
+                }
+
+                store.commit('set_active_search_dvms', dvms)
                console.log("Events from" + event.author.toHex())
                console.log(items)
                store.commit('set_search_results', items)
@@ -245,8 +338,38 @@ defineProps({
      <input class="c-Input" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
      <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
     </h3>
-
   </div>
+  <div class="max-w-5xl relative space-y-3">
+
+    <div class="grid grid-cols-1 gap-6">
+        <div className="card w-30 h-60 bg-base-100 shadow-xl"  v-for="dvm in store.state.activesearchdvms"
+            :key="dvm.name">
+           <div className="card-body">
+        <div class="grid grid-cols-2 gap-6">
+
+          <div className="col-end-1">
+             <h2 className="card-title">{{ dvm.name }}</h2>
+
+            <figure v-if="dvm.image!=''" className="w-40"><img className="h-30" :src="dvm.image" alt="DVM Picture" /></figure>
+          </div>
+
+          <div className="col-end-2 w-auto">
+              <p >  {{ dvm.about }}</p>
+
+             <div><br>
+             <span className="loading loading-dots loading-lg"  ></span>
+          </div>
+
+
+
+            </div>
+          </div>
+        </div>
+          <br>
+      </div>
+    </div>
+</div>
+
 </template>
 
 <style scoped>

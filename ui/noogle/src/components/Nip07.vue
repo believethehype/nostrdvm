@@ -69,11 +69,11 @@ export default {
     async sign_in_anon() {
       try {
          await loadWasmAsync();
-         /*try {
+         try {
             initLogger(LogLevel.debug());
         } catch (error) {
             console.log(error);
-        }*/
+        }
 
         let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
         this.signer = ClientSigner.keys(keys) //TODO store keys
@@ -116,11 +116,11 @@ export default {
 
         await loadWasmAsync();
 
-          /*   try {
+            try {
                 initLogger(LogLevel.debug());
             } catch (error) {
                 console.log(error);
-            } */
+            }
 
         let nip07_signer = new Nip07Signer();
             try{
@@ -180,7 +180,7 @@ export default {
         for (let i = 5000; i < 6000; i++) {
           dvmkinds.push((i.toString()))
         }
-        console.log(dvmkinds)
+        //console.log(dvmkinds)
 
         const filter = new Filter().kind(31990).customTag(Alphabet.K, dvmkinds)
         //await client.reconcile(filter);
