@@ -132,8 +132,8 @@ export default {
              this.signer = ClientSigner.keys(Keys.generate())
           }
 
-        let zapper = ClientZapper.webln()
-        let client = new ClientBuilder().signer(this.signer).zapper(zapper).build();
+        //let zapper = ClientZapper.webln()
+        let client = new ClientBuilder().signer(this.signer).build();
 
         for (const relay of store.state.relays){
                  await client.addRelay(relay);
