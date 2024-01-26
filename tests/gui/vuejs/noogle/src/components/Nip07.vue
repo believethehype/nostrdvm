@@ -69,11 +69,11 @@ export default {
     async sign_in_anon() {
       try {
          await loadWasmAsync();
-         try {
+         /*try {
             initLogger(LogLevel.debug());
         } catch (error) {
             console.log(error);
-        }
+        }*/
 
         let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
         this.signer = ClientSigner.keys(keys) //TODO store keys
@@ -116,11 +116,11 @@ export default {
 
         await loadWasmAsync();
 
-             try {
+          /*   try {
                 initLogger(LogLevel.debug());
             } catch (error) {
                 console.log(error);
-            }
+            } */
 
         let nip07_signer = new Nip07Signer();
             try{
@@ -171,12 +171,9 @@ export default {
 
         let signer = ClientSigner.keys(keys) //TODO store keys
         let client = new ClientBuilder().signer(signer).build()
-        //await client.addRelay("wss://nos.lol");
-        await client.addRelay("wss://relay.f7z.io")
-        await client.addRelay("wss://pablof7z.nostr1.com")
-        //await client.addRelay("wss://relay.nostr.net")
-        await client.addRelay("wss://relay.nostr.band");
-        //await client.addRelay("wss://nostr-pub.wellorder.net")
+        for (const relay of store.state.relays){
+           await client.addRelay(relay);
+        }
         await client.connect();
 
         let dvmkinds = []
@@ -204,11 +201,11 @@ export default {
                         jsonentry.image = jsonentry.picture
                       }
                       jsonentry.event = entry.asJson()
-                    jsonentry.kind = entry.tags[tag].asVec()[1]
-                   nip89dvms.push(jsonentry);
+                      jsonentry.kind = entry.tags[tag].asVec()[1]
+                      nip89dvms.push(jsonentry);
                 }
                 catch (error){
-                  console.log(error)
+                  //console.log(error)
                 }
 
               }

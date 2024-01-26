@@ -54,7 +54,8 @@ async function generate_image(message) {
 
         let evt = new EventBuilder(5100, "NIP 90 Image Generation request", tags)
         let res = await client.sendEventBuilder(evt)
-        store.commit('set_current_request_id', res.toHex())
+        store.commit('set_current_request_id_image', res.toHex())
+        console.log("IMAGE EVENT SENT: " + res.toHex())
 
         //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         searching = true
@@ -65,9 +66,6 @@ async function generate_image(message) {
         else{
           console.log("Already has event listener")
         }
-
-        console.log(res)
-
 
       } catch (error) {
         console.log(error);
@@ -94,9 +92,9 @@ async function  listen() {
            let resonsetorequest = false
            for (let tag in event.tags) {
             if (event.tags[tag].asVec()[0] === "e") {
-              console.log("ETAG: " + event.tags[tag].asVec()[1])
-              console.log("LISTEN TO : " + store.state.requestid)
-              if (event.tags[tag].asVec()[1] ===  store.state.requestid) {
+              console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
+              console.log("IMAGE LISTEN TO : " + store.state.requestidImage)
+              if (event.tags[tag].asVec()[1] ===  store.state.requestidImage) {
                 resonsetorequest = true
               }
             }
@@ -315,7 +313,7 @@ defineProps({
 
         <div className="card-body">
           <h2 className="card-title">{{ dvm.name }}</h2>
-          <h3 >{{ dvm.about }}</h3>
+          <h3 class="fa-cut" >{{ dvm.about }}</h3>
 
 
 

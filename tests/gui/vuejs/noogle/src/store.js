@@ -8,13 +8,14 @@ const store = createStore({
       test: "hello",
       client: Client,
       pubkey: PublicKey,
-      requestid: String,
+      requestidSearch: String,
+      requestidImage: String,
       hasEventListener: false,
       imagehasEventListener: false,
       imagedvmreplies: [],
       nip89dvms: [],
       results:  [],
-      relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://relay.f7z.io", "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://relay.nostr.net", "wss://relay.nostr.band", "wss://nostr-pub.wellorder.net"],
+      relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://relay.nostr.net", "wss://relay.nostr.band", "wss://nostr-pub.wellorder.net"],
     }
   },
   mutations: {
@@ -37,8 +38,11 @@ const store = createStore({
       state.nip89dvms.length = 0
       state.nip89dvms.push.apply(state.nip89dvms, nip89dvms)
     },
-    set_current_request_id(state, requestid){
-       state.requestid = requestid
+    set_current_request_id_search(state, requestid){
+       state.requestidSearch = requestid
+    },
+    set_current_request_id_image(state, requestid){
+       state.requestidImage = requestid
     },
     set_search_results(state, results){
       state.results.length = 0
