@@ -177,7 +177,7 @@ cache/
 cookies_snapshot/satoshi2077@protonmail.com.json
 Todo.md
 tests/gui/svelte/node_modules
-tests/gui/vuejs/noogle/node_modules
-tests/gui/vuejs/noogle/.idea/
-tests/gui/vuejs/noogle/package-lock.json
+ui/noogle/node_modules
+ui/noogle/.idea/
+ui/noogle/package-lock.json
 search.py
