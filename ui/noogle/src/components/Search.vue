@@ -9,7 +9,7 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event
+  Nip19Event, Alphabet
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -73,7 +73,9 @@ async function send_search_request(message) {
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
         let res = await client.sendEventBuilder(evt)
         let requestid = res.toHex()
+        console.log("STORE: " +store.state.requestidSearch)
         store.commit('set_current_request_id_search', requestid)
+        console.log("STORE AFTER: " + store.state.requestidSearch)
 
 
         //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
@@ -127,6 +129,7 @@ async function  listen() {
     listener = true
     let client = store.state.client
     let pubkey = store.state.pubkey
+    let originale = [store.state.requestidSearch]
 
     const filter = new Filter().kinds([7000, 6302]).pubkey(pubkey).since(Timestamp.now());
     await client.subscribe([filter]);
@@ -137,23 +140,27 @@ async function  listen() {
               if (store.state.hasEventListener === false){
                 return true
               }
-            const dvmname =  getNamefromId(event.author.toHex())
+            //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
             let resonsetorequest = false
-            for (let tag in event.tags) {
-              if (event.tags[tag].asVec()[0] === "e") {
-                 console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
-                 console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
-                //if (event.tags[tag].asVec()[1] === store.state.requestidSearch) {
-                  resonsetorequest = true
-                //}
+
+            sleep(500).then(async () => {
+
+              for (let tag in event.tags) {
+                if (event.tags[tag].asVec()[0] === "e") {
+                  console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
+                  console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
+                  if (event.tags[tag].asVec()[1] === store.state.requestidSearch) {
+                    resonsetorequest = true
+                  }
+                }
+
               }
 
-            }
-          if(resonsetorequest){
+              if (resonsetorequest) {
 
-            if (event.kind === 7000) {
-              try {
+                if (event.kind === 7000) {
+                  try {
                     console.log("7000: ", event.content);
                     console.log("DVM: " + event.author.toHex())
                     searching = false
@@ -195,7 +202,6 @@ async function  listen() {
                         jsonentry.name = el.name
                         jsonentry.about = event.content
                         jsonentry.image = el.image
-
                         console.log(jsonentry)
 
                       }
@@ -204,9 +210,8 @@ async function  listen() {
                       dvms.push(jsonentry)
                     }
 
-
                     dvms.find(i => i.id === jsonentry.id).status = status
-                    if(status === "error"){
+                    if (status === "error") {
                       const index = dvms.indexOf((dvms.find(i => i.id === event.author.toHex())));
                       if (index > -1) {
                         dvms.splice(index, 1);
@@ -214,80 +219,77 @@ async function  listen() {
                     }
 
                     store.commit('set_active_search_dvms', dvms)
-
+                    console.log(store.state.activesearchdvms)
 
                   } catch (error) {
                     console.log("Error: ", error);
                   }
-
-
                 }
 
+                else if (event.kind === 6302) {
+                  let entries = []
+                  console.log("6302:", event.content);
+
+                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
+                  let event_etags = JSON.parse(event.content)
+                  if (event_etags.length > 0) {
+                    for (let etag of event_etags) {
+                      const eventid = EventId.fromHex(etag[1])
+                      entries.push(eventid)
+                    }
+                    const events = await getEvents(entries)
+                    let authors = []
+                    for (const evt of events) {
+                      authors.push(evt.author)
+                    }
+                    if (authors.length > 0) {
+                      let profiles = await get_user_infos(authors)
+                      for (const evt of events) {
+                        let p = profiles.find(record => record.author === evt.author.toHex())
+                        let bech32id = evt.id.toBech32()
+                        let nip19 = new Nip19Event(event.id, event.author, store.state.relays)
+                        let nip19bech32 = nip19.toBech32()
+                        let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
+                        let name = p === undefined ? bech32id : p["profile"]["name"]
+                        let highlighterurl = "https://highlighter.com/a/" + bech32id
+                        let njumpurl = "https://njump.me/" + bech32id
+                        let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
+                        let uri = "nostr:" + bech32id //  nip19.toNostrUri()
+
+                        if (items.find(e => e.id.toHex() === evt.id.toHex()) === undefined) {
+                          items.push({
+                            id: evt.id,
+                            content: evt.content,
+                            author: name,
+                            authorurl: "https://njump.me/" + evt.author.toBech32(),
+                            links: {
+                              "uri": uri,
+                              "highlighter": highlighterurl,
+                              "njump": njumpurl,
+                              "nostrudel": nostrudelurl
+                            },
+                            avatar: picture,
+                            indicator: {"time": evt.createdAt.toHumanDatetime()}
+                          })
+                        }
 
 
-
-
-
-
-
-             /*   try {
-                    console.log("7000: ", event.content);
-                    console.log("DVM: " + event.author.toHex())
-
-
-                    miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
-                } catch (error) {
-                    console.log("Error: ", error);
-                } */
-
-            else if(event.kind === 6302) {
-              let entries = []
-              console.log("6302:", event.content);
-
-              //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
-               let event_etags = JSON.parse(event.content)
-                for (let etag of event_etags){
-                  const eventid = EventId.fromHex(etag[1])
-                  entries.push(eventid)
-                }
-                const events = await getEvents(entries)
-                let authors = []
-                for (const evt of events){
-                    authors.push(evt.author)
-                }
-             let profiles = await get_user_infos(authors)
-
-
-              for (const evt of events){
-                     let p = profiles.find( record => record.author === evt.author.toHex())
-                      let bech32id = evt.id.toBech32()
-                      let nip19 = new Nip19Event(event.id, event.author, store.state.relays)
-                      let nip19bech32 = nip19.toBech32()
-                      let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
-                      let name = p === undefined ? bech32id : p["profile"]["name"]
-                      let highlighterurl = "https://highlighter.com/a/" + bech32id
-                      let njumpurl = "https://njump.me/" + bech32id
-                      let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
-                      let uri =  "nostr:" + bech32id //  nip19.toNostrUri()
-
-                      if (items.find(e => e.id.toHex() === evt.id.toHex())  === undefined) {
-                          items.push({id:evt.id,  content: evt.content, author: name, authorurl: "https://njump.me/" + evt.author.toBech32(), links: {"uri": uri, "highlighter": highlighterurl, "njump": njumpurl, "nostrudel": nostrudelurl} , avatar: picture,  indicator: {"time": evt.createdAt.toHumanDatetime()}})
                       }
+                    }
+                  }
 
 
+                  const index = dvms.indexOf((dvms.find(i => i.id === event.author.toHex())));
+                  if (index > -1) {
+                    dvms.splice(index, 1);
+                  }
+
+                  store.commit('set_active_search_dvms', dvms)
+                  console.log("Events from" + event.author.toHex())
+                  store.commit('set_search_results', items)
                 }
-
-                const index = dvms.indexOf((dvms.find(i => i.id === event.author.toHex())));
-                if (index > -1) {
-                  dvms.splice(index, 1);
-                }
-
-                store.commit('set_active_search_dvms', dvms)
-               console.log("Events from" + event.author.toHex())
-               console.log(items)
-               store.commit('set_search_results', items)
-            }
               }
+            })
         },
         // Handle relay message
         handleMsg: async (relayUrl, message) => {
@@ -326,49 +328,41 @@ defineProps({
 
 
 <template>
-
-  <div class="greetings">
-    <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
-    <br>
-    <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
-    <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin">
-    Search the Nostr with Data Vending Machines</h2>
-    <h3>
-     <br>
-     <input class="c-Input" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
-     <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
-    </h3>
-  </div>
-  <div class="max-w-5xl relative space-y-3">
-
-    <div class="grid grid-cols-1 gap-6">
+    <div class="greetings">
+      <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
+      <br>
+      <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
+      <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin">
+      Search the Nostr with Data Vending Machines</h2>
+      <h3>
+       <br>
+       <input class="c-Input" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
+       <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
+      </h3>
+    </div>
+    <div class="max-w-5xl relative space-y-3">
+      <div class="grid grid-cols-1 gap-6">
         <div className="card w-30 h-60 bg-base-100 shadow-xl"  v-for="dvm in store.state.activesearchdvms"
-            :key="dvm.name">
-           <div className="card-body">
-        <div class="grid grid-cols-2 gap-6">
+                  :key="dvm.name">
+                 <div className="card-body">
+                <div class="grid grid-cols-2 gap-6">
 
-          <div className="col-end-1">
-             <h2 className="card-title">{{ dvm.name }}</h2>
+                <div className="col-end-1">
+                  <h2 className="card-title">{{ dvm.name }}</h2>
+                  <figure v-if="dvm.image!==''" className="w-40"><img className="h-30" :src="dvm.image" alt="DVM Picture" /></figure>
+                </div>
 
-            <figure v-if="dvm.image!=''" className="w-40"><img className="h-30" :src="dvm.image" alt="DVM Picture" /></figure>
-          </div>
-
-          <div className="col-end-2 w-auto">
-              <p >  {{ dvm.about }}</p>
-
-             <div><br>
-             <span className="loading loading-dots loading-lg"  ></span>
-          </div>
-
-
-
+                <div className="col-end-2 w-auto">
+                    <p>{{ dvm.about }}</p>
+                   <div><br>
+                   <span className="loading loading-dots loading-lg" ></span>
+                </div>
+                </div>
             </div>
           </div>
         </div>
-          <br>
       </div>
     </div>
-</div>
 
 </template>
 

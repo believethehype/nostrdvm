@@ -32,7 +32,9 @@ let listener = false
 
 
 
-
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
 async function generate_image(message) {
 
    try {
@@ -90,22 +92,21 @@ async function  listen() {
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
            let resonsetorequest = false
-           for (let tag in event.tags) {
-            if (event.tags[tag].asVec()[0] === "e") {
-              console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
-              console.log("IMAGE LISTEN TO : " + store.state.requestidImage)
-              if (event.tags[tag].asVec()[1] ===  store.state.requestidImage) {
-                resonsetorequest = true
+            sleep(500).then(async () => {
+              for (let tag in event.tags) {
+                if (event.tags[tag].asVec()[0] === "e") {
+                  console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
+                  console.log("IMAGE LISTEN TO : " + store.state.requestidImage)
+                  if (event.tags[tag].asVec()[1] === store.state.requestidImage) {
+                    resonsetorequest = true
+                  }
+                }
+
               }
-            }
-
-          }
-          if (resonsetorequest === true) {
+              if (resonsetorequest === true) {
 
 
-
-           if (event.kind === 7000) {
-
+                if (event.kind === 7000) {
 
 
                   try {
@@ -167,19 +168,17 @@ async function  listen() {
                   }
 
 
+                } else if (event.kind === 6100) {
+                  let entries = []
+                  console.log("6100:", event.content);
+
+                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
+                  dvms.find(i => i.id === event.author.toHex()).result = event.content
+                  dvms.find(i => i.id === event.author.toHex()).status = "finished"
+                  store.commit('set_imagedvm_results', dvms)
                 }
-
-
-           else if(event.kind === 6100) {
-              let entries = []
-              console.log("6100:", event.content);
-
-              //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
-              dvms.find(i => i.id === event.author.toHex()).result = event.content
-              dvms.find(i => i.id === event.author.toHex()).status = "finished"
-              store.commit('set_imagedvm_results', dvms)
-            }
-           }
+              }
+            })
         },
         // Handle relay message
         handleMsg: async (relayUrl, message) => {
