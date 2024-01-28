@@ -30,7 +30,7 @@ import {
   Filter,
   initLogger,
   LogLevel,
-  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet
+  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet, SingleLetterTag
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -182,7 +182,7 @@ export default {
         }
         //console.log(dvmkinds)
 
-        const filter = new Filter().kind(31990).customTag(Alphabet.K, dvmkinds)
+        const filter = new Filter().kind(31990).customTag(SingleLetterTag.lowercase(Alphabet.K), dvmkinds)
         //await client.reconcile(filter);
         //const filterl = new Filter().kind(31990)
         //let evts = await client.database.query([filterl])
