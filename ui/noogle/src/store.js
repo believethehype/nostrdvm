@@ -22,7 +22,8 @@ const store = createStore({
         "wss://pablof7z.nostr1.com",
         "wss://relay.nostr.net",
         "wss://relay.nostr.band",
-        "wss://nostr-pub.wellorder.net"],
+        //"wss://nostr-pub.wellorder.net",
+      ],
     }
   },
   mutations: {

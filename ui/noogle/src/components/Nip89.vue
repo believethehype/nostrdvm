@@ -5,7 +5,7 @@
 import {
   ClientSigner,
   Filter,
-  Keys, ClientBuilder, Alphabet
+  Keys, ClientBuilder, Alphabet, SingleLetterTag
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -49,7 +49,7 @@ export default {
         }
 
 
-        const filter = new Filter().kind(31990).customTag(Alphabet.K, dvmkinds)
+        const filter = new Filter().kind(31990).customTag(SingleLetterTag.lowercase(Alphabet.K), dvmkinds)
         //await client.reconcile(filter);
         //const filterl = new Filter().kind(31990)
         //let evts = await client.database.query([filterl])
