@@ -144,7 +144,7 @@ async function  listen() {
             console.log("Received new event from", relayUrl);
             let resonsetorequest = false
 
-            sleep(500).then(async () => {
+            sleep(1000).then(async () => {
 
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
@@ -345,14 +345,14 @@ defineProps({
         <div className="card w-30 h-60 bg-base-100 shadow-xl"  v-for="dvm in store.state.activesearchdvms"
                   :key="dvm.name">
                  <div className="card-body">
-                <div class="grid grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 gap-6">
 
                 <div className="col-end-1">
                   <h2 className="card-title">{{ dvm.name }}</h2>
                   <figure v-if="dvm.image!==''" className="w-40"><img className="h-30" :src="dvm.image" alt="DVM Picture" /></figure>
                 </div>
 
-                <div className="col-end-2 w-auto">
+                <div className="col-end-2 w-auto card-body">
                     <p>{{ dvm.about }}</p>
                    <div><br>
                    <span className="loading loading-dots loading-lg" ></span>

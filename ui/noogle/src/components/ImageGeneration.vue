@@ -92,7 +92,7 @@ async function  listen() {
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
            let resonsetorequest = false
-            sleep(500).then(async () => {
+            sleep(1000).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
                   console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
@@ -300,12 +300,100 @@ defineProps({
   <br>
 
   <div class="max-w-5xl relative space-y-3">
-    <div class="grid grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 gap-6">
+        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.imagedvmreplies"
+            :key="dvm.id">
+
+
+
+
+        <div className="card-body">
+
+<div className="playeauthor-wrapper">
+  <figure  className="w-20">
+       <img className="avatar" :src="dvm.image"  alt="DVM Picture" />
+  </figure>
+
+
+          <h2 className="card-title">{{ dvm.name }}</h2>
+  </div>
+          <h3 class="fa-cut" >{{ dvm.about }}</h3>
+
+
+
+          <div className="card-actions justify-end mt-auto" >
+
+              <div className="tooltip mt-auto" :data-tip="dvm.status">
+
+
+                <button v-if="dvm.status === 'processing'" className="btn">Processing</button>
+                <button v-if="dvm.status === 'finished'" className="btn">Done</button>
+                <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
+                <button v-if="dvm.status === 'error'" className="btn">Error</button>
+                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
+
+
+          </div>
+
+        </div>
+            <figure className="w-full" >
+            <img  v-if="dvm.result" :src="dvm.result"  className="tooltip" data-top='Click to copy url'height="200" alt="DVM Picture" @click="copyurl(dvm.result)"/>
+           </figure>
+           </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!--  <div class="grid grid-cols-1 gap-6">
+        <div className="card h-60 bg-base-100 shadow-xl gap-6"  v-for="dvm in store.state.imagedvmreplies"
+                  :key="dvm.name">
+                 <div className="card-body">
+                <div class="grid grid-cols-5 gap-6">
+
+                <div className="col-end-1">
+                  <h2 className="card-title">{{ dvm.name }}</h2>
+                  <figure v-if="dvm.image!==''" className="w-40"><img className="h-30" :src="dvm.image" alt="DVM Picture" /></figure>
+                </div>
+
+                <div className="col-span-2">
+                 <h3>{{ dvm.about }}</h3>
+                   <div>
+
+
+                   </div>
+                       </div>
+              <div className="mt-auto col-end-4" :data-tip="dvm.card ">
+
+
+                <button v-if="dvm.status === 'processing'" className="btn">Processing</button>
+                <button v-if="dvm.status === 'finished'" className="btn">Done</button>
+                <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
+                <button v-if="dvm.status === 'error'" className="btn">Error</button>
+                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
+
+
+          </div>
+                  <div className="mt-auto col-end-6" :data-tip="dvm.card ">
+                    <figure v-if="dvm.result!==''" className="w-40"><img className="h-30" :src="dvm.result" alt="DVM Result"  @click="copyurl(dvm.result)" /></figure>
+
+
+          </div>
+
+
+
+
+            </div>
+          </div>
+        </div>
+
+
+
+   <div class="grid grid-cols-2 gap-6">
         <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.imagedvmreplies"
             :key="dvm.id">
 
         <figure class="w-full">
-          <img v-if="dvm.result" :src="dvm.result" height="200" alt="DVM Picture"  @click="copyurl(dvm.result)"/>
           <img v-if="!dvm.result" :src="dvm.image" height="200" alt="DVM Picture" />
         </figure>
 
@@ -335,15 +423,15 @@ defineProps({
           <br>
       </div>
     </div>
-  </div>
 
 
+        </div>-->
 </template>
 
 <style scoped>
 
 .zap-Button{
-  @apply btn hover:bg-amber-400;
+  @apply btn hover:bg-amber-400 border-amber-400 text-white;
   bottom: 0;
 }
 
@@ -362,6 +450,13 @@ defineProps({
   background: black;
 }
 
+.playeauthor-wrapper {
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-items: center;
+}
+
 .logo {
      display: flex;
     width:100%;
@@ -376,6 +471,16 @@ h3 {
 }
 
 
+.avatar {
+  margin-right: 10px;
+  margin-left: 0px;
+  display: inline-block;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: inset 0 4px 4px 0 rgb(0 0 0 / 10%);
+}
 
 .greetings h1,
 .greetings h3 {
