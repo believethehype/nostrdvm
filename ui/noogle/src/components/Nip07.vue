@@ -30,7 +30,7 @@ import {
   Filter,
   initLogger,
   LogLevel,
-  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet, SingleLetterTag
+  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet, SingleLetterTag, Options, Duration
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -77,7 +77,8 @@ export default {
 
         let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
         this.signer = ClientSigner.keys(keys) //TODO store keys
-        let client = new ClientBuilder().signer(this.signer).build()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+        let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
         for (const relay of store.state.relays){
            await client.addRelay(relay);
@@ -133,7 +134,9 @@ export default {
           }
 
         //let zapper = ClientZapper.webln()
-        let client = new ClientBuilder().signer(this.signer).build();
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+        let client = new ClientBuilder().signer(this.signer).opts(opts).build()
+
 
         for (const relay of store.state.relays){
                  await client.addRelay(relay);

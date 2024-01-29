@@ -16,13 +16,12 @@ const store = createStore({
       nip89dvms: [],
       activesearchdvms: [],
       results:  [],
-      relays: [
-          //"wss://relay.damus.io",
+      relays: ["wss://relay.damus.io",
         "wss://nos.lol",
         "wss://pablof7z.nostr1.com",
         "wss://relay.nostr.net",
         "wss://relay.nostr.band",
-        //"wss://nostr-pub.wellorder.net",
+        "wss://nostr-pub.wellorder.net",
       ],
     }
   },
