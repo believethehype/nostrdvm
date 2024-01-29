@@ -356,7 +356,7 @@ defineProps({
       Search the Nostr with Data Vending Machines</h2>
       <h3>
        <br>
-       <input class="c-Input" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
+       <input class="c-Input" type="search" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
        <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
       </h3>
      <!-- <div class="collapse bg-base-200">
