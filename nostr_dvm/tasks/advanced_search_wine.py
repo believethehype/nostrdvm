@@ -104,9 +104,9 @@ class AdvancedSearchWine(DVMTaskInterface):
 
         print("Sending job to Server")
         if options["users"]:
-            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0] + "&limit=100")
+            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0] + "&limit=100" + "&sort=time")
         else:
-            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + "&limit=100")
+            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + "&limit=100" + "&sort=time")
 
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
         response = requests.get(url, headers=headers)
