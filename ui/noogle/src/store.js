@@ -21,7 +21,7 @@ const store = createStore({
         "wss://nos.lol",
         "wss://pablof7z.nostr1.com",
         "wss://relay.nostr.net",
-        "wss://relay.nostr.band",
+        //"wss://relay.nostr.band",
         //"wss://nostr-pub.wellorder.net",
       ],
     }

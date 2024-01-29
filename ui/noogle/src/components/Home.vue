@@ -13,6 +13,8 @@ export default {
 </script>
 
 <template>
+
+
   <div class="center">
     <br>
     <Search/>
