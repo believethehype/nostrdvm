@@ -29,8 +29,8 @@ const message = ref("");
 
 onMounted(async () => {
   let urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('search')) {
-    message.value = urlParams.get('search')
+  if (urlParams.has('q')) {
+    message.value = urlParams.get('q')
     await sleep(1000)
     await send_search_request(message.value)
   }
@@ -348,6 +348,7 @@ defineProps({
 
 
 <template>
+
     <div class="greetings">
       <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
       <br>
@@ -356,7 +357,7 @@ defineProps({
       Search the Nostr with Data Vending Machines</h2>
       <h3>
        <br>
-       <input class="c-Input" type="search" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
+       <input class="c-Input" type="search" name="s" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
        <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
       </h3>
      <!-- <div class="collapse bg-base-200">

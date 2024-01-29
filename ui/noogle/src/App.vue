@@ -6,6 +6,7 @@ import Nip07 from "@/components/Nip07.vue";
 </script>
 
 <template>
+  <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="Noogle Search" />
 
 
   <main>
