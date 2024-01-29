@@ -1,8 +1,6 @@
 <script setup>
 
 
-
-
 import {
   Client,
   Filter,
@@ -13,27 +11,38 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event, Alphabet
+  Nip19Event, Alphabet, Keys
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 import searchdvms from './data/searchdvms.json'
-import {computed, watch} from "vue";
+import {computed, defineEmits, watch} from "vue";
 import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";
+import Newnote from "@/components/Newnote.vue";
 
 let dvms =[]
 let searching = false
 
 let listener = false
 
-
+function showDetails(user) {
+   this.$bvModal.show("modal-details");
+   this.modalData = user;
+}
 
 const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+
+async function post_note(note){
+   let client = store.state.client
+   await client.publishTextNote(note, []);
+
 }
 async function generate_image(message) {
 
@@ -275,6 +284,25 @@ defineProps({
   },
 })
 
+import { ref } from "vue";
+import ModalComponent from "../components/Newnote.vue";
+
+const isModalOpened = ref(false);
+const modalcontent = ref("");
+
+const openModal = result => {
+  isModalOpened.value = true;
+  modalcontent.value = result
+};
+const closeModal = () => {
+  isModalOpened.value = false;
+};
+
+const submitHandler = async () => {
+  console.log("hello")
+  await post_note(modalcontent)
+}
+
 
 
 </script>
@@ -299,8 +327,17 @@ defineProps({
   </div>
   <br>
 
+
+          <ModalComponent :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
+            <template #header>Share your creation on Nostr  <br> <br></template>
+
+            <template #content><textarea  v-model="modalcontent" className="c-Input" style="width: 400px; height: 300px;">{{modalcontent}}</textarea></template>
+            <template #footer><button className="v-Button" @click="post_note(modalcontent)"  @click.stop="closeModal">Create Note</button></template>
+          </ModalComponent>
+
   <div class="max-w-5xl relative space-y-3">
     <div class="grid grid-cols-1 gap-6">
+
         <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.imagedvmreplies"
             :key="dvm.id">
 
@@ -337,8 +374,22 @@ defineProps({
 
         </div>
             <figure className="w-full" >
-            <img  v-if="dvm.result" :src="dvm.result"  className="tooltip" data-top='Click to copy url'height="200" alt="DVM Picture" @click="copyurl(dvm.result)"/>
+            <img  v-if="dvm.result" :src="dvm.result"  className="tooltip" data-top='Click to copy url' height="200" alt="DVM Picture" @click="copyurl(dvm.result)"/>
            </figure>
+           <div  v-if="dvm.result && store.state.pubkey.toHex() !== Keys.fromSkStr('ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e').publicKey.toHex()" >
+                 <button @click="openModal('Look what I created on noogle.lol\n\n' +  dvm.result)"  class="w-8 h-8 rounded-full bg-nostr border-white border-1 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black tooltip" data-top='Share' aria-label="make note" role="button">
+                                    <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-pencil" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z"></path>
+                                        <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4"></path>
+                                        <line x1="13.5" y1="6.5" x2="17.5" y2="10.5"></line>
+                                    </svg>
+                               </button>
+
+
+         <!-- <button  class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-100 dark:text-gray-800 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black" aria-label="edit note" role="button">
+            <svg class="icon icon-tabler icon-tabler-pencil"  width="20" height="20"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="1.5"  stroke-linecap="round"  stroke-linejoin="round">  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg></button>
+ -->
+          </div>
            </div>
 
       </div>
