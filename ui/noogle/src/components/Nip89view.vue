@@ -1,28 +1,46 @@
 <template>
 
-  <div class="max-w-5xl relative space-y-3">
-    <div v-if="store.state.nip89dvms.length === 0">
-      <p>Loading Nip89s.. </p>
-       <span className="loading loading-dots loading-lg"  ></span>
-    </div>
-    <div class="grid grid-cols-2 gap-6">
-        <div className="card w-70 bg-base-100 shadow-xl"  v-for="dvm in store.state.nip89dvms"
-            :key="dvm.name">
-        <figure><img :src="dvm.image" alt="DVM Picture" /></figure>
+    <div class="max-w-5xl relative space-y-3">
+    <div class="grid grid-cols-1 gap-6">
+
+        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.nip89dvms"
+            :key="dvm.id">
+
+
+
+
         <div className="card-body">
+
+<div className="playeauthor-wrapper">
+  <figure  className="w-20">
+       <img className="avatar" :src="dvm.image"  alt="DVM Picture" />
+  </figure>
+
+
           <h2 className="card-title">{{ dvm.name }}</h2>
-          <p>  {{ dvm.about }}</p>
-           <p>Kind: {{ dvm.kind }}</p>
-          <div className="card-actions justify-end">
+  </div>
+          <h3 class="fa-cut" >{{ dvm.about }}</h3>
+
+
+
+          <div className="card-actions justify-end mt-auto" >
+
+             <div className="card-actions justify-end">
         <div className="tooltip" :data-tip="dvm.event">
          <button className="btn" @click="copyDoiToClipboard(dvm.event);">Copy Event</button>
         </div>
-          </div>
+
         </div>
-          <br>
+
+           </div>
+
       </div>
-    </div>
+
   </div>
+
+  </div>
+  </div>
+
 
 </template>
 
@@ -42,6 +60,9 @@ import deadnip89s from './data/deadnip89s.json'
 
 export default {
   computed: {
+    Keys() {
+      return Keys
+    },
     store() {
       return store
     }

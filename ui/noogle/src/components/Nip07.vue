@@ -1,4 +1,5 @@
 <template>
+
   <div>
      <div class="playeauthor-wrapper" v-if="current_user">
         <img class="avatar" @click="sign_out()" :src="this.avatar" alt="" />
@@ -38,15 +39,24 @@ import Nip89 from "@/components/Nip89.vue";
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
 let nip89dvms = []
+let logger = false
 export default {
    data() {
     return {
       current_user: "",
       avatar: "",
       signer: "",
+      isdark: JSON.parse(localStorage.getItem('isdark')) || false,
 
     };
   },
+  watch: {
+    isdark: function (newVal) {
+      localStorage.setItem('isdark', JSON.stringify(newVal));
+    },
+  },
+
+
   async mounted() {
      try{
         if (localStorage.getItem('nostr-key-method') === 'nip07')
@@ -66,13 +76,18 @@ export default {
   },
 
   methods: {
+     handleCheckboxChange() {
+      this.isdark = !this.isdark;
+    },
     async sign_in_anon() {
       try {
          await loadWasmAsync();
-         try {
-            initLogger(LogLevel.debug());
-        } catch (error) {
-            console.log(error);
+       if(logger){
+            try {
+                initLogger(LogLevel.debug());
+            } catch (error) {
+                console.log(error);
+            }
         }
 
         let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
@@ -117,16 +132,20 @@ export default {
 
         await loadWasmAsync();
 
+        if(logger){
             try {
                 initLogger(LogLevel.debug());
             } catch (error) {
                 console.log(error);
             }
+        }
+
 
         let nip07_signer = new Nip07Signer();
             try{
               this.signer = ClientSigner.nip07(nip07_signer);
               console.log("SIGNER: " + this.signer)
+
 
             } catch (error) {
             console.log(error);

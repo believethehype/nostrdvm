@@ -16,12 +16,13 @@ const store = createStore({
       nip89dvms: [],
       activesearchdvms: [],
       results:  [],
-      relays: ["wss://relay.damus.io",
+      relays: [
+          //"wss://relay.damus.io",
         "wss://nos.lol",
         "wss://pablof7z.nostr1.com",
         "wss://relay.nostr.net",
         "wss://relay.nostr.band",
-        "wss://nostr-pub.wellorder.net",
+        //"wss://nostr-pub.wellorder.net",
       ],
     }
   },
@@ -43,11 +44,11 @@ const store = createStore({
     },
     set_nip89dvms(state, nip89dvms) {
       state.nip89dvms.length = 0
-      console.log(nip89dvms)
+      //console.log(nip89dvms)
          let nip89dvmssorted =  nip89dvms.sort(function(a, b) {
           return a.createdAt - b.createdAt;
       });
-      console.log(nip89dvmssorted)
+      //console.log(nip89dvmssorted)
       state.nip89dvms.push.apply(state.nip89dvms, nip89dvmssorted)
     },
     set_current_request_id_search(state, requestid){

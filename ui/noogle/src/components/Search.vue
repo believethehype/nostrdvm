@@ -15,22 +15,42 @@ import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 import searchdvms from './data/searchdvms.json'
-import {computed} from "vue";
+import {computed, onMounted, ref} from "vue";
 import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
+import Nip07 from "@/components/Nip07.vue";
 
 let items = []
 let dvms =[]
 let listener = false
 let searching = false
 
+const message = ref("");
+
+onMounted(async () => {
+  let urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('search')) {
+    message.value = urlParams.get('search')
+    await sleep(1000)
+    await send_search_request(message.value)
+  }
+})
+
+
+   // console.log(urlParams.has('search')); // true
+   // console.log(urlParams.get('search')); // "MyParam"
 
 
 
-async function send_search_request(message) {
+
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function send_search_request(msg) {
    try {
-     if (message === undefined){
-       message = "Nostr"
+     if (msg === undefined){
+       msg = "Nostr"
      }
 
      if(store.state.pubkey === undefined){
@@ -41,15 +61,16 @@ async function send_search_request(message) {
         dvms =[]
         store.commit('set_search_results', items)
         let client = store.state.client
+
         let tags = []
         let users = [];
 
-        const taggedUsersFrom = message.split(' ')
+        const taggedUsersFrom = msg.split(' ')
           .filter(word => word.startsWith('from:'))
           .map(word => word.replace('from:', ''));
 
         // search
-        let search = message;
+        let search = msg;
 
         // tags
 
@@ -63,14 +84,15 @@ async function send_search_request(message) {
           users.push(pTag.asVec());
         }
 
-        message = search.replace(/from:|to:|@/g, '').trim();
+        msg = search.replace(/from:|to:|@/g, '').trim();
         console.log(search);
 
-        tags.push(Tag.parse(["i", message, "text"]))
+        tags.push(Tag.parse(["i", msg, "text"]))
         tags.push(Tag.parse(["param", "max_results", "150"]))
         tags.push(Tag.parse(['param', 'users', JSON.stringify(users)]))
 
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
+
         let res = await client.sendEventBuilder(evt)
         let requestid = res.toHex()
         console.log("STORE: " +store.state.requestidSearch)
@@ -95,9 +117,7 @@ async function send_search_request(message) {
       }
 }
 
-const sleep = (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
+
 async function getEvents(eventids) {
   const event_filter = new Filter().ids(eventids)
   let client = store.state.client
@@ -339,6 +359,15 @@ defineProps({
        <input class="c-Input" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
        <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
       </h3>
+     <!-- <div class="collapse bg-base-200">
+  <input type="checkbox" />
+  <div class="collapse-title text-xl font-medium">
+    Click me to show/hide content
+  </div>
+  <div class="collapse-content">
+    <p>hello</p>
+  </div>
+</div>-->
     </div>
     <div class="max-w-5xl relative space-y-3">
       <div class="grid grid-cols-1 gap-6">
