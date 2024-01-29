@@ -331,7 +331,7 @@ const submitHandler = async () => {
           <ModalComponent :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
             <template #header>Share your creation on Nostr  <br> <br></template>
 
-            <template #content><textarea  v-model="modalcontent" className="c-Input" style="width: 400px; height: 300px;">{{modalcontent}}</textarea></template>
+            <template #content><textarea  v-model="modalcontent" className="d-Input" style="height: 300px;">{{modalcontent}}</textarea></template>
             <template #footer><button className="v-Button" @click="post_note(modalcontent)"  @click.stop="closeModal">Create Note</button></template>
           </ModalComponent>
 
@@ -497,6 +497,14 @@ const submitHandler = async () => {
 
   width: 350px;
   height: 48px;
+  color: white;
+  background: black;
+}
+
+.d-Input {
+    @apply bg-black hover:bg-gray-900 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+  width: 300px;
+
   color: white;
   background: black;
 }

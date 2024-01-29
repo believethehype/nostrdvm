@@ -47,8 +47,8 @@ onClickOutside(target, ()=>emit('modal-close'))
 }
 .modal-container {
   @apply bg-base-100;
-  width: 500px;
-  margin: 150px auto;
+  width: 400px;
+  margin: 200px auto;
   padding: 20px 30px;
   //background-color: #181818;
   border-radius: 2px;
