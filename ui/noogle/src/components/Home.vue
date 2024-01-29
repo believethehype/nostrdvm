@@ -8,6 +8,8 @@ export default {
   name: "Home",
   components: {Donate, Nip07, ResultsTable, Search}
 }
+
+
 </script>
 
 <template>
