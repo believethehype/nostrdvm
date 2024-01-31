@@ -5,7 +5,7 @@ import Donate from "@/components/Donate.vue";
 
 export default {
   name: "Home",
-  components: {Donate, Nip07, ResultsTable, ImageGeneration}
+  components: {Donate, Nip07, ImageGeneration}
 }
 </script>
 
