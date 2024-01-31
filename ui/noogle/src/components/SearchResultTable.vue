@@ -94,32 +94,32 @@ const headers: Header[] = [
   box-shadow: inset 0 4px 4px 0 rgb(0 0 0 / 10%);
 }
 .customize-table {
-
+  width: auto;
   --easy-table-border: 1px solid #000000;
   --easy-table-row-border: 1px solid #000000;
 
   --easy-table-header-font-size: 14px;
   --easy-table-header-height: 50px;
-  --easy-table-header-font-color: #c1cad4;
-  --easy-table-header-background-color: #242424;
+  --easy-table-header-font-color: bg-accent;
+  --easy-table-header-background-color: bg-base;
 
   --easy-table-header-item-padding: 10px 15px;
 
-  --easy-table-body-even-row-font-color: #fff;
-  --easy-table-body-even-row-background-color: #242424;
+  --easy-table-body-even-row-font-color: bg-accenet;
+  --easy-table-body-even-row-background-color: bg-base;
 
-  --easy-table-body-row-font-color: #c0c7d2;
-  --easy-table-body-row-background-color: #242424;
+  --easy-table-body-row-font-color: bg-accent;
+  --easy-table-body-row-background-color: bg-base;
   --easy-table-body-row-height: 50px;
   --easy-table-body-row-font-size: 14px;
 
-  --easy-table-body-row-hover-font-color: #FFFFFF;
-  --easy-table-body-row-hover-background-color: #242424;
+  --easy-table-body-row-hover-font-color: bg-accent;
+  --easy-table-body-row-hover-background-color: bg-base;
 
   --easy-table-body-item-padding: 10px 15px;
 
-  --easy-table-footer-background-color: #242424;
-  --easy-table-footer-font-color: #c0c7d2;
+  --easy-table-footer-background-color: bg-base;
+  --easy-table-footer-font-color: bg-accent;
   --easy-table-footer-font-size: 14px;
   --easy-table-footer-padding: 0px 10px;
   --easy-table-footer-height: 50px;

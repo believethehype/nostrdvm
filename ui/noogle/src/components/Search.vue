@@ -353,22 +353,21 @@ defineProps({
       <img alt="Nostr logo" class="logo" src="../assets/nostr-purple.svg" />
       <br>
       <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
-      <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin">
+      <h2 class="text-base-200-content text-center tracking-wide text-2xl">
       Search the Nostr with Data Vending Machines</h2>
       <h3>
        <br>
        <input class="c-Input" type="search" name="s" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
        <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
       </h3>
-     <!-- <div class="collapse bg-base-200">
-  <input type="checkbox" />
-  <div class="collapse-title text-xl font-medium">
-    Click me to show/hide content
-  </div>
+
+    <!--  <details class="collapse bg-base">
+  <summary class="collapse-title font-thin bg ">Advanced Settings</summary>
   <div class="collapse-content">
-    <p>hello</p>
+    <p>content</p>
   </div>
-</div>-->
+</details> -->
+
     </div>
     <div class="max-w-5xl relative space-y-3">
       <div class="grid grid-cols-1 gap-6">
@@ -405,12 +404,12 @@ defineProps({
 }
 
 .c-Input {
-    @apply bg-black hover:bg-gray-900 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+    @apply bg-base-200 text-accent dark:bg-black dark:text-white  focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-accent-content transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
 
   width: 350px;
   height: 48px;
-  color: white;
-  background: black;
+  //color: white;
+  //background: black;
 }
 
 .logo {
@@ -431,7 +430,7 @@ h3 {
 
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1000px) {
 
   .greetings h1,
   .greetings h3 {
