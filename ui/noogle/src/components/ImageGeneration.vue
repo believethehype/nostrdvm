@@ -307,7 +307,7 @@ const submitHandler = async () => {
 
 </script>
 
-
+<!--  font-thin bg-gradient-to-r from-white to-nostr bg-clip-text text-transparent -->
 
 <template>
 
@@ -316,7 +316,7 @@ const submitHandler = async () => {
     <br>
     <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
     <h1 class="text-7xl font-black tracking-wide">Image Generation</h1>
-    <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin">
+    <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
     Generate Images, the decentralized way</h2>
     <h3>
      <br>
@@ -482,7 +482,7 @@ const submitHandler = async () => {
 <style scoped>
 
 .zap-Button{
-  @apply btn hover:bg-amber-400 border-amber-400 text-white;
+  @apply btn hover:bg-amber-400 border-amber-400 text-accent-content;
   bottom: 0;
 }
 
@@ -493,12 +493,11 @@ const submitHandler = async () => {
 }
 
 .c-Input {
-    @apply bg-black hover:bg-gray-900 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+  @apply bg-base-200 text-accent dark:bg-black dark:text-white  focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-accent-content transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
 
   width: 350px;
   height: 48px;
-  color: white;
-  background: black;
+
 }
 
 .d-Input {
