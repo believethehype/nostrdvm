@@ -516,7 +516,7 @@ const submitHandler = async () => {
 <style scoped>
 
 .zap-Button{
-  @apply btn hover:bg-amber-400 border-amber-400 text-accent-content;
+  @apply btn hover:bg-amber-400 border-amber-400 text-base;
   bottom: 0;
 }
 
