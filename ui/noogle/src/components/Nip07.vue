@@ -34,6 +34,9 @@
           <h3 className="card-title">Nip07 Login</h3>
           <p>Use a Browser Nip07 Extension like getalby or nos2x to login</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
+         <template v-if="supports_android_signer">
+          <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
+        </template>
         </div>
       </div>
     </div>
@@ -51,13 +54,14 @@ import {
   Filter,
   initLogger,
   LogLevel,
-  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet, SingleLetterTag, Options, Duration
+  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet, SingleLetterTag, Options, Duration, PublicKey
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
 import Nip89 from "@/components/Nip89.vue";
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
+import amberSignerService from "./android-signer/AndroidSigner";
 import {useDark, useToggle} from "@vueuse/core";
 const isDark = useDark();
 //const toggleDark = useToggle(isDark);
@@ -72,12 +76,16 @@ export default {
       current_user: "",
       avatar: "",
       signer: "",
-
+      supports_android_signer: false,
     };
   },
 
   async mounted() {
      try{
+        if (amberSignerService.supported) {
+          this.supports_android_signer = true;
+        }
+        
         if (localStorage.getItem('nostr-key-method') === 'nip07')
         {
            await this.sign_in_nip07()
@@ -212,6 +220,47 @@ export default {
 
       } catch (error) {
         console.log(error);
+      }
+    },
+    async sign_in_amber() {
+      try {
+
+        await loadWasmAsync();
+
+        if(logger){
+            try {
+                initLogger(LogLevel.debug());
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        if (!amberSignerService.supported) {
+          alert("android signer not supported")
+          return;
+        }
+
+        const hexKey = await amberSignerService.getPublicKey();
+        let publicKey = PublicKey.fromHex(hexKey);
+        let keys = Keys.fromPublicKey(publicKey)
+        this.signer = ClientSigner.keys(keys)
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+        let client = new ClientBuilder().signer(this.signer).opts(opts).build()
+        for (const relay of store.state.relays){
+          await client.addRelay(relay);
+        }
+        await client.connect();
+        store.commit('set_client', client)
+        store.commit('set_pubkey', publicKey)
+        store.commit('set_hasEventListener', false)
+        localStorage.setItem('nostr-key-method', "android-signer")
+        localStorage.setItem('nostr-key', "")
+        await this.get_user_info(publicKey)
+
+        miniToastr.showMessage("Login successful!", "Logged in as " + publicKey.toHex(), VueNotifications.types.success)
+
+      } catch (error) {
+        alert(error);
       }
     },
     async getnip89s(){
