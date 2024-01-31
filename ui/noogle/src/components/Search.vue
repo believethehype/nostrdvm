@@ -408,8 +408,7 @@ defineProps({
 
   width: 350px;
   height: 48px;
-  //color: white;
-  //background: black;
+
 }
 
 .logo {
