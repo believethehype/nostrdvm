@@ -1,6 +1,5 @@
 <script>
 import ImageGeneration from "@/components/ImageGeneration.vue";
-import ResultsTable from "@/components/ImageResultTable.vue";
 import Nip07 from "@/components/Nip07.vue";
 import Donate from "@/components/Donate.vue";
 
