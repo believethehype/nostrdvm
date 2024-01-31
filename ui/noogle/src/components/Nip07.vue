@@ -79,7 +79,6 @@ export default {
       supports_android_signer: false,
     };
   },
-
   async mounted() {
      try{
         if (amberSignerService.supported) {
@@ -99,7 +98,6 @@ export default {
     catch (error){
        console.log(error);
     }
-
   },
 
   methods: {
@@ -257,10 +255,10 @@ export default {
         localStorage.setItem('nostr-key', "")
         await this.get_user_info(publicKey)
 
-        miniToastr.showMessage("Login successful!", "Logged in as " + publicKey.toHex(), VueNotifications.types.success)
+        //miniToastr.showMessage("Login successful!", "Logged in as " + publicKey.toHex(), VueNotifications.types.success)
 
       } catch (error) {
-        alert(error);
+        console.log(error);
       }
     },
     async getnip89s(){

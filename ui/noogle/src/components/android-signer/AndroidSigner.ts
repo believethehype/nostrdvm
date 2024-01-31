@@ -6,10 +6,10 @@ import { DraftNostrEvent, NostrEvent } from "./types/nostr-event";
 export function createGetPublicKeyIntent() {
   return `intent:#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=get_public_key;end`;
 }
-export function createSignEventIntent(draft: DraftNostrEvent) {
+export function createSignEventIntent(draft) {
   return `intent:${encodeURIComponent(
     JSON.stringify(draft),
-  )}#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=sign_event;end`;
+  )}#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=event;S.type=sign_event;end`;
 }
 export function createNip04EncryptIntent(pubkey: string, plainText: string) {
   return `intent:${encodeURIComponent(
@@ -71,14 +71,12 @@ async function getPublicKey() {
   throw new Error("Expected clipboard to have pubkey");
 }
 
-async function signEvent(draft: DraftNostrEvent & { pubkey: string }): Promise<NostrEvent> {
-  const draftWithId = { ...draft, id: draft.id || getEventHash(draft) };
-  const sig = await intentRequest(createSignEventIntent(draftWithId));
-  if (!isHex(sig)) throw new Error("Expected hex signature");
-
-  const event: NostrEvent = { ...draftWithId, sig };
-  if (!verifySignature(event)) throw new Error("Invalid signature");
-  return event;
+async function signEvent(draft): Promise<NostrEvent> {
+  const signedEventJson = await intentRequest(createSignEventIntent(draft));
+  const signedEvent = JSON.parse(signedEventJson) as NostrEvent;
+  
+  if (!verifySignature(signedEvent)) throw new Error("Invalid signature");
+  return signedEvent;
 }
 
 async function nip04Encrypt(pubkey: string, plaintext: string): Promise<string> {
