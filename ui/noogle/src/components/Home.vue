@@ -9,7 +9,6 @@ export default {
   components: {Donate, Nip07, ResultsTable, Search}
 }
 
-
 </script>
 
 <template>
