@@ -32,7 +32,7 @@
       <div tabIndex={0} className="dropdown-content -start-44 z-[1] horizontal card card-compact w-64 p-2 shadow bg-primary text-primary-content">
         <div className="card-body">
           <h3 className="card-title">Nip07 Login</h3>
-          <p>Use a Browser Nip07 Extension like getalby or nos2x to login</p>
+          <p>Use a Browser Nip07 Extension like getalby or nos2x to login or use Amber on Android</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
          <template v-if="supports_android_signer">
           <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
@@ -88,6 +88,15 @@ export default {
         if (localStorage.getItem('nostr-key-method') === 'nip07')
         {
            await this.sign_in_nip07()
+        }
+
+        else  if (localStorage.getItem('nostr-key-method') === 'android-signer')
+        {
+          let key = ""
+          if (localStorage.getItem('nostr-key') !== ""){
+            key = localStorage.getItem('nostr-key')
+          }
+          await this.sign_in_amber(key)
         }
         else {
           await this.sign_in_anon()
@@ -220,7 +229,7 @@ export default {
         console.log(error);
       }
     },
-    async sign_in_amber() {
+    async sign_in_amber(key="") {
       try {
 
         await loadWasmAsync();
@@ -238,7 +247,14 @@ export default {
           return;
         }
 
-        const hexKey = await amberSignerService.getPublicKey();
+        try{
+        let hexKey = ""
+        if (key === ""){
+            hexKey = await amberSignerService.getPublicKey();
+        }
+        else{
+          hexKey = key
+        }
         let publicKey = PublicKey.fromHex(hexKey);
         let keys = Keys.fromPublicKey(publicKey)
         this.signer = ClientSigner.keys(keys)
@@ -252,8 +268,12 @@ export default {
         store.commit('set_pubkey', publicKey)
         store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "android-signer")
-        localStorage.setItem('nostr-key', "")
+        localStorage.setItem('nostr-key', hexKey)
         await this.get_user_info(publicKey)
+                }
+        catch (error){
+          alert(error)
+        }
 
         //miniToastr.showMessage("Login successful!", "Logged in as " + publicKey.toHex(), VueNotifications.types.success)
 
