@@ -19,6 +19,7 @@ import {computed, onMounted, ref} from "vue";
 import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import Nip07 from "@/components/Nip07.vue";
+import amberSignerService from "./android-signer/AndroidSigner";
 
 let items = []
 let dvms =[]
@@ -92,26 +93,43 @@ async function send_search_request(msg) {
         tags.push(Tag.parse(['param', 'users', JSON.stringify(users)]))
 
         let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
+        let res;
+        let requestid;
+        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+          let draft = {
+            content: "NIP 90 Search request", 
+            kind: 5302, 
+            pubkey: store.state.pubkey.toHex(),
+            tags: [
+              ["i", msg, "text"],
+              ["param", "max_results", "150"],
+              ['param', 'users', JSON.stringify(users)]
+            ], 
+            createdAt: Date.now()
+          };
 
-        let res = await client.sendEventBuilder(evt)
-        let requestid = res.toHex()
+          res = await amberSignerService.signEvent(draft)
+          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+          requestid = res.id;
+          res = res.id;
+        } else {
+          res = await client.sendEventBuilder(evt)
+          requestid = res.toHex()
+        }
+        
         console.log("STORE: " +store.state.requestidSearch)
         store.commit('set_current_request_id_search', requestid)
         console.log("STORE AFTER: " + store.state.requestidSearch)
 
-
         //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         if (!store.state.hasEventListener){
-               listen()
+            listen()
            store.commit('set_hasEventListener', true)
         }
         else{
           console.log("Already has event listener")
         }
-
         console.log(res)
-
-
       } catch (error) {
         console.log(error);
       }
@@ -313,7 +331,7 @@ async function  listen() {
         },
         // Handle relay message
         handleMsg: async (relayUrl, message) => {
-            //console.log("Received message from", relayUrl, message.asJson());
+            //console.log(`Received message from ${relayUrl} ${message.asJson()}`);
         }
     };
 

@@ -23,6 +23,7 @@ import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
+import amberSignerService from "./android-signer/AndroidSigner";
 
 let dvms =[]
 let searching = false
@@ -41,8 +42,19 @@ const sleep = (ms) => {
 
 async function post_note(note){
    let client = store.state.client
-   await client.publishTextNote(note, []);
-
+   if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+    const draft = {
+      content: note, 
+      kind: 1, 
+      pubkey: store.state.pubkey.toHex(),
+      tags: [], 
+      createdAt: Date.now()
+    };
+    const eventJson = await amberSignerService.signEvent(draft);
+    await client.sendEvent(Event.fromJson(JSON.stringify(eventJson)));
+   } else {
+    await client.publishTextNote(note, []);
+   }
 }
 async function generate_image(message) {
 
@@ -64,14 +76,36 @@ async function generate_image(message) {
         tags.push(Tag.parse(["i", message, "text"]))
 
         let evt = new EventBuilder(5100, "NIP 90 Image Generation request", tags)
-        let res = await client.sendEventBuilder(evt)
-        store.commit('set_current_request_id_image', res.toHex())
-        console.log("IMAGE EVENT SENT: " + res.toHex())
+        let res;
+        let requestid;
+
+        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+          let draft = {
+            content: "NIP 90 Image Generation request", 
+            kind: 5100, 
+            pubkey: store.state.pubkey.toHex(),
+            tags: [
+              ["i", message, "text"]
+            ], 
+            createdAt: Date.now()
+          };
+
+          res = await amberSignerService.signEvent(draft)
+          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+          requestid = res.id;
+          res = res.id;
+        } else {
+          res = await client.sendEventBuilder(evt);
+          requestid = res.toHex();
+        }
+
+        store.commit('set_current_request_id_image', requestid)
+        //console.log("IMAGE EVENT SENT: " + res.toHex())
 
         //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         searching = true
         if (!store.state.imagehasEventListener){
-               listen()
+           listen()
            store.commit('set_imagehasEventListener', true)
         }
         else{
