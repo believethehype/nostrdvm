@@ -20,6 +20,8 @@ import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import Nip07 from "@/components/Nip07.vue";
 import amberSignerService from "./android-signer/AndroidSigner";
+import VueDatePicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css'
 
 let items = []
 let dvms =[]
@@ -27,6 +29,12 @@ let listener = false
 let searching = false
 
 const message = ref("");
+
+
+
+
+const datefrom = ref(new Date().setFullYear(new Date().getFullYear() - 1));
+const dateto = ref(Date.now());
 
 onMounted(async () => {
   let urlParams = new URLSearchParams(window.location.search);
@@ -63,7 +71,7 @@ async function send_search_request(msg) {
         store.commit('set_search_results', items)
         let client = store.state.client
 
-        let tags = []
+
         let users = [];
 
         const taggedUsersFrom = msg.split(' ')
@@ -72,9 +80,6 @@ async function send_search_request(msg) {
 
         // search
         let search = msg;
-
-        // tags
-
         for (let word of taggedUsersFrom) {
           search = search.replace(word, "");
           if(word === "me"){
@@ -88,23 +93,27 @@ async function send_search_request(msg) {
         msg = search.replace(/from:|to:|@/g, '').trim();
         console.log(search);
 
-        tags.push(Tag.parse(["i", msg, "text"]))
-        tags.push(Tag.parse(["param", "max_results", "150"]))
-        tags.push(Tag.parse(['param', 'users', JSON.stringify(users)]))
+        let content = "NIP 90 Search request"
+        let kind = 5302
+        console.log((datefrom.value/1000).toFixed(0))
+        console.log((dateto.value/1000).toFixed(0))
+        let tags = [
+              ["i", msg, "text"],
+              ["param", "max_results", "150"],
+              ["param", "since", ((datefrom.value/1000).toFixed(0))],
+              ["param", "until", ((dateto.value/1000).toFixed(0))],
+              ['param', 'users', JSON.stringify(users)]
+            ]
 
-        let evt = new EventBuilder(5302, "NIP 90 Search request", tags)
+
         let res;
         let requestid;
         if (localStorage.getItem('nostr-key-method') === 'android-signer') {
           let draft = {
-            content: "NIP 90 Search request", 
-            kind: 5302, 
+            content: content,
+            kind: kind,
             pubkey: store.state.pubkey.toHex(),
-            tags: [
-              ["i", msg, "text"],
-              ["param", "max_results", "150"],
-              ['param', 'users', JSON.stringify(users)]
-            ], 
+            tags: tags,
             createdAt: Date.now()
           };
 
@@ -112,7 +121,15 @@ async function send_search_request(msg) {
           await client.sendEvent(Event.fromJson(JSON.stringify(res)))
           requestid = res.id;
           res = res.id;
-        } else {
+        }
+
+        else
+        {
+          let tags_t = []
+          for (let tag of tags){
+            tags_t.push(Tag.parse(tag))
+          }
+          let evt = new EventBuilder(kind, content, tags_t)
           res = await client.sendEventBuilder(evt)
           requestid = res.toHex()
         }
@@ -379,12 +396,24 @@ defineProps({
        <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
       </h3>
 
-    <!--  <details class="collapse bg-base">
-  <summary class="collapse-title font-thin bg ">Advanced Settings</summary>
-  <div class="collapse-content">
-    <p>content</p>
+    <details class="collapse bg-base " className="advanced" >
+  <summary class="collapse-title font-thin bg">Advanced Options</summary>
+  <div class="collapse-content font-size-0" className="z-10" id="collapse-settings">
+    <div>
+          <h4 className="inline-flex flex-none font-thin">from:</h4>
+    <div className="inline-flex flex-none" style="width: 10px;"></div>
+    <VueDatePicker :teleport="true" :dark="true" position="left" className="bg-base-200 inline-flex flex-none" style="width: 220px;" v-model="datefrom"></VueDatePicker>
+    </div>
+
+    <div className="inline-flex flex-none" style="width: 20px;"></div>
+    <div>
+      <h4 className="inline-flex font-thin ">until: </h4>
+    <div className="inline-flex flex-none" style="width: 10px;"></div>
+    <VueDatePicker :teleport="true" :dark="true" position="left" className="bg-base-200 inline-flex flex-none" style="width: 220px;" v-model="dateto"></VueDatePicker>
+    </div>
+
   </div>
-</details> -->
+</details>
 
     </div>
     <div class="max-w-5xl relative space-y-3">
@@ -439,6 +468,10 @@ defineProps({
 
 h3 {
   font-size: 1.2rem;
+}
+
+h4 {
+  font-size: 1.0rem;
 }
 
 .greetings h1,
