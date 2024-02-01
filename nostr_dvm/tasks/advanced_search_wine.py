@@ -50,8 +50,8 @@ class AdvancedSearchWine(DVMTaskInterface):
         # default values
         user = ""
         users = []
-        since_days = 800  # days ago
-        until_days = 365  # days ago
+        since_seconds = Timestamp.now().as_secs() - (365 * 24 * 60 * 60)
+        until_seconds = Timestamp.now().as_secs()
         search = ""
         max_results = 100
 
@@ -68,9 +68,9 @@ class AdvancedSearchWine(DVMTaskInterface):
                 elif param == "users":  # check for param type
                     users = json.loads(tag.as_vec()[2])
                 elif param == "since":  # check for param type
-                    since_days = int(tag.as_vec()[2])
+                    since_seconds = int(tag.as_vec()[2])
                 elif param == "until":  # check for param type
-                    until_days = int(tag.as_vec()[2])
+                    until_seconds = int(tag.as_vec()[2])
                 elif param == "max_results":  # check for param type
                     max_results = int(tag.as_vec()[2])
 
@@ -78,8 +78,8 @@ class AdvancedSearchWine(DVMTaskInterface):
             "search": search,
             "user": user,
             "users": users,
-            "since": since_days,
-            "until": until_days,
+            "since": since_seconds,
+            "until": until_seconds,
             "max_results": max_results,
 
         }
@@ -104,20 +104,18 @@ class AdvancedSearchWine(DVMTaskInterface):
 
         print("Sending job to Server")
         if options["users"]:
-            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0] + "&limit=100" + "&sort=time")
+            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0] + "&limit=100" + "&sort=time" + "&until=" + str(options["until"]) + "&since=" + str(options["since"]))
         else:
-            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + "&limit=100" + "&sort=time")
+            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + "&limit=100" + "&sort=time" + "&until=" + str(options["until"]) + "&since=" + str(options["since"]))
 
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
         response = requests.get(url, headers=headers)
         print(response.text)
         ob = json.loads(response.text)
         data = ob['data']
-        print(data)
         result_list = []
         for el in data:
             e_tag = Tag.parse(["e", el['id']])
-            print(e_tag.as_vec())
             result_list.append(e_tag.as_vec())
 
 

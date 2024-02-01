@@ -29,7 +29,8 @@ Current List of Tasks:
 | TextToSpeech                 | 5250   | Generate Audio from a prompt                               | local            |
 | TrendingNotesNostrBand       | 5300   | Show trending notes on nostr.band                          | nostr.band api   |
 | DiscoverInactiveFollows      | 5301   | Find inactive Nostr users                                  | local            |
-| AdvancedSearch               | 5302   | Search Content on nostr.band                               | local/nostr.band |
+| AdvancedSearch               | 5302   | Search Content on relays (nostr.band)                      | local/nostr.band |
+| AdvancedSearchWine           | 5302   | Search Content on nostr.wine                               | api/nostr.wine   |
 
 Kinds with (inoff) are suggestions and not merged yet and might change in the future.
 Backends might require to add an API key to the .env file or run an external server/framework the dvm will communicate with.

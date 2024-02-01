@@ -48,10 +48,13 @@ class AdvancedSearch(DVMTaskInterface):
         # default values
         user = ""
         users = []
-        since_days = 800  # days ago
-        until_days = 0  # days ago
+        since_seconds = Timestamp.now().as_secs() - (365 * 24 * 60 * 60)
+        until_seconds = Timestamp.now().as_secs()
         search = ""
-        max_results = 20
+        max_results = 100
+        relay = "wss://relay.nostr.band"
+        if self.options.get("relay") and self.options.get("relay") != "":
+            relay = self.options['relay']
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -61,23 +64,24 @@ class AdvancedSearch(DVMTaskInterface):
             elif tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "user":  # check for param type
-                    user = tag.as_vec()[2]
+                    #user = tag.as_vec()[2]
+                    users.append(Tag.parse(["p", tag.as_vec()[2]]))
                 elif param == "users":  # check for param type
                     users = json.loads(tag.as_vec()[2])
                 elif param == "since":  # check for param type
-                    since_days = int(tag.as_vec()[2])
+                    since_seconds = int(tag.as_vec()[2])
                 elif param == "until":  # check for param type
-                    until_days = int(tag.as_vec()[2])
+                    until_seconds = min(int(tag.as_vec()[2]), until_seconds)
                 elif param == "max_results":  # check for param type
                     max_results = int(tag.as_vec()[2])
 
         options = {
             "search": search,
-            "user": user,
             "users": users,
-            "since": since_days,
-            "until": until_days,
-            "max_results": max_results
+            "since": since_seconds,
+            "until": until_seconds,
+            "max_results": max_results,
+            "relay": relay
         }
         request_form['options'] = json.dumps(options)
         return request_form
@@ -92,16 +96,18 @@ class AdvancedSearch(DVMTaskInterface):
         signer = ClientSigner.keys(keys)
         cli = Client.with_opts(signer, opts)
 
-        cli.add_relay("wss://relay.nostr.band")
+        cli.add_relay(options["relay"])
         cli.connect()
 
-        search_since_seconds = int(options["since"]) * 24 * 60 * 60
-        dif = Timestamp.now().as_secs() - search_since_seconds
-        search_since = Timestamp.from_secs(dif)
+        #earch_since_seconds = int(options["since"]) * 24 * 60 * 60
+        #dif = Timestamp.now().as_secs() - search_since_seconds
+        #search_since = Timestamp.from_secs(dif)
+        search_since = Timestamp.from_secs(int(options["since"]))
 
-        search_until_seconds = int(options["until"]) * 24 * 60 * 60
-        dif = Timestamp.now().as_secs() - search_until_seconds
-        search_until = Timestamp.from_secs(dif)
+        #search_until_seconds = int(options["until"]) * 24 * 60 * 60
+        #dif = Timestamp.now().as_secs() - search_until_seconds
+        #search_until = Timestamp.from_secs(dif)
+        search_until = Timestamp.from_secs(int(options["until"]))
         userkeys = []
         for user in options["users"]:
             user = user[1]
@@ -115,22 +121,13 @@ class AdvancedSearch(DVMTaskInterface):
 
             userkeys.append(userkey)
 
-        if not options["users"] and options["user"] == "":
-            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(
-                options["max_results"])
+        if not options["users"]:
+            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
         elif options["search"] == "":
-            if options["users"]:
                 notes_filter = Filter().kind(1).authors(userkeys).since(search_since).until(
                     search_until).limit(options["max_results"])
-            else:
-                notes_filter = Filter().kind(1).authors([PublicKey.from_hex(options["user"])]).since(search_since).until(
-                    search_until).limit(options["max_results"])
         else:
-            if options["users"]:
                 notes_filter = Filter().kind(1).authors(userkeys).search(options["search"]).since(
-                    search_since).until(search_until).limit(options["max_results"])
-            else:
-                notes_filter = Filter().kind(1).authors([PublicKey.from_hex(options["user"])]).search(options["search"]).since(
                     search_since).until(search_until).limit(options["max_results"])
 
 
@@ -163,29 +160,28 @@ class AdvancedSearch(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
-    admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I search notes",
+        "image": "https://image.nostr.build/a99ab925084029d9468fef8330ff3d9be2cf67da473b024f2a6d48b5cd77197f.jpg",
+        "about": "I search notes on Nostr.band.",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {
-            "user": {
+            "users": {
                 "required": False,
                 "values": [],
-                "description": "Do the task for another user"
+                "description": "Search for content from specific users"
             },
             "since": {
                 "required": False,
                 "values": [],
-                "description": "The number of days in the past from now the search should include"
+                "description": "A unix timestamp in the past from where the search should start"
             },
             "until": {
                 "required": False,
                 "values": [],
-                "description": "The number of days in the past from now the search should include up to"
+                "description": "A unix timestamp that tells until the search should include results"
             },
             "max_results": {
                 "required": False,
@@ -199,8 +195,10 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
+    options = {"relay": "wss://relay.nostr.band"}
+
     return AdvancedSearch(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                          admin_config=admin_config)
+                          admin_config=admin_config, options=options)
 
 
 if __name__ == '__main__':
