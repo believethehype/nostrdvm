@@ -17,7 +17,7 @@ import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 import searchdvms from './data/searchdvms.json'
-import {computed, defineEmits, watch} from "vue";
+import {computed, watch} from "vue";
 import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
@@ -42,18 +42,22 @@ const sleep = (ms) => {
 
 async function post_note(note){
    let client = store.state.client
+   let tags = []
+
    if (localStorage.getItem('nostr-key-method') === 'android-signer') {
     const draft = {
       content: note, 
       kind: 1, 
       pubkey: store.state.pubkey.toHex(),
-      tags: [], 
+      tags: tags,
       createdAt: Date.now()
     };
     const eventJson = await amberSignerService.signEvent(draft);
     await client.sendEvent(Event.fromJson(JSON.stringify(eventJson)));
-   } else {
-    await client.publishTextNote(note, []);
+   }
+   else
+   {
+    await client.publishTextNote(note, tags);
    }
 }
 async function generate_image(message) {
@@ -71,22 +75,24 @@ async function generate_image(message) {
         dvms = []
         store.commit('set_imagedvm_results', dvms)
         let client = store.state.client
-        let tags = []
-        console.log(message)
-        tags.push(Tag.parse(["i", message, "text"]))
 
-        let evt = new EventBuilder(5100, "NIP 90 Image Generation request", tags)
+        let content = "NIP 90 Image Generation request"
+        let kind = 5100
+        let tags = [
+              ["i", message, "text"]
+            ]
+
+
+
         let res;
         let requestid;
 
         if (localStorage.getItem('nostr-key-method') === 'android-signer') {
           let draft = {
-            content: "NIP 90 Image Generation request", 
-            kind: 5100, 
+            content: content,
+            kind: kind,
             pubkey: store.state.pubkey.toHex(),
-            tags: [
-              ["i", message, "text"]
-            ], 
+            tags: tags,
             createdAt: Date.now()
           };
 
@@ -94,7 +100,15 @@ async function generate_image(message) {
           await client.sendEvent(Event.fromJson(JSON.stringify(res)))
           requestid = res.id;
           res = res.id;
-        } else {
+        }
+        else {
+
+          let tags_t = []
+          for (let tag of tags){
+            tags_t.push(Tag.parse(tag))
+          }
+          let evt = new EventBuilder(kind, content, tags_t)
+
           res = await client.sendEventBuilder(evt);
           requestid = res.toHex();
         }
