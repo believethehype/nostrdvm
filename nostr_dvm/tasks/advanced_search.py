@@ -138,7 +138,7 @@ class AdvancedSearch(DVMTaskInterface):
 
             for event in events:
                 e_tag = Tag.parse(["e", event.id().to_hex()])
-                print(e_tag.as_vec())
+                #print(e_tag.as_vec())
                 result_list.append(e_tag.as_vec())
 
         return json.dumps(result_list)

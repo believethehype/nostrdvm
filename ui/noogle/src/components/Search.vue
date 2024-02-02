@@ -203,8 +203,8 @@ async function  listen() {
 
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
-                  console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
+                  //console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
+                 // console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
                   if (event.tags[tag].asVec()[1] === store.state.requestidSearch) {
                     resonsetorequest = true
                   }
