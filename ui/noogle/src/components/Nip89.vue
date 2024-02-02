@@ -64,7 +64,11 @@ export default {
                       if (jsonentry.picture){
                         jsonentry.image = jsonentry.picture
                       }
+                      else if (!jsonentry.picture && !jsonentry.image){
+                        jsonentry.image = "../assets/nostr-purple.svg"
+                      }
                     jsonentry.event = entry.asJson()
+                    jsonentry.id = entry.id.toHex()
                     jsonentry.createdAt = entry.createdAt.asSecs()
                     jsonentry.kind = entry.tags[tag].asVec()[1]
                     nip89dvms.push(jsonentry);

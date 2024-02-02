@@ -338,6 +338,7 @@ import ModalComponent from "../components/Newnote.vue";
 const isModalOpened = ref(false);
 const modalcontent = ref("");
 
+
 const openModal = result => {
   isModalOpened.value = true;
   modalcontent.value = result
@@ -347,7 +348,7 @@ const closeModal = () => {
 };
 
 const submitHandler = async () => {
-  console.log("hello")
+
   await post_note(modalcontent)
 }
 
