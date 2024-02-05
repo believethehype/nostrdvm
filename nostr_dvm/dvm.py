@@ -387,7 +387,7 @@ class DVM:
                                      dvm_config=None):
 
             task = get_task(original_event, client=client, dvm_config=dvm_config)
-            alt_description, reaction = build_status_reaction(status, task, amount, content)
+            alt_description, reaction = build_status_reaction(status, task, amount, content, dvm_config)
 
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
             p_tag = Tag.parse(["p", original_event.author().to_hex()])

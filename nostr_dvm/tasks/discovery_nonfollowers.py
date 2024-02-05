@@ -92,7 +92,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                 if tag.as_vec()[0] == "p":
                     following = tag.as_vec()[1]
                     followings.append(following)
-                    ns.dic[following] = "False"
+                    ns.dic[following] = "True"
             print("Followings: " + str(len(followings)))
 
 
@@ -124,14 +124,17 @@ class DiscoverNonFollowers(DVMTaskInterface):
                                 newest = entry.created_at().as_secs()
                                 best_entry = entry
 
-                        #print(best_entry.as_json())
+                        foundfollower = False
                         for tag in best_entry.tags():
                             if tag.as_vec()[0] == "p":
                                 if len(tag.as_vec()) > 1:
                                     if tag.as_vec()[1] == options["user"]:
-                                        print("FOUND FOLLOWING")
-                                        instance.dic[best_entry.author().to_hex()] = "True"
-                                        break
+                                         foundfollower = True
+                                         break
+
+                        if not foundfollower:
+                            instance.dic[best_entry.author().to_hex()] = "False"
+                            print( "DIDNT FIND " + best_entry.author().to_nostr_uri())
 
                 print(str(i) + "/" + str(len(users)))
                 cli.disconnect()
