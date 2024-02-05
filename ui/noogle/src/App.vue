@@ -1,7 +1,6 @@
 <script setup>
-import Home from './components/Home.vue'
 import ThreeColumnLayout from "./layouts/ThreeColumnLayout.vue";
-import Nip07 from "@/components/Nip07.vue";
+
 
 </script>
 

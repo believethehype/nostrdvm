@@ -1,12 +1,11 @@
 <script>
 import Search from "@/components/Search.vue";
 import ResultsTable from "@/components/SearchResultTable.vue";
-import Nip07 from "@/components/Nip07.vue";
 import Donate from "@/components/Donate.vue";
 
 export default {
   name: "Home",
-  components: {Donate, Nip07, ResultsTable, Search}
+  components: {Donate, ResultsTable, Search}
 }
 
 </script>
