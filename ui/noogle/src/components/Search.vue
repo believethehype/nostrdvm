@@ -18,7 +18,6 @@ import searchdvms from './data/searchdvms.json'
 import {computed, onMounted, ref} from "vue";
 import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
-import Nip07 from "@/components/Nip07.vue";
 import amberSignerService from "./android-signer/AndroidSigner";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'

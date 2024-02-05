@@ -1,5 +1,5 @@
 <script setup>
-import Nip07 from "@/components/Nip07.vue";
+import Login from "@/components/Login.vue";
 import Donate from "@/components/Donate.vue"
 import {isVisible} from "bootstrap/js/src/util/index.js";
 </script>
@@ -18,7 +18,7 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
 
 
   </div>
- <Nip07/>
+ <Login/>
 
 </div>
 
