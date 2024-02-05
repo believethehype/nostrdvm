@@ -21,9 +21,9 @@ Params:  None
 """
 
 
-class DiscoverInactiveFollows(DVMTaskInterface):
+class DiscoverNonFollowers(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
-    TASK: str = "inactive-follows"
+    TASK: str = "non-followers"
     FIX_COST: float = 50
     client: Client
     dvm_config: DVMConfig
@@ -44,19 +44,14 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
         # default values
         user = event.author().to_hex()
-        since_days = 90
-
         for tag in event.tags():
             if tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "user":  # check for param type
                     user = tag.as_vec()[2]
-                elif param == "since_days":  # check for param type
-                    since_days = int(tag.as_vec()[2])
 
         options = {
             "user": user,
-            "since_days": since_days
         }
         request_form['options'] = json.dumps(options)
         return request_form
@@ -78,7 +73,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         options = DVMTaskInterface.set_options(request_form)
         step = 20
 
-        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(3).limit(1)
+        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(3)
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         if len(followers) > 0:
@@ -100,11 +95,8 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                     ns.dic[following] = "False"
             print("Followings: " + str(len(followings)))
 
-            not_active_since_seconds = int(options["since_days"]) * 24 * 60 * 60
-            dif = Timestamp.now().as_secs() - not_active_since_seconds
-            not_active_since = Timestamp.from_secs(dif)
 
-            def scanList(users, instance, i, st, notactivesince):
+            def scanList(users, instance, i, st):
                 from nostr_sdk import Filter
 
                 keys = Keys.from_sk_str(self.dvm_config.PRIVATE_KEY)
@@ -116,13 +108,31 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                     cli.add_relay(relay)
                 cli.connect()
 
-                filters = []
+
                 for i in range(i, i + st):
-                    filter1 = Filter().author(PublicKey.from_hex(users[i])).since(notactivesince).limit(1)
+                    filters = []
+                    filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(3)
                     filters.append(filter1)
-                event_from_authors = cli.get_events_of(filters, timedelta(seconds=10))
-                for author in event_from_authors:
-                    instance.dic[author.author().to_hex()] = "True"
+                    followers = cli.get_events_of(filters, timedelta(seconds=3))
+
+                    if len(followers) > 0:
+                        result_list = []
+                        newest = 0
+                        best_entry = followers[0]
+                        for entry in followers:
+                            if entry.created_at().as_secs() > newest:
+                                newest = entry.created_at().as_secs()
+                                best_entry = entry
+
+                        #print(best_entry.as_json())
+                        for tag in best_entry.tags():
+                            if tag.as_vec()[0] == "p":
+                                if len(tag.as_vec()) > 1:
+                                    if tag.as_vec()[1] == options["user"]:
+                                        print("FOUND FOLLOWING")
+                                        instance.dic[best_entry.author().to_hex()] = "True"
+                                        break
+
                 print(str(i) + "/" + str(len(users)))
                 cli.disconnect()
 
@@ -130,14 +140,14 @@ class DiscoverInactiveFollows(DVMTaskInterface):
             begin = 0
             # Spawn some threads to speed things up
             while begin < len(followings) - step:
-                args = [followings, ns, begin, step, not_active_since]
+                args = [followings, ns, begin, step]
                 t = Thread(target=scanList, args=args)
                 threads.append(t)
                 begin = begin + step -1
 
             # last to step size
             missing_scans = (len(followings) - begin)
-            args = [followings, ns, begin, missing_scans, not_active_since]
+            args = [followings, ns, begin, missing_scans]
             t = Thread(target=scanList, args=args)
             threads.append(t)
 
@@ -151,7 +161,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
             result = {k for (k, v) in ns.dic.items() if v == "False"}
 
-            print("Inactive accounts found: " + str(len(result)))
+            print("Non backfollowing accounts found: " + str(len(result)))
             for k in result:
                 p_tag = Tag.parse(["p", k])
                 result_list.append(p_tag.as_vec())
@@ -180,7 +190,7 @@ def build_example(name, identifier, admin_config):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I discover users you follow, but that have been inactive on Nostr",
+        "about": "I discover users you follow, but that don't follow you back.",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {
@@ -200,9 +210,9 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return DiscoverInactiveFollows(name=name, dvm_config=dvm_config, nip89config=nip89config,
+    return DiscoverNonFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                    admin_config=admin_config)
 
 
 if __name__ == '__main__':
-    process_venv(DiscoverInactiveFollows)
+    process_venv(DiscoverNonFollowers)

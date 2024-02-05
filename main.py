@@ -7,7 +7,8 @@ from nostr_dvm.bot import Bot
 from nostr_dvm.tasks import videogeneration_replicate_svd, imagegeneration_replicate_sdxl, textgeneration_llmlite, \
     trending_notes_nostrband, discovery_inactive_follows, translation_google, textextraction_pdf, \
     translation_libretranslate, textextraction_google, convert_media, imagegeneration_openai_dalle, texttospeech, \
-    imagegeneration_sd21_mlx, advanced_search, textgeneration_huggingchat, summarization_huggingchat
+    imagegeneration_sd21_mlx, advanced_search, textgeneration_huggingchat, summarization_huggingchat, \
+    discovery_nonfollowers
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -127,6 +128,11 @@ def playground():
                                                                  admin_config)
     bot_config.SUPPORTED_DVMS.append(discover_inactive)
     discover_inactive.run()
+
+    discover_nonfollowers = discovery_nonfollowers.build_example("Not Refollowing", "discovery_non_followers",
+                                                                 admin_config)
+    bot_config.SUPPORTED_DVMS.append(discover_nonfollowers)
+    discover_nonfollowers.run()
 
     trending = trending_notes_nostrband.build_example("Trending Notes on nostr.band", "trending_notes_nostrband", admin_config)
     bot_config.SUPPORTED_DVMS.append(trending)
