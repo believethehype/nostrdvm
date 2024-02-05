@@ -31,21 +31,55 @@
       <div tabIndex={0} role="button" class="v-Button" >Sign in</div>
       <div tabIndex={0} className="dropdown-content -start-44 z-[1] horizontal card card-compact w-64 p-2 shadow bg-primary text-primary-content">
         <div className="card-body">
-          <h3 className="card-title">Nip07 Login</h3>
-          <p>Use a Browser Nip07 Extension like getalby or nos2x to login or use Amber on Android</p>
+          <h3 className="card-title">Login</h3>
+          <p>Use a Browser Nip07 Extension like getalby or nos2x or Nsecbunker to login or use Amber on Android</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
+         <!-- <button className="btn" @click="sign_in_nip46()">NsecBunker</button> Not working yet-->
+          <button className="btn" @click="getWindowNostr()">Nostraddress</button>
+
          <template v-if="supports_android_signer">
           <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
         </template>
         </div>
       </div>
     </div>
+
+              <div v-if="checkConnected">
+            <h2>🎊 Connected successfully! 🎊</h2>
+            <img src="https://i.nostr.build/a4OQ.gif" alt="thumbs-up" />
+            <div id="npubMessage">
+                The npub of your account is:
+                <div id="newNostrNpub"></div>
+            </div>
+            <div id="sign" style="margin-top: 2rem">
+                <h2>Want to try signing a note? Don't worry, we won't publish it.</h2>
+                <pre id="noteCode"></pre>
+                <button
+                    style="display: block; font-size: 1.25rem; padding: 5px 8px; margin: 0 auto"
+                    onclick="NostrIgnition.signEvent(JSON.parse(document.getElementById('noteCode').innerText))"
+                >
+                    Sign "Hello World!"
+                </button>
+                <h2 style="margin-top: 4rem">Or, open your browser console and try pinging the bunker.</h2>
+                <button
+                    style="display: block; font-size: 1.25rem; padding: 5px 8px; margin: 0 auto"
+                    onclick="NostrIgnition.ping()"
+                    id="pingButton"
+                >
+                    Ping Bunker
+                </button>
+            </div>
+        </div>
+
       <Nip89></Nip89>
     </template>
   </div>
 </template>
-
 <script>
+
+
+
+
 import {
   loadWasmAsync,
   Client,
@@ -54,7 +88,17 @@ import {
   Filter,
   initLogger,
   LogLevel,
-  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet, SingleLetterTag, Options, Duration, PublicKey
+  Timestamp,
+  Keys,
+  NostrDatabase,
+  ClientBuilder,
+  ClientZapper,
+  Alphabet,
+  SingleLetterTag,
+  Options,
+  Duration,
+  PublicKey,
+  Nip46Signer
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -62,14 +106,16 @@ import Nip89 from "@/components/Nip89.vue";
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
+
 import {useDark, useToggle} from "@vueuse/core";
+import {ref} from "vue";
 const isDark = useDark();
-//const toggleDark = useToggle(isDark);
 
 
+import NostrIgnition from "./nostr-ignition/NostrIgnition"
 
 let nip89dvms = []
-let logger = true
+let logger = false
 export default {
    data() {
     return {
@@ -79,7 +125,40 @@ export default {
       supports_android_signer: false,
     };
   },
+
+
+
   async mounted() {
+
+
+     await NostrIgnition.init({
+       appName: "Noogle"})
+
+    const checkConnected = ref(false);
+     const interval = setInterval(() => {
+            if (NostrIgnition.connected()) {
+                checkConnected.value = true
+                console.log("connected")
+                console.log("IGNITION " + NostrIgnition.remoteNpub())
+                //document.getElementById("newNostrNpub").innerText = NostrIgnition.remoteNpub();
+                //document.getElementById("connectionSuccess").style.display = "flex";
+
+                const event = {
+                    content: "Hello World!",
+                    pubkey: NostrIgnition.remotePubkey(),
+                    createdAt: Math.floor(Date.now() / 1000),
+                    kind: 1,
+                    tags: [],
+                };
+
+                document.getElementById("noteCode").innerText = JSON.stringify(event, null, 4);
+                clearInterval(interval);
+            }
+            console.log("looping")
+        }, 1000);
+
+
+
      try{
         if (amberSignerService.supported) {
           this.supports_android_signer = true;
@@ -89,14 +168,15 @@ export default {
         {
            await this.sign_in_nip07()
         }
+       /* else if (localStorage.getItem('nostr-key-method') === 'nip46')
+        {
+           await this.sign_in_nip46()
+        }*/
 
         else  if (localStorage.getItem('nostr-key-method') === 'android-signer')
         {
-          let key = ""
-          if (localStorage.getItem('nostr-key') !== ""){
-            key = localStorage.getItem('nostr-key')
-          }
-          await this.sign_in_amber(key)
+
+          await this.sign_in_amber()
         }
         else {
           await this.sign_in_anon()
@@ -109,7 +189,14 @@ export default {
     }
   },
 
+
+
   methods: {
+
+  getWindowNostr() {
+    console.log("I try to call window.nostr,but nothing happens")
+    return window.nostr
+  },
 
     toggleDark(){
        isDark.value = !isDark.value
@@ -121,6 +208,7 @@ export default {
           document.documentElement.classList.remove('dark')
         }
     },
+
 
     async sign_in_anon() {
       try {
@@ -163,6 +251,77 @@ export default {
         localStorage.setItem('nostr-key-method', "anon")
         localStorage.setItem('nostr-key', "")
         console.log("Client connected")
+
+
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    async sign_in_nip46() {
+
+      try {
+
+        await loadWasmAsync();
+
+
+
+          let connectionstring = ""
+          if (localStorage.getItem('nostr-key') !== "" && localStorage.getItem('nostr-key').startsWith("nsecbunker://") ){
+            connectionstring = localStorage.getItem('nostr-key')
+          }
+
+        if (connectionstring === ""){
+              //ADD DEFAULT TEST STRING FOR NOW, USE USER INPUT LATER
+              connectionstring = "nsecbunker://npub1ffske30n349f7z3sccn6n90f9dxxqhcy5n4cgpq32355ka2ye6ls7sa6t4#7a53c7292aa6a8f731cd6fcc15b396213c6a7b0448f9e8994b2479f8832c029f?relay=wss://relay.nsecbunker.com"
+        }
+
+        if (connectionstring.startsWith("nsecbunker://")){
+           connectionstring = connectionstring.replace("nsecbunker://", "")
+           let split = connectionstring.split("?relay=")
+           let relay_url = split[1]
+           let split2 = split[0].split("#")
+           let publickey = Keys.fromPkStr(split2[0]).publicKey
+           let app_keys = Keys.fromSkStr(split2[1])
+
+
+        let nip46_signer = new Nip46Signer(relay_url, app_keys, publickey) ;
+            try{
+              this.signer = ClientSigner.nip46(nip46_signer);
+              console.log("SIGNER: " + this.signer)
+
+
+            } catch (error) {
+            console.log(error);
+             this.signer = ClientSigner.keys(Keys.generate())
+          }
+
+        //let zapper = ClientZapper.webln()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+        let client = new ClientBuilder().signer(this.signer).opts(opts).build()
+
+        await client.addRelay(relay_url)
+        for (const relay of store.state.relays){
+                 await client.addRelay(relay);
+              }
+
+        const pubkey = await nip46_signer.signerPublicKey()
+        console.log("PUBKEY : " + pubkey.toBech32())
+        await client.connect();
+
+        store.commit('set_client', client)
+        store.commit('set_pubkey', pubkey)
+        store.commit('set_hasEventListener', false)
+        localStorage.setItem('nostr-key-method', "nip46")
+        localStorage.setItem('nostr-key', connectionstring)
+        console.log("Client connected")
+        await this.get_user_info(pubkey)
+        //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
+
+
+     }
+        else {
+          miniToastr.showMessage("Invalid Nsecbunker url")
+        }
 
 
       } catch (error) {
@@ -241,6 +400,11 @@ export default {
                 console.log(error);
             }
         }
+
+         let key = ""
+          if (localStorage.getItem('nostr-key') !== ""){
+            key = localStorage.getItem('nostr-key')
+          }
 
         if (!amberSignerService.supported) {
           alert("android signer not supported")
@@ -364,7 +528,7 @@ export default {
       this.current_user = ""
       localStorage.setItem('nostr-key-method', "anon")
       localStorage.setItem('nostr-key', "")
-      await this.state.client.shutdown();
+      //await this.state.client.shutdown();
       await this.sign_in_anon()
     }
   },

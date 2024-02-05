@@ -1,10 +1,9 @@
 // taken from https://github.com/hzrd149/nostrudel
 
-import { nip19, verifySignature } from "nostr-tools";
+import { nip19, verifyEvent } from "nostr-tools";
 import createDefer, { Deferred } from "./classes/deffered";
 import { getPubkeyFromDecodeResult, isHexKey } from "./helpers/nip19";
 import { NostrEvent } from "./types/nostr-event";
-
 export function createGetPublicKeyIntent() {
   return `intent:#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=get_public_key;end`;
 }
@@ -67,7 +66,7 @@ async function signEvent(draft): Promise<NostrEvent> {
   const signedEventJson = await intentRequest(createSignEventIntent(draft));
   const signedEvent = JSON.parse(signedEventJson) as NostrEvent;
   
-  if (!verifySignature(signedEvent)) throw new Error("Invalid signature");
+  if (!verifyEvent(signedEvent)) throw new Error("Invalid signature");
   return signedEvent;
 }
 

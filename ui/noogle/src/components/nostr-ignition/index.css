@@ -1,0 +1,189 @@
+@media screen and (max-width: 767px) {
+    #nostr_ignition__nostrModal {
+        width: 100%;
+    }
+}
+@media screen and (min-width: 768px) {
+    #nostr_ignition__nostrModal {
+        width: 50%;
+    }
+}
+@media screen and (min-width: 1024px) {
+    #nostr_ignition__nostrModal {
+        width: 40%;
+    }
+}
+@media screen and (min-width: 1440px) {
+    #nostr_ignition__nostrModal {
+        width: 30%;
+    }
+}
+
+#nostr_ignition__nostrModal {
+    margin: 6rem auto;
+    border: 1px rgba(0, 0, 0, 0.6) solid;
+    border-radius: 10px;
+    outline: none;
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.3);
+}
+
+#nostr_ignition__nostrModal::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+#nostr_ignition__nostrModal > div {
+    padding: 0.875rem;
+    position: relative;
+}
+
+#nostr_ignition__nostrModalClose {
+    position: absolute;
+    top: 0rem;
+    right: 0rem;
+    border: none;
+    font-weight: bold;
+    padding: 0;
+    background: transparent;
+}
+
+#nostr_ignition__nostrModalClose svg {
+    stroke: #444;
+}
+#nostr_ignition__nostrModalClose:hover svg {
+    color: #000;
+    fill: #eee;
+    stroke: #000;
+}
+
+#nostr_ignition__nostrModalTitle {
+    margin: 1rem 0 0 0;
+    text-align: center;
+}
+
+.nostr_ignition__nostrModalForm {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nostr_ignition__inputWrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nostr_ignition__inputWrapperFull {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+}
+
+.nostr_ignition__nostrModalForm input[type="text"],
+.nostr_ignition__nostrModalForm input[type="email"] {
+    padding: 0.5rem;
+    border: 1px rgba(0, 0, 0, 0.6) solid;
+    border-radius: 5px;
+    flex-grow: 1;
+    outline: none;
+}
+
+.nostr_ignition__nostrModalForm input[type="text"].invalid,
+.nostr_ignition__nostrModalForm input[type="email"].invalid,
+.nostr_ignition__nostrModalForm select.invalid {
+    border: 1px red solid;
+}
+
+.nostr_ignition__nostrModalForm select {
+    padding: 0.5rem;
+    border: 1px rgba(0, 0, 0, 0.6) solid;
+    border-radius: 5px;
+    flex-grow: 1;
+    outline: none;
+}
+
+.nostr_ignition__nostrModalForm label {
+    font-size: 0.875rem;
+}
+
+.nostr_ignition__nostrModalError {
+    color: red;
+    display: none;
+    align-self: flex-start;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.nostr_ignition__nostrModalForm button[type="submit"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 5px;
+    background: #000;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    items-align: center;
+    justify-content: center;
+}
+
+.nostr_ignition__nostrModalForm button[type="submit"]:hover {
+    background: #333;
+}
+
+.nostr_ignition__nostrModalForm button[type="submit"]:disabled {
+    background: #555;
+    cursor: not-allowed;
+    color: #ccc;
+}
+
+.nostr_ignition__linkButton {
+    background: transparent;
+    border: none;
+    color: #000;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    margin: 1rem auto;
+    display: block;
+}
+
+#nostr_ignition__nostrModalLearnMore {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #555;
+}
+
+/* Loading spinner */
+#nostr_ignition__nostrModalCreateSubmitSpinner,
+#nostr_ignition__nostrModalSignInSubmitSpinner {
+    display: none;
+}
+#nostr_ignition__nostrModalCreateSubmitSpinner:after,
+#nostr_ignition__nostrModalSignInSubmitSpinner:after {
+    content: " ";
+    display: block;
+    width: 0.8rem;
+    height: 0.8rem;
+    border-radius: 50%;
+    border: 0.2rem solid #fff;
+    border-color: #fff transparent #fff transparent;
+    animation: lds-dual-ring 1.2s linear infinite;
+}
+@keyframes lds-dual-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
