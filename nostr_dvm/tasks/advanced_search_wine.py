@@ -91,7 +91,8 @@ class AdvancedSearchWine(DVMTaskInterface):
         options = DVMTaskInterface.set_options(request_form)
         userkeys = []
         for user in options["users"]:
-            user = user[1]
+            tag = Tag.parse(user)
+            user = tag.as_vec()[1]
             user = str(user).lstrip("@")
             if str(user).startswith('npub'):
                 userkey = PublicKey.from_bech32(user)
