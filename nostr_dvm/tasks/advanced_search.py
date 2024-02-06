@@ -110,7 +110,9 @@ class AdvancedSearch(DVMTaskInterface):
         search_until = Timestamp.from_secs(int(options["until"]))
         userkeys = []
         for user in options["users"]:
-            user = user[1]
+            tag = Tag.parse(user)
+            user = tag.as_vec()[1]
+            #user = user[1]
             user = str(user).lstrip("@")
             if str(user).startswith('npub'):
                 userkey = PublicKey.from_bech32(user)
