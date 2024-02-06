@@ -111,7 +111,7 @@ class AdvancedSearchWine(DVMTaskInterface):
 
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
         response = requests.get(url, headers=headers)
-        print(response.text)
+        #print(response.text)
         ob = json.loads(response.text)
         data = ob['data']
         result_list = []
