@@ -66,9 +66,9 @@ class DiscoverNonFollowers(DVMTaskInterface):
         keys = Keys.from_sk_str(sk.to_hex())
         signer = ClientSigner.keys(keys)
         cli = Client.with_opts(signer, opts)
-        cli.add_relay("wss://relay.nostr.band")
-        #for relay in self.dvm_config.RELAY_LIST:
-        #   cli.add_relay(relay)
+        #cli.add_relay("wss://relay.nostr.band")
+        for relay in self.dvm_config.RELAY_LIST:
+           cli.add_relay(relay)
         cli.connect()
 
         options = DVMTaskInterface.set_options(request_form)
