@@ -94,8 +94,8 @@ async function send_search_request(msg) {
 
         let content = "NIP 90 Search request"
         let kind = 5302
-        console.log((datefrom.value/1000).toFixed(0))
-        console.log((dateto.value/1000).toFixed(0))
+        //console.log((datefrom.value/1000).toFixed(0))
+        //console.log((dateto.value/1000).toFixed(0))
         let tags = [
               ["i", msg, "text"],
               ["param", "max_results", "150"],
@@ -129,6 +129,14 @@ async function send_search_request(msg) {
             tags_t.push(Tag.parse(tag))
           }
           let evt = new EventBuilder(kind, content, tags_t)
+          try{
+             res = await client.sendEventBuilder(evt)
+
+          }
+          catch(error){
+            console.log(error)
+          }
+
           res = await client.sendEventBuilder(evt)
           requestid = res.toHex()
         }
