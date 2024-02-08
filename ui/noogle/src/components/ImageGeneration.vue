@@ -30,6 +30,8 @@ let searching = false
 
 let listener = false
 
+let hasmultipleinputs = false
+
 function showDetails(user) {
    this.$bvModal.show("modal-details");
    this.modalData = user;
@@ -81,6 +83,14 @@ async function generate_image(message) {
         let tags = [
               ["i", message, "text"]
             ]
+
+        hasmultipleinputs = false
+        if (urlinput.value !== "" && urlinput.value.startsWith('http')){
+          let imagetag = ["i", urlinput.value, "url"]
+          tags.push(imagetag)
+          hasmultipleinputs = true
+           console.log(urlinput.value)
+        }
 
 
 
@@ -161,8 +171,6 @@ async function  listen() {
 
               }
               if (resonsetorequest === true) {
-
-
                 if (event.kind === 7000) {
 
 
@@ -211,9 +219,13 @@ async function  listen() {
                       }
                     }
                     if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
-                      dvms.push(jsonentry)
-                    }
+                      if (!hasmultipleinputs  ||
+                          (hasmultipleinputs && jsonentry.id !==  "04f74530a6ede6b24731b976b8e78fb449ea61f40ff10e3d869a3030c4edc91f")){
+                                              // DVM can not handle multiple inputs, straight up censorship until spec is fulfilled or requests are ignored.
+                         dvms.push(jsonentry)
+                      }
 
+                    }
 
                     dvms.find(i => i.id === jsonentry.id).status = status
 
@@ -247,7 +259,7 @@ async function  listen() {
 }
 
 
-
+const urlinput = ref("");
 
 function nextInput(e) {
   const next = e.currentTarget.nextElementSibling;
@@ -334,6 +346,7 @@ defineProps({
 
 import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
+import VueDatePicker from "@vuepic/vue-datepicker";
 
 const isModalOpened = ref(false);
 const modalcontent = ref("");
@@ -372,7 +385,18 @@ const submitHandler = async () => {
      <input class="c-Input" autofocus placeholder="A purple ostrich..." v-model="message" @keyup.enter="generate_image(message)" @keydown.enter="nextInput">
      <button class="v-Button"  @click="generate_image(message)">Generate Image</button>
     </h3>
+<details class="collapse bg-base " className="advanced" >
+  <summary class="collapse-title font-thin bg">Advanced Options</summary>
+  <div class="collapse-content font-size-0" className="z-10" id="collapse-settings">
+    <div>
+          <h4 className="inline-flex flex-none font-thin">Url to existing image:</h4>
+    <div className="inline-flex flex-none" style="width: 10px;"></div>
+    <input class="c-Input" style="width: 300px;"  placeholder="https://image.nostr.build/image123.jpg"  v-model="urlinput">
+    </div>
 
+
+  </div>
+</details>
   </div>
   <br>
 
