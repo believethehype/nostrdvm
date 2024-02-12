@@ -53,9 +53,7 @@ class AdvancedSearch(DVMTaskInterface):
         search = ""
         max_results = 100
         relay = "wss://relay.nostr.band"
-        if self.options.get("relay") and self.options.get("relay") != "":
-            relay = self.options['relay']
-
+        
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
