@@ -103,9 +103,9 @@ class AdvancedSearchWine(DVMTaskInterface):
 
             userkeys.append(userkey)
 
-        print("Sending job to Server")
+        print("Sending job to nostr.wine API")
         if options["users"]:
-            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0] + "&limit=100" + "&sort=time" + "&until=" + str(options["until"]) + "&since=" + str(options["since"]))
+            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0][1] + "&limit=100" + "&sort=time" + "&until=" + str(options["until"]) + "&since=" + str(options["since"]))
         else:
             url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + "&limit=100" + "&sort=time" + "&until=" + str(options["until"]) + "&since=" + str(options["since"]))
 
