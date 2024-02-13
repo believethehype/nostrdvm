@@ -34,6 +34,7 @@
           <h3 className="card-title">Nip07 Login</h3>
           <p>Use a Browser Nip07 Extension like getalby or nos2x to login or use Amber on Android</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
+          <!-- <button className="btn" @click="sign_in_nip46()">NsecBunker</button>  Not working on server end rn.-->
          <template v-if="supports_android_signer">
           <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
         </template>
@@ -54,7 +55,17 @@ import {
   Filter,
   initLogger,
   LogLevel,
-  Timestamp, Keys, NostrDatabase, ClientBuilder, ClientZapper, Alphabet, SingleLetterTag, Options, Duration, PublicKey
+  Timestamp,
+  Keys,
+  NostrDatabase,
+  ClientBuilder,
+  ClientZapper,
+  Alphabet,
+  SingleLetterTag,
+  Options,
+  Duration,
+  PublicKey,
+  Nip46Signer, NegentropyDirection, NegentropyOptions
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -69,7 +80,8 @@ const isDark = useDark();
 
 
 let nip89dvms = []
-let logger = true
+
+let logger = false
 export default {
    data() {
     return {
@@ -223,7 +235,80 @@ export default {
         localStorage.setItem('nostr-key', "")
         console.log("Client connected")
         await this.get_user_info(pubkey)
+        //await this.reconcile_all_profiles()
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
+
+      } catch (error) {
+        console.log(error);
+      }
+    },
+
+    async sign_in_nip46() {
+
+      try {
+
+        await loadWasmAsync();
+
+
+
+          let connectionstring = ""
+          if (localStorage.getItem('nostr-key') !== "" && localStorage.getItem('nostr-key').startsWith("nsecbunker://") ){
+            connectionstring = localStorage.getItem('nostr-key')
+          }
+
+        if (connectionstring === ""){
+              //ADD DEFAULT TEST STRING FOR NOW, USE USER INPUT LATER
+              connectionstring = "nsecbunker://npub1ffske30n349f7z3sccn6n90f9dxxqhcy5n4cgpq32355ka2ye6ls7sa6t4#7a53c7292aa6a8f731cd6fcc15b396213c6a7b0448f9e8994b2479f8832c029f?relay=wss://relay.nsecbunker.com"
+        }
+
+        if (connectionstring.startsWith("nsecbunker://")){
+           connectionstring = connectionstring.replace("nsecbunker://", "")
+           let split = connectionstring.split("?relay=")
+           let relay_url = split[1]
+           let split2 = split[0].split("#")
+           let publickey = Keys.fromPkStr(split2[0]).publicKey
+           let app_keys = Keys.fromSkStr(split2[1])
+
+
+        let nip46_signer = new Nip46Signer(relay_url, app_keys, publickey) ;
+            try{
+              this.signer = ClientSigner.nip46(nip46_signer);
+              console.log("SIGNER: " + this.signer)
+
+
+            } catch (error) {
+            console.log(error);
+             this.signer = ClientSigner.keys(Keys.generate())
+          }
+
+        //let zapper = ClientZapper.webln()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+        let client = new ClientBuilder().signer(this.signer).opts(opts).build()
+
+        await client.addRelay(relay_url)
+        for (const relay of store.state.relays){
+                 await client.addRelay(relay);
+              }
+
+        const pubkey = await nip46_signer.signerPublicKey()
+        console.log("PUBKEY : " + pubkey.toBech32())
+        await client.connect();
+
+        store.commit('set_client', client)
+        store.commit('set_pubkey', pubkey)
+        store.commit('set_hasEventListener', false)
+        localStorage.setItem('nostr-key-method', "nip46")
+        localStorage.setItem('nostr-key', connectionstring)
+        console.log("Client connected")
+        await this.get_user_info(pubkey)
+        //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
+
+
+     }
+        else {
+          miniToastr.showMessage("Invalid Nsecbunker url")
+        }
+
 
       } catch (error) {
         console.log(error);
@@ -334,7 +419,41 @@ export default {
 
 
     },
+    async reconcile_all_profiles() {
 
+      let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+      let db = NostrDatabase.indexeddb("profiles");
+      let signer = ClientSigner.keys(keys) //TODO store keys
+      dbclient = new ClientBuilder().signer(signer).database(await db).build()
+
+      await dbclient.addRelay("wss://relay.damus.io");
+      await dbclient.connect();
+      let direction = NegentropyDirection.Down;
+      let opts = new NegentropyOptions().direction(direction);
+
+
+      let followings = []
+      let followers_filter = new Filter().author(store.state.pubkey).kind(3).limit(1)
+      let followers = await dbclient.getEventsOf([followers_filter], 10)
+
+      console.log(followers)
+    if (followers.length > 0){
+      console.log(followers.length)
+          for (let tag of followers[0].tags) {
+        console.log(tag.asVec())
+        if (tag.asVec()[0] === "p") {
+          let following = tag.asVec()[1]
+          followings.push(PublicKey.fromHex(following))
+        }
+    }
+
+      }
+      console.log("Followings: " + (followings.length).toString())
+
+
+      let filter = new Filter().kind(0).authors(followings)
+      await dbclient.reconcile(filter, opts);
+    },
 
 
     async get_user_info(pubkey){
@@ -364,7 +483,7 @@ export default {
       this.current_user = ""
       localStorage.setItem('nostr-key-method', "anon")
       localStorage.setItem('nostr-key', "")
-      await this.state.client.shutdown();
+      //await this.state.client.shutdown();
       await this.sign_in_anon()
     }
   },
