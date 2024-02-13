@@ -34,7 +34,7 @@
           <h3 className="card-title">Nip07 Login</h3>
           <p>Use a Browser Nip07 Extension like getalby or nos2x to login or use Amber on Android</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
-          <!-- <button className="btn" @click="sign_in_nip46()">NsecBunker</button>  Not working on server end rn.-->
+          <button className="btn" @click="onSignupClick()">Nostr Login</button>
          <template v-if="supports_android_signer">
           <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
         </template>
@@ -73,6 +73,10 @@ import Nip89 from "@/components/Nip89.vue";
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
+import { init as initNostrLogin  } from "nostr-login"
+import { launch as launchNostrLoginDialog } from "nostr-login"
+
+
 import {useDark, useToggle} from "@vueuse/core";
 const isDark = useDark();
 //const toggleDark = useToggle(isDark);
@@ -93,6 +97,9 @@ export default {
   },
   async mounted() {
      try{
+
+        await initNostrLogin({/*options*/})
+
         if (amberSignerService.supported) {
           this.supports_android_signer = true;
         }
@@ -132,6 +139,13 @@ export default {
         } else {
           document.documentElement.classList.remove('dark')
         }
+    },
+
+     onSignupClick() {
+      // launch signup screen
+      launchNostrLoginDialog({
+        startScreen: 'signup'
+      })
     },
 
     async sign_in_anon() {
