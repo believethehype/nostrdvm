@@ -16,9 +16,7 @@ import {
 import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
-import searchdvms from './data/searchdvms.json'
 import {computed, watch} from "vue";
-import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";

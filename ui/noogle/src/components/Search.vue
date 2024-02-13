@@ -1,4 +1,6 @@
 <script setup>
+
+
 import {
   Client,
   Filter,
@@ -9,14 +11,12 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event, Alphabet
+  Nip19Event, Alphabet, ClientBuilder, ClientSigner, Keys, NostrDatabase, NegentropyOptions, NegentropyDirection
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
-import searchdvms from './data/searchdvms.json'
 import {computed, onMounted, ref} from "vue";
-import countries from "@/components/data/countries.json";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
 import VueDatePicker from '@vuepic/vue-datepicker';
@@ -28,12 +28,15 @@ let listener = false
 let searching = false
 
 const message = ref("");
+const fromuser = ref("");
 
-
+let dbclient = Client
+let usernames = []
 
 
 const datefrom = ref(new Date().setFullYear(new Date().getFullYear() - 1));
 const dateto = ref(Date.now());
+
 
 onMounted(async () => {
   let urlParams = new URLSearchParams(window.location.search);
@@ -42,6 +45,10 @@ onMounted(async () => {
     await sleep(1000)
     await send_search_request(message.value)
   }
+
+ await sleep(1000)
+await reconcile_all_profiles()
+
 })
 
 
@@ -51,9 +58,47 @@ onMounted(async () => {
 
 
 
+
+
 const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
+
+   async function reconcile_all_profiles() {
+      if (store.state.pubkey !== undefined){
+
+      let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+      let db = NostrDatabase.indexeddb("profiles");
+      let signer = ClientSigner.keys(keys) //TODO store keys
+      dbclient = new ClientBuilder().signer(signer).database(await db).build()
+
+      await dbclient.addRelay("wss://relay.damus.io");
+      await dbclient.connect();
+      let direction = NegentropyDirection.Down;
+      let opts = new NegentropyOptions().direction(direction);
+
+
+      let followings = []
+      let followers_filter = new Filter().author(store.state.pubkey).kind(3).limit(1)
+      let followers = await dbclient.getEventsOf([followers_filter], 10)
+
+    if (followers.length > 0){
+          for (let tag of followers[0].tags) {
+        if (tag.asVec()[0] === "p") {
+          let following = tag.asVec()[1]
+          followings.push(PublicKey.fromHex(following))
+        }
+    }
+
+      }
+      console.log("Followings: " + (followings.length).toString())
+
+
+      let filter = new Filter().kind(0).authors(followings)
+      await dbclient.reconcile(filter, opts);
+    }
+   }
+
 
 async function send_search_request(msg) {
    try {
@@ -87,6 +132,12 @@ async function send_search_request(msg) {
           const userPubkey = PublicKey.fromBech32(word.replace("@", "")).toHex()
           const pTag = Tag.parse(["p", userPubkey]);
           users.push(pTag.asVec());
+        }
+
+        if (fromuser.value !== ""){
+           const userPubkey = PublicKey.fromBech32(fromuser.value.replace("@", "")).toHex()
+           const pTag = Tag.parse(["p", userPubkey]);
+            users.push(pTag.asVec());
         }
 
         msg = search.replace(/from:|to:|@/g, '').trim();
@@ -166,15 +217,17 @@ async function getEvents(eventids) {
   return await client.getEventsOf([event_filter], 5)
 }
 
+
 async function get_user_infos(pubkeys){
         let profiles = []
         let client = store.state.client
         const profile_filter = new Filter().kind(0).authors(pubkeys)
         let evts = await client.getEventsOf([profile_filter], 10)
-        console.log("PROFILES:" + evts.length)
+
         for (const entry of evts){
           try{
             let contentjson = JSON.parse(entry.content)
+             console.log(contentjson)
             profiles.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
           }
           catch(error){
@@ -309,12 +362,12 @@ async function  listen() {
                       for (const evt of events) {
                         let p = profiles.find(record => record.author === evt.author.toHex())
                         let bech32id = evt.id.toBech32()
-                        let nip19 = new Nip19Event(event.id, event.author, store.state.relays)
+                        let nip19 = new Nip19Event(evt.id, evt.author, store.state.relays)
                         let nip19bech32 = nip19.toBech32()
                         let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
                         let name = p === undefined ? bech32id : p["profile"]["name"]
-                        let highlighterurl = "https://highlighter.com/a/" + bech32id
-                        let njumpurl = "https://njump.me/" + bech32id
+                        let highlighterurl = "https://highlighter.com/e/" +  nip19bech32
+                        let njumpurl = "https://njump.me/" + nip19bech32
                         let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
                         let uri = "nostr:" + bech32id //  nip19.toNostrUri()
 
@@ -379,12 +432,55 @@ function nextInput(e) {
   }
 }
 
+async function checkuser(msg){
+  usernames = []
+    let profiles = await get_user_from_search(msg)
+    for (let profile of profiles){
+      usernames.push(profile)
+    }
+
+
+
+
+
+}
+
+async function get_user_from_search(name){
+        name = "\"name\":" + name
+        let profiles = []
+        let filter1 = new Filter().kind(0).search(name)
+        let evts = await dbclient.database.query([filter1])
+
+
+
+        //const profile_filter = new Filter().kind(0).search(name)
+        //let evts = await client.getEventsOf([profile_filter], 3)
+
+        for (const entry of evts){
+          try{
+            let contentjson = JSON.parse(entry.content)
+             //console.log(entry.content)
+            profiles.push({profile: contentjson, author: entry.author.toBech32(), createdAt: entry.createdAt});
+          }
+          catch(error){
+            console.log(error)
+          }
+
+        }
+
+        return profiles
+
+    }
+
 defineProps({
   msg: {
     type: String,
     required: false
   },
 })
+
+
+
 
 </script>
 
@@ -399,13 +495,37 @@ defineProps({
       Search the Nostr with Data Vending Machines</h2>
       <h3>
        <br>
-       <input class="c-Input" type="search" name="s" autofocus placeholder="Search..." v-model="message"  @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
-       <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
+
+        <input class="c-Input" type="search" name="s" autofocus placeholder="Search..." v-model="message"   @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
+
+
+
+        <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
       </h3>
 
     <details class="collapse bg-base " className="advanced" >
   <summary class="collapse-title font-thin bg">Advanced Options</summary>
   <div class="collapse-content font-size-0" className="z-10" id="collapse-settings">
+
+    <div>
+    <h4 className="inline-flex flex-none font-thin">by: </h4>
+       <div className="inline-flex flex-none" style="width: 10px;"></div>
+        <input list="users" id="user" class="u-Input" style="margin-left: 10px" type="search" name="user" autofocus  placeholder="npub..." v-model="fromuser" @input="checkuser(fromuser)">
+
+     <datalist id="users">
+          <option v-for="profile in usernames" :value="profile.author">
+
+            {{profile.profile.name + ' (' + profile.profile.nip05 + ')'}}
+
+          </option>
+      </datalist>
+    </div>
+  </div>
+
+
+
+          <div className="inline-flex flex-none" style="width: 20px;"></div>
+
     <div>
           <h4 className="inline-flex flex-none font-thin">from:</h4>
     <div className="inline-flex flex-none" style="width: 10px;"></div>
@@ -418,10 +538,7 @@ defineProps({
     <div className="inline-flex flex-none" style="width: 10px;"></div>
     <VueDatePicker :teleport="true" :dark="true" position="left" className="bg-base-200 inline-flex flex-none" style="width: 220px;" v-model="dateto"></VueDatePicker>
     </div>
-
-  </div>
 </details>
-
     </div>
     <div class="max-w-5xl relative space-y-3">
       <div class="grid grid-cols-1 gap-6">
@@ -465,6 +582,15 @@ defineProps({
 
 }
 
+.u-Input {
+    @apply bg-base-200 text-accent dark:bg-base-200 dark:text-white  focus:ring-white  border border-transparent px-3 py-1.5 text-sm leading-4 text-accent-content transition-colors duration-300  focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+
+  width: 220px;
+  height: 35px;
+
+
+}
+
 .logo {
      display: flex;
     width:100%;
@@ -485,7 +611,10 @@ h4 {
 .greetings h3 {
   text-align: center;
 
+
 }
+
+
 
 @media (min-width: 1000px) {
 

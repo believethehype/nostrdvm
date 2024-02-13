@@ -20,8 +20,8 @@
         <div style="padding: 2px; text-align: left;" >
           <a class="menusmall" :href="links.uri" target="_blank">Nostr Client</a>
           <a class="menusmall" :href="links.njump" target="_blank">NJump</a>
-          <a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a>
-          <!-- <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a> -->
+          <!--<a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a> -->
+          <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a>
       </div>
    <!--   <p>{{content}}</p> -->
      </template>
