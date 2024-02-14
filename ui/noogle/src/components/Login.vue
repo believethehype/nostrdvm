@@ -34,7 +34,7 @@
           <h3 className="card-title">Nip07 Login</h3>
           <p>Use a Browser Nip07 Extension like getalby or nos2x to login or use Amber on Android</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
-          <!-- <button className="btn" @click="sign_in_nip46()">NsecBunker</button>  Not working on server end rn.-->
+          <button className="btn" @click="sign_in_nostr_login()">Nostr Login</button>
          <template v-if="supports_android_signer">
           <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
         </template>
@@ -73,6 +73,11 @@ import Nip89 from "@/components/Nip89.vue";
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
+import { init as initNostrLogin  } from "nostr-login"
+import { launch as launchNostrLoginDialog } from "nostr-login"
+import { logout as logoutNostrLogin } from "nostr-login"
+
+
 import {useDark, useToggle} from "@vueuse/core";
 const isDark = useDark();
 //const toggleDark = useToggle(isDark);
@@ -83,7 +88,7 @@ let nip89dvms = []
 
 let logger = false
 export default {
-   data() {
+  data() {
     return {
       current_user: "",
       avatar: "",
@@ -92,47 +97,102 @@ export default {
     };
   },
   async mounted() {
-     try{
-        if (amberSignerService.supported) {
-          this.supports_android_signer = true;
-        }
-        
-        if (localStorage.getItem('nostr-key-method') === 'nip07')
-        {
-           await this.sign_in_nip07()
-        }
+    try {
 
-        else  if (localStorage.getItem('nostr-key-method') === 'android-signer')
-        {
-          let key = ""
-          if (localStorage.getItem('nostr-key') !== ""){
-            key = localStorage.getItem('nostr-key')
-          }
-          await this.sign_in_amber(key)
-        }
-        else {
-          await this.sign_in_anon()
-        }
 
-        await this.getnip89s()
-     }
-    catch (error){
-       console.log(error);
+
+      if (amberSignerService.supported) {
+        this.supports_android_signer = true;
+      }
+
+      if (localStorage.getItem('nostr-key-method') === 'nip07') {
+        await this.sign_in_nip07()
+      }
+      else if (localStorage.getItem('nostr-key-method') === 'nostr-login'){
+        console.log(localStorage.getItem('__nostrlogin_nip46'))
+        await this.sign_in_nostr_login()
+      }
+
+      else if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+        let key = ""
+        if (localStorage.getItem('nostr-key') !== "") {
+          key = localStorage.getItem('nostr-key')
+        }
+        await this.sign_in_amber(key)
+      }
+      else {
+        console.log("NOH")
+        await this.sign_in_anon()
+      }
+
+      await this.getnip89s()
+    } catch (error) {
+      console.log(error);
     }
   },
 
   methods: {
 
-    toggleDark(){
-       isDark.value = !isDark.value
-       useToggle(isDark);
-       console.log(isDark.value)
+    toggleDark() {
+      isDark.value = !isDark.value
+      useToggle(isDark);
+      console.log(isDark.value)
       if (localStorage.isDark === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark')
-        } else {
-          document.documentElement.classList.remove('dark')
-        }
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
     },
+
+    async sign_in_nostr_login() {
+      await initNostrLogin({/*options*/})
+
+      // launch signup screen
+      if (!localStorage.getItem('__nostrlogin_nip46')){
+           await launchNostrLoginDialog({
+        /*startScreen: 'signup'*/
+      })
+      }
+
+      await loadWasmAsync();
+      let nip07_signer = new Nip07Signer();
+      try {
+        this.signer = ClientSigner.nip07(nip07_signer);
+        console.log("SIGNER: " + this.signer.toString())
+
+
+
+
+      let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+      let client = new ClientBuilder().signer(this.signer).opts(opts).build()
+
+
+      for (const relay of store.state.relays) {
+        await client.addRelay(relay);
+      }
+
+      const pubkey = await nip07_signer.getPublicKey();
+      console.log(pubkey.toBech32())
+      await client.connect();
+
+
+        store.commit('set_client', client)
+      store.commit('set_pubkey', pubkey)
+      store.commit('set_hasEventListener', false)
+      localStorage.setItem('nostr-key-method', "nostr-login")
+      localStorage.setItem('nostr-key', '')
+      console.log("Client Nip46 connected")
+      await this.get_user_info(pubkey)
+      console.log(pubkey.toBech32())
+      //await this.reconcile_all_profiles()
+    
+
+
+ } catch (error) {
+        console.log(error);
+      }
+    },
+
 
     async sign_in_anon() {
       try {
@@ -172,9 +232,10 @@ export default {
         store.commit('set_client', client)
         store.commit('set_pubkey', pubkey)
         store.commit('set_hasEventListener', false)
+        console.log("LOGINANON")
         localStorage.setItem('nostr-key-method', "anon")
         localStorage.setItem('nostr-key', "")
-        console.log("Client connected")
+        console.log("Client Anon connected")
 
 
       } catch (error) {
@@ -232,8 +293,8 @@ export default {
         store.commit('set_pubkey', pubkey)
         store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "nip07")
-        localStorage.setItem('nostr-key', "")
-        console.log("Client connected")
+        localStorage.setItem('nostr-key', pubkey.toHex())
+        console.log("Client Nip07 connected")
         await this.get_user_info(pubkey)
         //await this.reconcile_all_profiles()
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
@@ -258,7 +319,7 @@ export default {
 
         if (connectionstring === ""){
               //ADD DEFAULT TEST STRING FOR NOW, USE USER INPUT LATER
-              connectionstring = "nsecbunker://npub1ffske30n349f7z3sccn6n90f9dxxqhcy5n4cgpq32355ka2ye6ls7sa6t4#7a53c7292aa6a8f731cd6fcc15b396213c6a7b0448f9e8994b2479f8832c029f?relay=wss://relay.nsecbunker.com"
+              connectionstring = "bunker://7f2d38c4f3cf2070935bad7cab046ad088dcef2de4b0b985f2174ea22a094778?relay=wss://relay.nsec.app"
         }
 
         if (connectionstring.startsWith("nsecbunker://")){
@@ -394,8 +455,6 @@ export default {
             if (entry.tags[tag].asVec()[0] === "k")
               if(entry.tags[tag].asVec()[1] >= 5000 && entry.tags[tag].asVec()[1] <= 5999 &&  deadnip89s.filter(i => i.id === entry.id.toHex() ).length === 0) {   // blocklist.indexOf(entry.id.toHex()) < 0){
 
-              //  console.log(entry.tags[tag].asVec()[1])
-
                 try {
 
                     let jsonentry = JSON.parse(entry.content)
@@ -419,41 +478,6 @@ export default {
 
 
     },
-    async reconcile_all_profiles() {
-
-      let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
-      let db = NostrDatabase.indexeddb("profiles");
-      let signer = ClientSigner.keys(keys) //TODO store keys
-      dbclient = new ClientBuilder().signer(signer).database(await db).build()
-
-      await dbclient.addRelay("wss://relay.damus.io");
-      await dbclient.connect();
-      let direction = NegentropyDirection.Down;
-      let opts = new NegentropyOptions().direction(direction);
-
-
-      let followings = []
-      let followers_filter = new Filter().author(store.state.pubkey).kind(3).limit(1)
-      let followers = await dbclient.getEventsOf([followers_filter], 10)
-
-      console.log(followers)
-    if (followers.length > 0){
-      console.log(followers.length)
-          for (let tag of followers[0].tags) {
-        console.log(tag.asVec())
-        if (tag.asVec()[0] === "p") {
-          let following = tag.asVec()[1]
-          followings.push(PublicKey.fromHex(following))
-        }
-    }
-
-      }
-      console.log("Followings: " + (followings.length).toString())
-
-
-      let filter = new Filter().kind(0).authors(followings)
-      await dbclient.reconcile(filter, opts);
-    },
 
 
     async get_user_info(pubkey){
@@ -476,13 +500,23 @@ export default {
               this.current_user = profile["name"]
               this.avatar = profile["picture"]
 
-            }
+        }
+        else{
+           this.current_user = pubkey.toBech32()
+           this.avatar = "https://noogle.lol/favicon.ico"
+
+          }
     },
 
     async sign_out(){
       this.current_user = ""
+      if(localStorage.getItem('nostr-key-method') === "nostr-login"){
+        await logoutNostrLogin()
+      }
+      console.log("LOGOUT")
       localStorage.setItem('nostr-key-method', "anon")
       localStorage.setItem('nostr-key', "")
+
       //await this.state.client.shutdown();
       await this.sign_in_anon()
     }

@@ -227,7 +227,7 @@ async function get_user_infos(pubkeys){
         for (const entry of evts){
           try{
             let contentjson = JSON.parse(entry.content)
-             console.log(contentjson)
+             //console.log(contentjson)
             profiles.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
           }
           catch(error){
