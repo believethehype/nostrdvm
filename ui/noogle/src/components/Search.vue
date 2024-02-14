@@ -413,7 +413,12 @@ async function checkuser(msg){
 
 async function get_user_from_search(name){
         name = "\"name\":" + name
-        let dbclient = store.state.dbclient
+
+        if (store.state.dbclient.database === undefined){
+          console.log("not logged in, not getting profile suggestions")
+          return []
+        }
+       let dbclient = store.state.dbclient
         let profiles = []
         let filter1 = new Filter().kind(0).search(name)
         let evts = await dbclient.database.query([filter1])
