@@ -30,7 +30,7 @@ let searching = false
 const message = ref("");
 const fromuser = ref("");
 
-let dbclient = Client
+
 let usernames = []
 
 
@@ -46,8 +46,7 @@ onMounted(async () => {
     await send_search_request(message.value)
   }
 
- await sleep(1000)
-await reconcile_all_profiles()
+ await sleep(2000)
 
 })
 
@@ -64,40 +63,7 @@ const sleep = (ms) => {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-   async function reconcile_all_profiles() {
-      if (store.state.pubkey !== undefined){
 
-      let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
-      let db = NostrDatabase.indexeddb("profiles");
-      let signer = ClientSigner.keys(keys) //TODO store keys
-      dbclient = new ClientBuilder().signer(signer).database(await db).build()
-
-      await dbclient.addRelay("wss://relay.damus.io");
-      await dbclient.connect();
-      let direction = NegentropyDirection.Down;
-      let opts = new NegentropyOptions().direction(direction);
-
-
-      let followings = []
-      let followers_filter = new Filter().author(store.state.pubkey).kind(3).limit(1)
-      let followers = await dbclient.getEventsOf([followers_filter], 10)
-
-    if (followers.length > 0){
-          for (let tag of followers[0].tags) {
-        if (tag.asVec()[0] === "p") {
-          let following = tag.asVec()[1]
-          followings.push(PublicKey.fromHex(following))
-        }
-    }
-
-      }
-      console.log("Followings: " + (followings.length).toString())
-
-
-      let filter = new Filter().kind(0).authors(followings)
-      await dbclient.reconcile(filter, opts);
-    }
-   }
 
 
 async function send_search_request(msg) {
@@ -447,6 +413,7 @@ async function checkuser(msg){
 
 async function get_user_from_search(name){
         name = "\"name\":" + name
+        let dbclient = store.state.dbclient
         let profiles = []
         let filter1 = new Filter().kind(0).search(name)
         let evts = await dbclient.database.query([filter1])

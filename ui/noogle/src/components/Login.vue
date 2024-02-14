@@ -183,9 +183,10 @@ export default {
       localStorage.setItem('nostr-key', '')
       console.log("Client Nip46 connected")
       await this.get_user_info(pubkey)
+        await this.reconcile_all_profiles(pubkey)
       console.log(pubkey.toBech32())
       //await this.reconcile_all_profiles()
-    
+
 
 
  } catch (error) {
@@ -296,6 +297,7 @@ export default {
         localStorage.setItem('nostr-key', pubkey.toHex())
         console.log("Client Nip07 connected")
         await this.get_user_info(pubkey)
+          await this.reconcile_all_profiles(pubkey)
         //await this.reconcile_all_profiles()
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
 
@@ -361,7 +363,10 @@ export default {
         localStorage.setItem('nostr-key-method', "nip46")
         localStorage.setItem('nostr-key', connectionstring)
         console.log("Client connected")
+
         await this.get_user_info(pubkey)
+          await this.reconcile_all_profiles(pubkey)
+
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
 
 
@@ -415,7 +420,9 @@ export default {
         store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "android-signer")
         localStorage.setItem('nostr-key', hexKey)
+
         await this.get_user_info(publicKey)
+            await this.reconcile_all_profiles(publicKey)
                 }
         catch (error){
           alert(error)
@@ -479,6 +486,42 @@ export default {
 
     },
 
+async reconcile_all_profiles(publicKey) {
+    {
+      let dbclient = Client
+      let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+      let db = NostrDatabase.indexeddb("profiles");
+      let signer = ClientSigner.keys(keys) //TODO store keys
+      dbclient = new ClientBuilder().signer(signer).database(await db).build()
+
+      await dbclient.addRelay("wss://relay.damus.io");
+      await dbclient.connect();
+      store.commit('set_dbclient', dbclient)
+      let direction = NegentropyDirection.Down;
+      let opts = new NegentropyOptions().direction(direction);
+
+
+      let followings = []
+      let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
+      let followers = await dbclient.getEventsOf([followers_filter], 10)
+
+    if (followers.length > 0){
+          for (let tag of followers[0].tags) {
+        if (tag.asVec()[0] === "p") {
+          let following = tag.asVec()[1]
+          followings.push(PublicKey.fromHex(following))
+        }
+    }
+
+      }
+      console.log("Followings: " + (followings.length).toString())
+
+
+      let filter = new Filter().kind(0).authors(followings)
+      await dbclient.reconcile(filter, opts);
+
+    }
+   },
 
     async get_user_info(pubkey){
         let client = store.state.client
