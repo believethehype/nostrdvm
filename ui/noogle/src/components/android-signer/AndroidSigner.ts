@@ -1,28 +1,19 @@
 // taken from https://github.com/hzrd149/nostrudel
 
-import { getEventHash, nip19, verifyEvent } from "nostr-tools";
+import { nip19, verifyEvent } from "nostr-tools";
 import createDefer, { Deferred } from "./classes/deffered";
-import { getPubkeyFromDecodeResult, isHex, isHexKey } from "./helpers/nip19";
-import { DraftNostrEvent, NostrEvent } from "./types/nostr-event";
+import { getPubkeyFromDecodeResult, isHexKey } from "./helpers/nip19";
+import { NostrEvent } from "./types/nostr-event";
 
 export function createGetPublicKeyIntent() {
   return `intent:#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=get_public_key;end`;
 }
-export function createSignEventIntent(draft: DraftNostrEvent) {
+export function createSignEventIntent(draft) {
   return `intent:${encodeURIComponent(
     JSON.stringify(draft),
-  )}#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=sign_event;end`;
+  )}#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=event;S.type=sign_event;end`;
 }
-export function createNip04EncryptIntent(pubkey: string, plainText: string) {
-  return `intent:${encodeURIComponent(
-    plainText,
-  )}#Intent;scheme=nostrsigner;S.pubKey=${pubkey};S.compressionType=none;S.returnType=signature;S.type=nip04_encrypt;end`;
-}
-export function createNip04DecryptIntent(pubkey: string, data: string) {
-  return `intent:${encodeURIComponent(
-    data,
-  )}#Intent;scheme=nostrsigner;S.pubKey=${pubkey};S.compressionType=none;S.returnType=signature;S.type=nip04_decrypt;end`;
-}
+
 let pendingRequest: Deferred<string> | null = null;
 
 function rejectPending() {
@@ -72,31 +63,18 @@ async function getPublicKey() {
   throw new Error("Expected clipboard to have pubkey");
 }
 
-async function signEvent(draft: DraftNostrEvent & { pubkey: string }): Promise<NostrEvent> {
-  const draftWithId = { ...draft, id: draft.id || getEventHash(draft) };
-  const sig = await intentRequest(createSignEventIntent(draftWithId));
-  if (!isHex(sig)) throw new Error("Expected hex signature");
+async function signEvent(draft): Promise<NostrEvent> {
+  const signedEventJson = await intentRequest(createSignEventIntent(draft));
+  const signedEvent = JSON.parse(signedEventJson) as NostrEvent;
 
-  const event: NostrEvent = { ...draftWithId, sig };
-  if (!verifyEvent(event)) throw new Error("Invalid signature");
-  return event;
-}
-
-async function nip04Encrypt(pubkey: string, plaintext: string): Promise<string> {
-  const data = await intentRequest(createNip04EncryptIntent(pubkey, plaintext));
-  return data;
-}
-async function nip04Decrypt(pubkey: string, data: string): Promise<string> {
-  const plaintext = await intentRequest(createNip04DecryptIntent(pubkey, data));
-  return plaintext;
+  if (!verifyEvent(signedEvent)) throw new Error("Invalid signature");
+  return signedEvent;
 }
 
 const amberSignerService = {
   supported: navigator.userAgent.includes("Android") && navigator.clipboard,
   getPublicKey,
-  signEvent,
-  nip04Encrypt,
-  nip04Decrypt,
+  signEvent
 };
 
 export default amberSignerService;
