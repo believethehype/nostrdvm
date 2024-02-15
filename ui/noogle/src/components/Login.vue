@@ -31,8 +31,8 @@
       <div tabIndex={0} role="button" class="v-Button" >Sign in</div>
       <div tabIndex={0} className="dropdown-content -start-44 z-[1] horizontal card card-compact w-64 p-2 shadow bg-primary text-primary-content">
         <div className="card-body">
-          <h3 className="card-title">Nip07 Login</h3>
-          <p>Use a Browser Nip07 Extension like getalby or nos2x to login or use Amber on Android</p>
+          <h3 className="card-title">Login</h3>
+          <p>Use a Browser Nip07 Extension like getalby, nos2x or nsec.app, a nsec or ncryptsec or use Amber on Android to sign-in</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
           <button className="btn" @click="sign_in_nostr_login()">Nostr Login</button>
 
@@ -695,7 +695,7 @@ async reconcile_all_profiles(publicKey) {
     @apply bg-base-200 dark:bg-base-200 dark:text-white  focus:ring-white  border border-transparent px-3 py-1.5 text-sm leading-4 text-accent-content transition-colors duration-300  focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
 
   width: 220px;
-  height: 35px;
+
 
 
 }
