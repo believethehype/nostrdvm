@@ -35,9 +35,27 @@
           <p>Use a Browser Nip07 Extension like getalby or nos2x to login or use Amber on Android</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
           <button className="btn" @click="sign_in_nostr_login()">Nostr Login</button>
+
          <template v-if="supports_android_signer">
           <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
         </template>
+           <button className="btn" onclick="nsecmodal.showModal()">NSec/NCryptSec</button>
+      <dialog id="nsecmodal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">Login with key</h3>
+        <p class="py-4">Login with nsec or ncryptsec. Your keys will be stored in your Browser. This is the least recommended sign-in method</p>
+        <input class="u-Input" style="margin-left: 10px" type="search" name="user" autofocus  placeholder="nsec.../ncryptsec..." v-model="this.ncryptsec">
+        <input v-if="ncryptsec.startsWith('ncryptsec')" class="u-Input" style="margin-left: 10px" type="password" name="user" autofocus  placeholder="password..." v-model="this.pw">
+
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            <!-- if there is a button in form, it will close the modal -->
+            <button class="btn" @click="sign_in_key()">Login</button>
+          </form>
+        </div>
+      </div>
+</dialog>
         </div>
       </div>
     </div>
@@ -73,29 +91,39 @@ import Nip89 from "@/components/Nip89.vue";
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
+import nip49, {decryptwrapper} from "./android-signer/helpers/nip49";
 import { init as initNostrLogin  } from "nostr-login"
 import { launch as launchNostrLoginDialog } from "nostr-login"
 import { logout as logoutNostrLogin } from "nostr-login"
 
 
 import {useDark, useToggle} from "@vueuse/core";
+import {ref} from "vue";
 const isDark = useDark();
+
 //const toggleDark = useToggle(isDark);
 
 
 
 let nip89dvms = []
+const nsec =  ref("");
 
 let logger = false
 export default {
+
   data() {
     return {
       current_user: "",
       avatar: "",
       signer: "",
       supports_android_signer: false,
+      ncryptsec: ref(""),
+      pw: ref("")
+
+
     };
   },
+
   async mounted() {
     try {
 
@@ -107,6 +135,9 @@ export default {
 
       if (localStorage.getItem('nostr-key-method') === 'nip07') {
         await this.sign_in_nip07()
+      }
+      if (localStorage.getItem('nostr-key-method') === 'nsec') {
+        await this.sign_in_key(localStorage.getItem('nostr-key'))
       }
       else if (localStorage.getItem('nostr-key-method') === 'nostr-login'){
         console.log(localStorage.getItem('__nostrlogin_nip46'))
@@ -241,6 +272,70 @@ export default {
 
       } catch (error) {
         console.log(error);
+      }
+    },
+     async sign_in_key(nsec = "") {
+      try {
+         await loadWasmAsync();
+       if(logger){
+            try {
+                initLogger(LogLevel.debug());
+            } catch (error) {
+                console.log(error);
+            }
+        }
+       let key = ""
+       if (nsec !== ""){
+         key = nsec
+       }
+       else{
+           key = this.ncryptsec
+        if(this.ncryptsec.startsWith("ncryptsec")){
+
+          key = nip49.decryptwrapper(this.ncryptsec, this.pw)
+        }
+       }
+
+
+
+        let keys = Keys.fromSkStr(key)
+        this.signer = ClientSigner.keys(keys)
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+        let client = new ClientBuilder().signer(this.signer).opts(opts).build()
+
+        for (const relay of store.state.relays){
+           await client.addRelay(relay);
+        }
+
+        const pubkey =  keys.publicKey
+        await client.connect();
+
+        /*
+        const filter = new Filter().kind(6302).limit(20)
+        await client.reconcile(filter);
+        const filterl = new Filter().author(pubkey)
+        let test = await client.database.query([filterl])
+        for (let ev of test){
+          console.log(ev.asJson())
+        }*/
+
+
+
+
+        store.commit('set_client', client)
+        store.commit('set_pubkey', pubkey)
+        store.commit('set_hasEventListener', false)
+        console.log("LOGINANON")
+        localStorage.setItem('nostr-key-method', "nsec")
+        localStorage.setItem('nostr-key', keys.secretKey.toBech32())
+        console.log("Client key connected")
+         await this.get_user_info(pubkey)
+          await this.reconcile_all_profiles(pubkey)
+
+
+      } catch (error) {
+        console.log(error);
+        miniToastr.showMessage(error)
       }
     },
     async sign_in_nip07() {
@@ -594,5 +689,21 @@ async reconcile_all_profiles(publicKey) {
   height: 44px;
   width: 70px
 }
+
+
+.u-Input {
+    @apply bg-base-200 dark:bg-base-200 dark:text-white  focus:ring-white  border border-transparent px-3 py-1.5 text-sm leading-4 text-accent-content transition-colors duration-300  focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+
+  width: 220px;
+  height: 35px;
+
+
+}
+
+.modal{
+  @apply dark:text-white
+}
+
+
 
 </style>
