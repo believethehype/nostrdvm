@@ -18,7 +18,7 @@ const store = createStore({
       activesearchdvms: [],
       results:  [],
       relays: [
-          //"wss://relay.damus.io",
+          "wss://relay.damus.io",
         "wss://nos.lol",
         "wss://pablof7z.nostr1.com",
         "wss://relay.nostr.net",
