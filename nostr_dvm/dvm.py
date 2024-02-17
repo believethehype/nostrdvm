@@ -23,6 +23,7 @@ from nostr_dvm.utils.cashu_utils import redeem_cashu
 
 
 
+
 class DVM:
     dvm_config: DVMConfig
     admin_config: AdminConfig
@@ -43,8 +44,6 @@ class DVM:
         signer = NostrSigner.keys(self.keys)
         self.client = Client.with_opts(signer,opts)
 
-        if dvm_config.SHOWLOG:
-            init_logger(LogLevel.DEBUG)
 
         self.job_list = []
         self.jobs_on_hold_list = []

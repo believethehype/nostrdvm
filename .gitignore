@@ -181,3 +181,5 @@ ui/noogle/node_modules
 ui/noogle/.idea/
 ui/noogle/package-lock.json
 search.py
+identifier.sqlite
+.idea/dataSources.xml
