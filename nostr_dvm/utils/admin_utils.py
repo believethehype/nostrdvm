@@ -81,7 +81,7 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
 
     if adminconfig.DELETE_NIP89:
         event_id = adminconfig.EVENTID
-        keys = Keys.from_sk_str(
+        keys = Keys.parse(
             adminconfig.PRIVKEY)  # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
         fetch_nip89_paramters_for_deletion(keys, event_id, client, dvmconfig)
 

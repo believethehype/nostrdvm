@@ -3,7 +3,7 @@ import time
 from datetime import timedelta
 from nicegui import run, ui
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, \
-    Options, Timestamp, ClientSigner, EventId, Nip19Event, PublicKey
+    Options, Timestamp, NostrSigner, EventId, Nip19Event, PublicKey
 
 from nostr_dvm.utils import dvmconfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -13,11 +13,11 @@ from nostr_dvm.utils.definitions import EventDefinitions
 
 @ui.page('/', dark=True)
 def init():
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
     opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=2))
             .skip_disconnected_relays(True))
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client.with_opts(signer, opts)
     relay_list = dvmconfig.DVMConfig.RELAY_LIST
 

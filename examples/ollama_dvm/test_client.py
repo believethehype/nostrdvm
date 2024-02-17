@@ -4,7 +4,7 @@ from pathlib import Path
 from threading import Thread
 
 import dotenv
-from nostr_sdk import Keys, Client, ClientSigner, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt
+from nostr_sdk import Keys, Client, NostrSigner, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -12,7 +12,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 
 
 def nostr_client_test_llm(prompt):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
     relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
@@ -24,7 +24,7 @@ def nostr_client_test_llm(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
 
     for relay in relay_list:
@@ -35,7 +35,7 @@ def nostr_client_test_llm(prompt):
     return event.as_json()
 
 def nostr_client():
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Test Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")

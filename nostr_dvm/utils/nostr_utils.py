@@ -116,7 +116,7 @@ def check_and_decrypt_tags(event, dvm_config):
                 return None
 
             elif p == dvm_config.PUBLIC_KEY:
-                tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
                                          event.author(), event.content())
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
@@ -148,7 +148,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
                 return None
 
             elif event.author().to_hex() == dvm_config.PUBLIC_KEY:
-                tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
                                          PublicKey.from_hex(p), event.content())
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
@@ -164,7 +164,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
 
 
 def update_profile(dvm_config, client, lud16=""):
-    keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+    keys = Keys.parse(dvm_config.PRIVATE_KEY)
     nip89content = json.loads(dvm_config.NIP89.CONTENT)
     if nip89content.get("name"):
         name = nip89content.get("name")

@@ -5,7 +5,7 @@ from threading import Thread
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, ClientSigner
+    nip04_encrypt, NostrSigner
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -14,7 +14,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 
 # TODO HINT: Best use this path with a previously whitelisted privkey, as zapping events is not implemented in the lib/code
 def nostr_client_test_translation(input, kind, lang, sats, satsmax):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
     if kind == "text":
         iTag = Tag.parse(["i", input, "text"])
     elif kind == "event":
@@ -31,7 +31,7 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
 
     for relay in relay_list:
@@ -43,7 +43,7 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
 
 
 def nostr_client_test_image(prompt):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
@@ -60,7 +60,7 @@ def nostr_client_test_image(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -71,7 +71,7 @@ def nostr_client_test_image(prompt):
 
 
 def nostr_client_test_tts(prompt):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
     paramTag1 = Tag.parse(["param", "language", "en"])
@@ -86,7 +86,7 @@ def nostr_client_test_tts(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -97,8 +97,8 @@ def nostr_client_test_tts(prompt):
 
 
 def nostr_client_test_image_private(prompt, cashutoken):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
-    receiver_keys = Keys.from_sk_str(check_and_set_private_key("replicate_sdxl"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+    receiver_keys = Keys.parse(check_and_set_private_key("replicate_sdxl"))
 
     # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
 
@@ -125,7 +125,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params,
                                 [pTag, encrypted_tag]).to_event(keys)
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -136,11 +136,11 @@ def nostr_client_test_image_private(prompt, cashutoken):
 
 
 def nostr_client():
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
 
     dvmconfig = DVMConfig()
