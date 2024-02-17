@@ -14,7 +14,7 @@ class DVMConfig:
     PUBLIC_KEY: str = ""
     FIX_COST: float = None
     PER_UNIT_COST: float = None
-    SHOWLOG: bool = False  # Shows Nostr logs from Rust-Library, default off, turn on in config if needed.
+
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.wine",
                   "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
