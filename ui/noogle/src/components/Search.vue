@@ -233,7 +233,7 @@ async function  listen() {
             console.log("Received new event from", relayUrl);
             let resonsetorequest = false
 
-            sleep(1000).then(async () => {
+            sleep(1200).then(async () => {
 
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
