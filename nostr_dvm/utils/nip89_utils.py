@@ -4,7 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId
+from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import send_event
@@ -69,7 +69,7 @@ def nip89_fetch_all_dvms(client):
     for i in range(5000, 5999):
         ktags.append(str(i))
 
-    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tag(Alphabet.K, ktags)
+    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags)
     events = client.get_events_of([filter], timedelta(seconds=5))
     for event in events:
         print(event.as_json())
@@ -80,7 +80,7 @@ def nip89_fetch_events_pubkey(client, pubkey, kind):
     # for i in range(5000, 5999):
     #     ktags.append(str(i))
     nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.from_hex(pubkey)).
-                   custom_tag(Alphabet.K, ktags))
+                   custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags))
     events = client.get_events_of([nip89filter], timedelta(seconds=2))
 
     dvms = {}
