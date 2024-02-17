@@ -40,7 +40,7 @@ class DVMTaskInterface:
         self.NAME = name
         self.PRIVATE_KEY = dvm_config.PRIVATE_KEY
         if dvm_config.PUBLIC_KEY == "" or dvm_config.PUBLIC_KEY is None:
-            dvm_config.PUBLIC_KEY = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_hex()
+            dvm_config.PUBLIC_KEY = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_hex()
         self.PUBLIC_KEY = dvm_config.PUBLIC_KEY
         if dvm_config.FIX_COST is not None:
             self.FIX_COST = dvm_config.FIX_COST

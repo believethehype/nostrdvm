@@ -26,7 +26,7 @@
 
 import '../app.css'
 import store from "@/store.js";
-import {Alphabet, ClientBuilder, ClientSigner, Filter, Keys, NostrDatabase, Tag} from "@rust-nostr/nostr-sdk";
+import {Alphabet, ClientBuilder, NostrSigner, Filter, Keys, NostrDatabase, Tag} from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 

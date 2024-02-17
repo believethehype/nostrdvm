@@ -5,7 +5,7 @@ from threading import Thread
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, ClientSigner
+    nip04_encrypt, NostrSigner
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -14,7 +14,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 
 # TODO HINT: Best use this path with a previously whitelisted privkey, as zapping events is not implemented in the lib/code
 def nostr_client_test_translation(input, kind, lang, sats, satsmax):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
     if kind == "text":
         iTag = Tag.parse(["i", input, "text"])
     elif kind == "event":
@@ -31,7 +31,32 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+
+    for relay in relay_list:
+        client.add_relay(relay)
+    client.connect()
+    config = DVMConfig
+    send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+def nostr_client_test_search_profile(input):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    iTag = Tag.parse(["i", input, "text"])
+
+
+
+    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                           "wss://nostr-pub.wellorder.net"])
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
+    event = EventBuilder(EventDefinitions.KIND_NIP90_USER_SEARCH, str("Search for user"),
+                         [iTag, relaysTag, alttag]).to_event(keys)
+
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                  "wss://nostr-pub.wellorder.net"]
+
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
 
     for relay in relay_list:
@@ -41,9 +66,8 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
-
 def nostr_client_test_image(prompt):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
@@ -60,7 +84,7 @@ def nostr_client_test_image(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -71,7 +95,7 @@ def nostr_client_test_image(prompt):
 
 
 def nostr_client_test_tts(prompt):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
     paramTag1 = Tag.parse(["param", "language", "en"])
@@ -86,7 +110,7 @@ def nostr_client_test_tts(prompt):
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -97,8 +121,8 @@ def nostr_client_test_tts(prompt):
 
 
 def nostr_client_test_image_private(prompt, cashutoken):
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
-    receiver_keys = Keys.from_sk_str(check_and_set_private_key("replicate_sdxl"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+    receiver_keys = Keys.parse(check_and_set_private_key("replicate_sdxl"))
 
     # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
 
@@ -125,7 +149,7 @@ def nostr_client_test_image_private(prompt, cashutoken):
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params,
                                 [pTag, encrypted_tag]).to_event(keys)
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
@@ -136,11 +160,11 @@ def nostr_client_test_image_private(prompt, cashutoken):
 
 
 def nostr_client():
-    keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
 
     dvmconfig = DVMConfig()
@@ -158,8 +182,8 @@ def nostr_client():
     # nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
     # nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     # nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
-    nostr_client_test_image("a beautiful purple ostrich watching the sunset")
-
+    #nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+    nostr_client_test_search_profile("dontbelievew")
     # nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
 
     # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
