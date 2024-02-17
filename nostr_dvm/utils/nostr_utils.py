@@ -6,14 +6,14 @@ from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
-    Nip19Event
+    Nip19Event, SingleLetterTag
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
     split = event_id.split(":")
     if len(split) == 3:
         pk = PublicKey.from_hex(split[1])
-        id_filter = Filter().author(pk).custom_tag(Alphabet.D, [split[2]])
+        id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
         events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     else:
         if str(event_id).startswith('note'):
@@ -116,7 +116,7 @@ def check_and_decrypt_tags(event, dvm_config):
                 return None
 
             elif p == dvm_config.PUBLIC_KEY:
-                tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
                                          event.author(), event.content())
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
@@ -148,7 +148,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
                 return None
 
             elif event.author().to_hex() == dvm_config.PUBLIC_KEY:
-                tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
                                          PublicKey.from_hex(p), event.content())
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
@@ -164,7 +164,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
 
 
 def update_profile(dvm_config, client, lud16=""):
-    keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+    keys = Keys.parse(dvm_config.PRIVATE_KEY)
     nip89content = json.loads(dvm_config.NIP89.CONTENT)
     if nip89content.get("name"):
         name = nip89content.get("name")

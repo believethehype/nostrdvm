@@ -5,7 +5,7 @@ from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, Options, nip04_encrypt, ClientSigner
+    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner
 
 import time
 
@@ -21,9 +21,7 @@ from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt1
     parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
-use_logger = False
-if use_logger:
-    init_logger(LogLevel.DEBUG)
+
 
 
 class DVM:
@@ -37,13 +35,13 @@ class DVM:
     def __init__(self, dvm_config, admin_config=None):
         self.dvm_config = dvm_config
         self.admin_config = admin_config
-        self.keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         wait_for_send = True
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
 
-        signer = ClientSigner.keys(self.keys)
+        signer = NostrSigner.keys(self.keys)
         self.client = Client.with_opts(signer,opts)
 
 
@@ -472,7 +470,7 @@ class DVM:
             else:
                 content = reaction
 
-            keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+            keys = Keys.parse(dvm_config.PRIVATE_KEY)
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
             send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.NAME + "]" + ": Sent Kind " + str(

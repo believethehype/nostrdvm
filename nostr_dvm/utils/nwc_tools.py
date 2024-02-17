@@ -2,7 +2,7 @@ import json
 import os
 
 import requests
-from nostr_sdk import Keys, PublicKey, Client, nip04_encrypt, EventBuilder, Tag, ClientSigner
+from nostr_sdk import Keys, PublicKey, Client, nip04_encrypt, EventBuilder, Tag, NostrSigner
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -11,7 +11,7 @@ from nostr_dvm.utils.zap_utils import zaprequest
 
 def nwc_zap(connectionstr, bolt11, keys):
     target_pubkey, relay, secret = parse_connection_str(connectionstr)
-    SecretSK = Keys.from_sk_str(secret)
+    SecretSK = Keys.parse(secret)
 
     content = {
         "method": "pay_invoice",
@@ -20,7 +20,7 @@ def nwc_zap(connectionstr, bolt11, keys):
         }
     }
 
-    signer = ClientSigner.keys(keys)
+    signer = NostrSigner.keys(keys)
     client = Client(signer)
     client.add_relay(relay)
     client.connect()
@@ -47,7 +47,7 @@ def parse_connection_str(connectionstring):
 
 
 def make_nwc_account(identifier, nwcdomain):
-    pubkey = Keys.from_sk_str(os.getenv("DVM_PRIVATE_KEY_" + identifier.upper())).public_key().to_hex()
+    pubkey = Keys.parse(os.getenv("DVM_PRIVATE_KEY_" + identifier.upper())).public_key().to_hex()
     data = {
         'name': identifier,
         'host': os.getenv("LNBITS_HOST"),
@@ -77,7 +77,7 @@ def nwc_test(nwc_server):
     # connectionstring = "nostr+walletconnect:..."
     if connectionstring != "":
         # we use the keys from a test user
-        keys = Keys.from_sk_str(check_and_set_private_key("test"))
+        keys = Keys.parse(check_and_set_private_key("test"))
 
         # we zap npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8's profile 21 sats and say Cool stuff
         pubkey = PublicKey.from_bech32("npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8")

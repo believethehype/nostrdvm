@@ -15,6 +15,7 @@ class DVMConfig:
     FIX_COST: float = None
     PER_UNIT_COST: float = None
 
+
     RELAY_LIST = ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.wine",
                   "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
                   "wss://relay.f7z.io", "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://140.f7z.io",
@@ -40,7 +41,7 @@ def build_default_config(identifier):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.IDENTIFIER = identifier
-    npub = Keys.from_sk_str(dvm_config.PRIVATE_KEY).public_key().to_bech32()
+    npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
     invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     dvm_config.LNBITS_INVOICE_KEY = invoice_key
     dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back

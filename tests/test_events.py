@@ -4,20 +4,20 @@ from pathlib import Path
 import dotenv
 import nostr_sdk
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, EventId, Options, PublicKey, Event, ClientSigner, Nip19Event
+    nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 
 
 relay_list = dvmconfig.DVMConfig.RELAY_LIST
-keys = Keys.from_sk_str(check_and_set_private_key("test_client"))
+keys = Keys.parse(check_and_set_private_key("test_client"))
 wait_for_send = False
 skip_disconnected_relays = True
 opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=5))
         .skip_disconnected_relays(skip_disconnected_relays))
 
-signer = ClientSigner.keys(keys)
+signer = NostrSigner.keys(keys)
 client = Client.with_opts(signer, opts)
 
 for relay in relay_list:

@@ -269,7 +269,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
 
             zap_request = EventBuilder(9733, content,
                                        [p_tag, e_tag]).to_event(keys).as_json()
-            keys = Keys.from_sk_str(encryption_key)
+            keys = Keys.parse(encryption_key)
             encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
             anon_tag = Tag.parse(['anon', encrypted_content])
             tags.append(anon_tag)
