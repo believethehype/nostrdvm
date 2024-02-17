@@ -1,5 +1,5 @@
 import {createStore} from "vuex";
-import {Client, ClientSigner, PublicKey} from "@rust-nostr/nostr-sdk";
+import {Client, NostrSigner, PublicKey} from "@rust-nostr/nostr-sdk";
 
 const store = createStore({
   state () {

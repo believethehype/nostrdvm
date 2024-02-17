@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 import requests
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, ClientSigner, Event
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Event
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig

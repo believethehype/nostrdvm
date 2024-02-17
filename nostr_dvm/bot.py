@@ -5,7 +5,7 @@ import time
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, ClientSigner, EventId, Nip19Event)
+                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
@@ -30,12 +30,12 @@ class Bot:
         nip89config.NAME = self.NAME
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
-        self.keys = Keys.from_sk_str(dvm_config.PRIVATE_KEY)
+        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         wait_for_send = True
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
-        signer = ClientSigner.keys(self.keys)
+        signer = NostrSigner.keys(self.keys)
         self.client = Client.with_opts(signer, opts)
 
         pk = self.keys.public_key()
@@ -211,7 +211,7 @@ class Bot:
 
                 if is_encrypted:
                     if ptag == self.keys.public_key().to_hex():
-                        tags_str = nip04_decrypt(Keys.from_sk_str(dvm_config.PRIVATE_KEY).secret_key(),
+                        tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
                                                  nostr_event.author(), nostr_event.content())
                         params = json.loads(tags_str)
                         params.append(Tag.parse(["p", ptag]).as_vec())

@@ -27,7 +27,7 @@ def nip89_create_d_tag(name, pubkey, image):
 def nip89_announce_tasks(dvm_config, client):
     k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND)])
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
-    keys = Keys.from_sk_str(dvm_config.NIP89.PK)
+    keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
     send_event(event, client=client, dvm_config=dvm_config)
@@ -98,7 +98,7 @@ def nip89_fetch_events_pubkey(client, pubkey, kind):
 
 def check_and_set_d_tag(identifier, name, pk, imageurl):
     if not os.getenv("NIP89_DTAG_" + identifier.upper()):
-        new_dtag = nip89_create_d_tag(name, Keys.from_sk_str(pk).public_key().to_hex(),
+        new_dtag = nip89_create_d_tag(name, Keys.parse(pk).public_key().to_hex(),
                                       imageurl)
         nip89_add_dtag_to_env_file("NIP89_DTAG_" + identifier.upper(), new_dtag)
         print("Some new dtag:" + new_dtag)
