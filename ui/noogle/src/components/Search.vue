@@ -11,7 +11,14 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event, Alphabet, ClientBuilder, ClientSigner, Keys, NostrDatabase, NegentropyOptions, NegentropyDirection
+  Nip19Event,
+  Alphabet,
+  ClientBuilder,
+  Keys,
+  NostrDatabase,
+  NegentropyOptions,
+  NegentropyDirection,
+  Duration
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -94,6 +101,7 @@ async function send_search_request(msg) {
           search = search.replace(word, "");
           if(word === "me"){
             word = store.state.pubkey.toBech32()
+
           }
           const userPubkey = PublicKey.fromBech32(word.replace("@", "")).toHex()
           const pTag = Tag.parse(["p", userPubkey]);
@@ -180,7 +188,7 @@ async function send_search_request(msg) {
 async function getEvents(eventids) {
   const event_filter = new Filter().ids(eventids)
   let client = store.state.client
-  return await client.getEventsOf([event_filter], 5)
+  return await client.getEventsOf([event_filter], Duration.fromSecs(5))
 }
 
 
@@ -188,7 +196,7 @@ async function get_user_infos(pubkeys){
         let profiles = []
         let client = store.state.client
         const profile_filter = new Filter().kind(0).authors(pubkeys)
-        let evts = await client.getEventsOf([profile_filter], 10)
+        let evts = await client.getEventsOf([profile_filter],  Duration.fromSecs(10))
 
         for (const entry of evts){
           try{
