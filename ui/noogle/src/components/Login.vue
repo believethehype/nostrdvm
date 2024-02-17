@@ -68,7 +68,6 @@
 import {
   loadWasmAsync,
   Client,
-  ClientSigner,
   Nip07Signer,
   Filter,
   initLogger,
@@ -83,7 +82,7 @@ import {
   Options,
   Duration,
   PublicKey,
-  Nip46Signer, NegentropyDirection, NegentropyOptions
+  Nip46Signer, NegentropyDirection, NegentropyOptions, NostrSigner
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -188,7 +187,7 @@ export default {
       await loadWasmAsync();
       let nip07_signer = new Nip07Signer();
       try {
-        this.signer = ClientSigner.nip07(nip07_signer);
+        this.signer = NostrSigner.nip07(nip07_signer);
         console.log("SIGNER: " + this.signer.toString())
 
 
@@ -237,8 +236,8 @@ export default {
             }
         }
 
-        let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
-        this.signer = ClientSigner.keys(keys) //TODO store keys
+        let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+        this.signer = NostrSigner.keys(keys) //TODO store keys
         let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
@@ -298,8 +297,8 @@ export default {
 
 
 
-        let keys = Keys.fromSkStr(key)
-        this.signer = ClientSigner.keys(keys)
+        let keys = Keys.parse(key)
+        this.signer = NostrSigner.keys(keys)
         let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
@@ -355,13 +354,13 @@ export default {
 
         let nip07_signer = new Nip07Signer();
             try{
-              this.signer = ClientSigner.nip07(nip07_signer);
+              this.signer = NostrSigner.nip07(nip07_signer);
               console.log("SIGNER: " + this.signer)
 
 
             } catch (error) {
             console.log(error);
-             this.signer = ClientSigner.keys(Keys.generate())
+             this.signer = NostrSigner.keys(Keys.generate())
           }
 
         //let zapper = ClientZapper.webln()
@@ -424,19 +423,19 @@ export default {
            let split = connectionstring.split("?relay=")
            let relay_url = split[1]
            let split2 = split[0].split("#")
-           let publickey = Keys.fromPkStr(split2[0]).publicKey
-           let app_keys = Keys.fromSkStr(split2[1])
+           let publickey = Keys.parse(split2[0]).publicKey
+           let app_keys = Keys.fromPublicKey(PublicKey.parse(split2[1]))
 
 
-        let nip46_signer = new Nip46Signer(relay_url, app_keys, publickey) ;
+        let nip46_signer = new Nip46Signer(relay_url, app_keys, publickey, Duration.fromSecs(10)) ;
             try{
-              this.signer = ClientSigner.nip46(nip46_signer);
+              this.signer = NostrSigner.nip46(nip46_signer);
               console.log("SIGNER: " + this.signer)
 
 
             } catch (error) {
             console.log(error);
-             this.signer = ClientSigner.keys(Keys.generate())
+             this.signer = NostrSigner.keys(Keys.generate())
           }
 
         //let zapper = ClientZapper.webln()
@@ -503,7 +502,7 @@ export default {
         }
         let publicKey = PublicKey.fromHex(hexKey);
         let keys = Keys.fromPublicKey(publicKey)
-        this.signer = ClientSigner.keys(keys)
+        this.signer = NostrSigner.keys(keys)
         let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
         for (const relay of store.state.relays){
@@ -532,9 +531,9 @@ export default {
     async getnip89s(){
 
         //let keys = Keys.generate()
-        let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+        let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
 
-        let signer = ClientSigner.keys(keys) //TODO store keys
+        let signer = NostrSigner.keys(keys) //TODO store keys
         let client = new ClientBuilder().signer(signer).build()
         for (const relay of store.state.relays){
            await client.addRelay(relay);
@@ -551,7 +550,7 @@ export default {
         //await client.reconcile(filter);
         //const filterl = new Filter().kind(31990)
         //let evts = await client.database.query([filterl])
-        let evts = await client.getEventsOf([filter], 3)
+        let evts = await client.getEventsOf([filter], Duration.fromSecs(5))
         for (const entry of evts){
           for (const tag in entry.tags){
             if (entry.tags[tag].asVec()[0] === "k")
@@ -584,13 +583,13 @@ export default {
 async reconcile_all_profiles(publicKey) {
     {
       let dbclient = Client
-      let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+      let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
       let db = NostrDatabase.indexeddb("profiles");
-      let signer = ClientSigner.keys(keys) //TODO store keys
+      let signer = NostrSigner.keys(keys) //TODO store keys
       dbclient = new ClientBuilder().signer(signer).database(await db).build()
 
       await dbclient.addRelay("wss://relay.damus.io");
-      await dbclient.connect();
+      await dbclient.connect()
       store.commit('set_dbclient', dbclient)
       let direction = NegentropyDirection.Down;
       let opts = new NegentropyOptions().direction(direction);
@@ -598,7 +597,7 @@ async reconcile_all_profiles(publicKey) {
 
       let followings = []
       let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
-      let followers = await dbclient.getEventsOf([followers_filter], 10)
+      let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
 
     if (followers.length > 0){
           for (let tag of followers[0].tags) {
@@ -621,7 +620,7 @@ async reconcile_all_profiles(publicKey) {
     async get_user_info(pubkey){
         let client = store.state.client
         const profile_filter = new Filter().kind(0).author(pubkey).limit(1)
-        let evts = await client.getEventsOf([profile_filter], 10)
+        let evts = await client.getEventsOf([profile_filter], Duration.fromSecs(5))
         console.log("PROFILES:" + evts.length)
         if (evts.length > 0){
              let latest_entry = evts[0]

@@ -3,9 +3,8 @@
 
 <script>
 import {
-  ClientSigner,
   Filter,
-  Keys, ClientBuilder, Alphabet, SingleLetterTag
+  Keys, ClientBuilder, Alphabet, SingleLetterTag, NostrSigner, Duration
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -34,9 +33,9 @@ export default {
     async getnip89s(){
 
         //let keys = Keys.generate()
-        let keys = Keys.fromSkStr("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+        let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
 
-        let signer = ClientSigner.keys(keys) //TODO store keys
+        let signer = NostrSigner.keys(keys) //TODO store keys
         let client = new ClientBuilder().signer(signer).build()
        for (const relay of store.state.relays){
            await client.addRelay(relay);
@@ -53,7 +52,7 @@ export default {
         //await client.reconcile(filter);
         //const filterl = new Filter().kind(31990)
         //let evts = await client.database.query([filterl])
-        let evts = await client.getEventsOf([filter], 3)
+        let evts = await client.getEventsOf([filter],  Duration.fromSecs(3))
         for (const entry of evts){
           for (const tag in entry.tags){
             if (entry.tags[tag].asVec()[0] === "k")
