@@ -135,7 +135,7 @@ export default {
       if (localStorage.getItem('nostr-key-method') === 'nip07') {
         await this.sign_in_nip07()
       }
-      if (localStorage.getItem('nostr-key-method') === 'nsec') {
+      else if (localStorage.getItem('nostr-key-method') === 'nsec') {
         await this.sign_in_key(localStorage.getItem('nostr-key'))
       }
       else if (localStorage.getItem('nostr-key-method') === 'nostr-login'){
