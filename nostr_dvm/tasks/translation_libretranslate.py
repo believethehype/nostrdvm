@@ -106,6 +106,7 @@ class TranslationLibre(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     options = {'libre_end_point': os.getenv("LIBRE_TRANSLATE_ENDPOINT"),

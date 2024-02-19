@@ -23,7 +23,6 @@ class AdvancedSearch(DVMTaskInterface):
     TASK: str = "search-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
-    dependencies = [("nostr-dvm", "nostr-dvm")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
@@ -160,6 +159,7 @@ class AdvancedSearch(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
     # Add NIP89
     nip89info = {
         "name": name,
