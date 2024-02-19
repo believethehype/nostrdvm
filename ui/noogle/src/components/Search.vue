@@ -88,7 +88,6 @@ async function send_search_request(msg) {
         store.commit('set_search_results', items)
         let client = store.state.client
 
-
         let users = [];
 
         const taggedUsersFrom = msg.split(' ')
@@ -119,8 +118,6 @@ async function send_search_request(msg) {
 
         let content = "NIP 90 Search request"
         let kind = 5302
-        //console.log((datefrom.value/1000).toFixed(0))
-        //console.log((dateto.value/1000).toFixed(0))
         let tags = [
               ["i", msg, "text"],
               ["param", "max_results", "150"],
@@ -128,7 +125,6 @@ async function send_search_request(msg) {
               ["param", "until", ((dateto.value/1000).toFixed(0))],
               ['param', 'users', JSON.stringify(users)]
             ]
-
 
         let res;
         let requestid;
@@ -147,8 +143,7 @@ async function send_search_request(msg) {
           res = res.id;
         }
 
-        else
-        {
+        else {
           let tags_t = []
           for (let tag of tags){
             tags_t.push(Tag.parse(tag))
@@ -156,16 +151,13 @@ async function send_search_request(msg) {
           let evt = new EventBuilder(kind, content, tags_t)
           try{
              res = await client.sendEventBuilder(evt)
-
+             requestid = res.toHex()
           }
           catch(error){
             console.log(error)
           }
-
-          res = await client.sendEventBuilder(evt)
-          requestid = res.toHex()
         }
-        
+
         console.log("STORE: " +store.state.requestidSearch)
         store.commit('set_current_request_id_search', requestid)
         console.log("STORE AFTER: " + store.state.requestidSearch)
