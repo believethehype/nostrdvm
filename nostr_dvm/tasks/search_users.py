@@ -72,9 +72,6 @@ class SearchUser(DVMTaskInterface):
         # default values
         search = ""
         max_results = 100
-        relay = "wss://relay.nostr.band"
-        if self.options["relay"]:
-            relay = self.options["relay"]
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -89,7 +86,6 @@ class SearchUser(DVMTaskInterface):
         options = {
             "search": search,
             "max_results": max_results,
-            "relay": relay
         }
         request_form['options'] = json.dumps(options)
         return request_form
