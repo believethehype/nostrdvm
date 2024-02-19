@@ -24,7 +24,6 @@ class SearchUser(DVMTaskInterface):
     TASK: str = "search-user"
     FIX_COST: float = 0
     dvm_config: DVMConfig
-    dependencies = [("nostr-dvm", "nostr-dvm")]
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
