@@ -10,6 +10,7 @@ const store = createStore({
       dbclient: Client,
       pubkey: PublicKey,
       requestidSearch: String,
+      requestidSearchProfile: String,
       requestidImage: String,
       hasEventListener: false,
       imagehasEventListener: false,
@@ -17,6 +18,7 @@ const store = createStore({
       nip89dvms: [],
       activesearchdvms: [],
       results:  [],
+      profile_results: [],
       relays: [
           "wss://relay.damus.io",
         "wss://nos.lol",
@@ -58,9 +60,16 @@ const store = createStore({
     set_current_request_id_search(state, requestid){
       state.requestidSearch = String(requestid)
     },
+    set_current_request_profile_id_search(state, requestid){
+      state.requestidSearchProfile = String(requestid)
+    },
     set_active_search_dvms(state, dvms) {
       state.activesearchdvms.length = 0
       state.activesearchdvms.push.apply(state.activesearchdvms, dvms)
+    },
+    set_search_results_profiles(state, items){
+      state.profile_results.length = 0
+      state.profile_results.push.apply(state.profile_results, items)
     },
     set_current_request_id_image(state, requestid){
        state.requestidImage = requestid

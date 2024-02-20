@@ -30,6 +30,7 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 
 let items = []
+let profiles = []
 let dvms =[]
 let listener = false
 let searching = false
@@ -58,6 +59,12 @@ onMounted(async () => {
 })
 
 
+
+
+
+
+
+
    // console.log(urlParams.has('search')); // true
    // console.log(urlParams.get('search')); // "MyParam"
 
@@ -84,8 +91,10 @@ async function send_search_request(msg) {
           return
      }
         items = []
+        profiles = []
         dvms =[]
         store.commit('set_search_results', items)
+        store.commit('set_search_results_profiles', profiles)
         let client = store.state.client
 
         let users = [];
@@ -118,6 +127,7 @@ async function send_search_request(msg) {
 
         let content = "NIP 90 Search request"
         let kind = 5302
+        let kind_profiles = 5303
         let tags = [
               ["i", msg, "text"],
               ["param", "max_results", "150"],
@@ -128,6 +138,7 @@ async function send_search_request(msg) {
 
         let res;
         let requestid;
+        let requestid_profile;
         if (localStorage.getItem('nostr-key-method') === 'android-signer') {
           let draft = {
             content: content,
@@ -149,7 +160,10 @@ async function send_search_request(msg) {
             tags_t.push(Tag.parse(tag))
           }
           let evt = new EventBuilder(kind, content, tags_t)
+          let evt_profiles = new EventBuilder(kind_profiles, "Profile Search request",  [Tag.parse(["i", msg, "text"]),  Tag.parse(["param", "max_results", "500"])])
           try{
+             let res1 = await client.sendEventBuilder(evt_profiles)
+             requestid_profile = res1.toHex()
              res = await client.sendEventBuilder(evt)
              requestid = res.toHex()
           }
@@ -160,6 +174,7 @@ async function send_search_request(msg) {
 
         console.log("STORE: " +store.state.requestidSearch)
         store.commit('set_current_request_id_search', requestid)
+       store.commit('set_current_request_profile_id_search', requestid_profile)
         console.log("STORE AFTER: " + store.state.requestidSearch)
 
         //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
@@ -212,7 +227,7 @@ async function  listen() {
     let pubkey = store.state.pubkey
     let originale = [store.state.requestidSearch]
 
-    const filter = new Filter().kinds([7000, 6302]).pubkey(pubkey).since(Timestamp.now());
+    const filter = new Filter().kinds([7000, 6302, 6303]).pubkey(pubkey).since(Timestamp.now());
     await client.subscribe([filter]);
 
     const handle = {
@@ -231,7 +246,7 @@ async function  listen() {
                 if (event.tags[tag].asVec()[0] === "e") {
                   //console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
                  // console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
-                  if (event.tags[tag].asVec()[1] === store.state.requestidSearch) {
+                  if (event.tags[tag].asVec()[1] === store.state.requestidSearch || event.tags[tag].asVec()[1] === store.state.requestidSearchProfile) {
                     resonsetorequest = true
                   }
                 }
@@ -312,6 +327,7 @@ async function  listen() {
                   console.log("6302:", event.content);
 
                   //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
+                  try{
                   let event_etags = JSON.parse(event.content)
                   if (event_etags.length > 0) {
                     for (let etag of event_etags) {
@@ -368,6 +384,58 @@ async function  listen() {
                   store.commit('set_active_search_dvms', dvms)
                   console.log("Events from" + event.author.toHex())
                   store.commit('set_search_results', items)
+                     }
+                catch{
+
+                }
+                }
+
+
+                else if (event.kind === 6303) {
+                  let entries = []
+                  console.log("6303:", event.content);
+
+                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
+                  let event_ptags = JSON.parse(event.content)
+                  let authors = []
+                  if (event_ptags.length > 0) {
+                    for (let ptag of event_ptags) {
+                        authors.push(PublicKey.parse(ptag[1]))
+                    }
+
+                    if (authors.length > 0) {
+                      let infos = await get_user_infos(authors)
+
+                      for (const profile of infos) {
+                        console.log(profile["author"])
+                        //let p = profiles.find(record => record.author === profile.author)
+
+                        //‚let bech32id = PublicKey.parse(profile["profile"][]).toBech32()  profile.author.toBech32()
+                       // let picture = profile === undefined ? "../assets/nostr-purple.svg" : profile["profile"]["picture"]
+                       // let name = profile === undefined ? bech32id : profile["profile"]["name"]
+                        if (profiles.findIndex(e => e.id === profile["author"]) === -1 && profile["profile"]["name"] !== "" ) {
+                          profiles.push({
+                            id: profile["author"],
+                            content: profile["profile"],
+                            author: profile["profile"]["name"],
+                            authorurl: "https://njump.me/" +PublicKey.parse(profile["author"]).toBech32(),
+                            avatar: profile["profile"]["picture"]
+                          })
+                        }
+
+
+                      }
+                    }
+                  }
+
+
+                  const index = dvms.indexOf((dvms.find(i => i.id === event.author.toHex())));
+                  if (index > -1) {
+                    dvms.splice(index, 1);
+                  }
+
+                  store.commit('set_active_search_dvms', dvms)
+                  store.commit('set_search_results_profiles', profiles)
                 }
               }
             })
