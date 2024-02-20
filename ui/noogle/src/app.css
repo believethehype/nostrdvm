@@ -28,6 +28,13 @@ a,
   transition: 0.4s;
   padding: 3px;
 }
+
+.white {
+  @apply  text-white;
+  text-decoration: none;
+  transition: 0.4s;
+  padding: 3px;
+}
 .menu {
 color: white;
     @apply btn bg-transparent border-transparent tracking-wide;

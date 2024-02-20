@@ -29,7 +29,6 @@ async function schedule(time) {
   contenttags.push(Tag.parse(["i", stringifyiedevent, "text"]))
   contenttags.push(Tag.parse(["param", "relays", "wss://now.lol"]))
   let client = store.state.client
-  client.nip04_encrypt()
   //nip04_encrypt() contenttags.toString()
 
   let tags_t = []
@@ -60,7 +59,7 @@ async function schedule(time) {
           <slot name="footer">
             <div>
               <button @click.stop="emit('modal-close')">Submit</button>
-              <button @click.stop="schedule(Date.now())">Schedule</button>
+             <!-- <button @click.stop="schedule(Date.now())">Schedule</button> -->
             </div>
           </slot>
         </div>

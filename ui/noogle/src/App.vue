@@ -1,5 +1,8 @@
 <script setup>
 import ThreeColumnLayout from "./layouts/ThreeColumnLayout.vue";
+import ProfileResultsTable from "@/components/ProfileResultTable.vue";
+import router from "@/router/index.js";
+
 
 
 </script>
@@ -10,9 +13,11 @@ import ThreeColumnLayout from "./layouts/ThreeColumnLayout.vue";
 
   <main>
     <ThreeColumnLayout>
-      <template #aside>
+  <template #aside>
 
+    <ProfileResultsTable style="margin-top: 450px"/>
     </template>
+
     </ThreeColumnLayout>
 
 
