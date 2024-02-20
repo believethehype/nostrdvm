@@ -544,7 +544,7 @@ class DVM:
         self.client.handle_notifications(NotificationHandler())
         while True:
             for job in self.job_list:
-                if job.bolt11 != "" and job.payment_hash != "" and not job.is_paid:
+                if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
                     ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)
                     if ispaid and job.is_paid is False:
                         print("is paid")
