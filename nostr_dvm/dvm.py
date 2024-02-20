@@ -449,7 +449,7 @@ class DVM:
                     status == "processing" and not is_paid)
                     or (status == "success" and not is_paid)):
 
-                if dvm_config.LNBITS_INVOICE_KEY != "":
+                if dvm_config.LNBITS_INVOICE_KEY != "" and bolt11 is not None:
                     amount_tag = Tag.parse(["amount", str(amount * 1000), bolt11])
                 else:
                     amount_tag = Tag.parse(["amount", str(amount * 1000)])  # to millisats
