@@ -115,8 +115,11 @@ class AdvancedSearchWine(DVMTaskInterface):
         data = ob['data']
         result_list = []
         for el in data:
-            e_tag = Tag.parse(["e", el['id']])
-            result_list.append(e_tag.as_vec())
+            try:
+                e_tag = Tag.parse(["e", el['id']])
+                result_list.append(e_tag.as_vec())
+            except Exception as e:
+                print("ERROR: " + str(e))
 
 
         return json.dumps(result_list)
