@@ -11,6 +11,7 @@
             </figure>
         </div>
         <br>
+         <h3 class="fa-cut" >Kind: {{ dvm.kind }}</h3>
           <h3 class="fa-cut" >{{ dvm.about }}</h3>
           <div className="card-actions justify-end mt-auto" >
              <div className="card-actions justify-end">

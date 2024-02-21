@@ -7,6 +7,7 @@ const store = createStore({
       count: 0,
       test: "hello",
       client: Client,
+      signer: NostrSigner,
       dbclient: Client,
       pubkey: PublicKey,
       requestidSearch: String,
@@ -38,6 +39,9 @@ const store = createStore({
     },
     set_dbclient (state, dbclient) {
       state.dbclient = dbclient
+    },
+    set_signer (state, signer) {
+      state.signer = signer
     },
      set_pubkey(state, pubkey) {
       state.pubkey = pubkey

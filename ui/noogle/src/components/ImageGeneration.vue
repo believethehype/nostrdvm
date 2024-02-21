@@ -11,7 +11,7 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event, Alphabet, Keys
+  Nip19Event, Alphabet, Keys, nip04_decrypt, SecretKey
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -25,6 +25,8 @@ import amberSignerService from "./android-signer/AndroidSigner";
 
 let dvms =[]
 let searching = false
+
+
 
 let listener = false
 
@@ -60,6 +62,52 @@ async function post_note(note){
     await client.publishTextNote(note, tags);
    }
 }
+
+async function schedule(note) {
+
+
+  let schedule = Timestamp.fromSecs(datetopost.value/1000)
+  let humandatetime = schedule.toHumanDatetime()
+      let time = humandatetime.split("T")[1].split("Z")[0].trim()
+     let date = humandatetime.split("T")[0].split("-")[2].trim() + "." + humandatetime.split("T")[0].split("-")[1].trim() + "." + humandatetime.split("T")[0].split("-")[0].trim().slice(2)
+
+   console.log("Date: " + date + " Time: "+ time )
+
+  let client = store.state.client
+  let signer = store.state.signer
+
+  let noteevent = EventBuilder.textNote(note, []).customCreatedAt(schedule).toUnsignedEvent(store.state.pubkey)
+  let signedEvent = await signer.signEvent(noteevent)
+
+  let stringifiedevent = signedEvent.asJson()
+
+  let tags_str = []
+  let tag = Tag.parse(["i", stringifiedevent, "text"])
+  tags_str.push(tag.asVec())
+  let tags_as_str = JSON.stringify(tags_str)
+
+
+  let content = await signer.nip04Encrypt(PublicKey.parse("85c20d3760ef4e1976071a569fb363f4ff086ca907669fb95167cdc5305934d1"), tags_as_str)
+
+  let tags_t = []
+  tags_t.push(Tag.parse(["p", "85c20d3760ef4e1976071a569fb363f4ff086ca907669fb95167cdc5305934d1"]))
+  tags_t.push(Tag.parse(["encrypted"]))
+  tags_t.push(Tag.parse(["client", "noogle"]))
+
+
+  let evt = new EventBuilder(5905, content, tags_t)
+  console.log(evt)
+  let res = await client.sendEventBuilder(evt);
+  console.log(res)
+  miniToastr.showMessage("Note scheduled for " + ("Date: " + date + " Time: "+ time ))
+
+
+
+
+}
+
+
+
 async function generate_image(message) {
 
    try {
@@ -145,7 +193,7 @@ async function  listen() {
     let client = store.state.client
     let pubkey = store.state.pubkey
 
-    const filter = new Filter().kinds([7000, 6100]).pubkey(pubkey).since(Timestamp.now());
+    const filter = new Filter().kinds([7000, 6100, 6905]).pubkey(pubkey).since(Timestamp.now());
     await client.subscribe([filter]);
 
     const handle = {
@@ -156,6 +204,7 @@ async function  listen() {
               }
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
+              console.log(event.asJson())
            let resonsetorequest = false
             sleep(1000).then(async () => {
               for (let tag in event.tags) {
@@ -235,7 +284,12 @@ async function  listen() {
                   }
 
 
-                } else if (event.kind === 6100) {
+                }
+                else if (event.kind === 6905) {
+                  console.log(event.content)
+
+                }
+                else if (event.kind === 6100) {
                   let entries = []
                   console.log("6100:", event.content);
 
@@ -353,22 +407,27 @@ defineProps({
 import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
+import {timestamp} from "@vueuse/core";
 
 const isModalOpened = ref(false);
 const modalcontent = ref("");
+const datetopost = ref(Date.now());
 
 
 const openModal = result => {
+  datetopost.value = Date.now();
   isModalOpened.value = true;
   modalcontent.value = result
 };
 const closeModal = () => {
   isModalOpened.value = false;
+  console.log(datetopost.value)
 };
 
 const submitHandler = async () => {
 
-  await post_note(modalcontent)
+ // await post_note(modalcontent)
+  await schedule(modalcontent, Timestamp.now())
 }
 
 
@@ -410,8 +469,35 @@ const submitHandler = async () => {
           <ModalComponent :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
             <template #header>Share your creation on Nostr  <br> <br></template>
 
-            <template #content><textarea  v-model="modalcontent" className="d-Input" style="height: 300px;">{{modalcontent}}</textarea></template>
-            <template #footer><button className="v-Button" @click="post_note(modalcontent)"  @click.stop="closeModal">Create Note</button></template>
+            <template #content>
+              <textarea  v-model="modalcontent" className="d-Input" style="height: 300px;">{{modalcontent}}</textarea>
+
+
+
+
+
+
+            </template>
+
+
+            <template #footer>
+            <div>
+
+
+
+                                <VueDatePicker :min-date="new Date()" :teleport="false" :dark="true" position="right" className="bg-base-200 inline-flex flex-none" style="width: 220px;" v-model="datetopost"></VueDatePicker>
+
+              <button className="v-Button" @click="schedule(modalcontent)"   @click.stop="closeModal"><img width="25px" style="margin-right: 5px" src="../../public/shipyard.ico"/>Schedule Note with Shipyard DVM</button>
+
+               <br>
+              or
+              <br>
+                <button className="v-Button" style="margin-bottom: 0px" @click="post_note(modalcontent)"   @click.stop="closeModal"><img  width="25px" style="margin-right: 5px;" src="../../public/favicon.ico"/>Post Note now</button>
+                </div>
+
+
+
+            </template>
           </ModalComponent>
 
   <div class="max-w-5xl relative space-y-3">
@@ -464,98 +550,12 @@ const submitHandler = async () => {
                                     </svg>
                                </button>
 
-
-         <!-- <button  class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-100 dark:text-gray-800 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black" aria-label="edit note" role="button">
-            <svg class="icon icon-tabler icon-tabler-pencil"  width="20" height="20"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="1.5"  stroke-linecap="round"  stroke-linejoin="round">  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg></button>
- -->
           </div>
            </div>
 
       </div>
     </div>
   </div>
-
-  <!--  <div class="grid grid-cols-1 gap-6">
-        <div className="card h-60 bg-base-100 shadow-xl gap-6"  v-for="dvm in store.state.imagedvmreplies"
-                  :key="dvm.name">
-                 <div className="card-body">
-                <div class="grid grid-cols-5 gap-6">
-
-                <div className="col-end-1">
-                  <h2 className="card-title">{{ dvm.name }}</h2>
-                  <figure v-if="dvm.image!==''" className="w-40"><img className="h-30" :src="dvm.image" alt="DVM Picture" /></figure>
-                </div>
-
-                <div className="col-span-2">
-                 <h3>{{ dvm.about }}</h3>
-                   <div>
-
-
-                   </div>
-                       </div>
-              <div className="mt-auto col-end-4" :data-tip="dvm.card ">
-
-
-                <button v-if="dvm.status === 'processing'" className="btn">Processing</button>
-                <button v-if="dvm.status === 'finished'" className="btn">Done</button>
-                <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
-                <button v-if="dvm.status === 'error'" className="btn">Error</button>
-                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
-
-
-          </div>
-                  <div className="mt-auto col-end-6" :data-tip="dvm.card ">
-                    <figure v-if="dvm.result!==''" className="w-40"><img className="h-30" :src="dvm.result" alt="DVM Result"  @click="copyurl(dvm.result)" /></figure>
-
-
-          </div>
-
-
-
-
-            </div>
-          </div>
-        </div>
-
-
-
-   <div class="grid grid-cols-2 gap-6">
-        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.imagedvmreplies"
-            :key="dvm.id">
-
-        <figure class="w-full">
-          <img v-if="!dvm.result" :src="dvm.image" height="200" alt="DVM Picture" />
-        </figure>
-
-
-        <div className="card-body">
-          <h2 className="card-title">{{ dvm.name }}</h2>
-          <h3 class="fa-cut" >{{ dvm.about }}</h3>
-
-
-
-          <div className="card-actions justify-end mt-auto" >
-
-              <div className="tooltip mt-auto" :data-tip="dvm.card ">
-
-
-                <button v-if="dvm.status === 'processing'" className="btn">Processing</button>
-                <button v-if="dvm.status === 'finished'" className="btn">Done</button>
-                <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
-                <button v-if="dvm.status === 'error'" className="btn">Error</button>
-                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
-
-
-          </div>
-
-        </div>
-           </div>
-          <br>
-      </div>
-    </div>
-
-
-        </div>-->
 </template>
 
 <style scoped>

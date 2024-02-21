@@ -151,7 +151,6 @@ export default {
         await this.sign_in_amber(key)
       }
       else {
-        console.log("NOH")
         await this.sign_in_anon()
       }
 
@@ -207,6 +206,7 @@ export default {
 
 
         store.commit('set_client', client)
+        store.commit('set_signer', this.signer)
       store.commit('set_pubkey', pubkey)
       store.commit('set_hasEventListener', false)
       localStorage.setItem('nostr-key-method', "nostr-login")
@@ -261,6 +261,7 @@ export default {
 
 
         store.commit('set_client', client)
+        store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
         store.commit('set_hasEventListener', false)
         console.log("LOGINANON")
@@ -322,6 +323,7 @@ export default {
 
 
         store.commit('set_client', client)
+        store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
         store.commit('set_hasEventListener', false)
         console.log("LOGINANON")
@@ -373,6 +375,8 @@ export default {
               }
 
         const pubkey = await nip07_signer.getPublicKey();
+
+
         await client.connect();
 
         /*
@@ -385,6 +389,7 @@ export default {
         }*/
 
         store.commit('set_client', client)
+        store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
         store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "nip07")
@@ -452,6 +457,7 @@ export default {
         await client.connect();
 
         store.commit('set_client', client)
+          store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
         store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "nip46")
@@ -510,6 +516,7 @@ export default {
         }
         await client.connect();
         store.commit('set_client', client)
+          store.commit('set_signer', this.signer)
         store.commit('set_pubkey', publicKey)
         store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "android-signer")
