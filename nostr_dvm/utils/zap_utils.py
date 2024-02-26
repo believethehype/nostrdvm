@@ -290,16 +290,20 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
 def get_price_per_sat(currency):
     import requests
 
-    url = "https://api.coinstats.app/public/v1/coins"
+    url = "https://openapiv1.coinstats.app/coins/bitcoin"
     params = {"skip": 0, "limit": 1, "currency": currency}
-    try:
-        response = requests.get(url, params=params)
-        response_json = response.json()
+    price_currency_per_sat = 0.0004
+    if os.getenv("COINSTATSOPENAPI_KEY"):
 
-        bitcoin_price = response_json["coins"][0]["price"]
-        price_currency_per_sat = bitcoin_price / 100000000.0
-    except:
-        price_currency_per_sat = 0.0004
+        header = {'accept': 'application/json', 'X-API-KEY': os.getenv("COINSTATSOPENAPI_KEY")}
+        try:
+            response = requests.get(url, headers=header, params=params)
+            response_json = response.json()
+
+            bitcoin_price = response_json["price"]
+            price_currency_per_sat = bitcoin_price / 100000000.0
+        except:
+            price_currency_per_sat = 0.0004
 
     return price_currency_per_sat
 
