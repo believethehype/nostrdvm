@@ -111,15 +111,19 @@ class AdvancedSearchWine(DVMTaskInterface):
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
         response = requests.get(url, headers=headers)
         #print(response.text)
-        ob = json.loads(response.text)
-        data = ob['data']
-        result_list = []
-        for el in data:
-            try:
-                e_tag = Tag.parse(["e", el['id']])
-                result_list.append(e_tag.as_vec())
-            except Exception as e:
-                print("ERROR: " + str(e))
+
+        try:
+            ob = json.loads(response.text)
+            data = ob['data']
+            result_list = []
+            for el in data:
+                try:
+                    e_tag = Tag.parse(["e", el['id']])
+                    result_list.append(e_tag.as_vec())
+                except Exception as e:
+                    print("ERROR: " + str(e))
+        except Exception as e:
+            print(e)
 
 
         return json.dumps(result_list)
