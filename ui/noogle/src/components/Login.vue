@@ -86,7 +86,6 @@ import {
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
-import Nip89 from "@/components/Nip89.vue";
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
@@ -154,7 +153,7 @@ export default {
         await this.sign_in_anon()
       }
 
-      await this.getnip89s()
+
     } catch (error) {
       console.log(error);
     }
@@ -213,6 +212,7 @@ export default {
       localStorage.setItem('nostr-key', '')
       console.log("Client Nip46 connected")
       await this.get_user_info(pubkey)
+        await this.getnip89s()
         await this.reconcile_all_profiles(pubkey)
       console.log(pubkey.toBech32())
       //await this.reconcile_all_profiles()
@@ -223,8 +223,6 @@ export default {
         console.log(error);
       }
     },
-
-
     async sign_in_anon() {
       try {
          await loadWasmAsync();
@@ -274,7 +272,7 @@ export default {
         console.log(error);
       }
     },
-     async sign_in_key(nsec = "") {
+    async sign_in_key(nsec = "") {
       try {
          await loadWasmAsync();
        if(logger){
@@ -330,8 +328,9 @@ export default {
         localStorage.setItem('nostr-key-method', "nsec")
         localStorage.setItem('nostr-key', keys.secretKey.toBech32())
         console.log("Client key connected")
-         await this.get_user_info(pubkey)
-          await this.reconcile_all_profiles(pubkey)
+        await this.get_user_info(pubkey)
+        await this.getnip89s()
+        await this.reconcile_all_profiles(pubkey)
 
 
       } catch (error) {
@@ -396,6 +395,7 @@ export default {
         localStorage.setItem('nostr-key', pubkey.toHex())
         console.log("Client Nip07 connected")
         await this.get_user_info(pubkey)
+          await this.getnip89s()
           await this.reconcile_all_profiles(pubkey)
         //await this.reconcile_all_profiles()
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
@@ -404,7 +404,6 @@ export default {
         console.log(error);
       }
     },
-
     async sign_in_nip46() {
 
       try {
@@ -465,6 +464,8 @@ export default {
         console.log("Client connected")
 
         await this.get_user_info(pubkey)
+                  await this.getnip89s()
+
           await this.reconcile_all_profiles(pubkey)
 
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
@@ -523,6 +524,8 @@ export default {
         localStorage.setItem('nostr-key', hexKey)
 
         await this.get_user_info(publicKey)
+          await this.getnip89s()
+
             await this.reconcile_all_profiles(publicKey)
                 }
         catch (error){
@@ -539,7 +542,6 @@ export default {
 
         //let keys = Keys.generate()
         let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
-
         let signer = NostrSigner.keys(keys) //TODO store keys
         let client = new ClientBuilder().signer(signer).build()
         for (const relay of store.state.relays){
@@ -586,8 +588,7 @@ export default {
 
 
     },
-
-async reconcile_all_profiles(publicKey) {
+    async reconcile_all_profiles(publicKey) {
     {
       let dbclient = Client
       let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
@@ -623,7 +624,6 @@ async reconcile_all_profiles(publicKey) {
 
     }
    },
-
     async get_user_info(pubkey){
         let client = store.state.client
         const profile_filter = new Filter().kind(0).author(pubkey).limit(1)
@@ -651,7 +651,6 @@ async reconcile_all_profiles(publicKey) {
 
           }
     },
-
     async sign_out(){
       this.current_user = ""
       if(localStorage.getItem('nostr-key-method') === "nostr-login"){
