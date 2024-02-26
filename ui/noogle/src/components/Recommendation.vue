@@ -1,17 +1,18 @@
 <script>
 import ImageGeneration from "@/components/ImageGeneration.vue";
 import Donate from "@/components/Donate.vue";
+import RecommendationGeneration from "@/components/RecommendationGeneration.vue";
 
 export default {
-  name: "Image",
-  components: {ImageGeneration}
+  name: "Recommendation",
+  components: {RecommendationGeneration}
 }
 </script>
 
 <template>
   <div class="center">
     <br>
-    <ImageGeneration/>
+    <RecommendationGeneration/>
     <br>
   </div>
 </template>
