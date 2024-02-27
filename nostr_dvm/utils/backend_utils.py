@@ -111,11 +111,11 @@ def is_input_supported_generic(tags, client, dvm_config) -> bool:
                 else:
                     input_value = tag.as_vec()[1]
                     input_type = tag.as_vec()[2]
-                    if input_type == "event":
-                        evt = get_event_by_id(input_value, client=client, config=dvm_config)
-                        if evt is None:
-                            print("Event not found")
-                            return False
+                    #if input_type == "event":
+                    #    evt = get_event_by_id(input_value, client=client, config=dvm_config)
+                    #    if evt is None:
+                    #        print("Event not found")
+                    #        return False
                     # TODO check_url_is_readable might be more relevant per task in the future
                     # if input_type == 'url' and check_url_is_readable(input_value) is None:
                     #    print("Url not readable / supported")
