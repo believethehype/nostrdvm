@@ -14,13 +14,16 @@ const store = createStore({
       requestidSearchProfile: String,
       requestidImage: String,
       requestidRecommendation: String,
+      requestidSummarization: String,
       hasEventListener: false,
       imagehasEventListener: false,
       recommendationehasEventListener: false,
+      summarizationhasEventListener: false,
       imagedvmreplies: [],
       nip89dvms: [],
       activesearchdvms: [],
       recommendationhdvms: [],
+      summarizationdvms: [],
       results:  [],
       profile_results: [],
       relays: [
@@ -60,6 +63,10 @@ const store = createStore({
       state.recommendationehasEventListener = recommendationehasEventListener
     },
 
+    set_summariarizationEventListener(state, summarizationhasEventListener) {
+      state.summarizationhasEventListener = summarizationhasEventListener
+    },
+
     set_nip89dvms(state, nip89dvms) {
       state.nip89dvms.length = 0
       //console.log(nip89dvms)
@@ -72,6 +79,11 @@ const store = createStore({
     set_current_request_id_search(state, requestid){
       state.requestidSearch = String(requestid)
     },
+
+    set_current_request_id_summarization(state, requestid){
+      state.requestidSummarization = String(requestid)
+    },
+
     set_current_request_profile_id_search(state, requestid){
       state.requestidSearchProfile = String(requestid)
     },
@@ -82,6 +94,11 @@ const store = createStore({
     set_recommendation_dvms(state, dvms) {
       state.recommendationhdvms.length = 0
       state.recommendationhdvms.push.apply(state.recommendationhdvms, dvms)
+    },
+
+    set_summarization_dvms(state, dvms) {
+      state.summarizationdvms.length = 0
+      state.summarizationdvms.push.apply(state.summarizationdvms, dvms)
     },
     set_search_results_profiles(state, items){
       state.profile_results.length = 0
