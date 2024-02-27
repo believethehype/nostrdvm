@@ -37,6 +37,37 @@ def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
         return None
 
 
+def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
+    search_ids = []
+    for event_id in event_ids:
+        split = event_id.split(":")
+        if len(split) == 3:
+            pk = PublicKey.from_hex(split[1])
+            id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
+            events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+        else:
+            if str(event_id).startswith('note'):
+                event_id = EventId.from_bech32(event_id)
+            elif str(event_id).startswith("nevent"):
+                event_id = Nip19Event.from_bech32(event_id).event_id()
+            elif str(event_id).startswith('nostr:note'):
+                event_id = EventId.from_nostr_uri(event_id)
+            elif str(event_id).startswith("nostr:nevent"):
+                event_id = Nip19Event.from_nostr_uri(event_id).event_id()
+
+            else:
+                event_id = EventId.from_hex(event_id)
+        search_ids.append(event_id)
+
+    id_filter = Filter().ids(search_ids)
+    events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+    if len(events) > 0:
+
+        return events
+    else:
+        return None
+
+
 def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
     id_filter = Filter().ids(event_ids)
     events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))

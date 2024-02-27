@@ -23,17 +23,7 @@
           <a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a>
           <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a>
       </div>
-   <!--   <p>{{content}}</p> -->
      </template>
-    <!--<template #expand="item">
-      <div style="padding: 15px; text-align: left;" >
-          <a class="menu" :href="item.links.uri" target="_blank">Nostr Client</a>
-          <a class="menu" :href="item.links.njump" target="_blank">NJump</a>
-          <a class="menu" :href="item.links.highlighter" target="_blank">Highlighter</a>
-          <a class="menu":href="item.links.nostrudel" target="_blank">Nostrudel</a>
-      </div>
-    </template> -->
-
 
       </EasyDataTable>
 
@@ -51,7 +41,6 @@ const sortType: SortType = "desc";
 
 const headers: Header[] = [
   { text: "Results:", value: "content", fixed:true},
- // { text: "Time", value: "indicator.time", sortable: true, },
 ];
 
 

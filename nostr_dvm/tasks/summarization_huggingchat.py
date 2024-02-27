@@ -6,7 +6,7 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
+from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by_id, get_events_by_ids
 from nostr_sdk import Tag
 
 """
@@ -42,15 +42,17 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
         prompt = ""
+        collect_events = []
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":
-                    prompt = tag.as_vec()[1]
+                    prompt += tag.as_vec()[1] + "\n"
                 elif input_type == "event":
-                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
-                    prompt = evt.content()
+                    collect_events.append(tag.as_vec()[1])
+                    #evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    #prompt += evt.content() + "\n"
                 elif input_type == "job":
                     evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
                                                      kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
@@ -72,6 +74,12 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
 
                     else:
                         prompt = evt.content()
+
+        evts = get_events_by_ids(collect_events, client=client, config=dvm_config)
+        if evts is not None:
+            for evt in evts:
+                prompt += evt.content() + "\n"
+
         options = {
             "prompt": prompt,
         }
@@ -96,7 +104,7 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
 
         try:
             chatbot = hugchat.ChatBot(cookies=cookies.get_dict())  # or cookie_path="usercookies/<email>.json"
-            query_result = chatbot.query("Summarize the following text in maximum 5 sentences: " + options["prompt"])
+            query_result = chatbot.query("Summarize the following notes: " + options["prompt"])
             print(query_result["text"])  # or query_result.text or query_result["text"]
             return str(query_result["text"]).lstrip()
 
@@ -116,7 +124,7 @@ def build_example(name, identifier, admin_config):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I use a LLM connected via Huggingchat",
+        "about": "I use a LLM connected via Huggingchat to summarize Inputs",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {}
