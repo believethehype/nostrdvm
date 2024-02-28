@@ -21,98 +21,15 @@ import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
+import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
 
 let dvms =[]
-let searching = false
-
-
-
-let listener = false
-
-let hasmultipleinputs = false
-
-function showDetails(user) {
-   this.$bvModal.show("modal-details");
-   this.modalData = user;
-}
-
-const sleep = (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-
-async function post_note(note){
-   let client = store.state.client
-   let tags = []
-
-   if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-    const draft = {
-      content: note, 
-      kind: 1, 
-      pubkey: store.state.pubkey.toHex(),
-      tags: tags,
-      createdAt: Date.now()
-    };
-    const eventJson = await amberSignerService.signEvent(draft);
-    await client.sendEvent(Event.fromJson(JSON.stringify(eventJson)));
-   }
-   else
-   {
-    await client.publishTextNote(note, tags);
-   }
-}
-
-async function schedule(note) {
-
-
-  let schedule = Timestamp.fromSecs(datetopost.value/1000)
-  let humandatetime = schedule.toHumanDatetime()
-      let time = humandatetime.split("T")[1].split("Z")[0].trim()
-     let date = humandatetime.split("T")[0].split("-")[2].trim() + "." + humandatetime.split("T")[0].split("-")[1].trim() + "." + humandatetime.split("T")[0].split("-")[0].trim().slice(2)
-
-   console.log("Date: " + date + " Time: "+ time )
-
-  let client = store.state.client
-  let signer = store.state.signer
-
-  let noteevent = EventBuilder.textNote(note, []).customCreatedAt(schedule).toUnsignedEvent(store.state.pubkey)
-  let signedEvent = await signer.signEvent(noteevent)
-
-  let stringifiedevent = signedEvent.asJson()
-
-  let tags_str = []
-  let tag = Tag.parse(["i", stringifiedevent, "text"])
-  tags_str.push(tag.asVec())
-  let tags_as_str = JSON.stringify(tags_str)
-
-
-  let content = await signer.nip04Encrypt(PublicKey.parse("85c20d3760ef4e1976071a569fb363f4ff086ca907669fb95167cdc5305934d1"), tags_as_str)
-
-  let tags_t = []
-  tags_t.push(Tag.parse(["p", "85c20d3760ef4e1976071a569fb363f4ff086ca907669fb95167cdc5305934d1"]))
-  tags_t.push(Tag.parse(["encrypted"]))
-  tags_t.push(Tag.parse(["client", "noogle"]))
-
-
-  let evt = new EventBuilder(5905, content, tags_t)
-  console.log(evt)
-  let res = await client.sendEventBuilder(evt);
-  console.log(res)
-  miniToastr.showMessage("Note scheduled for " + ("Date: " + date + " Time: "+ time ))
-
-
-
-
-}
-
-
 
 async function generate_feed() {
 
    try {
-
-
      if(store.state.pubkey === undefined || localStorage.getItem('nostr-key-method') === "anon"){
                miniToastr.showMessage("In order to receive personalized recommendations, sign-in first.", "Not signed in.", VueNotifications.types.warn)
           return
@@ -122,20 +39,13 @@ async function generate_feed() {
         dvm = {}
         dvms.pop()
       }
-
         dvms = []
         store.commit('set_recommendation_dvms', dvms)
         let client = store.state.client
 
         let content = "NIP 90 Content Discovery request"
         let kind = 5300
-          let tags = [
-
-            ]
-
-
-
-
+        let tags = []
         let res;
         let requestid;
 
@@ -169,10 +79,6 @@ async function generate_feed() {
         }
 
         store.commit('set_current_request_id_recommendation', requestid)
-        //console.log("IMAGE EVENT SENT: " + res.toHex())
-
-        //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
-        searching = true
         if (!store.state.recommendationehasEventListener){
            listen()
            store.commit('set_recommendationEventListener', true)
@@ -187,39 +93,7 @@ async function generate_feed() {
 }
 
 
-
-async function getEvents(eventids) {
-  const event_filter = new Filter().ids(eventids)
-  let client = store.state.client
-  return await client.getEventsOf([event_filter], Duration.fromSecs(5))
-}
-
-
-async function get_user_infos(pubkeys){
-        let profiles = []
-        let client = store.state.client
-        const profile_filter = new Filter().kind(0).authors(pubkeys)
-        let evts = await client.getEventsOf([profile_filter],  Duration.fromSecs(10))
-
-        for (const entry of evts){
-          try{
-            let contentjson = JSON.parse(entry.content)
-             //console.log(contentjson)
-            profiles.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
-          }
-          catch(error){
-            console.log("error")
-          }
-
-        }
-
-        return profiles
-
-    }
-
 async function  listen() {
-    listener = true
-
     let client = store.state.client
     let pubkey = store.state.pubkey
 
@@ -239,8 +113,6 @@ async function  listen() {
             sleep(1000).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  console.log("RECOMMENDATION ETAG: " + event.tags[tag].asVec()[1])
-                  console.log("RECOMMENDATION LISTEN TO : " + store.state.requestidRecommendation)
                   if (event.tags[tag].asVec()[1] === store.state.requestidRecommendation) {
                     resonsetorequest = true
                   }
@@ -254,7 +126,6 @@ async function  listen() {
                   try {
                     console.log("7000: ", event.content);
                     console.log("DVM: " + event.author.toHex())
-                    searching = false
                     //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
 
                     let status = "unknown"
@@ -364,23 +235,16 @@ async function  listen() {
                             indicator: {"time": evt.createdAt.toHumanDatetime()}
                           })
                         }
-
-
                       }
 
-
-
-
-                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
                         dvms.find(i => i.id === event.author.toHex()).result.length = 0
-                      dvms.find(i => i.id === event.author.toHex()).result.push.apply(dvms.find(i => i.id === event.author.toHex()).result, items)
-                      dvms.find(i => i.id === event.author.toHex()).status = "finished"
+                        dvms.find(i => i.id === event.author.toHex()).result.push.apply(dvms.find(i => i.id === event.author.toHex()).result, items)
+                        dvms.find(i => i.id === event.author.toHex()).status = "finished"
                          }
                      }
                   store.commit('set_recommendation_dvms', dvms)
-
-                  //store.commit('set_imagedvm_results', dvms)
                 }
+
               }
             })
         },
@@ -396,81 +260,30 @@ async function  listen() {
 
 const urlinput = ref("");
 
-function nextInput(e) {
-  const next = e.currentTarget.nextElementSibling;
-  if (next) {
-    next.focus();
 
+async function zap(invoice) {
+  let webln;
+
+    //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
+    //this.dvminvoice = invoice
+  try {
+    webln = await requestProvider();
+  } catch (err) {
+      await copyinvoice(invoice)
+  }
+
+  if (webln) {
+    try{
+         let response = await webln.sendPayment(invoice)
+         dvms.find(i => i.bolt11 === invoice).status = "paid"
+          store.commit('set_recommendation_results', dvms)
+    }
+    catch(err){
+          console.log(err)
+          await copyinvoice(invoice)
+    }
   }
 }
-
-
-    async function copyinvoice(invoice){
-       await navigator.clipboard.writeText(invoice)
-        window.open("lightning:" + invoice,"_blank")
-       miniToastr.showMessage("", "Copied Invoice to clipboard", VueNotifications.types.info)
-    }
-
-    async function copyurl(url){
-       await navigator.clipboard.writeText(url)
-       miniToastr.showMessage("", "Copied link to clipboard", VueNotifications.types.info)
-    }
-
-
-    async function zap(invoice) {
-      let webln;
-
-        //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
-        //this.dvminvoice = invoice
-
-
-      try {
-        webln = await requestProvider();
-      } catch (err) {
-          await copyinvoice(invoice)
-      }
-
-      if (webln) {
-        try{
-             let response = await webln.sendPayment(invoice)
-             dvms.find(i => i.bolt11 === invoice).status = "paid"
-              store.commit('set_recommendation_results', dvms)
-        }
-        catch(err){
-              console.log(err)
-              await copyinvoice(invoice)
-        }
-
-      }
-
-
-    }
-
-    async function createBolt11Lud16(lud16, amount) {
-    let url;
-      if (lud16.includes('@')) {  // LNaddress
-        const parts = lud16.split('@');
-        url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
-    } else {  // No lud16 set or format invalid
-        return null;
-    }
-
-    try {
-        console.log(url);
-        const response = await fetch(url);
-        const ob = await response.json();
-        const callback = ob.callback;
-        const amountInSats = parseInt(amount) * 1000;
-        const callbackResponse = await fetch(`${callback}?amount=${amountInSats}`);
-        const obCallback = await callbackResponse.json();
-        return obCallback.pr;
-        }
-    catch (e) {
-            console.log(`LUD16: ${e}`);
-            return null;
-      }
-
-  }
 
 
 defineProps({
@@ -494,17 +307,24 @@ const datetopost = ref(Date.now());
 const openModal = result => {
   datetopost.value = Date.now();
   isModalOpened.value = true;
+
+
+
+  //let resevents = ""
+  //for (let evt of result){
+   // resevents = resevents + "nostr:" + (evt.id.toBech32()) + "\n"
+  //}
   modalcontent.value = result
 };
 const closeModal = () => {
   isModalOpened.value = false;
-  console.log(datetopost.value)
 };
+
+
+
 
 const submitHandler = async () => {
 
- // await post_note(modalcontent)
-  await schedule(modalcontent, Timestamp.now())
 }
 
 
@@ -528,23 +348,31 @@ const submitHandler = async () => {
     </h3>
   </div>
   <br>
-          <ModalComponent :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
-            <template #header>Share your creation on Nostr  <br> <br></template>
+  <div>
+       <ModalComponent  :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
+            <template #header>Summarize Results <br></template>
             <template #content>
-              <textarea  v-model="modalcontent" className="d-Input" style="height: 300px;">{{modalcontent}}</textarea>
+
+              <SummarizationGeneration :events="modalcontent"></SummarizationGeneration>
+
+
+
+
+
             </template>
 
             <template #footer>
-              <div>
+              <!-- <div>
                 <VueDatePicker :min-date="new Date()" :teleport="false" :dark="true" position="right" className="bg-base-200 inline-flex flex-none" style="width: 220px;" v-model="datetopost"></VueDatePicker>
-                <button className="v-Button" @click="schedule(modalcontent)"   @click.stop="closeModal"><img width="25px" style="margin-right: 5px" src="../../public/shipyard.ico"/>Schedule Note with Shipyard DVM</button>
+               <button className="v-Button" @click="schedule(modalcontent, datetopost)"   @click.stop="closeModal"><img width="25px" style="margin-right: 5px" src="../../public/shipyard.ico"/>Schedule Note with Shipyard DVM</button>
                  <br>
                 or
                 <br>
                   <button className="v-Button" style="margin-bottom: 0px" @click="post_note(modalcontent)"   @click.stop="closeModal"><img  width="25px" style="margin-right: 5px;" src="../../public/favicon.ico"/>Post Note now</button>
-              </div>
+              </div> -->
             </template>
           </ModalComponent>
+      </div>
 
   <div class=" relative space-y-3">
     <div class="grid grid-cols-1 gap-6">
@@ -609,24 +437,19 @@ const submitHandler = async () => {
 
 
 
-
-          <!-- <div  v-if="dvm.result.length > 0 && store.state.pubkey.toHex() !== Keys.parse('ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e').publicKey.toHex()" >
-                 <button @click="openModal('Look what I created on noogle.lol\n\n' +  dvm.result)"  class="w-8 h-8 rounded-full bg-nostr border-white border-1 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black tooltip" data-top='Share' aria-label="make note" role="button">
-                                    <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-pencil" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                        <path stroke="none" d="M0 0h24v24H0z"></path>
-                                        <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4"></path>
-                                        <line x1="13.5" y1="6.5" x2="17.5" y2="10.5"></line>
-                                    </svg>
+     <div data-tip="Make Summarization"   v-if="dvm.result.length > 0 && store.state.pubkey.toHex() !== Keys.parse('ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e').publicKey.toHex()" >
+                 <button @click="openModal(dvm.result)"  class="w-8 h-8 rounded-full bg-nostr border-white border-1 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black tooltip" data-top='Share' aria-label="make note" role="button">
+   <svg class="w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+    <path d="M9 19V.352A3.451 3.451 0 0 0 7.5 0a3.5 3.5 0 0 0-3.261 2.238A3.5 3.5 0 0 0 2.04 6.015a3.518 3.518 0 0 0-.766 1.128c-.042.1-.064.209-.1.313a3.34 3.34 0 0 0-.106.344 3.463 3.463 0 0 0 .02 1.468A4.016 4.016 0 0 0 .3 10.5l-.015.036a3.861 3.861 0 0 0-.216.779A3.968 3.968 0 0 0 0 12a4.032 4.032 0 0 0 .107.889 4 4 0 0 0 .2.659c.006.014.015.027.021.041a3.85 3.85 0 0 0 .417.727c.105.146.219.284.342.415.072.076.148.146.225.216.1.091.205.179.315.26.11.081.2.14.308.2.02.013.039.028.059.04v.053a3.506 3.506 0 0 0 3.03 3.469 3.426 3.426 0 0 0 4.154.577A.972.972 0 0 1 9 19Zm10.934-7.68a3.956 3.956 0 0 0-.215-.779l-.017-.038a4.016 4.016 0 0 0-.79-1.235 3.417 3.417 0 0 0 .017-1.468 3.387 3.387 0 0 0-.1-.333c-.034-.108-.057-.22-.1-.324a3.517 3.517 0 0 0-.766-1.128 3.5 3.5 0 0 0-2.202-3.777A3.5 3.5 0 0 0 12.5 0a3.451 3.451 0 0 0-1.5.352V19a.972.972 0 0 1-.184.546 3.426 3.426 0 0 0 4.154-.577A3.506 3.506 0 0 0 18 15.5v-.049c.02-.012.039-.027.059-.04.106-.064.208-.13.308-.2s.214-.169.315-.26c.077-.07.153-.14.225-.216a4.007 4.007 0 0 0 .459-.588c.115-.176.215-.361.3-.554.006-.014.015-.027.021-.041.087-.213.156-.434.205-.659.013-.057.024-.115.035-.173.046-.237.07-.478.073-.72a3.948 3.948 0 0 0-.066-.68Z"/>
+</svg>
                                </button>
 
-          </div> -->
+          </div>
            </div>
 
       </div>
     </div>
 
-      <h2 v-if="dvms.length > 0" class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
-    There will be more algos coming soon..</h2>
   </div>
 </template>
 

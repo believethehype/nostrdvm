@@ -28,12 +28,12 @@ import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput} from "../components/helper/Helper.vue"
+
 
 let items = []
 let profiles = []
 let dvms =[]
-let listener = false
-let searching = false
 
 const message = ref("");
 const fromuser = ref("");
@@ -57,28 +57,6 @@ onMounted(async () => {
  await sleep(2000)
 
 })
-
-
-
-
-
-
-
-
-   // console.log(urlParams.has('search')); // true
-   // console.log(urlParams.get('search')); // "MyParam"
-
-
-
-
-
-
-const sleep = (ms) => {
-  return new Promise(resolve => setTimeout(resolve, ms))
-}
-
-
-
 
 async function send_search_request(msg) {
    try {
@@ -172,15 +150,12 @@ async function send_search_request(msg) {
           }
         }
 
-        console.log("STORE: " +store.state.requestidSearch)
         store.commit('set_current_request_id_search', requestid)
-       store.commit('set_current_request_profile_id_search', requestid_profile)
-        console.log("STORE AFTER: " + store.state.requestidSearch)
+        store.commit('set_current_request_profile_id_search', requestid_profile)
 
-        //miniToastr.showMessage("Sent Request to DVMs", "Awaiting results", VueNotifications.types.warn)
         if (!store.state.hasEventListener){
             listen()
-           store.commit('set_hasEventListener', true)
+            store.commit('set_hasEventListener', true)
         }
         else{
           console.log("Already has event listener")
@@ -191,38 +166,7 @@ async function send_search_request(msg) {
       }
 }
 
-
-async function getEvents(eventids) {
-  const event_filter = new Filter().ids(eventids)
-  let client = store.state.client
-  return await client.getEventsOf([event_filter], Duration.fromSecs(5))
-}
-
-
-async function get_user_infos(pubkeys){
-        let profiles = []
-        let client = store.state.client
-        const profile_filter = new Filter().kind(0).authors(pubkeys)
-        let evts = await client.getEventsOf([profile_filter],  Duration.fromSecs(10))
-
-        for (const entry of evts){
-          try{
-            let contentjson = JSON.parse(entry.content)
-             //console.log(contentjson)
-            profiles.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
-          }
-          catch(error){
-            console.log("error")
-          }
-
-        }
-
-        return profiles
-
-    }
-
 async function  listen() {
-    listener = true
     let client = store.state.client
     let pubkey = store.state.pubkey
     let originale = [store.state.requestidSearch]
@@ -236,7 +180,6 @@ async function  listen() {
               if (store.state.hasEventListener === false){
                 return true
               }
-            //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
             let resonsetorequest = false
 
@@ -244,8 +187,6 @@ async function  listen() {
 
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  //console.log("SEARCH ETAG: " + event.tags[tag].asVec()[1])
-                 // console.log("SEARCH LISTEN TO : " + store.state.requestidSearch)
                   if (event.tags[tag].asVec()[1] === store.state.requestidSearch || event.tags[tag].asVec()[1] === store.state.requestidSearchProfile) {
                     resonsetorequest = true
                   }
@@ -259,8 +200,6 @@ async function  listen() {
                   try {
                     console.log("7000: ", event.content);
                     console.log("DVM: " + event.author.toHex())
-                    searching = false
-                    //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
 
                     let status = "unknown"
                     let jsonentry = {
@@ -325,8 +264,6 @@ async function  listen() {
                 else if (event.kind === 6302) {
                   let entries = []
                   console.log("6302:", event.content);
-
-                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
                   try{
                   let event_etags = JSON.parse(event.content)
                   if (event_etags.length > 0) {
@@ -369,12 +306,9 @@ async function  listen() {
                             indicator: {"time": evt.createdAt.toHumanDatetime()}
                           })
                         }
-
-
                       }
                     }
                   }
-
 
                   const index = dvms.indexOf((dvms.find(i => i.id === event.author.toHex())));
                   if (index > -1) {
@@ -387,7 +321,7 @@ async function  listen() {
                      }
                 catch{
 
-                }
+                  }
                 }
 
 
@@ -395,7 +329,6 @@ async function  listen() {
                   let entries = []
                   console.log("6303:", event.content);
 
-                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
                   let event_ptags = JSON.parse(event.content)
                   let authors = []
                   if (event_ptags.length > 0) {
@@ -408,11 +341,6 @@ async function  listen() {
 
                       for (const profile of infos) {
                         console.log(profile["author"])
-                        //let p = profiles.find(record => record.author === profile.author)
-
-                        //‚let bech32id = PublicKey.parse(profile["profile"][]).toBech32()  profile.author.toBech32()
-                       // let picture = profile === undefined ? "../assets/nostr-purple.svg" : profile["profile"]["picture"]
-                       // let name = profile === undefined ? bech32id : profile["profile"]["name"]
                         if (profiles.findIndex(e => e.id === profile["author"]) === -1 && profile["profile"]["name"] !== "" ) {
                           profiles.push({
                             id: profile["author"],
@@ -422,8 +350,6 @@ async function  listen() {
                             avatar: profile["profile"]["picture"]
                           })
                         }
-
-
                       }
                     }
                   }
@@ -458,13 +384,6 @@ function getNamefromId(id){
   else return elements[0].name
 }
 
-function nextInput(e) {
-  const next = e.currentTarget.nextElementSibling;
-  if (next) {
-    next.focus();
-
-  }
-}
 
 async function checkuser(msg){
   usernames = []
@@ -472,29 +391,18 @@ async function checkuser(msg){
     for (let profile of profiles){
       usernames.push(profile)
     }
-
-
-
-
-
 }
 
 async function get_user_from_search(name){
         name = "\"name\":" + name
-
         if (store.state.dbclient.database === undefined){
           console.log("not logged in, not getting profile suggestions")
           return []
         }
-       let dbclient = store.state.dbclient
+        let dbclient = store.state.dbclient
         let profiles = []
         let filter1 = new Filter().kind(0).search(name)
         let evts = await dbclient.database.query([filter1])
-
-
-
-        //const profile_filter = new Filter().kind(0).search(name)
-        //let evts = await client.getEventsOf([profile_filter], 3)
 
         for (const entry of evts){
           try{
@@ -505,11 +413,8 @@ async function get_user_from_search(name){
           catch(error){
             console.log(error)
           }
-
         }
-
         return profiles
-
     }
 
 defineProps({
@@ -519,11 +424,7 @@ defineProps({
   },
 })
 
-
-
-
 </script>
-
 
 <template>
 
@@ -534,12 +435,8 @@ defineProps({
       <h2 class="text-base-200-content text-center tracking-wide text-2xl">
       Search the Nostr with Data Vending Machines</h2>
       <h3>
-       <br>
-
+        <br>
         <input class="c-Input" type="search" name="s" autofocus placeholder="Search..." v-model="message"   @keyup.enter="send_search_request(message)" @keydown.enter="nextInput">
-
-
-
         <button class="v-Button"  @click="send_search_request(message)">Search the Nostr</button>
       </h3>
 
@@ -554,7 +451,6 @@ defineProps({
 
      <datalist id="users">
           <option v-for="profile in usernames" :value="profile.author">
-
             {{profile.profile.name + ' (' + profile.profile.nip05 + ')'}}
 
           </option>
@@ -563,8 +459,7 @@ defineProps({
   </div>
 
 
-
-          <div className="inline-flex flex-none" style="width: 20px;"></div>
+      <div className="inline-flex flex-none" style="width: 20px;"></div>
 
     <div>
           <h4 className="inline-flex flex-none font-thin">from:</h4>

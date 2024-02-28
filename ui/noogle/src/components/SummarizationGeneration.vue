@@ -11,7 +11,7 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event, Alphabet, Keys, nip04_decrypt, SecretKey
+  Nip19Event, Alphabet, Keys, nip04_decrypt, SecretKey, Duration
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -21,46 +21,38 @@ import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
+import {post_note, schedule, copyurl, copyinvoice, sleep, nextInput} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
 import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
-import {post_note, schedule, copyinvoice, copyurl, sleep, nextInput} from "../components/helper/Helper.vue"
-
-
+import NoteTable from "@/components/NoteTable.vue";
 
 let dvms =[]
-let hasmultipleinputs = false
+async function summarizefeed(eventids) {
 
-async function generate_image(message) {
    try {
-     if (message === undefined){
-       message = "A purple Ostrich"
-     }
-
-     if(store.state.pubkey === undefined){
-               miniToastr.showMessage("Please login first", "No pubkey set", VueNotifications.types.warn)
+     if(store.state.pubkey === undefined || localStorage.getItem('nostr-key-method') === "anon"){
+               miniToastr.showMessage("In order to receive personalized recommendations, sign-in first.", "Not signed in.", VueNotifications.types.warn)
           return
      }
 
         dvms = []
-        store.commit('set_imagedvm_results', dvms)
+
+        store.commit('set_summarization_dvms', dvms)
         let client = store.state.client
+        let content = "NIP 90 Content Discovery request"
+        let kind = 5001
 
-        let content = "NIP 90 Image Generation request"
-        let kind = 5100
-        let tags = [
-              ["i", message, "text"]
-            ]
+         let tags = []
+         for (const tag of eventids){
+           try{
+              tags.push(["i", tag.id.toHex(), "event"])
+           }
+           catch{}
+         }
 
-        hasmultipleinputs = false
-        if (urlinput.value !== "" && urlinput.value.startsWith('http')){
-          let imagetag = ["i", urlinput.value, "url"]
-          tags.push(imagetag)
-          hasmultipleinputs = true
-           console.log(urlinput.value)
-        }
 
         let res;
         let requestid;
@@ -85,15 +77,17 @@ async function generate_image(message) {
             tags_t.push(Tag.parse(tag))
           }
           let evt = new EventBuilder(kind, content, tags_t)
-
           res = await client.sendEventBuilder(evt);
           requestid = res.toHex();
+          console.log(res)
+
+
         }
 
-        store.commit('set_current_request_id_image', requestid)
-        if (!store.state.imagehasEventListener){
+        store.commit('set_current_request_id_summarization', requestid)
+        if (!store.state.summarizationhasEventListener){
            listen()
-           store.commit('set_imagehasEventListener', true)
+           store.commit('set_summariarizationEventListener', true)
         }
         else{
           console.log("Already has event listener")
@@ -104,17 +98,18 @@ async function generate_image(message) {
       }
 }
 
+
 async function  listen() {
     let client = store.state.client
     let pubkey = store.state.pubkey
 
-    const filter = new Filter().kinds([7000, 6100, 6905]).pubkey(pubkey).since(Timestamp.now());
+    const filter = new Filter().kinds([7000, 6001]).pubkey(pubkey).since(Timestamp.now());
     await client.subscribe([filter]);
 
     const handle = {
         // Handle event
         handleEvent: async (relayUrl, event) => {
-              if (store.state.imagehasEventListener === false){
+              if (store.state.summarizationhasEventListener === false){
                 return true
               }
             //const dvmname =  getNamefromId(event.author.toHex())
@@ -124,9 +119,8 @@ async function  listen() {
             sleep(1000).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
-                  console.log("IMAGE LISTEN TO : " + store.state.requestidImage)
-                  if (event.tags[tag].asVec()[1] === store.state.requestidImage) {
+
+                  if (event.tags[tag].asVec()[1] === store.state.requestidSummarization) {
                     resonsetorequest = true
                   }
                 }
@@ -139,14 +133,13 @@ async function  listen() {
                   try {
                     console.log("7000: ", event.content);
                     console.log("DVM: " + event.author.toHex())
-                    //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
 
                     let status = "unknown"
                     let jsonentry = {
                       id: event.author.toHex(),
                       kind: "",
                       status: status,
-                      result: "",
+                      result: [],
                       name: event.author.toBech32(),
                       about: "",
                       image: "",
@@ -168,6 +161,7 @@ async function  listen() {
                       }
                     }
 
+
                     //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
                     for (const el of store.state.nip89dvms) {
                       if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
@@ -180,18 +174,15 @@ async function  listen() {
                       }
                     }
                     if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
-                      if (!hasmultipleinputs  ||
-                          (hasmultipleinputs && jsonentry.id !==  "04f74530a6ede6b24731b976b8e78fb449ea61f40ff10e3d869a3030c4edc91f")){
-                                              // DVM can not handle multiple inputs, straight up censorship until spec is fulfilled or requests are ignored.
-                         dvms.push(jsonentry)
-                      }
 
+                         dvms.push(jsonentry)
                     }
+                    /*if (event.content !== ""){
+                      status = event.content
+                    }*/
 
                     dvms.find(i => i.id === jsonentry.id).status = status
-
-                    store.commit('set_imagedvm_results', dvms)
-
+                    store.commit('set_summarization_dvms', dvms)
 
                   } catch (error) {
                     console.log("Error: ", error);
@@ -199,23 +190,18 @@ async function  listen() {
 
 
                 }
-                else if (event.kind === 6905) {
-                  console.log(event.content)
 
-                }
-                else if (event.kind === 6100) {
-                  let entries = []
-                  console.log("6100:", event.content);
 
-                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
-                  dvms.find(i => i.id === event.author.toHex()).result = event.content
-                  dvms.find(i => i.id === event.author.toHex()).status = "finished"
-                  store.commit('set_imagedvm_results', dvms)
+                 else if (event.kind === 6001){
+                   console.log(event.content)
+                    dvms.find(i => i.id === event.author.toHex()).result = event.content
+                    dvms.find(i => i.id === event.author.toHex()).status = "finished"
+                    store.commit('set_summarization_dvms', dvms)
                 }
               }
             })
         },
-
+        // Handle relay message
         handleMsg: async (relayUrl, message) => {
             //console.log("Received message from", relayUrl, message.asJson());
         }
@@ -225,43 +211,39 @@ async function  listen() {
 }
 
 
-const urlinput = ref("");
+async function zap(invoice) {
+  let webln;
+
+    //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
+    //this.dvminvoice = invoice
 
 
+  try {
+    webln = await requestProvider();
+  } catch (err) {
+      await copyinvoice(invoice)
+  }
 
-    async function zap(invoice) {
-      let webln;
-
-        //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
-        //this.dvminvoice = invoice
-
-
-      try {
-        webln = await requestProvider();
-      } catch (err) {
-          await copyinvoice(invoice)
-      }
-
-      if (webln) {
-        try{
-             let response = await webln.sendPayment(invoice)
-             dvms.find(i => i.bolt11 === invoice).status = "paid"
-              store.commit('set_imagedvm_results', dvms)
-        }
-        catch(err){
-              console.log(err)
-              await copyinvoice(invoice)
-        }
-
-      }
-
-
+  if (webln) {
+    try{
+         let response = await webln.sendPayment(invoice)
+         dvms.find(i => i.bolt11 === invoice).status = "paid"
+          store.commit('set_summarization_dvms', dvms)
     }
+    catch(err){
+          console.log(err)
+          await copyinvoice(invoice)
+    }
+
+  }
+
+
+}
 
 
 defineProps({
-  msg: {
-    type: String,
+  events: {
+    type: Array,
     required: false
   },
 })
@@ -276,70 +258,49 @@ const datetopost = ref(Date.now());
 const openModal = result => {
   datetopost.value = Date.now();
   isModalOpened.value = true;
-  modalcontent.value = result
+  modalcontent.value = resevents
 };
 const closeModal = () => {
   isModalOpened.value = false;
-  console.log(datetopost.value)
 };
 
+
+const ttest = result => {
+
+  summarizefeed(result)
+}
+
 const submitHandler = async () => {
+
+
 }
 
 
+
 </script>
+
+<!--  font-thin bg-gradient-to-r from-white to-nostr bg-clip-text text-transparent -->
+
 <template>
 
   <div class="greetings">
-   <br>
-    <br>
     <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
-    <h1 class="text-7xl font-black tracking-wide">Image Generation</h1>
-    <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
-    Generate Images, the decentralized way</h2>
+    <h3 class="text-7xl font-black tracking-wide">Summarization</h3>
+
     <h3>
      <br>
-     <input class="c-Input" autofocus placeholder="A purple ostrich..." v-model="message" @keyup.enter="generate_image(message)" @keydown.enter="nextInput">
-     <button class="v-Button"  @click="generate_image(message)">Generate Image</button>
+     <button class="v-Button"  @click="summarizefeed($props.events)">Summarize Results</button>
     </h3>
-<details class="collapse bg-base " className="advanced" >
-  <summary class="collapse-title font-thin bg">Advanced Options</summary>
-  <div class="collapse-content font-size-0" className="z-10" id="collapse-settings">
-    <div>
-      <h4 className="inline-flex flex-none font-thin">Url to existing image:</h4>
-      <div className="inline-flex flex-none" style="width: 10px;"></div>
-      <input class="c-Input" style="width: 300px;"  placeholder="https://image.nostr.build/image123.jpg"  v-model="urlinput">
-      </div>
-  </div>
-</details>
+
   </div>
   <br>
+<div class="overflow-y-auto scrollbar w-full" style="max-height: 60pc">
 
 
-          <ModalComponent :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
-            <template #header>Share your creation on Nostr  <br> <br></template>
+  <div class=" relative space-y-3">
+    <div class="grid grid-cols-1 gap-4 "  >
 
-            <template #content>
-              <textarea  v-model="modalcontent" className="d-Input" style="height: 300px;">{{modalcontent}}</textarea>
-            </template>
-
-
-            <template #footer>
-            <div>
-              <VueDatePicker :min-date="new Date()" :teleport="false" :dark="true" position="right" className="bg-base-200 inline-flex flex-none" style="width: 220px;" v-model="datetopost"></VueDatePicker>
-              <button className="v-Button" @click="schedule(modalcontent, datetopost)"   @click.stop="closeModal"><img width="25px" style="margin-right: 5px" src="../../public/shipyard.ico"/>Schedule Note with Shipyard DVM</button>
-               <br>
-              or
-              <br>
-                <button className="v-Button" style="margin-bottom: 0px" @click="post_note(modalcontent)"   @click.stop="closeModal"><img  width="25px" style="margin-right: 5px;" src="../../public/favicon.ico"/>Post Note now</button>
-                </div>
-            </template>
-          </ModalComponent>
-
-  <div class="max-w-5xl relative space-y-3">
-    <div class="grid grid-cols-1 gap-6">
-
-        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.imagedvmreplies"
+        <div className="card w-70 bg-base-100 shadow-xl"   v-for="dvm in store.state.summarizationdvms"
             :key="dvm.id">
 
 
@@ -349,7 +310,8 @@ const submitHandler = async () => {
 
 <div className="playeauthor-wrapper">
   <figure  className="w-20">
-       <img className="avatar" :src="dvm.image"  alt="DVM Picture" />
+       <img className="avatar"  v-if="dvm.image" :src="dvm.image"  alt="DVM Picture" />
+       <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
   </figure>
 
 
@@ -364,7 +326,7 @@ const submitHandler = async () => {
               <div className="tooltip mt-auto" :data-tip="dvm.status">
 
 
-                <button v-if="dvm.status === 'processing'" className="btn">Processing</button>
+                <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error'"  className="btn">{{dvm.status}}</button>
                 <button v-if="dvm.status === 'finished'" className="btn">Done</button>
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
@@ -374,23 +336,36 @@ const submitHandler = async () => {
           </div>
 
         </div>
-            <figure className="w-full" >
-            <img  v-if="dvm.result" :src="dvm.result"  className="tooltip" data-top='Click to copy url' height="200" alt="DVM Picture" @click="copyurl(dvm.result)"/>
-           </figure>
-           <div  v-if="dvm.result && store.state.pubkey.toHex() !== Keys.parse('ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e').publicKey.toHex()" >
-                 <button @click="openModal('Look what I created on noogle.lol\n\n' +  dvm.result)"  class="w-8 h-8 rounded-full bg-nostr border-white border-1 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black tooltip" data-top='Share' aria-label="make note" role="button">
-                    <svg  xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-pencil" width="20" height="20" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z"></path>
-                        <path d="M4 20h4l10.5 -10.5a1.5 1.5 0 0 0 -4 -4l-10.5 10.5v4"></path>
-                        <line x1="13.5" y1="6.5" x2="17.5" y2="10.5"></line>
-                    </svg>
-                 </button>
 
-          </div>
+         <!--       <div v-if="dvm.result.length > 0" class="collapse bg-base-200">
+        <input type="checkbox" class="peer" />
+        <div class="collapse-title bg-primary text-primary-content peer-checked:bg-secondary peer-checked:text-secondary-content">
+          Click me to show/hide content
+        </div>
+        <div class="collapse-content bg-primary text-primary-content peer-checked:bg-base-200 peer-checked:text-accent">
+
+        </div>
+</div> -->
+
+
+    <details v-if="dvm.status === 'finished'" class="collapse bg-base">
+  <summary class="collapse-title  "><div class="btn">Show/Hide Results</div></summary>
+  <div class="collapse-content font-size-0" className="z-10" id="collapse">
+
+     <p>{{dvm.result}}</p>
+
+
+    </div>
+</details>
+
+
            </div>
 
       </div>
     </div>
+
+
+  </div>
   </div>
 </template>
 
@@ -460,6 +435,12 @@ h3 {
   text-align: left;
 
 }
+
+.center {
+  text-align: center;
+  justify-content: center;
+}
+
 
 @media (min-width: 1024px) {
 
