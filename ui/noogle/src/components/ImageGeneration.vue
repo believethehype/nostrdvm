@@ -26,7 +26,7 @@ import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
-import {post_note, schedule, copyinvoice, copyurl, sleep, nextInput} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyinvoice, copyurl, sleep, nextInput, get_user_infos, createBolt11Lud16} from "../components/helper/Helper.vue"
 
 
 
@@ -124,8 +124,8 @@ async function  listen() {
             sleep(1000).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
-                  console.log("IMAGE LISTEN TO : " + store.state.requestidImage)
+                  //console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
+                  //console.log("IMAGE LISTEN TO : " + store.state.requestidImage)
                   if (event.tags[tag].asVec()[1] === store.state.requestidImage) {
                     resonsetorequest = true
                   }
@@ -137,8 +137,8 @@ async function  listen() {
 
 
                   try {
-                    console.log("7000: ", event.content);
-                    console.log("DVM: " + event.author.toHex())
+                    //console.log("7000: ", event.content);
+                    //console.log("DVM: " + event.author.toHex())
                     //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
 
                     let status = "unknown"
@@ -164,7 +164,41 @@ async function  listen() {
                         if (event.tags[tag].asVec().length > 2) {
                           jsonentry.bolt11 = event.tags[tag].asVec()[2]
                         }
-                        // TODO else request invoice
+                        else{
+                            let profiles = await get_user_infos([event.author])
+                           let created = 0
+                            let current
+                          console.log("NUM KIND0 FOUND " + profiles.length)
+                            if (profiles.length > 0){
+                             // for (const profile of profiles){
+                                console.log(profiles[0].profile)
+                              let current = profiles[0]
+                               // if (profiles[0].profile.createdAt > created){
+                               //     created = profile.profile.createdAt
+                               //     current = profile
+                               //   }
+
+
+                               let lud16 = current.profile.lud16
+                              if (lud16 !== null && lud16 !== ""){
+                                console.log("LUD16: " +  lud16)
+                                jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount)
+                                console.log(jsonentry.bolt11)
+                                if(jsonentry.bolt11 === ""){
+                                 status = "error"
+                                }
+                            }
+                              else {
+                                console.log("NO LNURL")
+                              }
+
+                          }
+
+                            else {
+                              console.log("PROFILE NOT FOUND")
+                            }
+                        }
+
                       }
                     }
 

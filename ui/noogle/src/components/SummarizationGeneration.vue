@@ -42,7 +42,7 @@ async function summarizefeed(eventids) {
 
         store.commit('set_summarization_dvms', dvms)
         let client = store.state.client
-        let content = "NIP 90 Content Discovery request"
+        let content = "NIP 90 Summarization request"
         let kind = 5001
 
          let tags = []
@@ -157,7 +157,40 @@ async function  listen() {
                         if (event.tags[tag].asVec().length > 2) {
                           jsonentry.bolt11 = event.tags[tag].asVec()[2]
                         }
-                        // TODO else request invoice
+                          else{
+                            let profiles = await get_user_infos([event.author])
+                           let created = 0
+                            let current
+                          console.log("NUM KIND0 FOUND " + profiles.length)
+                            if (profiles.length > 0){
+                             // for (const profile of profiles){
+                                console.log(profiles[0].profile)
+                              let current = profiles[0]
+                               // if (profiles[0].profile.createdAt > created){
+                               //     created = profile.profile.createdAt
+                               //     current = profile
+                               //   }
+
+
+                               let lud16 = current.profile.lud16
+                              if (lud16 !== null && lud16 !== ""){
+                                console.log("LUD16: " +  lud16)
+                                jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount)
+                                console.log(jsonentry.bolt11)
+                                if(jsonentry.bolt11 === ""){
+                                 status = "error"
+                                }
+                            }
+                              else {
+                                console.log("NO LNURL")
+                              }
+
+                          }
+
+                            else {
+                              console.log("PROFILE NOT FOUND")
+                            }
+                        }
                       }
                     }
 
