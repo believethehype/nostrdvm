@@ -359,9 +359,11 @@ const submitHandler = async () => {
 
 
             <template #footer>
-            <div>
-              <VueDatePicker :min-date="new Date()" :teleport="false" :dark="true" position="right" className="bg-base-200 inline-flex flex-none" style="width: 220px;" v-model="datetopost"></VueDatePicker>
-              <button className="v-Button" @click="schedule(modalcontent, datetopost)"   @click.stop="closeModal"><img width="25px" style="margin-right: 5px" src="../../public/shipyard.ico"/>Schedule Note with Shipyard DVM</button>
+            <div class="content-center">
+              <VueDatePicker :min-date="new Date()"  :dark="true"   className="bg-base-200 content-center" teleport-center v-model="datetopost"></VueDatePicker>
+              <br>
+
+              <button className="v-Button" @click="schedule(modalcontent, datetopost)"  @click.stop="closeModal"><img width="25px" style="margin-right: 5px" src="../../public/shipyard.ico"/>Schedule Note with Shipyard DVM</button>
                <br>
               or
               <br>
@@ -451,7 +453,7 @@ const submitHandler = async () => {
 
 .d-Input {
     @apply bg-black hover:bg-gray-900 focus:ring-white mb-2 inline-flex flex-none items-center rounded-lg border border-transparent px-3 py-1.5 text-sm leading-4 text-white transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
-  width: 300px;
+  width: 500px;
 
   color: white;
   background: black;

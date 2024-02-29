@@ -18,6 +18,7 @@ onClickOutside(target, ()=>emit('modal-close'))
 </script>
 
 <template>
+
   <div v-if="isOpen" class="modal-mask" >
     <div class="modal-wrapper"  >
       <div class="modal-container" ref="target">
@@ -55,7 +56,7 @@ onClickOutside(target, ()=>emit('modal-close'))
 .modal-container {
   @apply bg-base-200;
   width: 600px;
-  margin: 200px auto;
+  margin: 15% auto;
   padding: 20px 30px;
   border-radius: 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
