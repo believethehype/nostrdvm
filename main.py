@@ -8,7 +8,7 @@ from nostr_dvm.tasks import videogeneration_replicate_svd, imagegeneration_repli
     trending_notes_nostrband, discovery_inactive_follows, translation_google, textextraction_pdf, \
     translation_libretranslate, textextraction_google, convert_media, imagegeneration_openai_dalle, texttospeech, \
     imagegeneration_sd21_mlx, advanced_search, textgeneration_huggingchat, summarization_huggingchat, \
-    discovery_nonfollowers
+    discovery_nonfollowers, search_users
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -31,7 +31,6 @@ def playground():
     bot_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     bot_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
-
     # Generate an optional Admin Config, in this case, whenever we give our DVMs this config, they will (re)broadcast
     # their NIP89 announcement
     # You can create individual admins configs and hand them over when initializing the dvm,
@@ -45,7 +44,6 @@ def playground():
 
     # Update the DVMs (not the bot) profile. For example after you updated the NIP89 or the lnaddress, you can automatically update profiles here.
     admin_config.UPDATE_PROFILE = False
-
 
     # Spawn some DVMs in the playground and run them
     # You can add arbitrary DVMs there and instantiate them here
@@ -63,10 +61,10 @@ def playground():
     # Spawn DVM3 Kind 5002 Local Text TranslationLibre, calling the free LibreTranslateApi, as an alternative.
     # This will only run and appear on the bot if an endpoint is set in the .env
     if os.getenv("LIBRE_TRANSLATE_ENDPOINT") is not None and os.getenv("LIBRE_TRANSLATE_ENDPOINT") != "":
-        libre_translator = translation_libretranslate.build_example("Libre Translator", "libre_translator", admin_config)
+        libre_translator = translation_libretranslate.build_example("Libre Translator", "libre_translator",
+                                                                    admin_config)
         bot_config.SUPPORTED_DVMS.append(libre_translator)  # We add translator to the bot
         libre_translator.run()
-
 
     # Spawn DVM4, this one requires an OPENAI API Key and balance with OpenAI, you will move the task to them and pay
     # per call. Make sure you have enough balance and the DVM's cost is set higher than what you pay yourself, except, you know,
@@ -77,17 +75,18 @@ def playground():
         dalle.run()
 
     if os.getenv("REPLICATE_API_TOKEN") is not None and os.getenv("REPLICATE_API_TOKEN") != "":
-        sdxlreplicate = imagegeneration_replicate_sdxl.build_example("Stable Diffusion XL", "replicate_sdxl", admin_config)
+        sdxlreplicate = imagegeneration_replicate_sdxl.build_example("Stable Diffusion XL", "replicate_sdxl",
+                                                                     admin_config)
         bot_config.SUPPORTED_DVMS.append(sdxlreplicate)
         sdxlreplicate.run()
 
     if os.getenv("REPLICATE_API_TOKEN") is not None and os.getenv("REPLICATE_API_TOKEN") != "":
-        svdreplicate = videogeneration_replicate_svd.build_example("Stable Video Diffusion", "replicate_svd", admin_config)
+        svdreplicate = videogeneration_replicate_svd.build_example("Stable Video Diffusion", "replicate_svd",
+                                                                   admin_config)
         bot_config.SUPPORTED_DVMS.append(svdreplicate)
         svdreplicate.run()
 
-
-    #Let's define a function so we can add external DVMs to our bot, we will instanciate it afterwards
+    # Let's define a function so we can add external DVMs to our bot, we will instanciate it afterwards
 
     # Spawn DVM5.. oh wait, actually we don't spawn a new DVM, we use the dvmtaskinterface to define an external dvm by providing some info about it, such as
     # their pubkey, a name, task, kind etc. (unencrypted)
@@ -98,7 +97,6 @@ def playground():
     bot_config.SUPPORTED_DVMS.append(tasktiger_external)
     # Don't run it, it's on someone else's machine, and we simply make the bot aware of it.
 
-
     # DVM: 6 Another external dvm for recommendations:
     ymhm_external = build_external_dvm(pubkey="6b37d5dc88c1cbd32d75b713f6d4c2f7766276f51c9337af9d32c8d715cc1b93",
                                        task="content-discovery",
@@ -108,20 +106,16 @@ def playground():
     # If we get back a list of people or events, we can post-process it to make it readable in social clients
     bot_config.SUPPORTED_DVMS.append(ymhm_external)
 
-
     # Spawn DVM 7 Find inactive followers
     googleextractor = textextraction_google.build_example("Extractor", "speech_recognition",
                                                           admin_config)
     bot_config.SUPPORTED_DVMS.append(googleextractor)
     googleextractor.run()
 
-
     # Spawn DVM 8 A Media Grabber/Converter
     media_bringer = convert_media.build_example("Media Bringer", "media_converter", admin_config)
     bot_config.SUPPORTED_DVMS.append(media_bringer)
     media_bringer.run()
-
-
 
     # Spawn DVM9  Find inactive followers
     discover_inactive = discovery_inactive_follows.build_example("Bygones", "discovery_inactive_follows",
@@ -134,7 +128,8 @@ def playground():
     bot_config.SUPPORTED_DVMS.append(discover_nonfollowers)
     discover_nonfollowers.run()
 
-    trending = trending_notes_nostrband.build_example("Trending Notes on nostr.band", "trending_notes_nostrband", admin_config)
+    trending = trending_notes_nostrband.build_example("Trending Notes on nostr.band", "trending_notes_nostrband",
+                                                      admin_config)
     bot_config.SUPPORTED_DVMS.append(trending)
     trending.run()
 
@@ -150,8 +145,12 @@ def playground():
     bot_config.SUPPORTED_DVMS.append(search)
     search.run()
 
+    profile_search = search_users.build_example("Profile Searcher", "profile_search", admin_config)
+    bot_config.SUPPORTED_DVMS.append(profile_search)
+    profile_search.run()
 
-    inactive = discovery_inactive_follows.build_example("Inactive People you follow", "discovery_inactive_follows", admin_config)
+    inactive = discovery_inactive_follows.build_example("Inactive People you follow", "discovery_inactive_follows",
+                                                        admin_config)
     bot_config.SUPPORTED_DVMS.append(inactive)
     inactive.run()
 
@@ -162,15 +161,14 @@ def playground():
         mlx.run()
 
     if os.getenv("HUGGINGFACE_EMAIL") is not None and os.getenv("HUGGINGFACE_EMAIL") != "":
-        hugginchat = textgeneration_huggingchat.build_example("Huggingchat", "huggingchat",admin_config)
+        hugginchat = textgeneration_huggingchat.build_example("Huggingchat", "huggingchat", admin_config)
         bot_config.SUPPORTED_DVMS.append(hugginchat)
         hugginchat.run()
 
-        hugginchatsum = summarization_huggingchat.build_example("Huggingchat Summarizer", "huggingchatsum", admin_config)
+        hugginchatsum = summarization_huggingchat.build_example("Huggingchat Summarizer", "huggingchatsum",
+                                                                admin_config)
         bot_config.SUPPORTED_DVMS.append(hugginchatsum)
         hugginchatsum.run()
-
-
 
     # Run the bot
     Bot(bot_config)

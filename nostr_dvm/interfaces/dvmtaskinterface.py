@@ -86,6 +86,10 @@ class DVMTaskInterface:
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
         nostr_dvm_thread.start()
 
+    def schedule(self, dvm_config):
+        """schedule something, e.g. define some time to update or to post, does nothing by default"""
+        pass
+
     def NIP89_announcement(self, nip89config: NIP89Config):
         nip89 = NIP89Config()
         nip89.NAME = self.NAME

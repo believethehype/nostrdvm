@@ -22,8 +22,6 @@ from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt1
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
 
-
-
 class DVM:
     dvm_config: DVMConfig
     admin_config: AdminConfig
@@ -42,8 +40,7 @@ class DVM:
                 .skip_disconnected_relays(skip_disconnected_relays))
 
         signer = NostrSigner.keys(self.keys)
-        self.client = Client.with_opts(signer,opts)
-
+        self.client = Client.with_opts(signer, opts)
 
         self.job_list = []
         self.jobs_on_hold_list = []
@@ -419,15 +416,15 @@ class DVM:
             if status == "payment-required" or (status == "processing" and not is_paid):
                 if dvm_config.LNBITS_INVOICE_KEY != "":
                     try:
-                        bolt11, payment_hash = create_bolt11_ln_bits(amount,dvm_config)
+                        bolt11, payment_hash = create_bolt11_ln_bits(amount, dvm_config)
                     except Exception as e:
                         print(e)
                         try:
                             bolt11, payment_hash = create_bolt11_lud16(dvm_config.LN_ADDRESS,
-                                                                   amount)
+                                                                       amount)
                         except Exception as e:
-                             print(e)
-                             bolt11 = None
+                            print(e)
+                            bolt11 = None
                 elif dvm_config.LN_ADDRESS != "":
                     try:
                         bolt11, payment_hash = create_bolt11_lud16(dvm_config.LN_ADDRESS, amount)
@@ -529,7 +526,8 @@ class DVM:
                             user = get_or_add_user(self.dvm_config.DB, job_event.author().to_hex(),
                                                    client=self.client, config=self.dvm_config)
                             print(user.lud16 + " " + str(amount))
-                            bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", job_event, user.npub,
+                            bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", job_event,
+                                                user.npub,
                                                 self.keys, self.dvm_config.RELAY_LIST, zaptype="private")
                             if bolt11 is None:
                                 print("Receiver has no Lightning address, can't zap back.")
@@ -543,6 +541,11 @@ class DVM:
 
         self.client.handle_notifications(NotificationHandler())
         while True:
+
+            for dvm in self.dvm_config.SUPPORTED_DVMS:
+                scheduled_result = dvm.schedule(self.dvm_config)
+
+
             for job in self.job_list:
                 if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
                     ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)
