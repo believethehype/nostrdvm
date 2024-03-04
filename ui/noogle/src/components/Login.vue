@@ -93,7 +93,7 @@ import nip49, {decryptwrapper} from "./android-signer/helpers/nip49";
 import { init as initNostrLogin  } from "nostr-login"
 import { launch as launchNostrLoginDialog } from "nostr-login"
 import { logout as logoutNostrLogin } from "nostr-login"
-
+import {parseandreplacenpubs} from "@/components/helper/Helper.vue"
 
 import {useDark, useToggle} from "@vueuse/core";
 import {ref} from "vue";
@@ -571,6 +571,8 @@ export default {
                       if (jsonentry.picture){
                         jsonentry.image = jsonentry.picture
                       }
+
+                      jsonentry.about = await parseandreplacenpubs(jsonentry.about)
                       jsonentry.event = entry.asJson()
                       jsonentry.kind = entry.tags[tag].asVec()[1]
                       nip89dvms.push(jsonentry);

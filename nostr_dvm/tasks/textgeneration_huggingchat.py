@@ -89,7 +89,7 @@ def build_example(name, identifier, admin_config):
 
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "image": "https://image.nostr.build/720eadc9af89084bb09de659af43ad17fec1f4b0887084e83ac0ae708dfa83a6.png",
         "about": "I use a LLM connected via Huggingchat",
         "encryptionSupported": True,
         "cashuAccepted": True,

@@ -29,6 +29,7 @@ import amberSignerService from "./android-signer/AndroidSigner";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput} from "../components/helper/Helper.vue"
+import StringUtil from "@/components/helper/string.ts";
 
 
 let items = []
@@ -488,7 +489,8 @@ defineProps({
                 </div>
 
                 <div className="col-end-2 w-auto card-body">
-                    <p>{{ dvm.about }}</p>
+                    <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
+
                    <div><br>
                    <span className="loading loading-dots loading-lg" ></span>
                 </div>

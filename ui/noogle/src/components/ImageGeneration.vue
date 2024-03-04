@@ -27,6 +27,7 @@ import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
 import {post_note, schedule, copyinvoice, copyurl, sleep, nextInput, get_user_infos, createBolt11Lud16} from "../components/helper/Helper.vue"
+import StringUtil from "@/components/helper/string.ts";
 
 
 
@@ -391,7 +392,7 @@ const submitHandler = async () => {
 
           <h2 className="card-title">{{ dvm.name }}</h2>
   </div>
-          <h3 class="fa-cut" >{{ dvm.about }}</h3>
+          <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
 
 
 

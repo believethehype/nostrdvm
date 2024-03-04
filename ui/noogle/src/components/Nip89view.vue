@@ -12,7 +12,7 @@
         </div>
         <br>
          <h3 class="fa-cut" >Kind: {{ dvm.kind }}</h3>
-          <h3 class="fa-cut" >{{ dvm.about }}</h3>
+          <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
           <div className="card-actions justify-end mt-auto" >
              <div className="card-actions justify-end">
                 <button className="btn" @click="copyDoiToClipboard(dvm.event);">Copy Event Json</button>
@@ -30,11 +30,15 @@ import store from "@/store.js";
 import {Alphabet, ClientBuilder, NostrSigner, Filter, Keys, NostrDatabase, Tag} from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
+import StringUtil from "@/components/helper/string.ts";
 
 import deadnip89s from './data/deadnip89s.json'
 
 export default {
   computed: {
+    StringUtil() {
+      return StringUtil
+    },
     Keys() {
       return Keys
     },
@@ -60,3 +64,7 @@ async mounted(){
   }
 }
 </script>
+<style scoped>
+
+
+</style>

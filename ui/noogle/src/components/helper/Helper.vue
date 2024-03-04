@@ -2,7 +2,7 @@
 import {defineComponent} from 'vue'
 import store from "@/store";
 import amberSignerService from "@/components/android-signer/AndroidSigner";
-import {Duration, Event, EventBuilder, Filter, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
+import {Duration, Event, EventBuilder, Filter, Keys, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr/mini-toastr";
 import VueNotifications from "vue-notifications";
 
@@ -129,6 +129,29 @@ export const sleep = (ms) => {
        miniToastr.showMessage("", "Copied link to clipboard", VueNotifications.types.info)
     }
 
+
+
+export async function parseandreplacenpubs(note){
+
+  const myArray = note.split(" ");
+  let finalnote = ""
+  for (let word in myArray){
+    if(myArray[word].startsWith("nostr:npub")){
+      console.log(myArray[word])
+      let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
+       console.log(pk.toBech32())
+       let profiles = await get_user_infos([pk])
+      console.log(profiles[0].profile.nip05)
+      myArray[word] = profiles[0].profile.nip05 // replace with nip05 for now
+
+         // <href>='https://njump.com/'>test[0].profile.nip05</href>test[0].profile.nip05
+    }
+    finalnote = finalnote + myArray[word] + " "
+
+  }
+
+  return finalnote.trimEnd()
+}
 
 export async function createBolt11Lud16(lud16, amount) {
     let url;

@@ -24,6 +24,8 @@ import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
 import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
+import StringUtil from "@/components/helper/string.ts";
+
 
 let dvms =[]
 
@@ -427,7 +429,7 @@ const submitHandler = async () => {
 
           <h2 className="card-title">{{ dvm.name }}</h2>
   </div>
-          <h3 class="fa-cut" >{{ dvm.about }}</h3>
+          <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
 
 
 
