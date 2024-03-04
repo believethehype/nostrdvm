@@ -24,10 +24,12 @@ class SearchUser(DVMTaskInterface):
     TASK: str = "search-user"
     FIX_COST: float = 0
     dvm_config: DVMConfig
+    last_schedule: int
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
+        self.last_schedule = Timestamp.now().as_secs()
 
         use_logger = False
         if use_logger:
@@ -35,24 +37,7 @@ class SearchUser(DVMTaskInterface):
 
         super().__init__(name, dvm_config, nip89config, admin_config, options)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite("db/nostr_profiles.db")
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
-
-        cli.add_relay("wss://relay.damus.io")
-        #cli.add_relay("wss://atl.purplerelay.com")
-        cli.connect()
-
-        filter1 = Filter().kind(0)
-
-        # filter = Filter().author(keys.public_key())
-        print("Syncing Profile Database.. this might take a while..")
-        dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        cli.reconcile(filter1, dbopts)
-        print("Done Syncing Profile Database.")
+        self.sync_db()
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -103,21 +88,19 @@ class SearchUser(DVMTaskInterface):
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
-        #cli.add_relay("wss://atl.purplerelay.com")
+        # cli.add_relay("wss://atl.purplerelay.com")
         cli.connect()
 
         # Negentropy reconciliation
-
-
 
         # Query events from database
 
         filter1 = Filter().kind(0)
         events = cli.database().query([filter1])
-        #for event in events:
+        # for event in events:
         #    print(event.as_json())
 
-        #events = cli.get_events_of([notes_filter], timedelta(seconds=5))
+        # events = cli.get_events_of([notes_filter], timedelta(seconds=5))
 
         result_list = []
         print("Events: " + str(len(events)))
@@ -133,7 +116,7 @@ class SearchUser(DVMTaskInterface):
                             result_list.append(p_tag.as_vec())
                             index += 1
                     except Exception as exp:
-                         print(str(exp) + " " + event.author().to_hex())
+                        print(str(exp) + " " + event.author().to_hex())
                 else:
                     break
 
@@ -150,6 +133,34 @@ class SearchUser(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
+    def schedule(self, dvm_config):
+        if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
+            return 0
+        else:
+            if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
+                self.sync_db()
+                self.last_schedule = Timestamp.now().as_secs()
+                return 1
+
+    def sync_db(self):
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        keys = Keys.parse(sk.to_hex())
+        signer = NostrSigner.keys(keys)
+        database = NostrDatabase.sqlite("db/nostr_profiles.db")
+        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+
+        cli.add_relay("wss://relay.damus.io")
+        cli.connect()
+
+        filter1 = Filter().kind(0)
+
+        # filter = Filter().author(keys.public_key())
+        print("Syncing Profile Database.. this might take a while..")
+        dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
+        cli.reconcile(filter1, dbopts)
+        print("Done Syncing Profile Database.")
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
@@ -158,6 +169,7 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 seconds
     # Add NIP89
     nip89info = {
         "name": name,
