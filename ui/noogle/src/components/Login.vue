@@ -630,7 +630,6 @@ export default {
         let client = store.state.client
         const profile_filter = new Filter().kind(0).author(pubkey).limit(1)
         let evts = await client.getEventsOf([profile_filter], Duration.fromSecs(5))
-        console.log("PROFILES:" + evts.length)
         if (evts.length > 0){
              let latest_entry = evts[0]
              let latest_time = 0

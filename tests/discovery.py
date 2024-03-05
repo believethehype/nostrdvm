@@ -4,7 +4,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import Keys
 
-from nostr_dvm.tasks import content_discovery_test
+from nostr_dvm.tasks import content_discovery_currently_popular
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 
@@ -19,7 +19,7 @@ def playground():
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
 
-    discovery_test = content_discovery_test.build_example("Dicovery Test DVM", "discovery_content_test", admin_config)
+    discovery_test = content_discovery_currently_popular.build_example("Currently Popular Notes DVM", "discovery_content_test", admin_config)
     discovery_test.run()
 
     keep_alive()
