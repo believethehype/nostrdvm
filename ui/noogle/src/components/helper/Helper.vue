@@ -163,11 +163,11 @@ export async function parseandreplacenpubs(note){
   let finalnote = ""
   for (let word in myArray){
     if(myArray[word].startsWith("nostr:npub")){
-      console.log(myArray[word])
+      //console.log(myArray[word])
       let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
-       console.log(pk.toBech32())
+       //console.log(pk.toBech32())
        let profiles = await get_user_infos([pk])
-      console.log(profiles[0].profile.nip05)
+      //console.log(profiles[0].profile.nip05)
       myArray[word] = profiles[0].profile.nip05 // replace with nip05 for now
 
          // <href>='https://njump.com/'>test[0].profile.nip05</href>test[0].profile.nip05
