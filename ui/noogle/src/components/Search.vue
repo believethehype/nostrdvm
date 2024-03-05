@@ -269,7 +269,7 @@ async function  listen() {
                   let event_etags = JSON.parse(event.content)
                   if (event_etags.length > 0) {
                     for (let etag of event_etags) {
-                      const eventid = EventId.fromHex(etag[1])
+                      const eventid = EventId.parse(etag[1]).toHex() //a bit unnecessary
                       entries.push(eventid)
                     }
                     const events = await getEvents(entries)
@@ -341,7 +341,7 @@ async function  listen() {
                       let infos = await get_user_infos(authors)
 
                       for (const profile of infos) {
-                        console.log(profile["author"])
+                        //console.log(profile["author"])
                         if (profiles.findIndex(e => e.id === profile["author"]) === -1 && profile["profile"]["name"] !== "" ) {
                           profiles.push({
                             id: profile["author"],

@@ -1,7 +1,8 @@
 <template>
   <EasyDataTable class="customize-table" header-text-direction="left"  table-class-name="customize-table"
                  :headers="headers"
-                 :items="data" :sort-by="sortBy"
+                 :items="data"
+                 :sort-by="sortBy"
                  :sort-type="sortType">
    <template #item-content="{content, author, authorurl, avatar, indicator, links}">
 
@@ -12,7 +13,7 @@
      <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
 
      <a class="purple" :href="authorurl" target="_blank">{{ author }}</a>
-    <div class="time"  :data-tip="indicator.time">
+    <div class="time">
           {{indicator.time.split("T")[1].split("Z")[0].trim()}}
           {{indicator.time.split("T")[0].split("-")[2].trim()}}.{{indicator.time.split("T")[0].split("-")[1].trim()}}.{{indicator.time.split("T")[0].split("-")[0].trim().slice(2)}}
         </div>
@@ -48,17 +49,19 @@
 
 import type {Header, Item, SortType} from "vue3-easy-data-table";
 import store from '../store';
+import {types} from "sass";
+import Null = types.Null;
 defineProps<{
   data?: []
 
 }>()
 
-const sortBy = "indicator.time";
-const sortType: SortType = "desc";
+const sortBy: String = "index";
+const sortType: SortType = "asc";
 
 const headers: Header[] = [
-  { text: "Results:", value: "content", fixed:true},
- // { text: "Time", value: "indicator.time", sortable: true, },
+  { text: "Results:", value: "content", fixed: true},
+ // { text: "Time", value: "indicator.index", sortable: true, },
 ];
 
 

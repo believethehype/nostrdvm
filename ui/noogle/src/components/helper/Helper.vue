@@ -2,7 +2,7 @@
 import {defineComponent} from 'vue'
 import store from "@/store";
 import amberSignerService from "@/components/android-signer/AndroidSigner";
-import {Duration, Event, EventBuilder, Filter, Keys, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
+import {Duration, Event, EventBuilder, EventId, Filter, Keys, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr/mini-toastr";
 import VueNotifications from "vue-notifications";
 
@@ -73,11 +73,37 @@ export async function schedule(note, datetopost) {
 }
 
 export async function getEvents(eventids) {
-  const event_filter = new Filter().ids(eventids)
+  let ids = []
+  for (let eid of eventids){
+    ids.push(EventId.parse(eid))
+  }
+  const event_filter = new Filter().ids(ids)
   let client = store.state.client
   return await client.getEventsOf([event_filter], Duration.fromSecs(5))
-}
 
+}
+export async function getEventsOriginalOrder(eventids) {
+  let ids = []
+  for (let eid of eventids){
+    ids.push(EventId.parse(eid))
+  }
+  const event_filter = new Filter().ids(ids)
+  let client = store.state.client
+  let results =  await client.getEventsOf([event_filter], Duration.fromSecs(5))
+  console.log(results.length)
+  for (let e of results){
+    console.log(e.id.toHex())
+  }
+
+  let final = []
+  for (let f of eventids){
+    let note = results.find(value => value.id.toHex() === f)
+    console.log(note)
+    final.push(note)
+  }
+
+  return final
+}
 
 
 export function nextInput(e) {
