@@ -98,10 +98,11 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         events = cli.database().query([filter1])
         ns.finallist = {}
         for event in events:
-            ns.finallist[event.id().to_hex()] = 0
-            filt = Filter().kinds([9735, 7, 1]).event(event.id()).since(lasthour)
-            reactions = cli.database().query([filt])
-            ns.finallist[event.id().to_hex()] = len(reactions)
+            if event.created_at().as_secs() > timestamp_hour_ago:
+                ns.finallist[event.id().to_hex()] = 0
+                filt = Filter().kinds([9735, 7, 1]).event(event.id()).since(lasthour)
+                reactions = cli.database().query([filt])
+                ns.finallist[event.id().to_hex()] = len(reactions)
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
