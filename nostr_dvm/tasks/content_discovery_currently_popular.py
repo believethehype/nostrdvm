@@ -12,14 +12,14 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events, post_process_list_to_users
 
 """
-This File contains a Module to search for notes
-Accepted Inputs: a search query
+This File contains a Module to discover popular notes
+Accepted Inputs: none
 Outputs: A list of events 
 Params:  None
 """
 
 
-class SearchUser(DVMTaskInterface):
+class DicoverContentCurrentlyPopular(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
     TASK: str = "discover-content"
     FIX_COST: float = 0
@@ -88,11 +88,9 @@ class SearchUser(DVMTaskInterface):
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
-        # cli.add_relay("wss://atl.purplerelay.com")
         cli.connect()
 
         # Negentropy reconciliation
-
         # Query events from database
         timestamp_hour_ago = Timestamp.now().as_secs() - 3600
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
@@ -105,10 +103,6 @@ class SearchUser(DVMTaskInterface):
             reactions = cli.database().query([filt])
             ns.finallist[event.id().to_hex()] = len(reactions)
 
-        # for event in events:
-        #    print(event.as_json())
-
-        # events = cli.get_events_of([notes_filter], timedelta(seconds=5))
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
@@ -167,34 +161,19 @@ def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
-    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 seconds
+    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/a99ab925084029d9468fef8330ff3d9be2cf67da473b024f2a6d48b5cd77197f.jpg",
+        "image": "https://image.nostr.build/f720192abfbfbcc21ce78281aca4bbd1ccf89ee7c90b54ae16b71ae9c1ad88e0.png",
         "about": "I show popular content",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {
-            "users": {
-                "required": False,
-                "values": [],
-                "description": "Search for content from specific users"
-            },
-            "since": {
-                "required": False,
-                "values": [],
-                "description": "A unix timestamp in the past from where the search should start"
-            },
-            "until": {
-                "required": False,
-                "values": [],
-                "description": "A unix timestamp that tells until the search should include results"
-            },
             "max_results": {
                 "required": False,
                 "values": [],
-                "description": "The number of maximum results to return (default currently 20)"
+                "description": "The number of maximum results to return (default currently 100)"
             }
         }
     }
@@ -203,11 +182,9 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": "wss://relay.damus.io"}
-
-    return SearchUser(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                      admin_config=admin_config, options=options)
+    return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                      admin_config=admin_config)
 
 
 if __name__ == '__main__':
-    process_venv(SearchUser)
+    process_venv(DicoverContentCurrentlyPopular)
