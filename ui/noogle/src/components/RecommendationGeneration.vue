@@ -22,7 +22,7 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput, getEventsOriginalOrder} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
 
@@ -229,10 +229,10 @@ async function  listen() {
                   let event_etags = JSON.parse(event.content)
                   if (event_etags.length > 0) {
                     for (let etag of event_etags) {
-                      const eventid = EventId.fromHex(etag[1])
+                      const eventid = EventId.fromHex(etag[1]).toHex()
                       entries.push(eventid)
                     }
-                    const events = await getEvents(entries)
+                    const events = await getEventsOriginalOrder(entries)
                     let authors = []
                     for (const evt of events) {
                       authors.push(evt.author)
@@ -241,6 +241,7 @@ async function  listen() {
                       if (authors.length > 0) {
                       let profiles = await get_user_infos(authors)
                         let items = []
+                        let index = 0
                       for (const evt of events) {
                         let p = profiles.find(record => record.author === evt.author.toHex())
                         let bech32id = evt.id.toBech32()
@@ -267,9 +268,12 @@ async function  listen() {
                               "nostrudel": nostrudelurl
                             },
                             avatar: picture,
-                            indicator: {"time": evt.createdAt.toHumanDatetime()}
+                            index: index,
+                            indicator: {"time": evt.createdAt.toHumanDatetime(), "index": index}
                           })
+                           index = index+1
                         }
+
                       }
 
                         dvms.find(i => i.id === event.author.toHex()).result.length = 0
