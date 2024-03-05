@@ -21,7 +21,7 @@ Params: -model         # models: juggernaut, dynavision, colossusProject, newrea
 class ImageGenerationSDXL(DVMTaskInterface):
     KIND: int = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
-    FIX_COST: float = 70
+    FIX_COST: float = 50
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
                  admin_config: AdminConfig = None, options=None):
