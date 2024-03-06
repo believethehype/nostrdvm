@@ -22,7 +22,7 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput, getEventsOriginalOrder} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput, createBolt11Lud16, getEventsOriginalOrder} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
 
@@ -63,7 +63,7 @@ async function generate_feed() {
           res = await amberSignerService.signEvent(draft)
           await client.sendEvent(Event.fromJson(JSON.stringify(res)))
           requestid = res.id;
-          res = res.id;
+
         }
         else {
 
@@ -82,8 +82,9 @@ async function generate_feed() {
 
         store.commit('set_current_request_id_recommendation', requestid)
         if (!store.state.recommendationehasEventListener){
-           listen()
            store.commit('set_recommendationEventListener', true)
+           listen()
+
         }
         else{
           console.log("Already has event listener")
@@ -105,18 +106,22 @@ async function  listen() {
     const handle = {
         // Handle event
         handleEvent: async (relayUrl, event) => {
-              if (store.state.recommendationehasEventListener === false){
+             /* if (store.state.recommendationehasEventListener === false){
                 return true
-              }
+              }*/
             //const dvmname =  getNamefromId(event.author.toHex())
-            console.log("Received new event from", relayUrl);
-              console.log(event.asJson())
+          console.log("Received new event from", relayUrl);
+          //console.log(event.asJson())
            let resonsetorequest = false
-            sleep(1000).then(async () => {
+            sleep(0).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  if (event.tags[tag].asVec()[1] === store.state.requestidRecommendation) {
+                  console.log(event.tags[tag].asVec()[1])
+                  let test = store.state.requestidRecommendation
+                  console.log(test)
+                  if (event.tags[tag].asVec()[1] === test) {
                     resonsetorequest = true
+                    console.log("YES")
                   }
                 }
 
@@ -156,8 +161,6 @@ async function  listen() {
                           else{
                             let profiles = await get_user_infos([event.author])
                            let created = 0
-                            let current
-                          console.log("NUM KIND0 FOUND " + profiles.length)
                             if (profiles.length > 0){
                              // for (const profile of profiles){
                                 console.log(profiles[0].profile)
@@ -389,7 +392,7 @@ const submitHandler = async () => {
     </h3>
   </div>
   <br>
-  <div>
+
        <ModalComponent  :isOpen="isModalOpened" @modal-close="closeModal" @submit="submitHandler" name="first-modal">
             <template #header>Summarize Results <br></template>
             <template #content>
@@ -413,12 +416,11 @@ const submitHandler = async () => {
               </div> -->
             </template>
           </ModalComponent>
-      </div>
 
   <div class=" relative space-y-3">
     <div class="grid grid-cols-1 gap-6">
 
-        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.recommendationhdvms"
+        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.recommendationdvms"
             :key="dvm.id">
 
 
@@ -441,7 +443,7 @@ const submitHandler = async () => {
 
           <div className="card-actions justify-end mt-auto" >
 
-              <div className="tooltip mt-auto" :data-tip="dvm.status">
+              <div className="tooltip mt-auto">
 
 
                 <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error'"  className="btn">{{dvm.status}}</button>
@@ -466,8 +468,8 @@ const submitHandler = async () => {
 </div> -->
 
 
-    <details v-if="dvm.status === 'finished'" class="collapse bg-base">
-  <summary class="collapse-title  "><div class="btn">Show/Hide Results</div></summary>
+    <details open v-if="dvm.status === 'finished'" class="collapse bg-base">
+  <summary class="collapse-title   "><div class="btn">Show/Hide Results</div></summary>
   <div class="collapse-content font-size-0" className="z-10" id="collapse">
 
      <NoteTable  :data="dvm.result"  ></NoteTable>

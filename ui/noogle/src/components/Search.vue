@@ -155,8 +155,9 @@ async function send_search_request(msg) {
         store.commit('set_current_request_profile_id_search', requestid_profile)
 
         if (!store.state.hasEventListener){
-            listen()
             store.commit('set_hasEventListener', true)
+            listen()
+
         }
         else{
           console.log("Already has event listener")
@@ -178,13 +179,13 @@ async function  listen() {
     const handle = {
         // Handle event
         handleEvent: async (relayUrl, event) => {
-              if (store.state.hasEventListener === false){
+             /* if (store.state.hasEventListener === false){
                 return true
-              }
+              }*/
             console.log("Received new event from", relayUrl);
             let resonsetorequest = false
 
-            sleep(1200).then(async () => {
+            sleep(500).then(async () => {
 
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {

@@ -8,7 +8,7 @@ const routes = [
   { path: "/donate", component: () => import("@/components/Donate.vue") },
   { path: "/nip89", component: () => import("@/components/Nip89view.vue") },
   { path: "/image", component: () => import("@/components/Image.vue") },
-  { path: "/recommendation", component: () => import("@/components/Recommendation.vue") },
+  { path: "/discover", component: () => import("@/components/Recommendation.vue") },
   { path: "/article/:id", component: () => import("@/components/Home.vue") },
   { path: '/:pathMatch(.*)*', component: () => import("@/components/Home.vue") },
 ];

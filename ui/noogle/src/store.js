@@ -22,7 +22,7 @@ const store = createStore({
       imagedvmreplies: [],
       nip89dvms: [],
       activesearchdvms: [],
-      recommendationhdvms: [],
+      recommendationdvms: [],
       summarizationdvms: [],
       results:  [],
       profile_results: [],
@@ -92,8 +92,8 @@ const store = createStore({
       state.activesearchdvms.push.apply(state.activesearchdvms, dvms)
     },
     set_recommendation_dvms(state, dvms) {
-      state.recommendationhdvms.length = 0
-      state.recommendationhdvms.push.apply(state.recommendationhdvms, dvms)
+      state.recommendationdvms.length = 0
+      state.recommendationdvms.push.apply(state.recommendationdvms, dvms)
     },
 
     set_summarization_dvms(state, dvms) {

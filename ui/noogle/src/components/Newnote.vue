@@ -18,7 +18,6 @@ onClickOutside(target, ()=>emit('modal-close'))
 </script>
 
 <template>
-
   <div v-if="isOpen" class="modal-mask" >
     <div class="modal-wrapper"  >
       <div class="modal-container" ref="target">
@@ -45,17 +44,19 @@ onClickOutside(target, ()=>emit('modal-close'))
 .modal-mask {
 
 
+  max-height: 100%;
+  overflow-y: scroll;
   position: fixed;
   z-index: 9998;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+
   background-color: rgba(0, 0, 0, 0.5);
 }
 .modal-container {
   @apply bg-base-200;
-  width: 600px;
+
   margin: 15% auto;
   padding: 20px 30px;
   border-radius: 2px;
