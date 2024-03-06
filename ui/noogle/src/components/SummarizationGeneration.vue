@@ -39,8 +39,8 @@ async function summarizefeed(eventids) {
      }
 
         dvms = []
-
         store.commit('set_summarization_dvms', dvms)
+
         let client = store.state.client
         let content = "NIP 90 Summarization request"
         let kind = 5001
@@ -86,8 +86,9 @@ async function summarizefeed(eventids) {
 
         store.commit('set_current_request_id_summarization', requestid)
         if (!store.state.summarizationhasEventListener){
-           listen()
            store.commit('set_summariarizationEventListener', true)
+           listen()
+
         }
         else{
           console.log("Already has event listener")
@@ -109,14 +110,14 @@ async function  listen() {
     const handle = {
         // Handle event
         handleEvent: async (relayUrl, event) => {
-              if (store.state.summarizationhasEventListener === false){
+           /*   if (store.state.summarizationhasEventListener === false){
                 return true
-              }
+              }*/
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
               console.log(event.asJson())
            let resonsetorequest = false
-            sleep(1000).then(async () => {
+            sleep(0).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
 
@@ -327,11 +328,11 @@ const submitHandler = async () => {
 
   </div>
   <br>
-<div class="overflow-y-auto scrollbar w-full" style="max-height: 60pc">
 
 
-  <div class=" relative space-y-3">
-    <div class="grid grid-cols-1 gap-4 "  >
+
+  <div class=" relative space-y-2">
+    <div class="grid grid-cols-1 gap-2 "  >
 
         <div className="card w-70 bg-base-100 shadow-xl"   v-for="dvm in store.state.summarizationdvms"
             :key="dvm.id">
@@ -356,7 +357,7 @@ const submitHandler = async () => {
 
           <div className="card-actions justify-end mt-auto" >
 
-              <div className="tooltip mt-auto" :data-tip="dvm.status">
+              <div className="tooltip mt-auto">
 
 
                 <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error'"  className="btn">{{dvm.status}}</button>
@@ -379,17 +380,18 @@ const submitHandler = async () => {
 
         </div>
 </div> -->
+ <p  v-if="dvm.status === 'finished'">{{dvm.result}}</p>
 
-
-    <details v-if="dvm.status === 'finished'" class="collapse bg-base">
+  <!--   <details v-if="dvm.status === 'finished'" class="collapse bg-base">
   <summary class="collapse-title  "><div class="btn">Show/Hide Results</div></summary>
-  <div class="collapse-content font-size-0" className="z-10" id="collapse">
 
-     <p>{{dvm.result}}</p>
+ <div class="collapse-content font-size-0" className="z-10" id="collapse">
+
+
 
 
     </div>
-</details>
+</details>-->
 
 
            </div>
@@ -399,7 +401,7 @@ const submitHandler = async () => {
 
 
   </div>
-  </div>
+
 </template>
 
 <style scoped>

@@ -93,8 +93,9 @@ async function generate_image(message) {
 
         store.commit('set_current_request_id_image', requestid)
         if (!store.state.imagehasEventListener){
-           listen()
            store.commit('set_imagehasEventListener', true)
+           listen()
+
         }
         else{
           console.log("Already has event listener")
@@ -115,14 +116,14 @@ async function  listen() {
     const handle = {
         // Handle event
         handleEvent: async (relayUrl, event) => {
-              if (store.state.imagehasEventListener === false){
+             /* if (store.state.imagehasEventListener === false){
                 return true
-              }
+              }*/
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
               console.log(event.asJson())
            let resonsetorequest = false
-            sleep(1000).then(async () => {
+            sleep(0).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
                   //console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
@@ -360,10 +361,13 @@ const submitHandler = async () => {
 
 
             <template #footer>
-            <div class="content-center">
-              <VueDatePicker :min-date="new Date()"  :dark="true"   className="bg-base-200 content-center" teleport-center v-model="datetopost"></VueDatePicker>
-              <br>
 
+              <div class="inline-flex flex-none">
+                 <VueDatePicker :min-date="new Date()"  :dark="true" style="max-width: 200px;"  className="bg-base-200" teleport-center v-model="datetopost"></VueDatePicker>
+
+              </div>
+
+           <div class="content-center">
               <button className="v-Button" @click="schedule(modalcontent, datetopost)"  @click.stop="closeModal"><img width="25px" style="margin-right: 5px" src="../../public/shipyard.ico"/>Schedule Note with Shipyard DVM</button>
                <br>
               or

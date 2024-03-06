@@ -59,7 +59,6 @@
         </div>
       </div>
     </div>
-      <Nip89></Nip89>
     </template>
   </div>
 </template>
