@@ -21,9 +21,9 @@
 
    <p>{{content.substr(0, 320) + "\u2026"}}</p>
         <div style="padding: 2px; text-align: left;" >
-          <a class="menusmall" :href="links.uri" target="_blank">Nostr Client</a>
+          <a class="menusmall" :href="links.uri" target="_blank">Client</a>
           <a class="menusmall" :href="links.njump" target="_blank">NJump</a>
-         <a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a>
+         <!--<a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a> -->
           <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a>
       </div>
 
@@ -80,7 +80,7 @@ const headers: Header[] = [
 }
 
 .menusmall {
-  @apply btn text-gray-600 bg-transparent border-transparent tracking-wide;
+  @apply btn text-gray-600 bg-transparent border-transparent tracking-wide ;
 
 
   }

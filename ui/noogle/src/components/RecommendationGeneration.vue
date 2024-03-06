@@ -378,7 +378,9 @@ const submitHandler = async () => {
    <br>
     <br>
     <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
-    <h1 class="text-7xl font-black tracking-wide">Note Recommendations</h1>
+    <h1 class="text-7xl font-black tracking-wide">Content</h1>
+    <h1 class="text-7xl font-black tracking-wide">Discovery</h1>
+
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
     Algorithms, but you are the one in control.</h2>
     <h3>
