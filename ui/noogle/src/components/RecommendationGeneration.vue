@@ -113,13 +113,12 @@ async function  listen() {
           console.log("Received new event from", relayUrl);
           //console.log(event.asJson())
            let resonsetorequest = false
-            sleep(0).then(async () => {
+            sleep(1500).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  console.log(event.tags[tag].asVec()[1])
-                  let test = store.state.requestidRecommendation
-                  console.log(test)
-                  if (event.tags[tag].asVec()[1] === test) {
+                  //console.log(event.tags[tag].asVec()[1])
+                  //console.log(test)
+                  if (event.tags[tag].asVec()[1] ===  store.state.requestidRecommendation) {
                     resonsetorequest = true
                     console.log("YES")
                   }

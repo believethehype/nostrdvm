@@ -151,7 +151,7 @@ export default {
       else {
         await this.sign_in_anon()
       }
-
+     await this.getnip89s()
 
     } catch (error) {
       console.log(error);
@@ -211,7 +211,6 @@ export default {
       localStorage.setItem('nostr-key', '')
       console.log("Client Nip46 connected")
       await this.get_user_info(pubkey)
-        await this.getnip89s()
         await this.reconcile_all_profiles(pubkey)
       console.log(pubkey.toBech32())
       //await this.reconcile_all_profiles()
@@ -328,7 +327,6 @@ export default {
         localStorage.setItem('nostr-key', keys.secretKey.toBech32())
         console.log("Client key connected")
         await this.get_user_info(pubkey)
-        await this.getnip89s()
         await this.reconcile_all_profiles(pubkey)
 
 
@@ -463,7 +461,7 @@ export default {
         console.log("Client connected")
 
         await this.get_user_info(pubkey)
-                  await this.getnip89s()
+
 
           await this.reconcile_all_profiles(pubkey)
 
@@ -523,7 +521,7 @@ export default {
         localStorage.setItem('nostr-key', hexKey)
 
         await this.get_user_info(publicKey)
-          await this.getnip89s()
+
 
             await this.reconcile_all_profiles(publicKey)
                 }

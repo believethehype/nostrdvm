@@ -1,6 +1,6 @@
 <template>
   <EasyDataTable style="margin-top: 450px"
- class="customize-table" header-text-direction="left" hide-rows-per-page="true"  rows-per-page="10" v-if="store.state.profile_results.length != 0 && router.currentRoute.value.path == '/'" table-class-name="customize-table"
+ class="customize-table" header-text-direction="left" hide-rows-per-page=true  rows-per-page=10 v-if="store.state.profile_results.length != 0 && router.currentRoute.value.path == '/'" table-class-name="customize-table"
     :headers="headers"
     :items="store.state.profile_results" >
    <template #item-content="{ author, authorurl, avatar}">

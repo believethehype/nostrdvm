@@ -90,15 +90,15 @@ export async function getEventsOriginalOrder(eventids) {
   const event_filter = new Filter().ids(ids)
   let client = store.state.client
   let results =  await client.getEventsOf([event_filter], Duration.fromSecs(5))
-  console.log(results.length)
+  /*console.log(results.length)
   for (let e of results){
     console.log(e.id.toHex())
-  }
+  } */
 
   let final = []
   for (let f of eventids){
     let note = results.find(value => value.id.toHex() === f)
-    console.log(note)
+    //console.log(note)
     final.push(note)
   }
 
