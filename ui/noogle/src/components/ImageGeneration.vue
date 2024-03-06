@@ -402,7 +402,7 @@ const submitHandler = async () => {
 
           <div className="card-actions justify-end mt-auto" >
 
-              <div className="tooltip mt-auto" :data-tip="dvm.status">
+              <div className="tooltip mt-auto" >
 
 
                 <button v-if="dvm.status === 'processing'" className="btn">Processing</button>

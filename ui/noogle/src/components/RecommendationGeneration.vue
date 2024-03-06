@@ -33,16 +33,13 @@ async function generate_feed() {
 
    try {
      if(store.state.pubkey === undefined || localStorage.getItem('nostr-key-method') === "anon"){
-               miniToastr.showMessage("In order to receive personalized recommendations, sign-in first.", "Not signed in.", VueNotifications.types.warn)
-          return
+               miniToastr.showMessage("Some algorithms may need your profile to give personalized recommendations. Sign-in for a better experience.", "Not signed in.", VueNotifications.types.warn)
+
      }
 
-      for (let dvm of dvms){
-        dvm = {}
-        dvms.pop()
-      }
         dvms = []
         store.commit('set_recommendation_dvms', dvms)
+
         let client = store.state.client
 
         let content = "NIP 90 Content Discovery request"
@@ -76,8 +73,6 @@ async function generate_feed() {
 
 
           requestid = res.toHex();
-                          console.log(requestid)
-
         }
 
         store.commit('set_current_request_id_recommendation', requestid)
@@ -94,6 +89,8 @@ async function generate_feed() {
         console.log(error);
       }
 }
+
+
 
 
 async function  listen() {
@@ -113,109 +110,26 @@ async function  listen() {
           console.log("Received new event from", relayUrl);
           //console.log(event.asJson())
            let resonsetorequest = false
-            sleep(1500).then(async () => {
+            sleep(1200).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
                   //console.log(event.tags[tag].asVec()[1])
                   //console.log(test)
                   if (event.tags[tag].asVec()[1] ===  store.state.requestidRecommendation) {
                     resonsetorequest = true
-                    console.log("YES")
+
                   }
                 }
 
               }
               if (resonsetorequest === true) {
                 if (event.kind === 7000) {
-
-
                   try {
                     console.log("7000: ", event.content);
-                    console.log("DVM: " + event.author.toHex())
+                   // console.log("DVM: " + event.author.toHex())
                     //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
 
-                    let status = "unknown"
-                    let jsonentry = {
-                      id: event.author.toHex(),
-                      kind: "",
-                      status: status,
-                      result: [],
-                      name: event.author.toBech32(),
-                      about: "",
-                      image: "",
-                      amount: 0,
-                      bolt11: ""
-                    }
-
-                    for (const tag in event.tags) {
-                      if (event.tags[tag].asVec()[0] === "status") {
-                        status = event.tags[tag].asVec()[1]
-                      }
-
-                      if (event.tags[tag].asVec()[0] === "amount") {
-                        jsonentry.amount = event.tags[tag].asVec()[1]
-                        if (event.tags[tag].asVec().length > 2) {
-                          jsonentry.bolt11 = event.tags[tag].asVec()[2]
-                        }
-                          else{
-                            let profiles = await get_user_infos([event.author])
-                           let created = 0
-                            if (profiles.length > 0){
-                             // for (const profile of profiles){
-                                console.log(profiles[0].profile)
-                              let current = profiles[0]
-                               // if (profiles[0].profile.createdAt > created){
-                               //     created = profile.profile.createdAt
-                               //     current = profile
-                               //   }
-
-
-                               let lud16 = current.profile.lud16
-                              if (lud16 !== null && lud16 !== ""){
-                                console.log("LUD16: " +  lud16)
-                                jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount)
-                                console.log(jsonentry.bolt11)
-                                if(jsonentry.bolt11 === ""){
-                                 status = "error"
-                                }
-                            }
-                              else {
-                                console.log("NO LNURL")
-                              }
-
-                          }
-
-                            else {
-                              console.log("PROFILE NOT FOUND")
-                            }
-                        }
-                      }
-                    }
-
-
-                    //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
-                    for (const el of store.state.nip89dvms) {
-                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
-                        jsonentry.name = el.name
-                        jsonentry.about = el.about
-                        jsonentry.image = el.image
-
-                        console.log(jsonentry)
-
-                      }
-                    }
-                    if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
-
-                         dvms.push(jsonentry)
-                    }
-                    if (event.content !== ""){
-                      status = event.content
-                    }
-
-                    dvms.find(i => i.id === jsonentry.id).status = status
-
-                    store.commit('set_recommendation_dvms', dvms)
-
+                   await addDVM(event)
 
                   } catch (error) {
                     console.log("Error: ", error);
@@ -226,7 +140,7 @@ async function  listen() {
 
                 else if (event.kind === 6300) {
                   let entries = []
-                  console.log("6300:", event.content);
+                  //console.log("6300:", event.content);
 
                   let event_etags = JSON.parse(event.content)
                   if (event_etags.length > 0) {
@@ -277,10 +191,16 @@ async function  listen() {
                         }
 
                       }
+                        if (dvms.find(i => i.id === event.author.toHex()) === undefined){
+                          await addDVM(event)
+                          console.log("add dvm because of bug")
+                        }
+
 
                         dvms.find(i => i.id === event.author.toHex()).result.length = 0
                         dvms.find(i => i.id === event.author.toHex()).result.push.apply(dvms.find(i => i.id === event.author.toHex()).result, items)
                         dvms.find(i => i.id === event.author.toHex()).status = "finished"
+
                          }
                      }
                   store.commit('set_recommendation_dvms', dvms)
@@ -301,7 +221,93 @@ async function  listen() {
 
 const urlinput = ref("");
 
+async function addDVM(event){
+  let status = "unknown"
+  let jsonentry = {
+    id: event.author.toHex(),
+    kind: "",
+    status: status,
+    result: [],
+    name: event.author.toBech32(),
+    about: "",
+    image: "",
+    amount: 0,
+    bolt11: ""
+  }
 
+  for (const tag in event.tags) {
+    if (event.tags[tag].asVec()[0] === "status") {
+      status = event.tags[tag].asVec()[1]
+    }
+
+    if (event.tags[tag].asVec()[0] === "amount") {
+      jsonentry.amount = event.tags[tag].asVec()[1]
+      if (event.tags[tag].asVec().length > 2) {
+        jsonentry.bolt11 = event.tags[tag].asVec()[2]
+      }
+        else{
+          let profiles = await get_user_infos([event.author])
+         let created = 0
+          if (profiles.length > 0){
+           // for (const profile of profiles){
+              console.log(profiles[0].profile)
+            let current = profiles[0]
+             // if (profiles[0].profile.createdAt > created){
+             //     created = profile.profile.createdAt
+             //     current = profile
+             //   }
+
+
+             let lud16 = current.profile.lud16
+            if (lud16 !== null && lud16 !== ""){
+              console.log("LUD16: " +  lud16)
+              jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount)
+              console.log(jsonentry.bolt11)
+              if(jsonentry.bolt11 === ""){
+               status = "error"
+              }
+          }
+            else {
+              console.log("NO LNURL")
+            }
+
+        }
+
+          else {
+            console.log("PROFILE NOT FOUND")
+          }
+      }
+    }
+  }
+
+
+  //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
+  for (const el of store.state.nip89dvms) {
+    if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
+      jsonentry.name = el.name
+      jsonentry.about = el.about
+      jsonentry.image = el.image
+
+      console.log(jsonentry)
+
+    }
+  }
+
+
+   if (event.content !== "" && status !== "payment-required" &&  status !== "error" &&  status !== "finished" &&  status !== "paid"){
+    status = event.content
+  }
+  jsonentry.status = status
+  console.log(dvms)
+  if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
+       dvms.push(jsonentry)
+  }
+
+
+  //dvms.find(i => i.id === jsonentry.id).status = status
+  store.commit('set_recommendation_dvms', dvms)
+
+}
 async function zap(invoice) {
   let webln;
 
@@ -445,10 +451,11 @@ const submitHandler = async () => {
               <div className="tooltip mt-auto">
 
 
-                <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error'"  className="btn">{{dvm.status}}</button>
+               <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error'"  className="btn">{{dvm.status}}</button>
                 <button v-if="dvm.status === 'finished'" className="btn">Done</button>
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
+
                 <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
 
 
