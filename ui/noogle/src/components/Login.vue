@@ -130,6 +130,8 @@ export default {
         this.supports_android_signer = true;
       }
 
+
+
       if (localStorage.getItem('nostr-key-method') === 'nip07') {
         await this.sign_in_nip07()
       }
@@ -148,10 +150,14 @@ export default {
         }
         await this.sign_in_amber(key)
       }
+
+
       else {
         await this.sign_in_anon()
       }
-     await this.getnip89s()
+    await this.getnip89s()
+
+
 
     } catch (error) {
       console.log(error);
@@ -211,7 +217,7 @@ export default {
       localStorage.setItem('nostr-key', '')
       console.log("Client Nip46 connected")
       await this.get_user_info(pubkey)
-        await this.reconcile_all_profiles(pubkey)
+        this.reconcile_all_profiles(pubkey)
       console.log(pubkey.toBech32())
       //await this.reconcile_all_profiles()
 
@@ -327,7 +333,7 @@ export default {
         localStorage.setItem('nostr-key', keys.secretKey.toBech32())
         console.log("Client key connected")
         await this.get_user_info(pubkey)
-        await this.reconcile_all_profiles(pubkey)
+        this.reconcile_all_profiles(pubkey)
 
 
       } catch (error) {
@@ -392,8 +398,8 @@ export default {
         localStorage.setItem('nostr-key', pubkey.toHex())
         console.log("Client Nip07 connected")
         await this.get_user_info(pubkey)
-          await this.getnip89s()
-          await this.reconcile_all_profiles(pubkey)
+
+        this.reconcile_all_profiles(pubkey)
         //await this.reconcile_all_profiles()
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
 
@@ -460,10 +466,11 @@ export default {
         localStorage.setItem('nostr-key', connectionstring)
         console.log("Client connected")
 
-        await this.get_user_info(pubkey)
 
 
-          await this.reconcile_all_profiles(pubkey)
+
+          this.reconcile_all_profiles(pubkey)
+          await this.get_user_info(pubkey)
 
         //miniToastr.showMessage("Login successful!", "Logged in as " + this.current_user, VueNotifications.types.success)
 
@@ -520,10 +527,9 @@ export default {
         localStorage.setItem('nostr-key-method', "android-signer")
         localStorage.setItem('nostr-key', hexKey)
 
-        await this.get_user_info(publicKey)
 
-
-            await this.reconcile_all_profiles(publicKey)
+           this.reconcile_all_profiles(publicKey)
+           await this.get_user_info(publicKey)
                 }
         catch (error){
           alert(error)
@@ -538,13 +544,16 @@ export default {
     async getnip89s(){
 
         //let keys = Keys.generate()
-        let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
-        let signer = NostrSigner.keys(keys) //TODO store keys
-        let client = new ClientBuilder().signer(signer).build()
-        for (const relay of store.state.relays){
-           await client.addRelay(relay);
-        }
-        await client.connect();
+            let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+            let signer = NostrSigner.keys(keys) //TODO store keys
+            let client = new ClientBuilder().signer(signer).build()
+
+            for (const relay of store.state.relays) {
+              await client.addRelay(relay);
+            }
+            await client.connect();
+
+
 
         let dvmkinds = []
         for (let i = 5000; i < 6000; i++) {
