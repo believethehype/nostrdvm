@@ -567,6 +567,7 @@ export default {
         //let evts = await client.database.query([filterl])
         let evts = await client.getEventsOf([filter], Duration.fromSecs(5))
         for (const entry of evts){
+
           for (const tag in entry.tags){
             if (entry.tags[tag].asVec()[0] === "k")
               if(entry.tags[tag].asVec()[1] >= 5000 && entry.tags[tag].asVec()[1] <= 5999 &&  deadnip89s.filter(i => i.id === entry.id.toHex() ).length === 0) {   // blocklist.indexOf(entry.id.toHex()) < 0){
@@ -578,6 +579,10 @@ export default {
                         jsonentry.image = jsonentry.picture
                       }
 
+                      if(!jsonentry.amount){
+                        jsonentry.amount = ""
+                      }
+                      jsonentry.id = entry.author.toHex()
                       jsonentry.about = await parseandreplacenpubs(jsonentry.about)
                       jsonentry.event = entry.asJson()
                       jsonentry.kind = entry.tags[tag].asVec()[1]

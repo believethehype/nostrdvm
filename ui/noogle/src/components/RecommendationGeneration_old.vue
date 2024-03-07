@@ -16,7 +16,7 @@ import {
 import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
-import {computed, onMounted, watch} from "vue";
+import {computed, watch} from "vue";
 import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";
@@ -29,20 +29,7 @@ import StringUtil from "@/components/helper/string.ts";
 
 let dvms =[]
 
-
-onMounted(async () => {
-
-  while(store.state.nip89dvms.length === 0){
-     await sleep(100)
-  }
-await addAllContentDVMs()
-console.log("mount")
-  console.log(dvms)
-
-})
-
-
-async function generate_feed(id) {
+async function generate_feed() {
 
    try {
      if(store.state.pubkey === undefined || localStorage.getItem('nostr-key-method') === "anon"){
@@ -50,15 +37,14 @@ async function generate_feed(id) {
 
      }
 
-        //dvms = []
-        //store.commit('set_recommendation_dvms', dvms)
+        dvms = []
+        store.commit('set_recommendation_dvms', dvms)
 
         let client = store.state.client
 
         let content = "NIP 90 Content Discovery request"
         let kind = 5300
         let tags = []
-        tags.push(["p", id])
         let res;
         let requestid;
 
@@ -142,47 +128,9 @@ async function  listen() {
                     console.log("7000: ", event.content);
                    // console.log("DVM: " + event.author.toHex())
                     //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
-                    for (const tag in event.tags) {
-                      if (event.tags[tag].asVec()[0] === "status") {
-                        dvms.find(i => i.id === event.author.toHex()).status = event.tags[tag].asVec()[1]
-                      }
 
-                      if (event.tags[tag].asVec()[0] === "amount") {
-                        dvms.find(i => i.id === event.author.toHex()).amount = event.tags[tag].asVec()[1]
-                        if (event.tags[tag].asVec().length > 2) {
-                          dvms.find(i => i.id === event.author.toHex()).bolt11 = event.tags[tag].asVec()[2]
-                        } else {
-                          let profiles = await get_user_infos([event.author])
-                          let created = 0
-                          if (profiles.length > 0) {
-                            // for (const profile of profiles){
-                            console.log(profiles[0].profile)
-                            let current = profiles[0]
-                            // if (profiles[0].profile.createdAt > created){
-                            //     created = profile.profile.createdAt
-                            //     current = profile
-                            //   }
+                   await addDVM(event)
 
-
-                            let lud16 = current.profile.lud16
-                            if (lud16 !== null && lud16 !== "") {
-                              console.log("LUD16: " + lud16)
-                              dvms.find(i => i.id === event.author.toHex()).bolt11 = await createBolt11Lud16(lud16, dvms.find(i => i.id === event.author.toHex()).amount)
-                              console.log(dvms.find(i => i.id === event.author.toHex()).bolt11)
-                              if (dvms.find(i => i.id === event.author.toHex()).bolt11 === "") {
-                                dvms.find(i => i.id === event.author.toHex()).status = "error"
-                              }
-                            } else {
-                              console.log("NO LNURL")
-                            }
-
-                          } else {
-                            console.log("PROFILE NOT FOUND")
-                          }
-                        }
-                      }
-                      store.commit('set_recommendation_dvms', dvms)
-                    }
                   } catch (error) {
                     console.log("Error: ", error);
                   }
@@ -273,59 +221,6 @@ async function  listen() {
 
 const urlinput = ref("");
 
-
-async function addAllContentDVMs(){
-
-  for (const el of store.state.nip89dvms) {
-    for (const tag of JSON.parse(el.event).tags){
-
-        if (tag[0] === "k" && tag[1] === "5300"){
-             console.log(el)
-           const filtera = new Filter().author(PublicKey.parse(el.id)).kinds([6300, 7000]).limit(1)
-           let client = store.state.client
-           let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
-           let last_active = 0
-
-           for (let activity of activities){
-             console.log(activity.createdAt.asSecs())
-             if (activity.createdAt.asSecs() > last_active){
-               last_active = activity.createdAt.asSecs()
-             }
-           }
-
-           console.log(last_active)
-          // If DVM hasnt been active for 3 weeks, don't consider it.
-          if(last_active < Timestamp.now().asSecs() - 60*60*24*7){
-            continue
-          }
-
-
-            let status = "announced"
-            let jsonentry = {
-                id: el.id,
-                kind: "",
-                status: status,
-                result: [],
-                name: el.name,
-                about: el.about,
-                image:  el.image,
-                amount: el.amount,
-                bolt11: ""
-              }
-
-
-            console.log(jsonentry)
-             if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
-               dvms.push(jsonentry)
-          }
-
-        store.commit('set_recommendation_dvms', dvms)
-      }
-    }
-  }
-}
-
-
 async function addDVM(event){
   let status = "unknown"
   let jsonentry = {
@@ -413,10 +308,6 @@ async function addDVM(event){
   store.commit('set_recommendation_dvms', dvms)
 
 }
-
-
-
-
 async function zap(invoice) {
   let webln;
 
@@ -432,7 +323,7 @@ async function zap(invoice) {
     try{
          let response = await webln.sendPayment(invoice)
          dvms.find(i => i.bolt11 === invoice).status = "paid"
-          store.commit('set_recommendation_dvms', dvms)
+          store.commit('set_recommendation_results', dvms)
     }
     catch(err){
           console.log(err)
@@ -454,8 +345,6 @@ import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
 import NoteTable from "@/components/NoteTable.vue";
-
-
 
 const isModalOpened = ref(false);
 const modalcontent = ref("");
@@ -487,7 +376,6 @@ const submitHandler = async () => {
 
 
 
-
 </script>
 
 <!--  font-thin bg-gradient-to-r from-white to-nostr bg-clip-text text-transparent -->
@@ -505,8 +393,7 @@ const submitHandler = async () => {
     Algorithms, but you are the one in control.</h2>
     <h3>
      <br>
-     <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs..</button>
-
+     <button class="v-Button"  @click="generate_feed()">Recommend me Notes</button>
     </h3>
   </div>
   <br>
@@ -558,27 +445,21 @@ const submitHandler = async () => {
           <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
 
 
+
           <div className="card-actions justify-end mt-auto" >
 
               <div className="tooltip mt-auto">
 
 
-               <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error' && dvm.status !== 'announced'"   className="btn">{{dvm.status}}</button>
-                <button v-if="dvm.status === 'finished'" class="bg-base-200 text-bg-base200" @click="generate_feed(dvm.id)" className="btn">Done</button>
+               <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error'"  className="btn">{{dvm.status}}</button>
+                <button v-if="dvm.status === 'finished'" className="btn">Done</button>
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
 
                 <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
-                <button v-if="dvm.status === 'announced'" className="request-Button" @click="generate_feed(dvm.id);">Request</button>
-
-
-             <!--<h3 v-if="dvm.amount.toString().toLowerCase()==='free'" class="bg-nostr btn rounded-full" >{{ "Free" }}</h3> -->
 
 
           </div>
-
-
-
 
         </div>
 
@@ -593,18 +474,7 @@ const submitHandler = async () => {
 </div> -->
 
   <!-- <details open ></details> -->
-
-  <div style="margin-left: auto; margin-right: 10px;">
-   <p v-if="dvm.amount.toString().toLowerCase()==='free'" class="text-sm text-gray-600 rounded" >Free</p>
-   <p v-if="dvm.amount.toString().toLowerCase()==='subscription'" class="bg-orange-500 label rounded-full" >{{ dvm.amount/1000 }}</p>
-   <p v-if="dvm.amount.toString()===''" ></p>
-   <p v-if="!isNaN(parseInt(dvm.amount))" class="text-sm  text-gray-600 rounded" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
-  <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
-  </div>
-
-
-
-    <details open v-if="dvm.status === 'finished'" class="collapse bg-base">
+    <details v-if="dvm.status === 'finished'" class="collapse bg-base">
   <summary class="collapse-title   "><div class="btn">Show/Hide Results</div></summary>
   <div class="collapse-content font-size-0" className="z-10" id="collapse">
 
@@ -636,11 +506,6 @@ const submitHandler = async () => {
 
 .zap-Button{
   @apply btn hover:bg-amber-400 border-amber-400 text-base;
-  bottom: 0;
-}
-
-.request-Button{
-  @apply btn hover:bg-nostr border-nostr text-base;
   bottom: 0;
 }
 

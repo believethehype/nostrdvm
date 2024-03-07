@@ -102,8 +102,9 @@ def build_example(name, identifier, admin_config):
 
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "image": "https://image.nostr.build/4dc758923c7bfc5ba92030e6419272ec7470c3809d36e88e99f3a9daece88bac.png",
         "about": "I show trending notes from nostr.band",
+        "amount": "Free",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {}
