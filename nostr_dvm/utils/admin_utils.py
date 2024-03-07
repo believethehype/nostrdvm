@@ -20,7 +20,7 @@ class AdminConfig:
     LISTDATABASE: bool = False
     ClEANDB: bool = False
 
-    USERNPUB: str = ""
+    USERNPUBS: list = []
     LUD16: str = ""
 
     EVENTID: str = ""
@@ -37,7 +37,7 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
 
     if ((
             adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
-            and adminconfig.USERNPUB == ""):
+            and adminconfig.USERNPUBS == []):
         return
 
     if adminconfig.UPDATE_PROFILE and (dvmconfig.NIP89 is None):
@@ -48,27 +48,28 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
 
     db = dvmconfig.DB
 
-    if str(adminconfig.USERNPUB).startswith("npub"):
-        publickey = PublicKey.from_bech32(adminconfig.USERNPUB).to_hex()
-    else:
-        publickey = adminconfig.USERNPUB
+    for npub in adminconfig.USERNPUBS:
+        if str(npub).startswith("npub"):
+            publickey = PublicKey.from_bech32(npub).to_hex()
+        else:
+            publickey = npub
 
-    if adminconfig.WHITELISTUSER:
-        user = get_or_add_user(db, publickey, client=client, config=dvmconfig)
-        update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
-        user = get_from_sql_table(db, publickey)
-        print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
+        if adminconfig.WHITELISTUSER:
+            user = get_or_add_user(db, publickey, client=client, config=dvmconfig)
+            update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive)
+            user = get_from_sql_table(db, publickey)
+            print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
 
-    if adminconfig.UNWHITELISTUSER:
-        user = get_from_sql_table(db, publickey)
-        update_sql_table(db, user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive)
+        if adminconfig.UNWHITELISTUSER:
+            user = get_from_sql_table(db, publickey)
+            update_sql_table(db, user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive)
 
-    if adminconfig.BLACKLISTUSER:
-        user = get_from_sql_table(db, publickey)
-        update_sql_table(db, user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
+        if adminconfig.BLACKLISTUSER:
+            user = get_from_sql_table(db, publickey)
+            update_sql_table(db, user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive)
 
-    if adminconfig.DELETEUSER:
-        delete_from_sql_table(db, publickey)
+        if adminconfig.DELETEUSER:
+            delete_from_sql_table(db, publickey)
 
     if adminconfig.ClEANDB:
         clean_db(db)

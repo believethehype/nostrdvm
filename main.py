@@ -39,6 +39,9 @@ def playground():
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = False
     admin_config.LUD16 = lnaddress
+
+
+
     # Set rebroadcast to true once you have set your NIP89 descriptions and d tags. You only need to rebroadcast once you
     # want to update your NIP89 descriptions
 
