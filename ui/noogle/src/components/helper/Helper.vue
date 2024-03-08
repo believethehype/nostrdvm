@@ -6,6 +6,7 @@ import {Duration, Event, EventBuilder, EventId, Filter, Keys, PublicKey, Tag, Ti
 import miniToastr from "mini-toastr/mini-toastr";
 import VueNotifications from "vue-notifications";
 
+
 export default defineComponent({
   name: "posting"
 })
@@ -164,13 +165,17 @@ export async function parseandreplacenpubs(note){
   for (let word in myArray){
     if(myArray[word].startsWith("nostr:npub")){
       //console.log(myArray[word])
-      let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
-       //console.log(pk.toBech32())
-       let profiles = await get_user_infos([pk])
-      //console.log(profiles[0].profile.nip05)
-      myArray[word] = profiles[0].profile.nip05 // replace with nip05 for now
 
-         // <href>='https://njump.com/'>test[0].profile.nip05</href>test[0].profile.nip05
+       //console.log(pk.toBech32())
+      try{
+        let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
+        let profiles = await get_user_infos([pk])
+        //console.log(profiles[0].profile.nip05)
+        myArray[word] = profiles[0].profile.nip05 // replace with nip05 for now
+      }
+      catch{
+
+      }
     }
     finalnote = finalnote + myArray[word] + " "
 
@@ -179,6 +184,99 @@ export async function parseandreplacenpubs(note){
   return finalnote.trimEnd()
 }
 
+var getHtmlBlock = function(dataType) {
+    return `<div class="icon negative big toleft" id="cancel-btn"><i class="fas fa-minus-circle"></i></div><div class="icon add big toleft"><i class="fas fa-check-circle"></i></div><input type="text" class="contact-input" style="margin-bottom: 5px;" maxlength="50" name="my-contact-phone" data-name="Name" placeholder="${dataType}">`;
+};
+export async function parseandreplacenpubsName(note){
+
+  const myArray = note.split(" ");
+  let finalnote = ""
+  for (let word in myArray){
+    if(myArray[word].startsWith("nostr:npub")){
+      //console.log(myArray[word])
+
+       //console.log(pk.toBech32())
+      try{
+        let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
+        let profiles = await get_user_infos([pk])
+        //console.log(profiles[0].profile.nip05)
+
+        myArray[word] =  profiles[0].profile.name
+
+
+          //  profiles[0].profile.name // replace with nip05 for now
+      }
+      catch{
+
+      }
+    }
+    finalnote = finalnote + myArray[word] + " "
+
+  }
+
+  return finalnote.trimEnd()
+}
+
+
+export async function zaprequest(lud16, amount, content, zapped_event_id, zapped_user_id, relay_list){
+    let url = ""
+    if (lud16.toString().includes('@')){
+       url = 'https://' + lud16.toString().split('@')[1] + '/.well-known/lnurlp/' + lud16.toString().split('@')[0]
+    }
+    else{
+       return None
+    }
+    try{
+        let response = await fetch(url)
+        let ob = JSON.parse(response.content)
+        let callback = ob["callback"]
+        let encoded_lnurl =  "" // lnurl.encode(url)
+        let amount_tag = Tag.parse(['amount', (amount * 1000).toString()])
+        let relays_tag = Tag.parse(['relays', (relay_list).toString()])
+        let lnurl_tag = Tag.parse(['lnurl', encoded_lnurl])
+        let tags = []
+        let p_tag = Tag.parse(['p', zapped_user_id])
+        if (zapped_event_id !== None){
+            let e_tag = Tag.parse(['e', zapped_event_id])
+            tags = [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]
+        }
+
+        else{
+            tags = [amount_tag, relays_tag, p_tag, lnurl_tag]
+        }
+
+
+        //todo
+       /* if zaptype == "private":
+            key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(zapped_event.created_at().as_secs())
+            encryption_key = sha256(key_str.encode('utf-8')).hexdigest()
+
+            zap_request = EventBuilder(9733, content,
+                                       [p_tag, e_tag]).to_event(keys).as_json()
+            keys = Keys.parse(encryption_key)
+            encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
+            anon_tag = Tag.parse(['anon', encrypted_content])
+            tags.append(anon_tag)
+            content = "" */
+
+
+
+        let client = store.state.client
+        let zap_request = client.EventBuilder(9734, content,
+                                   tags).toSignedEvent().asJson()
+
+        response = await fetch(callback + "?amount=" + (Number.parse(amount) * 1000).toString() + "&nostr=" + encodeURI(zap_request) + "&lnurl=" + encoded_lnurl)
+        ob = JSON.parse(response.content)
+        return ob["pr"]
+    }
+    catch(error){
+      console.log("ZAP REQUEST: " + e)
+  }
+
+
+
+        return None
+}
 export async function createBolt11Lud16(lud16, amount) {
     let url;
       if (lud16.includes('@')) {  // LNaddress
