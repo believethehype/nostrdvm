@@ -5,6 +5,8 @@ import amberSignerService from "@/components/android-signer/AndroidSigner";
 import {Duration, Event, EventBuilder, EventId, Filter, Keys, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr/mini-toastr";
 import VueNotifications from "vue-notifications";
+import {bech32} from "bech32";
+
 
 
 export default defineComponent({
@@ -136,7 +138,62 @@ export async function get_user_infos(pubkeys){
         return profiles
 
     }
+export async function get_zaps(ids){
+        let zaps = []
+        let jsonentry = {}
+        for (let id of ids){
+            zaps.push({
+             id: id.toHex(),
+             amount: 0,
+            zappedbyUser: false,})
+        }
 
+        let client = store.state.client
+        const zap_filter = new Filter().kind(9735).events(ids)
+        let evts = await client.getEventsOf([zap_filter],  Duration.fromSecs(10))
+
+        for (const entry of evts){
+          try{
+            //let contentjson = JSON.parse(entry.content)
+
+            for (let tag of entry.tags){
+              if (tag.asVec()[0] === "description"){
+               let request =  JSON.parse(tag.asVec()[1])
+                let etag = ""
+                let amount = 0
+                for (let tg of request.tags){
+                     if (tg[0] === "amount") {
+                    amount = parseInt(tg[1])
+                  }
+                      if (tg[0] === "e") {
+                        etag = tg[1]
+                        console.log(request.pubkey )
+                        if(request.pubkey === localStorage.getItem("nostr-key")){
+                          zaps.find(x=> x.id === etag).zappedbyUser = true
+                        }
+                  }
+                }
+
+                zaps.find(x=> x.id ===  etag).amount += amount
+
+
+
+              }
+            }
+             //console.log(contentjson)
+            //zaps.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
+          }
+          catch(error){
+            console.log("error")
+          }
+
+        }
+
+        console.log(zaps)
+
+        return zaps
+
+    }
 
 
 
@@ -159,17 +216,19 @@ export const sleep = (ms) => {
 
 
 export async function parseandreplacenpubs(note){
-
+  note = note.replace("\n", " ")
   const myArray = note.split(" ");
   let finalnote = ""
   for (let word in myArray){
-    if(myArray[word].startsWith("nostr:npub")){
-      //console.log(myArray[word])
 
+    if(myArray[word].startsWith("nostr:npub")){
+
+  console.log(myArray[word])
        //console.log(pk.toBech32())
       try{
         let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
         let profiles = await get_user_infos([pk])
+        console.log(profiles)
         //console.log(profiles[0].profile.nip05)
         myArray[word] = profiles[0].profile.nip05 // replace with nip05 for now
       }
@@ -184,9 +243,7 @@ export async function parseandreplacenpubs(note){
   return finalnote.trimEnd()
 }
 
-var getHtmlBlock = function(dataType) {
-    return `<div class="icon negative big toleft" id="cancel-btn"><i class="fas fa-minus-circle"></i></div><div class="icon add big toleft"><i class="fas fa-check-circle"></i></div><input type="text" class="contact-input" style="margin-bottom: 5px;" maxlength="50" name="my-contact-phone" data-name="Name" placeholder="${dataType}">`;
-};
+
 export async function parseandreplacenpubsName(note){
 
   const myArray = note.split(" ");
@@ -217,26 +274,65 @@ export async function parseandreplacenpubsName(note){
   return finalnote.trimEnd()
 }
 
+async function fetchAsync (url) {
+  let response = await fetch(url);
+  let data = await response.json();
+  return data;
+}
+
+
 
 export async function zaprequest(lud16, amount, content, zapped_event_id, zapped_user_id, relay_list){
     let url = ""
-    if (lud16.toString().includes('@')){
-       url = 'https://' + lud16.toString().split('@')[1] + '/.well-known/lnurlp/' + lud16.toString().split('@')[0]
+
+  console.log(lud16)
+  console.log(PublicKey.parse(zapped_user_id).toBech32())
+  console.log(EventId.parse(zapped_event_id).toBech32())
+    console.log(zapped_event_id)
+
+
+  zapped_user_id = PublicKey.parse(zapped_user_id).toHex()
+  zapped_event_id = EventId.parse(zapped_event_id).toHex()
+
+ //overwrite for debug
+  //lud16 = "hype@bitcoinfixesthis.org"
+  //zapped_user_id = PublicKey.parse("npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8").toHex()
+  //zapped_event_id = EventId.parse("note1xsw95cp4ynelxdujd3xrh6kmre3y0lk699xn09z52mjenmktdllq9vtwyn").toHex()
+
+
+
+
+
+    if (lud16 !== "" && lud16.toString().includes('@')){
+    url = `https://${lud16.split('@')[1]}/.well-known/lnurlp/${lud16.split('@')[0]}`;
+      console.log(url)
     }
     else{
-       return None
+       return null
     }
     try{
-        let response = await fetch(url)
-        let ob = JSON.parse(response.content)
+
+        let ob = await fetchAsync(url)
         let callback = ob["callback"]
-        let encoded_lnurl =  "" // lnurl.encode(url)
-        let amount_tag = Tag.parse(['amount', (amount * 1000).toString()])
-        let relays_tag = Tag.parse(['relays', (relay_list).toString()])
-        let lnurl_tag = Tag.parse(['lnurl', encoded_lnurl])
-        let tags = []
+        console.log(callback)
+
+
+        const urlBytes = new TextEncoder().encode(url);
+        const encoded_lnurl = bech32.encode('lnurl', bech32.toWords(urlBytes), 1023);
+        console.log(encoded_lnurl)
+        console.log( relay_list.toString())
+      console.log(zapped_event_id)
+      console.log(zapped_user_id)
+           const amount_tag = Tag.parse(['amount', (amount * 1000).toString()]);
+           let relays = ['relays']
+           relays.push.apply(relays, relay_list)
+           let  relays_tag = Tag.parse(relays);
+
+           const lnurl_tag = Tag.parse(['lnurl', encoded_lnurl]);
+
+        let tags
         let p_tag = Tag.parse(['p', zapped_user_id])
-        if (zapped_event_id !== None){
+        if (zapped_event_id !== null){
             let e_tag = Tag.parse(['e', zapped_event_id])
             tags = [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]
         }
@@ -244,40 +340,56 @@ export async function zaprequest(lud16, amount, content, zapped_event_id, zapped
         else{
             tags = [amount_tag, relays_tag, p_tag, lnurl_tag]
         }
-
-
-        //todo
-       /* if zaptype == "private":
-            key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(zapped_event.created_at().as_secs())
-            encryption_key = sha256(key_str.encode('utf-8')).hexdigest()
-
-            zap_request = EventBuilder(9733, content,
-                                       [p_tag, e_tag]).to_event(keys).as_json()
-            keys = Keys.parse(encryption_key)
-            encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
-            anon_tag = Tag.parse(['anon', encrypted_content])
-            tags.append(anon_tag)
-            content = "" */
+       /*if (zaptype === "private") {
+          const key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + zapped_event.created_at().as_secs().toString();
+          const encryption_key = sha256(key_str).toString('hex');
+          const zap_request = new EventBuilder(9733, content, [p_tag, e_tag]).to_event(keys).as_json();
+          keys = Keys.parse(encryption_key);
+          const encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author());
+          const anon_tag = Tag.parse(['anon', encrypted_content]);
+          tags.push(anon_tag);
+          content = "";
+        } */
 
 
 
-        let client = store.state.client
-        let zap_request = client.EventBuilder(9734, content,
-                                   tags).toSignedEvent().asJson()
+        let signer = store.state.signer
 
-        response = await fetch(callback + "?amount=" + (Number.parse(amount) * 1000).toString() + "&nostr=" + encodeURI(zap_request) + "&lnurl=" + encoded_lnurl)
-        ob = JSON.parse(response.content)
+        let noteevent =  new EventBuilder(9734, content, tags).toUnsignedEvent(store.state.pubkey)
+        let signedEvent = await signer.signEvent(noteevent)
+         let zap_request = signedEvent.asJson()
+
+       //console.log(encoded_zap_request)
+
+
+//`amount=${(amount * 1000).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
+   // const queryString = `amount=${(amount * 1000).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
+
+   try{
+
+         const queryString = `amount=${(amount * 1000).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
+
+          console.log(queryString)
+        let ob = await fetchAsync(`${callback}?${queryString}`)
         return ob["pr"]
+          }
+      catch(e){
+        console.log("HELLO" + e)
+      }
     }
     catch(error){
-      console.log("ZAP REQUEST: " + e)
+      console.log("ZAP REQUEST: " + error)
   }
 
 
 
-        return None
+        return null
 }
 export async function createBolt11Lud16(lud16, amount) {
+  if (lud16 === null || lud16 === ""){
+    return null;
+  }
+
     let url;
       if (lud16.includes('@')) {  // LNaddress
         const parts = lud16.split('@');

@@ -22,7 +22,7 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput, createBolt11Lud16, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, nextInput, createBolt11Lud16, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
 
@@ -202,53 +202,75 @@ async function  listen() {
                     }
                     const events = await getEventsOriginalOrder(entries)
                     let authors = []
-                    for (const evt of events) {
+
+                   for (const evt of events) {
+                      try{
                       authors.push(evt.author)
+                          }
+                          catch(error){
+                        console.log(error)
+                     }
+
                     }
 
+
                       if (authors.length > 0) {
-                      let profiles = await get_user_infos(authors)
+
+                        try{
+
+                        let profiles = await get_user_infos(authors)
+
+                            let ids = []
+                            for (let evt of events){
+                               ids.push(evt.id)
+                            }
+                          let zaps = await get_zaps(ids)
                         let items = []
                         let index = 0
-                      for (const evt of events) {
-                        let p = profiles.find(record => record.author === evt.author.toHex())
-                        let bech32id = evt.id.toBech32()
-                        let nip19 = new Nip19Event(evt.id, evt.author, store.state.relays)
-                        let nip19bech32 = nip19.toBech32()
-                        let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
-                        let name = p === undefined ? bech32id : p["profile"]["name"]
-                        let authorid = evt.author.toHex()
-                        let highlighterurl = "https://highlighter.com/e/" + nip19bech32
-                        let njumpurl = "https://njump.me/" + nip19bech32
-                        let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
-                        let uri = "nostr:" + bech32id //  nip19.toNostrUri()
-                        let lud16 =  "" //"p["profile"]["lud16"]"
+                        for (const evt of events) {
+                            if(!evt){
+                            continue
+                          }
+                          let p = profiles.find(record => record.author === evt.author.toHex())
+                          let bech32id = evt.id.toBech32()
+                          let nip19 = new Nip19Event(evt.id, evt.author, store.state.relays)
+                          let nip19bech32 = nip19.toBech32()
+                          let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
+                          let name = p === undefined ? bech32id : p["profile"]["name"]
+                          let authorid = evt.author.toHex()
+                          let highlighterurl = "https://highlighter.com/e/" + nip19bech32
+                          let njumpurl = "https://njump.me/" + nip19bech32
+                          let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
+                          let uri = "nostr:" + bech32id //  nip19.toNostrUri()
+                          let lud16 = p === undefined ? "" : (p["profile"] === undefined ? "" : p["profile"]["lud16"])
 
 
-                        if (items.find(e => e.id.toHex() === evt.id.toHex()) === undefined) {
-                          items.push({
-                            id: evt.id,
-                            content: await parseandreplacenpubsName(evt.content),
-                            author: name,
-                            authorid: authorid,
-                            authorurl: "https://njump.me/" + evt.author.toBech32(),
-                            links: {
-                              "uri": uri,
-                              "highlighter": highlighterurl,
-                              "njump": njumpurl,
-                              "nostrudel": nostrudelurl
-                            },
-                            avatar: picture,
-                            index: index,
-                            indicator: {"time": evt.createdAt.toHumanDatetime(), "index": index},
-                            lud16: lud16,
+                          if (items.find(e => e.id === evt.id.toHex()) === undefined) {
+                            items.push({
+                              id: evt.id.toHex(),
+                              content: await parseandreplacenpubsName(evt.content),
+                              author: name,
+                              authorid: authorid,
+                              authorurl: "https://njump.me/" + evt.author.toBech32(),
+                              links: {
+                                "uri": uri,
+                                "highlighter": highlighterurl,
+                                "njump": njumpurl,
+                                "nostrudel": nostrudelurl
+                              },
+                              avatar: picture,
+                              index: index,
+                              indicator: {"time": evt.createdAt.toHumanDatetime(), "index": index},
+                              lud16: lud16,
+                              zapped: zaps.find(x => x.id === evt.id.toHex()).zappedbyUser,
+                              zapAmount: zaps.find(x => x.id === evt.id.toHex()).amount
 
-                          })
-                           index = index+1
+                            })
+                            index = index + 1
+                          }
+
                         }
-
-                      }
-                        if (dvms.find(i => i.id === event.author.toHex()) === undefined){
+                        if (dvms.find(i => i.id === event.author.toHex()) === undefined) {
                           await addDVM(event)
                           console.log("add dvm because of bug")
                         }
@@ -257,8 +279,10 @@ async function  listen() {
                         dvms.find(i => i.id === event.author.toHex()).result.length = 0
                         dvms.find(i => i.id === event.author.toHex()).result.push.apply(dvms.find(i => i.id === event.author.toHex()).result, items)
                         dvms.find(i => i.id === event.author.toHex()).status = "finished"
-
-                         }
+                      }
+                         catch(error){
+                        console.log(error)}
+                      }
                      }
                   store.commit('set_recommendation_dvms', dvms)
                 }
@@ -285,20 +309,20 @@ async function addAllContentDVMs(){
     for (const tag of JSON.parse(el.event).tags){
 
         if (tag[0] === "k" && tag[1] === "5300"){
-             console.log(el)
+
            const filtera = new Filter().author(PublicKey.parse(el.id)).kinds([6300, 7000]).limit(1)
            let client = store.state.client
            let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
            let last_active = 0
 
            for (let activity of activities){
-             console.log(activity.createdAt.asSecs())
+             //console.log(activity.createdAt.asSecs())
              if (activity.createdAt.asSecs() > last_active){
                last_active = activity.createdAt.asSecs()
              }
            }
 
-           console.log(last_active)
+          // console.log(last_active)
           // If DVM hasnt been active for 3 weeks, don't consider it.
           if(last_active < Timestamp.now().asSecs() - 60*60*24*7){
             continue

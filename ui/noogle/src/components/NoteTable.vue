@@ -4,7 +4,7 @@
                  :items="data"
                  :sort-by="sortBy"
                  :sort-type="sortType">
-   <template #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid}">
+   <template #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid, zapped, zapAmount}">
 
    <div class="playeauthor-wrapper">
 
@@ -28,21 +28,25 @@
          <!--<a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a> -->
           <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a>
 
-
-       <!--<div style="margin-left: auto; margin-right: 10px;" class=" justify-end mt-auto" @click="zap(lud16, id.toHex(), authorid)">
-          <svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
-  <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg></div>-->
+<div  class="flex" v-if="!zapped"  @click="zap(lud16, id, authorid, author)">
+     <div  style="margin-left: auto; margin-right: 5px; float: left;">
+          <svg  style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
+  <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/> </svg> </div>
+  <div>
+    <p style="float: left;">{{zapAmount/1000}}</p>
+  </div>
+</div>
+<div  class="flex" v-if="zapped" @click="zap(lud16, id, authorid, author)"  >
+     <div style="margin-left: auto; margin-right: 5px;">
+          <svg style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" class="bi bi-lightning fill-amber-400" viewBox="0 0 16 20">
+  <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg></div>
+    <div>
+    <p style="float: left;" className="text-amber-400">{{zapAmount/1000}}</p>
+  </div>
+</div>
 
       </div>
      </template>
-    <!--<template #expand="item">
-      <div style="padding: 15px; text-align: left;" >
-          <a class="menu" :href="item.links.uri" target="_blank">Nostr Client</a>
-          <a class="menu" :href="item.links.njump" target="_blank">NJump</a>
-          <a class="menu" :href="item.links.highlighter" target="_blank">Highlighter</a>
-          <a class="menu":href="item.links.nostrudel" target="_blank">Nostrudel</a>
-      </div>
-    </template> -->
 
 
       </EasyDataTable>
@@ -61,10 +65,13 @@ import Null = types.Null;
 import StringUtil from "@/components/helper/string";
 import {copyinvoice, createBolt11Lud16, parseandreplacenpubs, zaprequest} from "@/components/helper/Helper.vue";
 import {requestProvider} from "webln";
-defineProps<{
-  data?: []
+
+
+const props =  defineProps<{
+  data: any[]
 
 }>()
+
 
 const sortBy: String = "index";
 const sortType: SortType = "asc";
@@ -75,12 +82,11 @@ const headers: Header[] = [
 ];
 
 
-async function zap(lud16, id, authorid){
-  //let invoice = await zaprequest(lud16, 21 , "with love from noogle.lol", id, authorid, store.state.relays)  //Not working yet
+async function zap(lud16, eventid, authorid, author){
+
   if(lud16 != Null && lud16 != ""){
-
-
-    let invoice = await createBolt11Lud16(lud16, 21)
+  let invoice = await zaprequest(lud16, 21 , "with love from noogle.lol", eventid, authorid, store.state.relays)  //Not working yet
+    // let invoice = await createBolt11Lud16(lud16, 21)
      let webln;
     try {
       webln = await requestProvider();
@@ -90,6 +96,29 @@ async function zap(lud16, id, authorid){
     if (webln) {
       try{
            let response = await webln.sendPayment(invoice)
+        if(response.preimage != null && response.preimage != ""){
+
+
+            let objects =  (props.data.find(x=> x.id === eventid))
+          if (objects !== undefined){
+                  console.log(objects.zapped)
+            objects.zapped = true
+            objects.zapAmount += 21000
+          }
+
+           /* if (objects != undefined && objects.length > 0){
+               console.log(objects[0])
+              props.data.find(x=> x.id === eventid).zapped.push.apply(props.data.find(x=> x.id === eventid).zapped, true)
+
+
+            }*/
+
+
+         // miniToastr.showMessage("Zapped " + author , "Success" , VueNotifications.types.warn)
+            console.log(response)
+
+        }
+
 
       }
       catch(err){
