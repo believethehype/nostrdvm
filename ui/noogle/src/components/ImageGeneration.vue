@@ -41,7 +41,7 @@ async function generate_image(message) {
      }
 
      if(store.state.pubkey === undefined){
-               miniToastr.showMessage("Please login first", "No pubkey set", VueNotifications.types.warn)
+
           return
      }
 
@@ -184,7 +184,7 @@ async function  listen() {
                                let lud16 = current.profile.lud16
                               if (lud16 !== null && lud16 !== ""){
                                 console.log("LUD16: " +  lud16)
-                                jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount)
+                                jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount) //todo replace with zaprequest
                                 console.log(jsonentry.bolt11)
                                 if(jsonentry.bolt11 === ""){
                                  status = "error"

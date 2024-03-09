@@ -30,9 +30,7 @@ const store = createStore({
           "wss://relay.damus.io",
         "wss://nos.lol",
         "wss://pablof7z.nostr1.com",
-        "wss://relay.nostr.net",
-        //"wss://relay.nostr.band",
-        //"wss://nostr-pub.wellorder.net",
+        "wss://relay.nostr.net"
       ],
     }
   },
