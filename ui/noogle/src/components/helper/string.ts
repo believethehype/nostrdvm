@@ -9,9 +9,10 @@ const Regex_Nip05_Str= "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^
 
 const StringUtil = {
   isValidUrl: (str: string): boolean => new RegExp(Regex_Url_Str, "i").test(str),
-  parseHyperlinks: (str: string): string => str.replace(new RegExp(Regex_Urlw_Str, "gim"), "<a class='purple' target=\"_blank\" rel=\"noreferrer\" href=\"$&\">$&</a>").replace(new RegExp(Regex_Nip05_Str, "gim"), "<a class='purple' target=\"_blank\" rel=\"noreferrer\" href=\"https://njump.me/$&\">$&</a>"),
-  parseImages: (str: string): string => str.replace(new RegExp(Regex_Url_Img, "gim"), "<img src='$&'/> ").replace(new RegExp(Regex_Url_Video, "gim"), "<video controls muted autoplay src=\"$&\"></video>").replace(new RegExp(Regex_Url_Str, "gim"), "<a class='purple' target=\"_blank\" rel=\"noreferrer\" href=\"$&\">$&</a>"),
+  parseHyperlinks: (str: string): string => str.replace(new RegExp(Regex_Urlw_Str, "gim"), "<a class='purple' target=\"_blank\" rel=\"noreferrer\" href=\"$&\">$&</a>").replace(new RegExp(Regex_Nip05_Str, "gim"), "<a class='purple' target=\"_blank\" rel=\"noreferrer\" href=\"https://njump.me/$&\">$&</a> "),
+  parseImages: (str: string): string => str.replace(new RegExp(Regex_Url_Img, "gim"), "<img src='$&'/> ").replace(new RegExp(Regex_Url_Video, "gim"), "<video controls muted autoplay src=\"$&\"></video> ").replace(new RegExp(Regex_Url_Str, "gim"), "<a class='purple' target=\"_blank\" rel=\"noreferrer\" href=\"$&\">$&</a> "),
 
+  //parseImages: (str: string): string => str.replace("\n", " ").replace(new RegExp(Regex_Url_Img, "gim"), "<img src='$&'/> ")
 
 
 };
