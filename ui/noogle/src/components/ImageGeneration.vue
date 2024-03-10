@@ -26,7 +26,7 @@ import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
-import {post_note, schedule, copyinvoice, copyurl, sleep, nextInput, get_user_infos, createBolt11Lud16} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyinvoice, copyurl, sleep, nextInput, get_user_infos, createBolt11Lud16, zaprequest} from "../components/helper/Helper.vue"
 import StringUtil from "@/components/helper/string.ts";
 
 
@@ -153,7 +153,8 @@ async function  listen() {
                       about: "",
                       image: "",
                       amount: 0,
-                      bolt11: ""
+                      bolt11: "",
+                      nip90params: {},
                     }
 
                     for (const tag in event.tags) {
@@ -184,7 +185,9 @@ async function  listen() {
                                let lud16 = current.profile.lud16
                               if (lud16 !== null && lud16 !== ""){
                                 console.log("LUD16: " +  lud16)
-                                jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount) //todo replace with zaprequest
+                                //jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount) //todo replace with zaprequest
+                                jsonentry.bolt11 = await zaprequest(lud16, jsonentry.amount , "zapped from noogle.lol", event.id.toHex(), event.author.toHex(), store.state.relays)  //Not working yet
+
                                 console.log(jsonentry.bolt11)
                                 if(jsonentry.bolt11 === ""){
                                  status = "error"
@@ -210,8 +213,8 @@ async function  listen() {
                         jsonentry.name = el.name
                         jsonentry.about = el.about
                         jsonentry.image = el.image
+                        jsonentry.nip90Params = el.nip90Params
 
-                        console.log(jsonentry)
 
                       }
                     }
@@ -396,7 +399,12 @@ const submitHandler = async () => {
 
           <h2 className="card-title">{{ dvm.name }}</h2>
   </div>
-          <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
+        <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
+         <!-- <p>{{dvm.nip90Params}}</p> -->
+               <!-- <div   v-for="param in dvm.nip90Params">
+                    <p>{{param}}</p>
+                  </div> -->
+
 
 
 

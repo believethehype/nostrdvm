@@ -11,7 +11,7 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
 
   </div>
   <div className="flex-1">
-    <router-link  class="menu" to="/">Noogle</router-link>
+    <router-link  class="menu" to="/">Search</router-link>
     <router-link class="menu" to="/discover">Discover</router-link>
     <router-link class="menu" to="/image">ImageGen</router-link>
     <!--<router-link class="menu" to="/about">About</router-link> -->

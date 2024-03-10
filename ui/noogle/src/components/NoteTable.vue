@@ -21,6 +21,7 @@
 <!--.substr(0, 320) + "\u2026"}} -->
 
        <h3 v-html="StringUtil.parseImages(content)"></h3>
+     <!-- <h3>{{StringUtil.parseImages(content)}}</h3> -->
    <!--<p>{{content.substr(0, 320) + "\u2026"}}</p> -->
         <div style="padding: 2px; text-align: left;" >
           <a class="menusmall" :href="links.uri" target="_blank">Client</a>
@@ -28,7 +29,7 @@
          <!--<a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a> -->
           <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a>
 
-<div  class="flex" v-if="!zapped"  @click="zap(lud16, id, authorid, author)">
+<div  class="flex" v-if="!zapped"  @click="zap(lud16, id, authorid)">
      <div  style="margin-left: auto; margin-right: 5px; float: left;">
           <svg  style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
   <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/> </svg> </div>
@@ -36,7 +37,7 @@
     <p style="float: left;">{{zapAmount/1000}}</p>
   </div>
 </div>
-<div  class="flex" v-if="zapped" @click="zap(lud16, id, authorid, author)"  >
+<div  class="flex" v-if="zapped" @click="zap(lud16, id, authorid)"  >
      <div style="margin-left: auto; margin-right: 5px;">
           <svg style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" class="bi bi-lightning fill-amber-400" viewBox="0 0 16 20">
   <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg></div>
@@ -82,7 +83,7 @@ const headers: Header[] = [
 ];
 
 
-async function zap(lud16, eventid, authorid, author){
+async function zap(lud16, eventid, authorid){
 
   if(lud16 != Null && lud16 != ""){
   let invoice = await zaprequest(lud16, 21 , "with love from noogle.lol", eventid, authorid, store.state.relays)  //Not working yet
@@ -172,7 +173,7 @@ async function zap(lud16, eventid, authorid, author){
 }
 .customize-table {
   width: auto;
-  --easy-table-border: 2px solid #000000;
+  --easy-table-border: 2px solid bg-base;
   --easy-table-row-border: 1px solid #000000;
 
   --easy-table-header-font-size: 14px;

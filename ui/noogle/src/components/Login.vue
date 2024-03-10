@@ -586,6 +586,7 @@ export default {
                       jsonentry.about = await parseandreplacenpubs(jsonentry.about)
                       jsonentry.event = entry.asJson()
                       jsonentry.kind = entry.tags[tag].asVec()[1]
+                      //jsonentry.nip90Params = JSON.parse(jsonentry.nip90Params)
                       nip89dvms.push(jsonentry);
                 }
                 catch (error){

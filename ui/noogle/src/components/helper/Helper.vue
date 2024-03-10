@@ -246,10 +246,23 @@ export async function parseandreplacenpubs(note){
 
 export async function parseandreplacenpubsName(note){
 
-  const myArray = note.split(" ");
+  const myArray = note.split(/\n | \r | /);
   let finalnote = ""
   for (let word in myArray){
-    if(myArray[word].startsWith("nostr:npub")){
+
+        if (myArray[word].startsWith("https")){
+          myArray[word] = myArray[word] + "\n"
+        }
+
+      if(myArray[word].startsWith("nostr:note")){
+               myArray[word] =  "<a class='purple' target=\"_blank\" href='https://njump.me/" + myArray[word].replace("nostr:", "")+ "'>" +myArray[word].replace("nostr:", "") + "</a> "
+      }
+     else  if(myArray[word].startsWith("nostr:nevent")){
+               myArray[word] =  "<a class='purple' target=\"_blank\" href='https://njump.me/" + myArray[word].replace("nostr:", "")+ "'>" +myArray[word].replace("nostr:", "") + "</a> "
+      }
+
+
+    else if(myArray[word].startsWith("nostr:npub")){
       //console.log(myArray[word])
 
        //console.log(pk.toBech32())
@@ -258,7 +271,8 @@ export async function parseandreplacenpubsName(note){
         let profiles = await get_user_infos([pk])
         //console.log(profiles[0].profile.nip05)
 
-        myArray[word] =  profiles[0].profile.name
+       // myArray[word] =  "<a class='purple' target=\"_blank\"  href=\"https://njump.com/" + myArray[word].replace("nostr:", "") +" \">" + profiles[0].profile.name + "</a> "
+       myArray[word] =  "<a class='purple' target=\"_blank\" href='https://njump.me/" + myArray[word].replace("nostr:", "")+ "'>" + profiles[0].profile.name + "</a> "
 
 
           //  profiles[0].profile.name // replace with nip05 for now
