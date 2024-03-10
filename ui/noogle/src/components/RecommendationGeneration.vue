@@ -303,56 +303,80 @@ async function  listen() {
 const urlinput = ref("");
 
 
-async function addAllContentDVMs(){
+async function addAllContentDVMs() {
 
+  let relevent_dvms = []
   for (const el of store.state.nip89dvms) {
-    for (const tag of JSON.parse(el.event).tags){
-
-        if (tag[0] === "k" && tag[1] === "5300"){
-
-           const filtera = new Filter().author(PublicKey.parse(el.id)).kinds([6300, 7000]).limit(1)
-           let client = store.state.client
-           let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
-           let last_active = 0
-
-           for (let activity of activities){
-             //console.log(activity.createdAt.asSecs())
-             if (activity.createdAt.asSecs() > last_active){
-               last_active = activity.createdAt.asSecs()
-             }
-           }
-
-          // console.log(last_active)
-          // If DVM hasnt been active for 3 weeks, don't consider it.
-          if(last_active < Timestamp.now().asSecs() - 60*60*24*7){
-            continue
-          }
-
-
-            let status = "announced"
-            let jsonentry = {
-                id: el.id,
-                kind: "",
-                status: status,
-                result: [],
-                name: el.name,
-                about: el.about,
-                image:  el.image,
-                amount: el.amount,
-                bolt11: ""
-              }
-
-
-            console.log(jsonentry)
-             if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
-               dvms.push(jsonentry)
-          }
-
-        store.commit('set_recommendation_dvms', dvms)
+    for (const tag of JSON.parse(el.event).tags) {
+      if (tag[0] === "k" && tag[1] === "5300") {
+        relevent_dvms.push(PublicKey.parse(el.id))
       }
     }
   }
+  let active_dvms = []
+  for (let id of relevent_dvms) {
+    let jsonentry = {
+      id: id.toHex(),
+      last_active: 0
+    }
+    active_dvms.push(jsonentry)
+
+  }
+
+  console.log(active_dvms)
+
+  const filtera = new Filter().authors(relevent_dvms).kinds([6300, 7000])
+  let client = store.state.client
+  let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
+
+
+  //let last_active = 0
+
+  for (let activity of activities) {
+
+    //console.log(activity.createdAt.asSecs())
+    if (activity.createdAt.asSecs() > active_dvms.find(x => x.id === activity.author.toHex()).last_active) {
+      //last_active = activity.createdAt.asSecs()
+      active_dvms.find(x => x.id === activity.author.toHex()).last_active = activity.createdAt.asSecs()
+    }
+  }
+
+  // console.log(last_active)
+  // If DVM hasnt been active for 3 weeks, don't consider it.
+  console.log(active_dvms)
+  let final_dvms = []
+  for (let element of active_dvms) {
+    if (element.last_active > Timestamp.now().asSecs() - 60 * 60 * 24 * 7) {
+      final_dvms.push(store.state.nip89dvms.find(x => x.id === element.id))
+    }
+
+  for (let el of final_dvms){
+
+    let status = "announced"
+    let jsonentry = {
+      id: el.id,
+      kind: "",
+      status: status,
+      result: [],
+      name: el.name,
+      about: el.about,
+      image: el.image,
+      amount: el.amount,
+      bolt11: ""
+    }
+
+
+    console.log(jsonentry)
+    if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
+      dvms.push(jsonentry)
+    }
+  }
+
+  store.commit('set_recommendation_dvms', dvms)
+  }
+
 }
+
 
 
 async function addDVM(event){
@@ -534,7 +558,10 @@ const submitHandler = async () => {
     Algorithms, but you are the one in control.</h2>
     <h3>
      <br>
-     <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs..</button>
+      <div class="align-content-center">
+             <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs..</button>
+
+      </div>
 
     </h3>
   </div>
