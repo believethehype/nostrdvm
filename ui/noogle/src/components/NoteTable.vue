@@ -92,7 +92,13 @@ async function zap(lud16, eventid, authorid){
     try {
       webln = await requestProvider();
     } catch (err) {
-        await copyinvoice(invoice)
+      if (invoice === null){
+        invoice = await createBolt11Lud16(lud16, 21)
+      }
+
+      await copyinvoice(invoice)
+
+
     }
     if (webln) {
       try{
