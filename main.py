@@ -5,7 +5,7 @@ from sys import platform
 
 from nostr_dvm.bot import Bot
 from nostr_dvm.tasks import videogeneration_replicate_svd, imagegeneration_replicate_sdxl, textgeneration_llmlite, \
-    trending_notes_nostrband, discovery_inactive_follows, translation_google, textextraction_pdf, \
+    discovery_trending_notes_nostrband, discovery_inactive_follows, translation_google, textextraction_pdf, \
     translation_libretranslate, textextraction_google, convert_media, imagegeneration_openai_dalle, texttospeech, \
     imagegeneration_sd21_mlx, advanced_search, textgeneration_huggingchat, summarization_huggingchat, \
     discovery_nonfollowers, search_users
@@ -131,7 +131,7 @@ def playground():
     bot_config.SUPPORTED_DVMS.append(discover_nonfollowers)
     discover_nonfollowers.run()
 
-    trending = trending_notes_nostrband.build_example("Trending Notes on nostr.band", "trending_notes_nostrband",
+    trending = discovery_trending_notes_nostrband.build_example("Trending Notes on nostr.band", "trending_notes_nostrband",
                                                       admin_config)
     bot_config.SUPPORTED_DVMS.append(trending)
     trending.run()
