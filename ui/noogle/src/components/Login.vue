@@ -15,7 +15,7 @@
           <div tabIndex={0} role="button" class="button" >
               <img class="avatar"  :src="this.avatar" alt="" />
           </div>
-      <div tabIndex={0} className="dropdown-content -start-44 z-[1] horizontal card card-compact w-64 p-2 shadow bg-primary text-primary-content">
+      <div tabIndex={0} className="dropdown-content -start-56 z-[1] horizontal card card-compact w-64 p-2 shadow bg-nostr text-primary-content">
         <div className="card-body">
           <h3 className="card-title">Sign out of your account</h3>
           <!--<p>Sign out</p> -->
@@ -23,13 +23,13 @@
         </div>
       </div>
     </div>
-         <p>{{ this.current_user }}</p>
+        <!--<p>{{ this.current_user }}</p> -->
      </div>
 
     <template v-if="!current_user">
       <div className="dropdown">
       <div tabIndex={0} role="button" class="v-Button" >Sign in</div>
-      <div tabIndex={0} className="dropdown-content -start-44 z-[1] horizontal card card-compact w-64 p-2 shadow bg-primary text-primary-content">
+      <div tabIndex={0} className="dropdown-content -start-56 z-[1] horizontal card card-compact w-64 p-2 shadow bg-nostr text-primary-content">
         <div className="card-body">
           <h3 className="card-title">Login</h3>
           <p>Use a Browser Nip07 Extension like getalby, nos2x or nsec.app, a nsec or ncryptsec or use Amber on Android to sign-in</p>

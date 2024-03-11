@@ -22,7 +22,7 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, nextInput, createBolt11Lud16, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, get_reactions, nextInput, createBolt11Lud16, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
 
@@ -144,8 +144,25 @@ async function  listen() {
                     //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
                     for (const tag in event.tags) {
                       if (event.tags[tag].asVec()[0] === "status") {
-                        dvms.find(i => i.id === event.author.toHex()).status = event.tags[tag].asVec()[1]
-                      }
+
+                           if (event.content !== "" && event.tags[tag].asVec()[1] === "processing") {
+                              if(event.tags[tag].asVec().length > 2) {
+                               dvms.find(i => i.id === event.author.toHex()).status  = event.tags[tag].asVec()[2]
+
+                              }
+                              else{
+                                dvms.find(i => i.id === event.author.toHex()).status  = event.content
+
+                              }
+
+                           }
+                           else{
+                               dvms.find(i => i.id === event.author.toHex()).status = event.tags[tag].asVec()[1]
+
+                           }
+                     }
+
+
 
                       if (event.tags[tag].asVec()[0] === "amount") {
                         dvms.find(i => i.id === event.author.toHex()).amount = event.tags[tag].asVec()[1]
@@ -246,6 +263,8 @@ async function  listen() {
 
 
                           if (items.find(e => e.id === evt.id.toHex()) === undefined) {
+
+                            let react = zaps.find(x => x.id === evt.id.toHex())
                             items.push({
                               id: evt.id.toHex(),
                               content: await parseandreplacenpubsName(evt.content),
@@ -262,8 +281,10 @@ async function  listen() {
                               index: index,
                               indicator: {"time": evt.createdAt.toHumanDatetime(), "index": index},
                               lud16: lud16,
-                              zapped: zaps.find(x => x.id === evt.id.toHex()).zappedbyUser,
-                              zapAmount: zaps.find(x => x.id === evt.id.toHex()).amount
+                              zapped: react.zappedbyUser,
+                              zapAmount: react.amount,
+                              reacted: react.reactedbyUser,
+                              reactions: react.reactions,
 
                             })
                             index = index + 1
@@ -342,7 +363,7 @@ async function addAllContentDVMs() {
   }
 
   // console.log(last_active)
-  // If DVM hasnt been active for 3 weeks, don't consider it.
+  // If DVM hasn't been active for 3 weeks, don't consider it.
   console.log(active_dvms)
   let final_dvms = []
   for (let element of active_dvms) {
@@ -455,7 +476,7 @@ async function addDVM(event){
    if (event.content !== "" && status !== "payment-required" &&  status !== "error" &&  status !== "finished" &&  status !== "paid"){
     status = event.content
   }
-  jsonentry.status = status
+
   console.log(dvms)
   if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
        dvms.push(jsonentry)
