@@ -139,17 +139,91 @@ export async function get_user_infos(pubkeys){
 
     }
 export async function get_zaps(ids){
-        let zaps = []
-        let jsonentry = {}
+        let zapsandreactions = []
+
         for (let id of ids){
-            zaps.push({
+            zapsandreactions.push({
              id: id.toHex(),
              amount: 0,
-            zappedbyUser: false,})
+              reactions: 0,
+            zappedbyUser: false,
+            reactedbyUser: false,})
         }
 
         let client = store.state.client
-        const zap_filter = new Filter().kind(9735).events(ids)
+        const zap_filter = new Filter().kinds([9735, 7]).events(ids)
+        let evts = await client.getEventsOf([zap_filter],  Duration.fromSecs(10))
+
+        for (const entry of evts){
+          try{
+            //let contentjson = JSON.parse(entry.content)
+            if (entry.kind === 9735){
+              for (let tag of entry.tags) {
+                if (tag.asVec()[0] === "description") {
+                  let request = JSON.parse(tag.asVec()[1])
+                  let etag = ""
+                  let amount = 0
+                  for (let tg of request.tags) {
+                    if (tg[0] === "amount") {
+                      amount = parseInt(tg[1])
+                    }
+                    if (tg[0] === "e") {
+                      etag = tg[1]
+                      console.log(request.pubkey)
+                      if (request.pubkey === localStorage.getItem("nostr-key")) {
+                        zapsandreactions.find(x => x.id === etag).zappedbyUser = true
+                      }
+                    }
+                  }
+
+                  zapsandreactions.find(x => x.id === etag).amount += amount
+                }
+                }
+            }
+              else if (entry.kind === 7) {
+                  for (let tag of entry.tags) {
+
+                    if (tag.asVec()[0] === "e") {
+                      console.log(entry.pubkey)
+                      if (entry.author.toHex() === localStorage.getItem("nostr-key")) {
+                        zapsandreactions.find(x => x.id === tag.asVec()[1]).reactedbyUser = true
+                      }
+                      zapsandreactions.find(x => x.id === tag.asVec()[1]).reactions += 1
+
+                    }
+                  }
+
+
+                }
+
+
+             //console.log(contentjson)
+            //zaps.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
+          }
+          catch(error){
+            console.log("error")
+          }
+
+        }
+
+        console.log(zapsandreactions)
+
+        return zapsandreactions
+
+    }
+
+export async function get_reactions(ids){
+        let reactions = []
+        let jsonentry = {}
+        for (let id of ids){
+            reactions.push({
+             id: id.toHex(),
+             amount: 0,
+             ReactedbyUser: false,})
+        }
+
+        let client = store.state.client
+        const zap_filter = new Filter().kind(7).events(ids)
         let evts = await client.getEventsOf([zap_filter],  Duration.fromSecs(10))
 
         for (const entry of evts){
@@ -157,26 +231,13 @@ export async function get_zaps(ids){
             //let contentjson = JSON.parse(entry.content)
 
             for (let tag of entry.tags){
-              if (tag.asVec()[0] === "description"){
-               let request =  JSON.parse(tag.asVec()[1])
-                let etag = ""
-                let amount = 0
-                for (let tg of request.tags){
-                     if (tg[0] === "amount") {
-                    amount = parseInt(tg[1])
-                  }
-                      if (tg[0] === "e") {
-                        etag = tg[1]
-                        console.log(request.pubkey )
-                        if(request.pubkey === localStorage.getItem("nostr-key")){
-                          zaps.find(x=> x.id === etag).zappedbyUser = true
-                        }
-                  }
+
+              if (tag.asVec()[0] === "e") {
+                console.log(entry.pubkey )
+                if(entry.pubkey === localStorage.getItem("nostr-key")){
+                  reactions.find(x=> x.id === tag.asVec()[1]).ReactedbyUser = true
                 }
-
-                zaps.find(x=> x.id ===  etag).amount += amount
-
-
+                reactions.find(x=> x.id ===  tag.asVec()[1]).amount += 1
 
               }
             }
@@ -189,9 +250,9 @@ export async function get_zaps(ids){
 
         }
 
-        console.log(zaps)
+        console.log(reactions)
 
-        return zaps
+        return reactions
 
     }
 
@@ -203,8 +264,9 @@ export const sleep = (ms) => {
 
 
  export  async function copyinvoice(invoice){
-       await navigator.clipboard.writeText(invoice)
+
         window.open("lightning:" + invoice,"_blank")
+    await navigator.clipboard.writeText(invoice)
         miniToastr.showMessage("", "Copied Invoice to clipboard", VueNotifications.types.info)
     }
 
@@ -333,26 +395,24 @@ export async function zaprequest(lud16, amount, content, zapped_event_id, zapped
 
         const urlBytes = new TextEncoder().encode(url);
         const encoded_lnurl = bech32.encode('lnurl', bech32.toWords(urlBytes), 1023);
-        console.log(encoded_lnurl)
-        console.log( relay_list.toString())
-      console.log(zapped_event_id)
-      console.log(zapped_user_id)
-           const amount_tag = Tag.parse(['amount', (amount * 1000).toString()]);
+
+
+           const amount_tag = ['amount', (amount * 1000).toString()];
            let relays = ['relays']
            relays.push.apply(relays, relay_list)
-           let  relays_tag = Tag.parse(relays);
+           //let  relays_tag = Tag.parse(relays);
 
-           const lnurl_tag = Tag.parse(['lnurl', encoded_lnurl]);
+           const lnurl_tag = ['lnurl', encoded_lnurl];
 
-        let tags
-        let p_tag = Tag.parse(['p', zapped_user_id])
+        let tags = []
+        let p_tag = ['p', zapped_user_id]
         if (zapped_event_id !== null){
-            let e_tag = Tag.parse(['e', zapped_event_id])
-            tags = [amount_tag, relays_tag, p_tag, e_tag, lnurl_tag]
+            let e_tag = ['e', zapped_event_id]
+            tags = [amount_tag, relays, p_tag, e_tag, lnurl_tag]
         }
 
         else{
-            tags = [amount_tag, relays_tag, p_tag, lnurl_tag]
+            tags = [amount_tag, relays, p_tag, lnurl_tag]
         }
        /*if (zaptype === "private") {
           const key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + zapped_event.created_at().as_secs().toString();
@@ -368,16 +428,31 @@ export async function zaprequest(lud16, amount, content, zapped_event_id, zapped
 
 
         let signer = store.state.signer
+        let zap_request = ""
 
-        let noteevent =  new EventBuilder(9734, content, tags).toUnsignedEvent(store.state.pubkey)
-        let signedEvent = await signer.signEvent(noteevent)
-         let zap_request = signedEvent.asJson()
+        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+            let draft = {
+              content: content,
+              kind: 9734,
+              pubkey: store.state.pubkey.toHex(),
+              tags: tags,
+              createdAt: Date.now()
+            };
 
-       //console.log(encoded_zap_request)
+            let res = await amberSignerService.signEvent(draft)
+            zap_request = JSON.stringify(res)
+            //await sleep(3000)
 
-
-//`amount=${(amount * 1000).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
-   // const queryString = `amount=${(amount * 1000).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
+          }
+       else {
+            let tags_t = []
+            for (let tag of tags){
+              tags_t.push(Tag.parse(tag))
+            }
+            let noteevent =  new EventBuilder(9734, content, tags_t).toUnsignedEvent(store.state.pubkey)
+            let signedEvent = await signer.signEvent(noteevent)
+            zap_request = signedEvent.asJson()
+       }
 
    try{
 
