@@ -170,7 +170,7 @@ async function zap(lud16, eventid, authorid){
 
             let objects =  (props.data.find(x=> x.id === eventid))
           if (objects !== undefined){
-                  console.log(objects.zapped)
+               //   console.log(objects.zapped)
             objects.zapped = true
             objects.zapAmount += 21000
           }

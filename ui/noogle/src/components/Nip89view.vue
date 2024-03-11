@@ -8,7 +8,9 @@
 
   <div style="margin-left: auto; margin-right: 10px;">
    <p v-if="dvm.amount.toString().toLowerCase()==='free'" class="text-sm  text-gray-600 rounded" >Free</p>
-   <p v-if="dvm.amount.toString().toLowerCase()==='subscription'" class="bg-orange-500 label rounded-full" >{{ dvm.amount/1000 }}</p>
+    <p v-if="dvm.amount.toString().toLowerCase()==='flexible'" class="text-sm text-gray-600 rounded" >Flexible</p>
+
+   <p v-if="dvm.amount.toString().toLowerCase()==='subscription'" class="text-sm  text-orange-400 rounded">Subscription</p>
    <p v-if="dvm.amount.toString()===''" ></p>
    <p v-if="!isNaN(parseInt(dvm.amount))" class="text-sm  text-gray-600 rounded" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
   <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
