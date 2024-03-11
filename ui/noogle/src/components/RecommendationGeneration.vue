@@ -22,7 +22,7 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, get_reactions, nextInput, createBolt11Lud16, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, zaprequest, get_reactions, nextInput, createBolt11Lud16, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
 import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
 
@@ -36,7 +36,6 @@ onMounted(async () => {
      await sleep(100)
   }
 await addAllContentDVMs()
-console.log("mount")
   console.log(dvms)
 
 })
@@ -45,10 +44,7 @@ console.log("mount")
 async function generate_feed(id) {
 
    try {
-     if(store.state.pubkey === undefined || localStorage.getItem('nostr-key-method') === "anon"){
-               miniToastr.showMessage("Some algorithms may need your profile to give personalized recommendations. Sign-in for a better experience.", "Not signed in.", VueNotifications.types.warn)
 
-     }
 
         //dvms = []
         //store.commit('set_recommendation_dvms', dvms)
@@ -121,7 +117,7 @@ async function  listen() {
                 return true
               }*/
             //const dvmname =  getNamefromId(event.author.toHex())
-          console.log("Received new event from", relayUrl);
+          //console.log("Received new event from", relayUrl);
           //console.log(event.asJson())
            let resonsetorequest = false
             sleep(1200).then(async () => {
@@ -142,6 +138,7 @@ async function  listen() {
                     console.log("7000: ", event.content);
                    // console.log("DVM: " + event.author.toHex())
                     //miniToastr.showMessage("DVM: " + dvmname, event.content, VueNotifications.types.info)
+                    dvms.find(i => i.id === event.author.toHex()).laststatusid = event.id.toHex()
                     for (const tag in event.tags) {
                       if (event.tags[tag].asVec()[0] === "status") {
 
@@ -162,7 +159,11 @@ async function  listen() {
                            }
                      }
 
-
+                    if (event.tags[tag].asVec()[0] === "subscribed") {
+                      if (Timestamp.fromSecs(parseInt(event.tags[tag].asVec()[1])).asSecs() > Timestamp.now().asSecs()) {
+                        dvms.find(i => i.id === event.author.toHex()).subscription = event.tags[tag].asVec()[1]
+                      }
+                    }
 
                       if (event.tags[tag].asVec()[0] === "amount") {
                         dvms.find(i => i.id === event.author.toHex()).amount = event.tags[tag].asVec()[1]
@@ -184,10 +185,12 @@ async function  listen() {
                             let lud16 = current.profile.lud16
                             if (lud16 !== null && lud16 !== "") {
                               console.log("LUD16: " + lud16)
-                              dvms.find(i => i.id === event.author.toHex()).bolt11 = await createBolt11Lud16(lud16, dvms.find(i => i.id === event.author.toHex()).amount)
+                              dvms.find(i => i.id === event.author.toHex()).bolt11 = await zaprequest(lud16, dvms.find(i => i.id === event.author.toHex()).amount, "paid from noogle.lol", event.id.toHex(), event.author.toHex(), store.state.relays)
+                              //dvms.find(i => i.id === event.author.toHex()).bolt11 = await createBolt11Lud16(lud16, dvms.find(i => i.id === event.author.toHex()).amount)
                               console.log(dvms.find(i => i.id === event.author.toHex()).bolt11)
                               if (dvms.find(i => i.id === event.author.toHex()).bolt11 === "") {
                                 dvms.find(i => i.id === event.author.toHex()).status = "error"
+
                               }
                             } else {
                               console.log("NO LNURL")
@@ -378,16 +381,19 @@ async function addAllContentDVMs() {
       id: el.id,
       kind: "",
       status: status,
+      laststatusid: "",
       result: [],
       name: el.name,
       about: el.about,
       image: el.image,
       amount: el.amount,
-      bolt11: ""
+      bolt11: "",
+      lud16: el.lud16,
+      subscription: ""
     }
 
 
-    console.log(jsonentry)
+    //console.log(jsonentry)
     if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
       dvms.push(jsonentry)
     }
@@ -411,7 +417,9 @@ async function addDVM(event){
     about: "",
     image: "",
     amount: 0,
-    bolt11: ""
+    bolt11: "",
+    lud16: "",
+    subscription: ""
   }
 
   for (const tag in event.tags) {
@@ -457,15 +465,21 @@ async function addDVM(event){
           }
       }
     }
+
+
+
+
+
   }
 
 
   //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
   for (const el of store.state.nip89dvms) {
-    if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
+    if (JSON.parse(el.event).pubkey === event.author.toHex()) {
       jsonentry.name = el.name
       jsonentry.about = el.about
       jsonentry.image = el.image
+      jsonentry.lud16 = el.lud16
 
       console.log(jsonentry)
 
@@ -489,7 +503,19 @@ async function addDVM(event){
 }
 
 
+async function subscribe(lud16, days, amountperday, eventid, authorid) {
+  if (lud16 !== "") {
+    let profiles = await get_user_infos([PublicKey.parse(authorid)])
+    if (profiles.length > 0) {
+      let current = profiles[0]
+      lud16 = current.profile.lud16
+    }
+  }
+    let invoice = await zaprequest(lud16, days * amountperday, "paid from noogle.lol", eventid, authorid, store.state.relays)
+    console.log(invoice)
+    await zap(invoice)
 
+}
 
 async function zap(invoice) {
   let webln;
@@ -640,12 +666,36 @@ const submitHandler = async () => {
               <div className="tooltip mt-auto">
 
 
-               <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'error' && dvm.status !== 'announced'"   className="btn">{{dvm.status}}</button>
+               <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'subscription-required' && dvm.status !== 'subscription-success' && dvm.status !== 'error' && dvm.status !== 'announced'" className="btn">{{dvm.status}}</button>
                 <button v-if="dvm.status === 'finished'" class="bg-base-200 text-bg-base200" @click="generate_feed(dvm.id)" className="btn">Done</button>
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
 
                 <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
+              <!--  <button v-if="dvm.status === 'subscription-required'" className="sub-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button> d -->
+                 <div class="playeauthor-wrapper" v-if="dvm.status === 'subscription-required'">
+
+                  <div className="dropdown">
+                    <div tabIndex={0} role="button" class="sub-Button" >
+                      <p>Subscribe</p>
+                    </div>
+                <div tabIndex={0} className="dropdown-content -start-56 z-[1] horizontal card card-compact w-64 p-2 shadow bg-orange-500 text-primary-content">
+                  <div className="card-body">
+                    <h3 className="card-title">Subscribe for a day</h3>
+
+                    <button className="sub-Button" @click="subscribe(dvm.lud16, 1, dvm.amount/1000, dvm.laststatusid, dvm.id)">{{ dvm.amount/1000 }} Sats</button>
+
+                      <h3 className="card-title">Subscribe for a month</h3>
+                    <!--<p>Sign out</p> -->
+                    <button className="sub-Button" @click="subscribe(dvm.lud16, 30, dvm.amount/1000, dvm.laststatusid, dvm.id)">{{ 30 * dvm.amount/1000 }} Sats</button>
+                  </div>
+                </div>
+              </div>
+                  <!--<p>{{ this.current_user }}</p> -->
+               </div>
+
+                <button v-if="dvm.status === 'subscription-success'" className="sub-Button"  @click="generate_feed(dvm.id);">Subscribed. Request job</button>
+
                 <button v-if="dvm.status === 'announced'" className="request-Button" @click="generate_feed(dvm.id);">Request</button>
 
 
@@ -671,11 +721,30 @@ const submitHandler = async () => {
 
   <!-- <details open ></details> -->
 
-  <div style="margin-left: auto; margin-right: 10px;">
-   <p v-if="dvm.amount.toString().toLowerCase()==='free'" class="text-sm text-gray-600 rounded" >Free</p>
-   <p v-if="dvm.amount.toString().toLowerCase()==='subscription'" class="bg-orange-500 label rounded-full" >{{ dvm.amount/1000 }}</p>
+  <div style="margin-left: auto; margin-right: 3px;">
+   <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='free'" class="text-sm text-gray-600 rounded" >Free</p>
+    <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='flexible'" class="text-sm text-gray-600 rounded" >Flexible</p>
+   <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='subscription'" class="text-sm  text-gray-600 rounded">Subscription</p>
+    <div className="dropdown">
+                    <div tabIndex={0}  role="button" class="Button" >
+                      <p v-if="dvm.subscription!==''" class="text-sm  text-gray-600 rounded" >Subscription active until
+          {{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[0].split("-")[2].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[0].split("-")[1].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[0].split("-")[0].trim().slice(2)}} {{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[1].split("Z")[0].trim()}}</p>
+                    </div>
+                <!--  <div tabIndex={0} style="z-index: 100000;" className="dropdown-content -start-56 z-[1] horizontal card card-compact w-64 p-2 shadow bg-orange-500 text-primary-content">
+                  <div className="card-body">
+                    <h3 className="card-title">Subscribe for a day</h3>
+
+                    <button className="sub-Button" @click="subscribe(dvm.lud16, 1, dvm.amount/1000, dvm.laststatusid, dvm.id)">{{ dvm.amount/1000 }} Sats</button>
+
+                      <h3 className="card-title">Subscribe for a month</h3>
+
+                    <button className="sub-Button" @click="subscribe(dvm.lud16, 30, dvm.amount/1000, dvm.laststatusid, dvm.id)">{{ 30 * dvm.amount/1000 }} Sats</button>
+                  </div>
+                </div> -->
+              </div>
    <p v-if="dvm.amount.toString()===''" ></p>
-   <p v-if="!isNaN(parseInt(dvm.amount))" class="text-sm  text-gray-600 rounded" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
+
+   <p v-if="dvm.subscription ==='' && !isNaN(parseInt(dvm.amount)) && dvm.status !='subscription-required' && dvm.status !='subscription-success'" class="text-sm  text-gray-600 rounded" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
   <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
   </div>
 
@@ -713,6 +782,11 @@ const submitHandler = async () => {
 
 .zap-Button{
   @apply btn hover:bg-amber-400 border-amber-400 text-base;
+  bottom: 0;
+}
+
+.sub-Button{
+  @apply btn hover:bg-nostr border-orange-500 text-base;
   bottom: 0;
 }
 

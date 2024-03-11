@@ -169,7 +169,7 @@ export async function get_zaps(ids){
                     }
                     if (tg[0] === "e") {
                       etag = tg[1]
-                      console.log(request.pubkey)
+                      //console.log(request.pubkey)
                       if (request.pubkey === localStorage.getItem("nostr-key")) {
                         zapsandreactions.find(x => x.id === etag).zappedbyUser = true
                       }
@@ -184,7 +184,6 @@ export async function get_zaps(ids){
                   for (let tag of entry.tags) {
 
                     if (tag.asVec()[0] === "e") {
-                      console.log(entry.pubkey)
                       if (entry.author.toHex() === localStorage.getItem("nostr-key")) {
                         zapsandreactions.find(x => x.id === tag.asVec()[1]).reactedbyUser = true
                       }
@@ -201,12 +200,12 @@ export async function get_zaps(ids){
             //zaps.push({profile: contentjson, author: entry.author.toHex(), createdAt: entry.createdAt});
           }
           catch(error){
-            console.log("error")
+            //console.log(error)
           }
 
         }
 
-        console.log(zapsandreactions)
+        //console.log(zapsandreactions)
 
         return zapsandreactions
 
