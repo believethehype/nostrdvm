@@ -17,7 +17,7 @@
           </div>
       <div tabIndex={0} className="dropdown-content -start-56 z-[1] horizontal card card-compact w-64 p-2 shadow bg-nostr text-primary-content">
         <div className="card-body">
-          <h3 className="card-title">Sign out of your account</h3>
+          <h3 className="card-title">Your account</h3>
           <!--<p>Sign out</p> -->
           <button className="btn" onclick="nwcmodal.showModal()" >Nostr Wallet Connect</button>
            <dialog id="nwcmodal" class="modal">
