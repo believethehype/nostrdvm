@@ -25,14 +25,14 @@
         <h3 class="font-bold text-lg">Connect with Nostr Wallet Connect</h3>
         <br>
           <div class="flex">
-              <img class="avatar"  src="../../public/favicon.ico" alt="" />
+              <img class="avatar"  src="/favicon.ico" alt="" />
             <h3 class="text-lg">Noogle</h3>
           </div>
         <p class="py-4">Enter a Nostr Wallet connect string for easier zapping on the page</p>
         <div class="collapse bg-base-200">
   <input type="radio" name="my-accordion-1" />
   <div class="collapse-title text-xl font-medium bg-black/30 flex">
-      <img  class="w-12 h-12 mask mask-squircle bg-zinc-700" style="width: 46px; height: 46px" src="../../public/Alby.jpg"/>
+      <img  class="w-12 h-12 mask mask-squircle bg-zinc-700" style="width: 46px; height: 46px" src="/Alby.jpg"/>
      <div style="margin-left: 30px">
            <h3>Alby NWC</h3>
            <h3 class="text-sm text-neutral">Connect with your Alby Wallet</h3>
@@ -68,7 +68,7 @@
 <div class="collapse bg-base-200">
   <input type="radio" name="my-accordion-1" />
   <div class="collapse-title text-xl font-medium bg-black/30  flex">
-         <img class="w-12 h-12 mask mask-squircle bg-zinc-700" style="width: 46px; height: 46px" src="../../public/Mutiny.png"/>
+         <img class="w-12 h-12 mask mask-squircle bg-zinc-700" style="width: 46px; height: 46px" src="/Mutiny.png"/>
     <div style="margin-left: 30px">
             <h3> Mutiny Wallet</h3>
            <h3 class="text-sm text-neutral">Connect with your Mutiny Wallet</h3>
