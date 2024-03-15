@@ -87,11 +87,11 @@ import store from '../store';
 import {types} from "sass";
 import Null = types.Null;
 import StringUtil from "@/components/helper/string";
-import {copyinvoice, createBolt11Lud16, parseandreplacenpubs, zaprequest} from "@/components/helper/Helper.vue";
+import {copyinvoice, parseandreplacenpubs, } from "@/components/helper/Helper.vue";
 import {requestProvider} from "webln";
 import {Event, EventBuilder, EventId, PublicKey} from "@rust-nostr/nostr-sdk";
 import amberSignerService from "@/components/android-signer/AndroidSigner";
-import zap, {zap_lud16} from "@/components/helper/Zap.vue";
+import {zap, zap_lud16, createBolt11Lud16, zaprequest} from "@/components/helper/Zap.vue";
 
 
 const props =  defineProps<{
