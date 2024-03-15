@@ -23,7 +23,7 @@ a,
 }
 
 .purple {
-  @apply  text-nostr;
+  @apply  text-nostr hover:text-orange-400;
   text-decoration: none;
   transition: 0.4s;
   padding: 3px;
