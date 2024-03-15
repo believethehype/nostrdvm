@@ -28,7 +28,8 @@
               <img class="avatar"  src="/favicon.ico" alt="" />
             <h3 class="text-lg">Noogle</h3>
           </div>
-        <p class="py-4">Enter a Nostr Wallet connect string for easier zapping on the page</p>
+        <div v-if="!this.hasNWC">
+           <p  class="py-4">Enter a Nostr Wallet connect string for easier zapping on the page</p>
         <div class="collapse bg-base-200">
   <input type="radio" name="my-accordion-1" />
   <div class="collapse-title text-xl font-medium bg-black/30 flex">
@@ -65,44 +66,42 @@
             </div>
 
 </div>
-<div class="collapse bg-base-200">
-  <input type="radio" name="my-accordion-1" />
-  <div class="collapse-title text-xl font-medium bg-black/30  flex">
-         <img class="w-12 h-12 mask mask-squircle bg-zinc-700" style="width: 46px; height: 46px" src="/Mutiny.png"/>
-    <div style="margin-left: 30px">
-            <h3> Mutiny Wallet</h3>
-           <h3 class="text-sm text-neutral">Connect with your Mutiny Wallet</h3>
-         </div>
+        <div class="collapse bg-base-200">
+          <input type="radio" name="my-accordion-1" />
+          <div class="collapse-title text-xl font-medium bg-black/30  flex">
+                 <img class="w-12 h-12 mask mask-squircle bg-zinc-700" style="width: 46px; height: 46px" src="/Mutiny.png"/>
+            <div style="margin-left: 30px">
+                    <h3> Mutiny Wallet</h3>
+                   <h3 class="text-sm text-neutral">Connect with your Mutiny Wallet</h3>
+                 </div>
+          </div>
+
+          <div class="collapse-content">
+             <p>Add a new Wallet Connection from:</p>
+            <ul class="steps steps-vertical">
+          <li class="step">Settings</li>
+          <li class="step">Wallet Connections</li>
+          <li class="step">Add Connection</li><li class="step">copy the connection string.</li>
+        </ul>
+          <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"   placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="this.nwcmutiny"></textarea>
+          </div>
+        </div>
+        <div class="collapse bg-base-200">
+        <input type="radio" name="my-accordion-1" />
+        <div class="collapse-title text-xl font-medium transparent bg-black/30 flex">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mask mask-squircle"><g clip-path="url(#clip0_1138_8450)"><rect width="56" height="56" rx="16" fill="black"></rect><rect width="56" height="56" fill="url(#paint0_radial_1138_8450)"></rect><rect width="56" height="56" fill="black" fill-opacity="0.9"></rect><path d="M42.7656 23.2125C42.7656 33.8416 32.4114 42.9297 28 42.9297C23.5886 42.9297 13.2344 33.8416 13.2344 23.2125C13.2344 15.0741 19.8452 8.47656 28 8.47656C36.1548 8.47656 42.7656 15.0741 42.7656 23.2125Z" fill="url(#paint1_radial_1138_8450)"></path><path d="M25.5108 47.4784L27.7337 46.747C27.9067 46.6901 28.0933 46.6901 28.2663 46.747L30.4892 47.4784C31.2399 47.7255 31.8928 46.9058 31.4827 46.231L28.7272 41.6978C28.396 41.1528 27.604 41.1528 27.2728 41.6978L24.5173 46.231C24.1072 46.9058 24.7601 47.7255 25.5108 47.4784Z" fill="url(#paint2_radial_1138_8450)"></path><circle cx="28" cy="23.2422" r="5.79688" fill="black" fill-opacity="0.66"></circle></g><defs><radialGradient id="paint0_radial_1138_8450" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(56 56) rotate(-135) scale(79.196 118.441)"><stop stop-color="#6951FA"></stop><stop offset="1" stop-color="#9151FA"></stop></radialGradient><radialGradient id="paint1_radial_1138_8450" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(42.7656 47.5234) rotate(-127.1) scale(48.9566 70.4506)"><stop stop-color="#6951FA"></stop><stop offset="1" stop-color="#9151FA"></stop></radialGradient><radialGradient id="paint2_radial_1138_8450" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(42.7656 47.5234) rotate(-127.1) scale(48.9566 70.4506)"><stop stop-color="#6951FA"></stop><stop offset="1" stop-color="#9151FA"></stop></radialGradient><clipPath id="clip0_1138_8450"><rect width="56" height="56" rx="16" fill="white"></rect></clipPath></defs></svg>
+               <div style="margin-left: 30px">
+                 <h3>Nostr Wallet Connect</h3>
+                 <h3 class="text-sm text-neutral">Manually connect with NWC string</h3>
+               </div>
 
 
-  </div>
+        </div>
+        <div class="collapse-content">
+        <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"  placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="this.nwc"></textarea>
 
-  <div class="collapse-content">
-     <p>Add a new Wallet Connection from:</p>
-    <ul class="steps steps-vertical">
-  <li class="step">Settings</li>
-  <li class="step">Wallet Connections</li>
-  <li class="step">Add Connection</li><li class="step">copy the connection string.</li>
-</ul>
-  <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"   placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="this.nwcmutiny"></textarea>
-  </div>
-</div>
-<div class="collapse bg-base-200">
-  <input type="radio" name="my-accordion-1" />
-  <div class="collapse-title text-xl font-medium transparent bg-black/30 flex">
-    <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mask mask-squircle"><g clip-path="url(#clip0_1138_8450)"><rect width="56" height="56" rx="16" fill="black"></rect><rect width="56" height="56" fill="url(#paint0_radial_1138_8450)"></rect><rect width="56" height="56" fill="black" fill-opacity="0.9"></rect><path d="M42.7656 23.2125C42.7656 33.8416 32.4114 42.9297 28 42.9297C23.5886 42.9297 13.2344 33.8416 13.2344 23.2125C13.2344 15.0741 19.8452 8.47656 28 8.47656C36.1548 8.47656 42.7656 15.0741 42.7656 23.2125Z" fill="url(#paint1_radial_1138_8450)"></path><path d="M25.5108 47.4784L27.7337 46.747C27.9067 46.6901 28.0933 46.6901 28.2663 46.747L30.4892 47.4784C31.2399 47.7255 31.8928 46.9058 31.4827 46.231L28.7272 41.6978C28.396 41.1528 27.604 41.1528 27.2728 41.6978L24.5173 46.231C24.1072 46.9058 24.7601 47.7255 25.5108 47.4784Z" fill="url(#paint2_radial_1138_8450)"></path><circle cx="28" cy="23.2422" r="5.79688" fill="black" fill-opacity="0.66"></circle></g><defs><radialGradient id="paint0_radial_1138_8450" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(56 56) rotate(-135) scale(79.196 118.441)"><stop stop-color="#6951FA"></stop><stop offset="1" stop-color="#9151FA"></stop></radialGradient><radialGradient id="paint1_radial_1138_8450" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(42.7656 47.5234) rotate(-127.1) scale(48.9566 70.4506)"><stop stop-color="#6951FA"></stop><stop offset="1" stop-color="#9151FA"></stop></radialGradient><radialGradient id="paint2_radial_1138_8450" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(42.7656 47.5234) rotate(-127.1) scale(48.9566 70.4506)"><stop stop-color="#6951FA"></stop><stop offset="1" stop-color="#9151FA"></stop></radialGradient><clipPath id="clip0_1138_8450"><rect width="56" height="56" rx="16" fill="white"></rect></clipPath></defs></svg>
-         <div style="margin-left: 30px">
-           <h3>Nostr Wallet Connect</h3>
-           <h3 class="text-sm text-neutral">Manually connect with NWC string</h3>
-         </div>
-
-
-  </div>
-  <div class="collapse-content">
-  <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"  placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="this.nwc"></textarea>
-
-  </div>
-</div>
+        </div>
+      </div>
 
 
         <div class="modal-action">
@@ -112,6 +111,17 @@
             <button class="btn" @click="store_nwc()">Save</button>
           </form>
         </div>
+        </div>
+        <div v-if="this.hasNWC">
+          <br>
+          <br>
+           <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            <!-- if there is a button in form, it will close the modal -->
+            <button class="btn" @click="disconnect_nwc()">Disconnect NWC</button>
+          </form>
+        </div>
+
       </div>
 </dialog>
 
@@ -219,6 +229,7 @@ export default {
       nwc: ref(""),
       nwcmutiny: ref(""),
       nwcalby: ref(""),
+      hasNWC: ref(""),
       nwcconnector: ref("user"),
 
       pw: ref("")
@@ -263,6 +274,11 @@ export default {
       }
     await this.getnip89s()
       let nwc = loadNWCObject()
+      this.hasNWC = false
+
+      if(nwc != null && nwc.nwcUrl){
+         this.hasNWC = true
+      }
 
 
        if(nwc.connectorType === "alby"){
@@ -902,6 +918,14 @@ export default {
       await this.sign_in_anon()
     },
 
+    async disconnect_nwc(){
+      this.nwc = ""
+      this.nwcalby = ""
+      this.nwcmutiny = ""
+      this.hasNWC = false
+       localStorage.setItem("nwc", "{\"nwcUrl\":\"" + "" + "\",\"connectorName\":\""+ "" +"\",\"connectorType\":\"" + "" +"\"}" )
+    },
+
     async store_nwc(){
       let connector = ""
       let nwc = ""
@@ -918,6 +942,7 @@ export default {
         nwc  = this.nwc
       }
       localStorage.setItem("nwc", "{\"nwcUrl\":\"" + nwc + "\",\"connectorName\":\""+ connector +"\",\"connectorType\":\"" + connector +"\"}" )
+      this.hasNWC = true
     },
 
 
