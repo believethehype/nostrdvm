@@ -1,71 +1,17 @@
 <template>
 
-    <div class="flex flex-row gap-6 items-center">
+   <div class="flex flex-row gap-6 items-center">
         <Logo />
         <div class="flex flex-col gap-2">
             <h1 class="text-7xl font-black tracking-wide">About</h1>
               <h2 class="text-4xl font-black tracking-wide">Nostr NIP 90 Data Vending Machines</h2>
           <div class="text-lg text-default">
-                There are many things that make using DVMs a bit of a magical experience.
+            <!--    There are many things that make using DVMs a bit of a magical experience. -->
             </div>
         </div>
     </div>
 <br><br>
-    <div class="grid grid-cols-1 gap-6">
-     <!--    <div class="card card-compact rounded-box bg-black/30">
-            <div class="card-body !text-base">
-                <div class="card-title text-base-100-content font-bold">
-                    Global improvements
-                </div>
-                <p>
-                    Once a Nostr app supports DVMs that means that they get immediate access to all features,
-                    algorithms, and crazy inventions <em>all</em> DVMs support.</p>
-                <p>
-                    Don't like your client's default <em>Trending</em> algorithm? Pick from hundreds of different
-                    algorithms. Your Highlighter client doesn't work well when trying to read an obscure PDF?
-                    Use a DVM that has better support for it.
-                </p>
-                <p>
-                    You say the spam filtering in your client is too aggressive? or not aggressive enough? Just choose
-                    from a different spam-filtering DVM!
-                </p>
-            </div>
-        </div>
 
-        <div class="card card-compact rounded-box bg-black/30">
-            <div class="card-body !text-base">
-                <div class="card-title text-base-100-content font-bold">
-                    Long-tail
-                </div>
-                <p>
-                    Because discoverability of these algorithms is solved by the very use of Nostr, we can easily imagine
-                    a future where there are thousands of very specific, very niche and abundantly weird DVMs providing all
-                    kinds of obscure functionalities.
-                </p>
-                <p>
-                    Even if a DVM only had a handful of users, it would still be worth it for its users and for the DVM.
-                </p>
-            </div>
-        </div>
-
-        <div class="card card-compact rounded-box bg-black/30">
-            <div class="card-body !text-base">
-                <div class="card-title text-base-100-content font-bold">
-                    Reusable results
-                </div>
-                <p>
-                    Every time a Nostr client autotranslates a note, it pings a specific API endpoint to get the
-                    result translated.
-                </p>
-                <p>
-                    Over, and over. The same text being translated by each user.
-                </p>
-                <p>
-                    Since Data Vending Machine results are public by default, once a note has been translated,
-                    all clients can choose to reuse the same translation.
-                </p>
-            </div>
-        </div> -->
           <div class="card card-compact rounded-box bg-black/30">
             <div class="card-body !text-base">
                 <div class="card-title text-base-100-content font-bold">
@@ -95,21 +41,50 @@
                 </p>
             </div>
         </div>
-    </div>
+
 
 <br><br>
 
 <div class="grid gap-6 ">
-    <div className="card w-70 bg-base-200 shadow-xl"   v-for="dvm in store.state.nip89dvms"
+    <div className="card  bg-base-200 shadow-xl"  style="height: 300px"   v-for="dvm in store.state.nip89dvms"
         :key="dvm.id">
      <!--   -->
 
 
- <div class="card card-side bg-black/20 shadow-xl">
+<!-- <div class="card bg-base-100 shadow-xl image-full"  style="height: 400px">
+  <figure><img v-if="dvm.image"  :src="dvm.image"    style=" width: 100%; object-fit: cover;"
+ :alt="dvm.name" onerror="this.src='https://noogle.lol/favicon.ico'"/></figure>
+  <div class="card-body">
+       <div style="margin-left: auto; margin-right: 10px;">
+   <p v-if="dvm.amount.toString().toLowerCase()==='free'" class="badge bg-nostr">Free</p>
+    <p v-if="dvm.amount.toString().toLowerCase()==='flexible'" class="badge bg-nostr2" >Flexible</p>
+
+   <p v-if="dvm.amount.toString().toLowerCase()==='subscription'" class="badge bg-orange-500">Subscription</p>
+   <p v-if="dvm.amount.toString()===''" ></p>
+   <p v-if="!isNaN(parseInt(dvm.amount))" class="text-sm  text-gray-600 rounded" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
+  <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
+  </div>
+    <div class="">
 
 
-  <figure style="width: 200px; flex: none" >
-    <img v-if="dvm.image"  :src="dvm.image"  :alt="dvm.name" onerror="this.src='https://noogle.lol/favicon.ico'"/>
+    <h2 class="card-title">{{ dvm.name }}</h2>
+    <h3 class="fa-cut text-gray" >Kind: {{ dvm.kind }}</h3>
+
+          <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
+
+          </div>
+      <div class="card-actions justify-end ">
+     <button className="btn " style="margin-bottom: 10px" @click="copyDoiToClipboard(dvm.event);">Copy Event Json</button>
+    </div>
+  </div>
+</div> -->
+
+
+ <div class="card card-side bg-black/20 shadow-xl" style="height: 300px">
+
+
+  <figure style="max-width: 20%; flex:  fit-content; background-size: cover;" >
+    <img v-if="dvm.image"  style=" width: 100%; object-fit: cover;" :src="dvm.image"  :alt="dvm.name" onerror="this.src='https://noogle.lol/favicon.ico'"/>
   </figure>
   <div class="card-body">
       <div style="margin-left: auto; margin-right: 10px;">
