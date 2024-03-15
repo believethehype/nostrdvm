@@ -2,7 +2,19 @@
 import {defineComponent} from 'vue'
 import store from "@/store";
 import amberSignerService from "@/components/android-signer/AndroidSigner";
-import {Duration, Event, EventBuilder, EventId, Filter, Keys, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
+import {
+  Alphabet,
+  Duration,
+  Event,
+  EventBuilder,
+  EventId,
+  Filter,
+  Keys,
+  PublicKey,
+  SingleLetterTag,
+  Tag,
+  Timestamp
+} from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr/mini-toastr";
 import VueNotifications from "vue-notifications";
 import {bech32} from "bech32";
@@ -349,7 +361,7 @@ export async function parseandreplacenpubsName(note){
   return finalnote.trimEnd()
 }
 
-async function fetchAsync (url) {
+export async function fetchAsync (url) {
   let response = await fetch(url);
   let data = await response.json();
   return data;
@@ -357,151 +369,202 @@ async function fetchAsync (url) {
 
 
 
-export async function zaprequest(lud16, amount, content, zapped_event_id, zapped_user_id, relay_list){
-    let url = ""
-
-  console.log(lud16)
-  console.log(PublicKey.parse(zapped_user_id).toBech32())
-  console.log(EventId.parse(zapped_event_id).toBech32())
-    console.log(zapped_event_id)
-
-
-  zapped_user_id = PublicKey.parse(zapped_user_id).toHex()
-  zapped_event_id = EventId.parse(zapped_event_id).toHex()
-
- //overwrite for debug
-  //lud16 = "hype@bitcoinfixesthis.org"
-  //zapped_user_id = PublicKey.parse("npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8").toHex()
-  //zapped_event_id = EventId.parse("note1xsw95cp4ynelxdujd3xrh6kmre3y0lk699xn09z52mjenmktdllq9vtwyn").toHex()
-
-
-
-
-
-    if (lud16 !== "" && lud16.toString().includes('@')){
-    url = `https://${lud16.split('@')[1]}/.well-known/lnurlp/${lud16.split('@')[0]}`;
-      console.log(url)
-    }
-    else{
-       return null
-    }
-    try{
-
-        let ob = await fetchAsync(url)
-        let callback = ob["callback"]
-        console.log(callback)
-
-
-        const urlBytes = new TextEncoder().encode(url);
-        const encoded_lnurl = bech32.encode('lnurl', bech32.toWords(urlBytes), 1023);
-
-
-           const amount_tag = ['amount', (amount * 1000).toString()];
-           let relays = ['relays']
-           relays.push.apply(relays, relay_list)
-           //let  relays_tag = Tag.parse(relays);
-
-           const lnurl_tag = ['lnurl', encoded_lnurl];
-
-        let tags = []
-        let p_tag = ['p', zapped_user_id]
-        if (zapped_event_id !== null){
-            let e_tag = ['e', zapped_event_id]
-            tags = [amount_tag, relays, p_tag, e_tag, lnurl_tag]
-        }
-
-        else{
-            tags = [amount_tag, relays, p_tag, lnurl_tag]
-        }
-       /*if (zaptype === "private") {
-          const key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + zapped_event.created_at().as_secs().toString();
-          const encryption_key = sha256(key_str).toString('hex');
-          const zap_request = new EventBuilder(9733, content, [p_tag, e_tag]).to_event(keys).as_json();
-          keys = Keys.parse(encryption_key);
-          const encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author());
-          const anon_tag = Tag.parse(['anon', encrypted_content]);
-          tags.push(anon_tag);
-          content = "";
-        } */
-
-
-
-        let signer = store.state.signer
-        let zap_request = ""
-
-        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-            let draft = {
-              content: content,
-              kind: 9734,
-              pubkey: store.state.pubkey.toHex(),
-              tags: tags,
-              createdAt: Date.now()
-            };
-
-            let res = await amberSignerService.signEvent(draft)
-            zap_request = JSON.stringify(res)
-            //await sleep(3000)
-
-          }
-       else {
-            let tags_t = []
-            for (let tag of tags){
-              tags_t.push(Tag.parse(tag))
-            }
-            let noteevent =  new EventBuilder(9734, content, tags_t).toUnsignedEvent(store.state.pubkey)
-            let signedEvent = await signer.signEvent(noteevent)
-            zap_request = signedEvent.asJson()
-       }
-
-   try{
-
-         const queryString = `amount=${(amount * 1000).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
-
-          console.log(queryString)
-        let ob = await fetchAsync(`${callback}?${queryString}`)
-        return ob["pr"]
-          }
-      catch(e){
-        console.log("HELLO" + e)
-      }
-    }
-    catch(error){
-      console.log("ZAP REQUEST: " + error)
+export async function hasActiveSubscription(pubkeystring, tiereventid, tierauthorid, amounts) {
+ console.log("Checking for subscription")
+  let client = store.state.client
+  let subscriptionstatus = {
+    isActive: false,
+    validuntil: 0,
+    subscriptionId: "",
   }
 
+  let event7001id = EventId
+  console.log(pubkeystring)
+  // look if user has 7001 event, and if 7001 has been canceled by 7002
+  const filter = new Filter().kind(7001).author(PublicKey.parse(pubkeystring)).pubkey(PublicKey.parse(tierauthorid)).event(EventId.parse(tiereventid)) //only get latest with these conditions
+  let evts = await client.getEventsOf([filter], Duration.fromSecs(5))
+  console.log(evts)
+  if (evts.length > 0) {
+
+    //console.log("7001: " + evts[0].asJson())
+    let checkispaid = []
+    for (let tag of evts[0].tags){
+      /*if (tag.asVec()[0] === "e"){
+        console.log("sanity check")
+           const filtercheck = new Filter().kind(37001).id(EventId.parse(tag.asVec()[1])).limit(1)  // get latest with these conditons   # customTag(SingleLetterTag.lowercase(Alphabet.A), [eventid])
+           let sanityevents = await client.getEventsOf([filtercheck], Duration.fromSecs(5))
+          if (sanityevents.length === 0){
+             subscriptionstatus.isActive = false
+             return subscriptionstatus
+          }
+          else{console.log(sanityevents[0].asJson())
+          }
+      } */
+
+      if (tag.asVec()[0] === "zap"){
+        checkispaid.push(tag)
+      }
+    }
+
+     let splitids = []
+    for (let tag of checkispaid){
+      splitids.push(PublicKey.parse(tag.asVec()[1]))
+      console.log(tag.asVec())
+    }
+    if (checkispaid.length === 0){
+        subscriptionstatus.isActive = false
+        return subscriptionstatus
+    }
+
+    for (let evt in evts){
+      event7001id = evts[0].id
+    }
+
+    event7001id = evts[0].id
+
+    const filter = new Filter().kind(7002).pubkey(PublicKey.parse(tierauthorid)).event(event7001id).limit(1)  // get latest with these conditons   # customTag(SingleLetterTag.lowercase(Alphabet.A), [eventid])
+    let cancelevts = await client.getEventsOf([filter], Duration.fromSecs(5))
+    if (cancelevts.length > 0) {
+      if (cancelevts[0].createdAt.asSecs() > evts[0].createdAt.asSecs()) {
+        console.log("A subscription exists, but has been canceled")
+        subscriptionstatus.isActive = false
+        subscriptionstatus.subscriptionId = event7001id.toHex()
+        return subscriptionstatus
+      }
+      }
+    else {
+      console.log("A subscription exists, checking payment status")
 
 
-        return null
+
+
+      const zapfilter = new Filter().kind(9735).pubkeys(splitids).event(event7001id).limit(checkispaid.length)
+      let zapevents = await client.getEventsOf([zapfilter], Duration.fromSecs(5))
+      if (zapevents.length > 0) {
+        console.log(zapevents)
+        let timeofourlastzap = 0
+
+          let overallamount = 0
+
+          let overall = 0
+          for (let tag of checkispaid){
+            let split = parseInt(tag.asVec()[2])
+            overall += split
+          }
+        for(let zapevent of zapevents) {
+
+
+          if (zapevent.createdAt.asSecs() > timeofourlastzap) {
+            timeofourlastzap = zapevent.createdAt.asSecs()
+          }
+
+            for (let tag of zapevent.tags) {
+              if (tag.asVec()[0] === "description") {
+
+                let event9734 = Event.fromJson(tag.asVec()[1])
+
+
+                for (let tag of event9734.tags) {
+                  if (tag.asVec()[0] === "amount") {
+                    let amount = parseInt(tag.asVec()[1])
+                    console.log("AMOUNT: " + amount)
+                    overallamount = overallamount + amount
+                  }
+                }
+              }
+          }
+        }
+
+
+                let entry
+                for (let index in amounts){
+                 if(parseInt(amounts[index].amount) === overallamount ){
+                   entry = amounts[index]
+                 }
+                }
+
+                if(!entry){
+                  console.log("Undefined amount")
+                   subscriptionstatus.isActive = false
+                   subscriptionstatus.subscriptionId = event7001id.toHex()
+                   //subscriptionstatus.validuntil = zapevent.createdAt.asSecs() + 24*60*60
+                   return subscriptionstatus
+                }
+                else{
+                     console.log(entry.amount + " " + entry.cadence)
+                     if (entry.cadence === "daily"){
+                       if (timeofourlastzap + 24*60*60 > Timestamp.now().asSecs()){
+                           console.log("A daily subscription exists, and is active")
+                           subscriptionstatus.isActive = true
+                           subscriptionstatus.subscriptionId = event7001id.toHex()
+                           subscriptionstatus.validuntil = timeofourlastzap + 24*60*60
+                          return subscriptionstatus
+
+                       }
+                     }
+                     else if (entry.cadence === "monthly"){
+                       if (timeofourlastzap + 31*24*60*60 > Timestamp.now().asSecs()){
+                           console.log("A monthly subscription exists, and is active")
+                           subscriptionstatus.isActive = true
+                           subscriptionstatus.subscriptionId = event7001id.toHex()
+                           subscriptionstatus.validuntil = timeofourlastzap + 31*24*60*60
+                          return subscriptionstatus
+
+                       }
+                     }
+                       else if (entry.cadence === "yearly"){
+                       if (timeofourlastzap + 366*24*60*60 > Timestamp.now().asSecs()){
+                           console.log("A yearly subscription exists, and is active")
+                           subscriptionstatus.isActive = true
+                           subscriptionstatus.subscriptionId = event7001id.toHex()
+                           subscriptionstatus.validuntil = timeofourlastzap + 366*24*60*60
+                          return subscriptionstatus
+
+                       }
+                     }
+
+
+
+
+
+            /*else if (tag.asVec()[0] === "bolt11"){
+              let lnurl = tag.asVec()[1]
+                console.log(lnurl)
+            } */
+
+
+
+
+
+      }
+        // todo check that subscription is within the range
+
+
+
+      } else {
+        console.log("A subscription exists, but no payment has been made")
+        subscriptionstatus.isActive = false
+        subscriptionstatus.subscriptionId = event7001id.toHex()
+        return subscriptionstatus
+      }
+
+    }
+
 }
-export async function createBolt11Lud16(lud16, amount) {
-  if (lud16 === null || lud16 === ""){
-    return null;
+
+  else {
+    console.log("No subscription exists")
+    subscriptionstatus.isActive = false
+    return subscriptionstatus
   }
+}
 
-    let url;
-      if (lud16.includes('@')) {  // LNaddress
-        const parts = lud16.split('@');
-        url = `https://${parts[1]}/.well-known/lnurlp/${parts[0]}`;
-    } else {  // No lud16 set or format invalid
-        return null;
-    }
 
-    try {
-        console.log(url);
-        const response = await fetch(url);
-        const ob = await response.json();
-        const callback = ob.callback;
-        const amountInSats = parseInt(amount) * 1000;
-        const callbackResponse = await fetch(`${callback}?amount=${amountInSats}`);
-        const obCallback = await callbackResponse.json();
-        return obCallback.pr;
-        }
-    catch (e) {
-            console.log(`LUD16: ${e}`);
-            return null;
-      }
 
-  }
+
+
+
+
 
 
 </script>

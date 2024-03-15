@@ -11,7 +11,7 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event, Alphabet, Keys, nip04_decrypt, SecretKey, Duration
+  Nip19Event, Alphabet, Keys, nip04_decrypt, SecretKey, Duration, SingleLetterTag
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -22,7 +22,9 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, zaprequest, get_reactions, nextInput, createBolt11Lud16, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
+import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, get_reactions, nextInput, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
+import {zap, createBolt11Lud16, zaprequest} from "../components/helper/Zap.vue"
+
 import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
 
@@ -99,9 +101,6 @@ async function generate_feed(id) {
         console.log(error);
       }
 }
-
-
-
 
 async function  listen() {
     let client = store.state.client
@@ -228,7 +227,7 @@ async function  listen() {
                       authors.push(evt.author)
                           }
                           catch(error){
-                        console.log(error)
+                        //console.log(error)
                      }
 
                     }
@@ -242,7 +241,11 @@ async function  listen() {
 
                             let ids = []
                             for (let evt of events){
-                               ids.push(evt.id)
+                              try {ids.push(evt.id)}
+                              catch(error){
+                                console.log(error)
+                              }
+
                             }
                           let zaps = await get_zaps(ids)
                         let items = []
@@ -323,22 +326,18 @@ async function  listen() {
     client.handleNotifications(handle);
 }
 
-
-const urlinput = ref("");
-
-
 async function addAllContentDVMs() {
 
-  let relevent_dvms = []
+  let relevant_dvms = []
   for (const el of store.state.nip89dvms) {
     for (const tag of JSON.parse(el.event).tags) {
       if (tag[0] === "k" && tag[1] === "5300") {
-        relevent_dvms.push(PublicKey.parse(el.id))
+        relevant_dvms.push(PublicKey.parse(el.id))
       }
     }
   }
   let active_dvms = []
-  for (let id of relevent_dvms) {
+  for (let id of relevant_dvms) {
     let jsonentry = {
       id: id.toHex(),
       last_active: 0
@@ -349,7 +348,7 @@ async function addAllContentDVMs() {
 
   console.log(active_dvms)
 
-  const filtera = new Filter().authors(relevent_dvms).kinds([6300, 7000])
+  const filtera = new Filter().authors(relevant_dvms).kinds([6300, 7000])
   let client = store.state.client
   let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
 
@@ -367,10 +366,10 @@ async function addAllContentDVMs() {
 
   // console.log(last_active)
   // If DVM hasn't been active for 3 weeks, don't consider it.
-  console.log(active_dvms)
+  //console.log(active_dvms)
   let final_dvms = []
   for (let element of active_dvms) {
-    if (element.last_active > Timestamp.now().asSecs() - 60 * 60 * 24 * 7) {
+    if (element.last_active > Timestamp.now().asSecs() - 60 * 60 * 24 * 21) {
       final_dvms.push(store.state.nip89dvms.find(x => x.id === element.id))
     }
 
@@ -389,7 +388,8 @@ async function addAllContentDVMs() {
       amount: el.amount,
       bolt11: "",
       lud16: el.lud16,
-      subscription: ""
+      subscription: "",
+      nip88: el.nip88
     }
 
 
@@ -503,21 +503,75 @@ async function addDVM(event){
 }
 
 
-async function subscribe(lud16, days, amountperday, eventid, authorid) {
-  if (lud16 !== "") {
-    let profiles = await get_user_infos([PublicKey.parse(authorid)])
-    if (profiles.length > 0) {
-      let current = profiles[0]
-      lud16 = current.profile.lud16
+
+
+async function subscribe(zaps, amount, cadence, activesubscriptioneventid, tierevent, tiereventid, dvmid) {
+
+  // We only arrive here if no subscription exists, we might create a 7001 if it doesnt exist and we zap it
+   let client = store.state.client
+
+  console.log(dvmid)
+  console.log(tiereventid)
+  console.log(JSON.stringify(tierevent))
+  console.log(amount)
+  console.log(activesubscriptioneventid)
+
+
+  if (activesubscriptioneventid === ""){
+    console.log("Creating 7001 event")
+    let tags = [
+        Tag.parse([ "p", dvmid]),
+         Tag.parse([ "e" , tiereventid]),
+         Tag.parse([ "event", JSON.stringify(tierevent)]),
+         Tag.parse([ "amount", (amount).toString(), "msats", cadence]),
+        // Zap-splits todo order and splits
+        // Tag.parse([ "zap", authorid, "19" ]), // 95%
+        // Tag.parse([ "zap", "fa984bd7dbb282f07e16e7ae87b26a2a7b9b90b7246a44771f0cf5ae58018f52", "1" ]), // 5% to client developer where subscription was created
+    ]
+
+    for(let zap of zaps){
+      let zaptag = Tag.parse([ "zap", zap.key, zap.split])
+      tags.push(zaptag)
     }
+
+      console.log(tags)
+      let evt = new EventBuilder(7001, "Subscription from noogle.lol", tags)
+      let res = await client.sendEventBuilder(evt);
+      activesubscriptioneventid = res.toHex()
+
   }
-    let invoice = await zaprequest(lud16, days * amountperday, "paid from noogle.lol", eventid, authorid, store.state.relays)
-    console.log(invoice)
-    await zap(invoice)
+
+  let overallsplit = 0
+  for (let zap of zaps){
+    overallsplit += parseInt(zap.split)
+  }
+  for (let zap of zaps){
+     let profiles = await get_user_infos([PublicKey.parse(zap.key)])
+      if (profiles.length > 0) {
+        let current = profiles[0]
+        let lud16 = current.profile.lud16
+        let splitted_amount = Math.floor((zap.split/overallsplit) * amount/1000)
+        console.log(splitted_amount)
+        console.log(overallsplit)
+        console.log(activesubscriptioneventid)
+         let invoice = await zaprequest(lud16, splitted_amount, "paid for " + cadence + " from noogle.lol", activesubscriptioneventid, dvmid, store.state.relays)
+          console.log(invoice)
+          await zapSubscription(invoice)
+      }
+  }
+
+
+
+   dvms.find(x => x.nip88.eventid === tiereventid ).hasActiveSubscription = true
+
+
+
+   // next, the dvm should listen to these 7001 events addressed to it and (or rather 9735 tagging the 7001 and the subscription should be considered valid for both)
+
 
 }
 
-async function zap(invoice) {
+async function zapSubscription(invoice) {
   let webln;
 
     //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
@@ -531,14 +585,26 @@ async function zap(invoice) {
   if (webln) {
     try{
          let response = await webln.sendPayment(invoice)
-         dvms.find(i => i.bolt11 === invoice).status = "paid"
-          store.commit('set_recommendation_dvms', dvms)
+
+         //dvms.find(i => i.bolt11 === invoice).status = "paid"
+         // store.commit('set_recommendation_dvms', dvms)
     }
     catch(err){
           console.log(err)
           await copyinvoice(invoice)
     }
   }
+}
+
+
+async function zap_local(invoice) {
+
+  let success = await zap(invoice)
+  if (success){
+    dvms.find(i => i.bolt11 === invoice).status = "paid"
+    store.commit('set_recommendation_dvms', dvms)
+  }
+
 }
 
 
@@ -554,6 +620,7 @@ import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
 import NoteTable from "@/components/NoteTable.vue";
+import {nostrzapper_nwc} from "@rust-nostr/nostr-sdk/pkg/nostr_sdk_js_bg.wasm.js";
 
 
 
@@ -667,37 +734,22 @@ const submitHandler = async () => {
 
 
                <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'subscription-required' && dvm.status !== 'subscription-success' && dvm.status !== 'error' && dvm.status !== 'announced'" className="btn">{{dvm.status}}</button>
-                <button v-if="dvm.status === 'finished'" class="bg-base-200 text-bg-base200" @click="generate_feed(dvm.id)" className="btn">Done</button>
+                <button v-if="dvm.status === 'finished'" @click="generate_feed(dvm.id)" className="request-Button">Done, again?</button>
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
 
-                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
-              <!--  <button v-if="dvm.status === 'subscription-required'" className="sub-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button> d -->
-                 <div class="playeauthor-wrapper" v-if="dvm.status === 'subscription-required'">
+                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap_local(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
+                <h3 v-if="dvm.status === 'subscription-required'" className="sub-Button" >Subscription required</h3>
 
-                  <div className="dropdown">
-                    <div tabIndex={0} role="button" class="sub-Button" >
-                      <p>Subscribe</p>
-                    </div>
-                <div tabIndex={0} className="dropdown-content -start-56 z-[1] horizontal card card-compact w-64 p-2 shadow bg-orange-500 text-primary-content">
-                  <div className="card-body">
-                    <h3 className="card-title">Subscribe for a day</h3>
-
-                    <button className="sub-Button" @click="subscribe(dvm.lud16, 1, dvm.amount/1000, dvm.laststatusid, dvm.id)">{{ dvm.amount/1000 }} Sats</button>
-
-                      <h3 className="card-title">Subscribe for a month</h3>
-                    <!--<p>Sign out</p> -->
-                    <button className="sub-Button" @click="subscribe(dvm.lud16, 30, dvm.amount/1000, dvm.laststatusid, dvm.id)">{{ 30 * dvm.amount/1000 }} Sats</button>
-                  </div>
-                </div>
-              </div>
-                  <!--<p>{{ this.current_user }}</p> -->
-               </div>
 
                 <button v-if="dvm.status === 'subscription-success'" className="sub-Button"  @click="generate_feed(dvm.id);">Subscribed. Request job</button>
 
-                <button v-if="dvm.status === 'announced'" className="request-Button" @click="generate_feed(dvm.id);">Request</button>
-
+               <!-- <button v-if="dvm.status === 'announced'" className="request-Button" @click="generate_feed(dvm.id);">Request</button> -->
+                <button v-if="dvm.status === 'announced'" @click="generate_feed(dvm.id);" class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800">
+                <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                Request
+                </span>
+                </button>
 
              <!--<h3 v-if="dvm.amount.toString().toLowerCase()==='free'" class="bg-nostr btn rounded-full" >{{ "Free" }}</h3> -->
 
@@ -723,13 +775,85 @@ const submitHandler = async () => {
 
   <div style="margin-left: auto; margin-right: 3px;">
    <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='free'" class="text-sm text-gray-600 rounded" >Free</p>
-    <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='flexible'" class="text-sm text-gray-600 rounded" >Flexible</p>
-   <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='subscription'" class="text-sm  text-gray-600 rounded">Subscription</p>
-    <div className="dropdown">
-                    <div tabIndex={0}  role="button" class="Button" >
+    <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='flexible'" class="text-sm text-gray-600 tracking-wide rounded" >Flexible</p>
+    </div>
+          <div>
+      <div class="playeauthor-wrapper" v-if="dvm.nip88">
+
+        <div v-if="!dvm.nip88.hasActiveSubscription" className="dropdown" >
+                    <div tabIndex={0} role="button" >
+                  <!--      <p  class=" text-sm sub-Button text-orange-400"> Subscription </p> -->
+    <button class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
+                        <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">Subscription
+                        </span>
+                        </button>
+                    </div>
+                    <div  style="z-index: 10000" tabIndex={0} className="dropdown-content -start-56 z-[1] horizontal card card-compact w-96 p-2 shadow bg-orange-500 text-primary-content">
+                      <img style="flex: content" :src="dvm.nip88.image"></img>
+                      <div class="glass" className="card-body">
+
+                        <h3 className="card-title">{{dvm.nip88.title}}</h3>
+
+                         <h3 style="text-align: left">{{dvm.nip88.description}}</h3>
+                        <div v-for="index in dvm.nip88.amounts">
+                          <br>
+                            <h3 >Subscribe and pay {{index.cadence}}</h3>
+                          <button className="sub-Button" @click="subscribe(dvm.nip88.zaps, index.amount, index.cadence, dvm.nip88.subscriptionId, dvm.nip88.event, dvm.nip88.eventid, dvm.id)">{{ index.amount/1000 }} Sats</button>
+
+                        </div>
+
+                      </div>
+                    </div>
+                  </div>
+        <div v-if="dvm.nip88.hasActiveSubscription" className="dropdown" >
+                    <div tabIndex={0} role="button" >
+                      <button class=" relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
+                        <span class="relative px-5 py-2.5 transition-all ease-in duration-75  rounded-md group-hover:bg-opacity-0">
+                        Active Subscription
+                        </span>
+                        </button>
+                                              <!--  <p  class=" text-sm sub-Button text-orange-400"> Active Subscription </p> -->
+
+                    </div>
+                    <div  style="z-index: 10000" tabIndex={0} className="dropdown-content start-12 z-[1] horizontal card card-compact w-96 p-2 shadow bg-orange-500 text-primary-content">
+                      <img style="flex: content" :src="dvm.nip88.image"></img>
+                      <div class="glass" className="card-body">
+
+                        <h3 className="card-title">{{dvm.nip88.title}}</h3>
+
+                         <h3 style="text-align: left">{{dvm.nip88.description}}</h3>
+                        <br>
+                        <h3 className="card-title">Perks:</h3>
+                        <div v-for="perk in dvm.nip88.perks">
+                          <p  style="text-align: left">{{perk}}</p>
+
+
+                        </div>
+ <br>
+                        <h3>Subscription active until
+          {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[2].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[1].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[0].trim().slice(2)}} {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[1].split("Z")[0].trim()}}</h3>
+                        <!-- <div v-for="index in dvm.nip88.amounts">
+                          <br>
+                            <h3 >Subscribe and pay {{index.cadence}}</h3>
+                          <button className="sub-Button" @click="subscribe(dvm.lud16, index.amount, index.cadence, dvm.event, dvm.eventid, dvm.id)">{{ index.amount/1000 }} Sats</button>
+
+                        </div> -->
+
+                       <!-- <br>
+                        <button class="btn">Unsubscribe (todo)</button> -->
+
+                      </div>
+                    </div>
+                  </div>
+
+      </div>
+
+
+
+                <!--    <div tabIndex={0}  role="button" class="Button" >
                       <p v-if="dvm.subscription!==''" class="text-sm  text-gray-600 rounded" >Subscription active until
           {{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[0].split("-")[2].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[0].split("-")[1].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[0].split("-")[0].trim().slice(2)}} {{Timestamp.fromSecs(parseInt(dvm.subscription)).toHumanDatetime().split("T")[1].split("Z")[0].trim()}}</p>
-                    </div>
+                    </div> -->
                 <!--  <div tabIndex={0} style="z-index: 100000;" className="dropdown-content -start-56 z-[1] horizontal card card-compact w-64 p-2 shadow bg-orange-500 text-primary-content">
                   <div className="card-body">
                     <h3 className="card-title">Subscribe for a day</h3>
@@ -740,11 +864,11 @@ const submitHandler = async () => {
 
                     <button className="sub-Button" @click="subscribe(dvm.lud16, 30, dvm.amount/1000, dvm.laststatusid, dvm.id)">{{ 30 * dvm.amount/1000 }} Sats</button>
                   </div>
-                </div> -->
-              </div>
+                </div>
+              </div>-->
    <p v-if="dvm.amount.toString()===''" ></p>
 
-   <p v-if="dvm.subscription ==='' && !isNaN(parseInt(dvm.amount)) && dvm.status !='subscription-required' && dvm.status !='subscription-success'" class="text-sm  text-gray-600 rounded" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
+   <p v-if="dvm.subscription ==='' && !isNaN(parseInt(dvm.amount)) && dvm.status !=='subscription-required' && dvm.status !=='subscription-success'" class="text-sm  text-gray-600 rounded" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
   <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
   </div>
 
@@ -787,6 +911,7 @@ const submitHandler = async () => {
 
 .sub-Button{
   @apply btn hover:bg-nostr border-orange-500 text-base;
+
   bottom: 0;
 }
 

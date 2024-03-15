@@ -28,6 +28,7 @@ import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
 import NoteTable from "@/components/NoteTable.vue";
+import {zap} from "@/components/helper/Zap.vue";
 
 let dvms =[]
 async function summarizefeed(eventids) {
@@ -245,35 +246,15 @@ async function  listen() {
 }
 
 
-async function zap(invoice) {
-  let webln;
+async function zap_local(invoice) {
 
-    //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
-    //this.dvminvoice = invoice
-
-
-  try {
-    webln = await requestProvider();
-  } catch (err) {
-      await copyinvoice(invoice)
+  let success = await zap(invoice)
+  if (success){
+     dvms.find(i => i.bolt11 === invoice).status = "paid"
+    store.commit('set_summarization_dvms', dvms)
   }
-
-  if (webln) {
-    try{
-         let response = await webln.sendPayment(invoice)
-         dvms.find(i => i.bolt11 === invoice).status = "paid"
-          store.commit('set_summarization_dvms', dvms)
-    }
-    catch(err){
-          console.log(err)
-          await copyinvoice(invoice)
-    }
-
-  }
-
 
 }
-
 
 defineProps({
   events: {
@@ -364,7 +345,7 @@ const submitHandler = async () => {
                 <button v-if="dvm.status === 'finished'" className="btn">Done</button>
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
-                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
+                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap_local(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
 
 
           </div>

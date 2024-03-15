@@ -308,29 +308,17 @@ async function addDVM(event){
   store.commit('set_recommendation_dvms', dvms)
 
 }
-async function zap(invoice) {
-  let webln;
 
-    //this.dvmpaymentaddr =  `https://chart.googleapis.com/chart?cht=qr&chl=${invoice}&chs=250x250&chld=M|0`;
-    //this.dvminvoice = invoice
-  try {
-    webln = await requestProvider();
-  } catch (err) {
-      await copyinvoice(invoice)
-  }
+async function zap_local(invoice) {
 
-  if (webln) {
-    try{
-         let response = await webln.sendPayment(invoice)
-         dvms.find(i => i.bolt11 === invoice).status = "paid"
+  let success = await zap(invoice)
+  if (success){
+    dvms.find(i => i.bolt11 === invoice).status = "paid"
           store.commit('set_recommendation_results', dvms)
-    }
-    catch(err){
-          console.log(err)
-          await copyinvoice(invoice)
-    }
   }
+
 }
+
 
 
 defineProps({
@@ -345,6 +333,7 @@ import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
 import NoteTable from "@/components/NoteTable.vue";
+import zap from "@/components/helper/Zap.vue";
 
 const isModalOpened = ref(false);
 const modalcontent = ref("");
@@ -456,7 +445,7 @@ const submitHandler = async () => {
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
 
-                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
+                <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap_local(dvm.bolt11);">{{ dvm.amount/1000 }} Sats</button>
 
 
           </div>
