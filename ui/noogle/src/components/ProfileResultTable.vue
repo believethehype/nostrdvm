@@ -5,15 +5,10 @@
     :items="store.state.profile_results" >
    <template #item-content="{ author, authorurl, avatar}">
    <div class="playeauthor-wrapper" >
-
      <img class="avatar" v-if="avatar" :src="avatar" alt="Avatar" onerror="this.src='https://noogle.lol/favicon.ico'" />
      <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
-
-         <a class="white" :href="authorurl" target="_blank">{{ author }}</a>
-
-
-
-        </div>
+     <a class="white" :href="authorurl" target="_blank">{{ author }}</a>
+   </div>
 
    <!--   <p>{{content}}</p> -->
      </template>
