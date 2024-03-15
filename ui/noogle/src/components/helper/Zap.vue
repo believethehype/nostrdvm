@@ -7,6 +7,8 @@ import {EventBuilder, EventId, PublicKey, Tag} from "@rust-nostr/nostr-sdk";
 import {bech32} from "bech32";
 import {webln} from "@getalby/sdk";
 
+import amberSignerService from "@/components/android-signer/AndroidSigner";
+
 
 
 
@@ -224,6 +226,7 @@ export async function zap_lud16(lud16, eventid, authorid){
       }
     }
     catch(error){
+
       console.log("ZAP REQUEST: " + error)
   }
 
