@@ -6,18 +6,16 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
 
 <template>
 
-  <div className="navbar bg-base-100">
+  <div className="navbar bg-base-100 scroll-auto">
   <div className="flex-none">
 
   </div>
   <div className="flex-1">
     <router-link  class="menu" to="/">Search</router-link>
     <router-link class="menu" to="/discover">Discover</router-link>
-    <router-link class="menu" to="/image">ImageGen</router-link>
+    <router-link class="menu" to="/image">Create</router-link>
     <!--<router-link class="menu" to="/about">About</router-link> -->
     <router-link class="menu" to="/nip89">DVMs</router-link>
-
-
   </div>
  <Login/>
 
