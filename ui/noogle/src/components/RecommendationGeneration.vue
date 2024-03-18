@@ -550,7 +550,10 @@ async function cancelSubscription(kind7001, recipent){
 
 async function subscribe_to_dvm() {
 
-
+  if (!localStorage.getItem("nostr-key-method") || localStorage.getItem("nostr-key-method") === "anon"){
+    miniToastr.showMessage("Login to subscribe to a DVM.", "Not logged in", "error")
+    return
+  }
 
   // We only arrive here if no subscription exists, we might create a 7001 if it doesnt exist and we zap it
    let client = store.state.client
@@ -641,6 +644,21 @@ async function subscribe_to_dvm() {
 
 
       }
+
+       // TODO this is only for viewing, check event (happens on page reload now)
+       let subscribeduntil = Timestamp.now().asSecs()
+       if (this.current_subscription_cadence === "daily"){
+         subscribeduntil = Timestamp.now().asSecs() + 60*60*24
+       }
+       else if (this.current_subscription_cadence === "weekly"){
+         subscribeduntil = Timestamp.now().asSecs() + 60*60*24 * 7
+       }
+        else if (this.current_subscription_cadence === "monthly"){
+         subscribeduntil = Timestamp.now().asSecs() + 60*60*24 * 31
+       }
+        else if (this.current_subscription_cadence === "yearly"){
+         subscribeduntil = Timestamp.now().asSecs() + 60*60*24 * 365
+       }
     console.log(content)
       let msg = JSON.stringify(content)
       console.log(msg)
@@ -649,6 +667,9 @@ async function subscribe_to_dvm() {
 
        dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.hasActiveSubscription = true
        dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.expires = false
+       dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.subscribedUntil = subscribeduntil
+
+
   }
   catch(error){
       console.log(error)
@@ -1077,7 +1098,7 @@ const closeNWCModal = () => {
 
                       </div>
 
-                        <button class="btn" v-if="!dvm.nip88.expires" @click="set_subscription_props(0, '', dvm); cancelSubscription(dvm.nip88.subscriptionId, dvm.id)"> Cancel Subscription
+                        <button class="btn" v-if="!dvm.nip88.expires && dvm.nip88.hasActiveSubscription" @click="set_subscription_props(0, '', dvm); cancelSubscription(dvm.nip88.subscriptionId, dvm.id)"> Cancel Subscription
 
 
                         </button>

@@ -230,6 +230,8 @@ class Subscription:
         try:
             while True:
                 time.sleep(60.0)
+
+
                 print("Checking Subscription")
         except KeyboardInterrupt:
             print('Stay weird!')
