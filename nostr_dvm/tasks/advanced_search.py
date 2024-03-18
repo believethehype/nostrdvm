@@ -123,12 +123,12 @@ class AdvancedSearch(DVMTaskInterface):
             userkeys.append(userkey)
 
         if not options["users"]:
-            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(Kind(1)).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
         elif options["search"] == "":
-                notes_filter = Filter().kind(1).authors(userkeys).since(search_since).until(
+                notes_filter = Filter().kind(Kind(1)).authors(userkeys).since(search_since).until(
                     search_until).limit(options["max_results"])
         else:
-                notes_filter = Filter().kind(1).authors(userkeys).search(options["search"]).since(
+                notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
                     search_since).until(search_until).limit(options["max_results"])
 
 
