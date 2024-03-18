@@ -60,6 +60,9 @@ function set_subscription_props(amount, cadence, dvm) {
   this.current_subscription_amount = amount
   this.current_subscription_cadence = cadence
   this.current_subscription_dvm = dvm
+  this.nwcalby = ""
+  this.nwcmutiny = ""
+  this.nwc = ""
 
 }
 
@@ -905,7 +908,18 @@ const closeNWCModal = () => {
 
 
                <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'subscription-required' && dvm.status !== 'subscription-success' && dvm.status !== 'error' && dvm.status !== 'announced'" className="btn">{{dvm.status}}</button>
-                <button v-if="dvm.status === 'finished'" @click="generate_feed(dvm.id)" className="request-Button">Done, again?</button>
+                <button v-if="dvm.status === 'finished'  && !dvm.nip88 ||(dvm.nip88 && !dvm.nip88.hasActiveSubscription)" @click="generate_feed(dvm.id)" class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800">
+                <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                Done, again?
+                </span>
+                </button>
+                  <button v-if="dvm.status === 'finished'  && dvm.nip88 && dvm.nip88.hasActiveSubscription" @click="generate_feed(dvm.id);" class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
+                <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                Done, Again?
+                </span>
+                </button>
+
+
                 <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
                 <button v-if="dvm.status === 'error'" className="btn">Error</button>
 
@@ -922,7 +936,7 @@ const closeNWCModal = () => {
                 </span>
                 </button>
 
-                <button v-if="dvm.status === 'announced'  && dvm.nip88 && dvm.nip88.hasActiveSubscription" @click="generate_feed(dvm.id);"class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
+                <button v-if="dvm.status === 'announced'  && dvm.nip88 && dvm.nip88.hasActiveSubscription" @click="generate_feed(dvm.id);" class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
             <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
                 Request
                 </span>
@@ -939,8 +953,9 @@ const closeNWCModal = () => {
         </div>
 
   <div style="margin-left: auto; margin-right: 3px;">
-   <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='free'" class="badge bg-nostr" >Free</p>
-    <p v-if="dvm.subscription ==='' && dvm.amount.toString().toLowerCase()==='flexible'" class="badge bg-nostr2" >Flexible</p>
+   <p v-if="!dvm.subscription && dvm.amount.toString().toLowerCase()==='free'" class="badge bg-nostr" >Free</p>
+    <p v-if="!dvm.subscription && dvm.amount.toString().toLowerCase()==='flexible'" class="badge bg-nostr2" >Flexible</p>
+    <p v-if="dvm.nip88" class="badge text-white bg-gradient-to-br from-pink-500 to-orange-400">Subscription</p>
 
     </div>
           <div>
@@ -982,7 +997,7 @@ const closeNWCModal = () => {
 
   </div>
           <div class="collapse-content">
-            <button style="margin-top: 20px;" @click="connect_alby_nwc()">
+            <button v-if="!nwcalby.startsWith('nostr')" style="margin-top: 20px;" @click="connect_alby_nwc()">
             <svg width="211" height="40" viewBox="0 0 211 40" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect x="0.5" width="210" height="40" rx="6" fill="url(#paint0_linear_1_148)"/>
             <circle cx="1.575" cy="1.575" r="1.575" transform="matrix(-1 0 0 1 22.1176 13.8575)" fill="black"/>
@@ -1004,6 +1019,7 @@ const closeNWCModal = () => {
             </svg>
 
             </button>
+           <p style="margin-top: 20px;"  v-if="nwcalby.startsWith('nostr')">Connected to Alby Wallet.</p>
             </div>
 
 </div>
@@ -1049,7 +1065,12 @@ const closeNWCModal = () => {
           <form method="dialog">
             <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
             <!-- if there is a button in form, it will close the modal -->
-            <button class="btn" @click="store_nwc(); subscribe_to_dvm()">Subscribe</button>
+                <button @click="store_nwc(); subscribe_to_dvm()" class=" relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
+                        <span class="relative px-5 py-2.5 transition-all ease-in duration-75  rounded-md group-hover:bg-opacity-0">
+                        Subscribe
+                        </span>
+              </button>
+
 
           </form>
         </div>
@@ -1060,7 +1081,7 @@ const closeNWCModal = () => {
 
         <dialog id="subscr" class="modal">
                  <div  className="modal-box rounded-3xl inner shadow-lg p-6 flex flex-col items-center transition-all duration-1000 bg-gradient-to-br from-pink-500 to-orange-400 ">
-                         <h3 class="font-bold text-lg">Subscribe</h3>
+                         <h3 class="font-bold text-lg">Manage your Subscription</h3>
                       <img style="flex: content" :src="dvm.nip88.image"></img>
                       <div class="glass" className="card-body">
 
@@ -1076,10 +1097,10 @@ const closeNWCModal = () => {
                         </div>
                         <br>
                            <h3 v-if="dvm.nip88.hasActiveSubscription && !dvm.nip88.expires ">Subscription renewing at
-          {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[2].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[1].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[0].trim().slice(2)}} {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[1].split("Z")[0].trim()}}</h3>
+          {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[2].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[1].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[0].trim().slice(2)}} {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[1].split("Z")[0].trim()}} GMT</h3>
 
                          <h3 v-if="dvm.nip88.hasActiveSubscription && dvm.nip88.expires ">Subscription expires on
-          {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[2].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[1].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[0].trim().slice(2)}} {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[1].split("Z")[0].trim()}}</h3>
+          {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[2].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[1].trim()}}.{{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[0].split("-")[0].trim().slice(2)}} {{Timestamp.fromSecs(parseInt(dvm.nip88.subscribedUntil)).toHumanDatetime().split("T")[1].split("Z")[0].trim()}} GMT</h3>
                        <h3 v-if="dvm.nip88.hasActiveSubscription && dvm.nip88.expires"> Changed your mind? Resubscribe! The current subscription will continue with a new NWC string</h3>
                         <div v-if="!dvm.nip88.hasActiveSubscription || dvm.nip88.expires" v-for="amount_item in dvm.nip88.amounts">
                           <br>

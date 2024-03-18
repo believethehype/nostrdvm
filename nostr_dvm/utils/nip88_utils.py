@@ -88,15 +88,16 @@ def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, c
     send_event(event, client, config)
 
 
-def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, dvm_config):
+def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, receiver_public_key_hex):
     subscription_status = {
         "isActive": False,
         "validUntil": 0,
         "subscriptionId": "",
+        "expires": False,
     }
 
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
-        PublicKey.parse(dvm_config.PUBLIC_KEY)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
+        PublicKey.parse(receiver_public_key_hex)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
                                                            [user.to_hex()]).limit(1)
     evts = client.get_events_of([subscriptionfilter], timedelta(seconds=5))
     if len(evts) > 0:
@@ -113,6 +114,17 @@ def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client
 
         if subscription_status["validUntil"] > Timestamp.now().as_secs() & matchesdtag:
             subscription_status["isActive"] = True
+
+        if subscription_status["isActive"]:
+            cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
+                user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(EventId.parse(subscription_status["subscriptionId"])).limit(1)
+            cancel_events = client.get_events_of([cancel_filter], timedelta(seconds=5))
+            if len(cancel_events) > 0:
+                if cancel_events[0].created_at().as_secs() > evts[0].created_at().as_secs():
+                    subscription_status["expires"] = True
+
+
+
 
     return subscription_status
 

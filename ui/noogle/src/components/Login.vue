@@ -757,7 +757,7 @@ export default {
                       if(!jsonentry.amount){
                         jsonentry.amount = ""
                       }
-                      if(jsonentry.amount === "subscription"){
+                      if(jsonentry.subscription === true){
                      // if(susbcrition_tier) {
                         const filter = new Filter().kind(37001).author(entry.author)
                         let tiers = await client.getEventsOf([filter], Duration.fromSecs(5))
