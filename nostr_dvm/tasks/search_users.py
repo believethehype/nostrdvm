@@ -153,7 +153,7 @@ class SearchUser(DVMTaskInterface):
         cli.add_relay("wss://relay.damus.io")
         cli.connect()
 
-        filter1 = Filter().kind(0)
+        filter1 = Filter().kind(Kind(0))
 
         # filter = Filter().author(keys.public_key())
         print("Syncing Profile Database.. this might take a while..")
