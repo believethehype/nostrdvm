@@ -382,7 +382,7 @@ export async function hasActiveSubscription(pubkeystring, tiereventdtag, tieraut
 
     let subscriptionfilter = new Filter().kind(7003).pubkey(PublicKey.parse(tierauthorid)).customTag(SingleLetterTag.uppercase(Alphabet.P), [pubkeystring]).limit(1)
     let evts = await client.getEventsOf([subscriptionfilter], Duration.fromSecs(5))
-       console.log(evts)
+
     if (evts.length > 0){
        console.log(evts[0].asJson())
         let matchesdtag = false
@@ -419,7 +419,7 @@ export async function hasActiveSubscription(pubkeystring, tiereventdtag, tieraut
         return subscriptionstatus
 
     }
-
+      return subscriptionstatus
 }
 
 
