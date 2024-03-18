@@ -97,6 +97,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         # Query events from database
         timestamp_hour_ago = Timestamp.now().as_secs() - 3600
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
+
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(lasthour)
         events = cli.database().query([filter1])
         ns.finallist = {}

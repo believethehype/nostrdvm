@@ -1,4 +1,5 @@
 import os
+import threading
 from pathlib import Path
 
 import dotenv
@@ -37,9 +38,10 @@ def playground():
     subscription_config.LNBITS_INVOICE_KEY = invoice_key
     subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    Subscription(subscription_config)
+    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config),))
+    x.start()
 
-    keep_alive()
+    #keep_alive()
 
 
 if __name__ == '__main__':

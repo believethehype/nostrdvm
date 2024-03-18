@@ -78,8 +78,9 @@ class TrendingNotesNostrBand(DVMTaskInterface):
 
             return json.dumps(result_list)
 
-        except:
-            return "error"
+        except Exception as e:
+            print(e)
+            return json.dumps([])
 
     def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
@@ -104,7 +105,7 @@ def build_example(name, identifier, admin_config):
 
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/4dc758923c7bfc5ba92030e6419272ec7470c3809d36e88e99f3a9daece88bac.png",
+        "image": "https://nostr.band/android-chrome-192x192.png",
         "about": "I show trending notes from nostr.band",
         "amount": "Free",
         "encryptionSupported": True,

@@ -114,7 +114,11 @@ def get_from_sql_table(db, npub):
             user.lud16 = row[5]
             user.name = row[6]
             user.lastactive = row[7]
-            user.subscribed = row[8]
+            try:
+                user.subscribed = row[8]
+            except:
+                user.subscribed = False
+
 
             return user
 

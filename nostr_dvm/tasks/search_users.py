@@ -95,7 +95,7 @@ class SearchUser(DVMTaskInterface):
 
         # Query events from database
 
-        filter1 = Filter().kind(0)
+        filter1 = Filter().kind(Kind(0))
         events = cli.database().query([filter1])
         # for event in events:
         #    print(event.as_json())
