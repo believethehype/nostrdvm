@@ -45,9 +45,7 @@ class Subscription:
         self.job_list = []
 
         print("Nostr Subscription Handler public key: " + str(pk.to_bech32()) + " Hex: " + str(
-            pk.to_hex()) + " Name: " + self.NAME +
-              " Supported DVM tasks: " +
-              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
+            pk.to_hex()) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
             self.client.add_relay(relay)
@@ -304,7 +302,7 @@ class Subscription:
                     else:
                         delete_threshold = 60 * 60 * 24 * 365
                         if subscription.cadence == "daily":
-                            delete_threshold = 60 * 60 * 24 * 7  # After 7 days, delete the subscription, user can make a new one
+                            delete_threshold = 60 * 60 * 24 * 3  # After 3 days, delete the subscription, user can make a new one
                         elif subscription.cadence == "weekly":
                             delete_threshold = 60 * 60 * 24 * 21  # After 21 days, delete the subscription, user can make a new one
                         elif subscription.cadence == "monthly":
