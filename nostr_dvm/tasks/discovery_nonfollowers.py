@@ -76,7 +76,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         options = DVMTaskInterface.set_options(request_form)
         step = 20
 
-        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(3)
+        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         if len(followers) > 0:
@@ -112,7 +112,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
 
                 for i in range(i, i + st):
                     filters = []
-                    filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(3)
+                    filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(Kind(3))
                     filters.append(filter1)
                     followers = cli.get_events_of(filters, timedelta(seconds=3))
 

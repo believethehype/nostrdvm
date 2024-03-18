@@ -80,7 +80,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         options = DVMTaskInterface.set_options(request_form)
         step = 20
 
-        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(3).limit(1)
+        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3)).limit(1)
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         if len(followers) > 0:
