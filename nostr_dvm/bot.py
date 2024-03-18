@@ -63,6 +63,7 @@ class Bot:
 
         create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
+        # add_sql_table_column(dvm_config.DB)
 
         class NotificationHandler(HandleNotification):
             client = self.client
