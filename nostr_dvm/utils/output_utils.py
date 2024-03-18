@@ -206,6 +206,12 @@ def build_status_reaction(status, task, amount, content, dvm_config):
             amount) + " Sats. "
         reaction = alt_description + emoji.emojize(":orange_heart:")
 
+    elif status == "subscription-required":
+        alt_description = "NIP90 DVM AI task " + task + " requires payment for subscription"
+        reaction = alt_description + emoji.emojize(":orange_heart:")
+
+
+
     elif status == "payment-rejected":
         alt_description = "NIP90 DVM AI task " + task + " payment is below required amount of " + str(
             amount) + " Sats. "

@@ -2,10 +2,13 @@ import json
 import os
 import time
 
+from nostr_sdk import Kind
+
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.definitions import EventDefinitions
 
@@ -19,17 +22,18 @@ Outputs: Transcribed text
 
 
 class SpeechToTextGoogle(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
+    KIND: Kind = EventDefinitions.KIND_NIP90_EXTRACT_TEXT
     TASK: str = "speech-to-text"
     FIX_COST: float = 10
     PER_UNIT_COST: float = 0.1
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("speech_recognition", "SpeechRecognition==3.10.0")]
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
         if options is None:
             self.options = {}
 

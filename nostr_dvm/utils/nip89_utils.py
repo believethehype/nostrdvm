@@ -25,7 +25,7 @@ def nip89_create_d_tag(name, pubkey, image):
 
 
 def nip89_announce_tasks(dvm_config, client):
-    k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND)])
+    k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND.as_u64())])
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
@@ -34,7 +34,7 @@ def nip89_announce_tasks(dvm_config, client):
     print("Announced NIP 89 for " + dvm_config.NIP89.NAME)
 
 
-def fetch_nip89_paramters_for_deletion(keys, eventid, client, dvmconfig):
+def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
     nip89events = client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""

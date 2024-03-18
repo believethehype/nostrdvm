@@ -1,11 +1,13 @@
 import json
 import os
 import requests
+from nostr_sdk import Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by_id
 
@@ -21,14 +23,15 @@ Requires API key or self-hosted instance
 
 
 class TranslationLibre(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_TRANSLATE_TEXT
+    KIND: Kind = EventDefinitions.KIND_NIP90_TRANSLATE_TEXT
     TASK: str = "translation"
     FIX_COST: float = 0
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
-                 admin_config: AdminConfig = None, options=None, task=None):
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                 admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options, task)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
