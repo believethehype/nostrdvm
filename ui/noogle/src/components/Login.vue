@@ -19,6 +19,7 @@
         <div className="card-body">
           <h3 className="card-title">Your account</h3>
           <!--<p>Sign out</p> -->
+
           <button className="btn" onclick="nwcmodal.showModal()" >Nostr Wallet Connect</button>
            <dialog id="nwcmodal" class="modal">
       <div class="modal-box rounded-3xl inner shadow-lg p-6 flex flex-col items-center transition-all duration-1000 bg-base-600/60  ">
@@ -210,7 +211,6 @@ const isDark = useDark();
 
 
 let nip89dvms = []
-const nsec =  ref("");
 
 let logger = false
 
@@ -372,7 +372,7 @@ export default {
             }
         }
 
-        let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+        let keys = Keys.parse(store.state.nooglekey)
         this.signer = NostrSigner.keys(keys) //TODO store keys
         let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
@@ -560,7 +560,7 @@ export default {
 
         if (connectionstring === ""){
               //ADD DEFAULT TEST STRING FOR NOW, USE USER INPUT LATER
-              connectionstring = "bunker://7f2d38c4f3cf2070935bad7cab046ad088dcef2de4b0b985f2174ea22a094778?relay=wss://relay.nsec.app"
+              connectionstring = ""
         }
 
         if (connectionstring.startsWith("nsecbunker://")){
@@ -682,7 +682,7 @@ export default {
     async getnip89s(){
 
         //let keys = Keys.generate()
-            let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+            let keys = Keys.parse(store.state.nooglekey)
             let signer = NostrSigner.keys(keys) //TODO store keys
             let client = new ClientBuilder().signer(signer).build()
 
@@ -741,9 +741,13 @@ export default {
                         description: "",
                         eventid: "",
                         event: "",
+                        p: "",
                         hasActiveSubscription:  false,
                         subscribedUntil:  0,
-                        subscriptionId: "",
+                        d : "",
+                        expires : false,
+                        subscriptionId: ""
+
                           }
 
                       if (jsonentry.picture){
@@ -786,7 +790,15 @@ export default {
                               nip88.perks.push(tag.asVec()[1])
                             }
 
-                             else if(tag.asVec()[0] === "zap_local"){
+                           else if(tag.asVec()[0] === "p") {
+                              nip88.p = tag.asVec()[1]
+                            }
+
+                           else if(tag.asVec()[0] === "d") {
+                              nip88.d = tag.asVec()[1]
+                            }
+
+                             else if(tag.asVec()[0] === "zap"){
                                   let zap = {
                                key:  (tag.asVec()[1] !== "" ? tag.asVec()[1] : PublicKey.parse("npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8").toHex()) ,
                                relay: tag.asVec()[2],
@@ -805,10 +817,11 @@ export default {
 
 
                           }
-                          let subscription_status = await hasActiveSubscription(localStorage.getItem("nostr-key"), evt.id.toHex(), evt.author.toHex(), nip88.amounts)
+                          let subscription_status = await hasActiveSubscription(store.state.pubkey.toHex(), nip88.d, evt.author.toHex(), nip88.amounts)
                           nip88.hasActiveSubscription  = subscription_status.isActive
-                          nip88.subscribedUntil = subscription_status.validuntil
+                          nip88.subscribedUntil = subscription_status.validUntil
                           nip88.subscriptionId = subscription_status.subscriptionId
+                          nip88.expires = subscription_status.expires
 
 
                           jsonentry.nip88 = nip88
@@ -844,7 +857,7 @@ export default {
     async reconcile_all_profiles(publicKey) {
     {
       let dbclient = Client
-      let keys = Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e")
+      let keys = Keys.parse(store.state.nooglekey)
       let db = NostrDatabase.indexeddb("profiles");
       let signer = NostrSigner.keys(keys) //TODO store keys
       dbclient = new ClientBuilder().signer(signer).database(await db).build()

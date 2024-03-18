@@ -5,11 +5,12 @@ const store = createStore({
   state () {
     return {
       count: 0,
-      test: "hello",
       client: Client,
       signer: NostrSigner,
       dbclient: Client,
       pubkey: PublicKey,
+      nooglekey: "ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e",
+      subscription_verifier_pubkey: "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e",
       requestidSearch: String,
       requestidSearchProfile: String,
       requestidImage: String,

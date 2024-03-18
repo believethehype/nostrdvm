@@ -222,7 +222,7 @@ export async function zap_lud16(lud16, eventid, authorid){
         return ob["pr"]
           }
       catch(e){
-        console.log("HELLO" + e)
+        console.log(e)
       }
     }
     catch(error){
