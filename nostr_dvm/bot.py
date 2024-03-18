@@ -364,7 +364,7 @@ class Bot:
                             return
 
                     dvms = [x for x in self.dvm_config.SUPPORTED_DVMS if
-                            x.PUBLIC_KEY == nostr_event.author().to_hex() and x.KIND == nostr_event.kind() - 1000]
+                            x.PUBLIC_KEY == nostr_event.author().to_hex() and x.KIND.as_u64() == nostr_event.kind().as_u64() - 1000]
                     if len(dvms) > 0:
                         dvm = dvms[0]
                         if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE != PostProcessFunctionType.NONE:
