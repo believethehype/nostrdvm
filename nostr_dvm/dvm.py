@@ -126,7 +126,7 @@ class DVM:
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
                         subscription_status = nip88_has_active_subscription(PublicKey.parse(user.npub),
                                                                             self.dvm_config.NIP88.DTAG, self.client,
-                                                                            self.dvm_config)
+                                                                            self.dvm_config.PUBLIC_KEY)
 
                         if subscription_status["isActive"]:
                             print("User subscribed until: " + str(
@@ -317,7 +317,7 @@ class DVM:
                                             config=self.dvm_config)
 
                         # a regular note
-                elif not anon:
+                elif not anon and dvm_config.NIP88 is None:
                     print("[" + self.dvm_config.NIP89.NAME + "] Profile Zap received for DVM balance: " +
                           str(invoice_amount) + " Sats from " + str(user.name))
                     update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
