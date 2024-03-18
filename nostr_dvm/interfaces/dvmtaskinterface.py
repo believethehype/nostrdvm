@@ -31,7 +31,7 @@ class DVMTaskInterface:
     admin_config: AdminConfig
     dependencies = []
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None,
                  options=None, task=None):
         self.init(name, dvm_config, admin_config, nip88config, nip89config, task)
@@ -59,7 +59,7 @@ class DVMTaskInterface:
         dvm_config.NIP89 = self.NIP89_announcement(nip89config)
 
         if nip88config is None:
-            dvm_config.NIP88 = NIP88Config()
+            dvm_config.NIP88 = None
         else:
             dvm_config.NIP88 = nip88config
 

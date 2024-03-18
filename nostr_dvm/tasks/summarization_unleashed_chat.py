@@ -109,7 +109,7 @@ class SummarizationUnleashedChat(DVMTaskInterface):
             for model in client.models.list():
                 print('- ' + model.id)
 
-            content = "Summarize the following notes: " + str(options["prompt"])[:4000]
+            content = "Summarize the following notes: " + str(options["prompt"])[:3500]
             normal_stream = client.chat.completions.create(
                 messages=[
                     {

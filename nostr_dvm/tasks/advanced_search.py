@@ -165,7 +165,7 @@ def build_example(name, identifier, admin_config):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/a99ab925084029d9468fef8330ff3d9be2cf67da473b024f2a6d48b5cd77197f.jpg",
+        "image": "https://nostr.band/android-chrome-192x192.png",
         "about": "I search notes on Nostr.band.",
         "encryptionSupported": True,
         "cashuAccepted": True,
