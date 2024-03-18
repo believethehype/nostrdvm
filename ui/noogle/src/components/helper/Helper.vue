@@ -13,7 +13,7 @@ import {
   PublicKey,
   SingleLetterTag,
   Tag,
-  Timestamp
+  Timestamp, UnsignedEvent
 } from "@rust-nostr/nostr-sdk";
 import miniToastr from "mini-toastr/mini-toastr";
 import VueNotifications from "vue-notifications";
@@ -369,196 +369,58 @@ export async function fetchAsync (url) {
 
 
 
-export async function hasActiveSubscription(pubkeystring, tiereventid, tierauthorid, amounts) {
- console.log("Checking for subscription")
-  let client = store.state.client
-  let subscriptionstatus = {
-    isActive: false,
-    validuntil: 0,
-    subscriptionId: "",
-  }
+export async function hasActiveSubscription(pubkeystring, tiereventdtag, tierauthorid, amounts) {
 
-  let event7001id = EventId
-  console.log(pubkeystring)
-  // look if user has 7001 event, and if 7001 has been canceled by 7002
-  const filter = new Filter().kind(7001).author(PublicKey.parse(pubkeystring)).pubkey(PublicKey.parse(tierauthorid)).event(EventId.parse(tiereventid)) //only get latest with these conditions
-  let evts = await client.getEventsOf([filter], Duration.fromSecs(5))
-  console.log(evts)
-  if (evts.length > 0) {
-
-    //console.log("7001: " + evts[0].asJson())
-    let checkispaid = []
-    for (let tag of evts[0].tags){
-      /*if (tag.asVec()[0] === "e"){
-        console.log("sanity check")
-           const filtercheck = new Filter().kind(37001).id(EventId.parse(tag.asVec()[1])).limit(1)  // get latest with these conditons   # customTag(SingleLetterTag.lowercase(Alphabet.A), [eventid])
-           let sanityevents = await client.getEventsOf([filtercheck], Duration.fromSecs(5))
-          if (sanityevents.length === 0){
-             subscriptionstatus.isActive = false
-             return subscriptionstatus
-          }
-          else{console.log(sanityevents[0].asJson())
-          }
-      } */
-
-      if (tag.asVec()[0] === "zap"){
-        checkispaid.push(tag)
-      }
+    console.log("Checking for subscription")
+    let client = store.state.client
+    let subscriptionstatus = {
+      isActive: false,
+      validUntil: 0,
+      subscriptionId: "",
+      expires: false
     }
 
-     let splitids = []
-    for (let tag of checkispaid){
-      splitids.push(PublicKey.parse(tag.asVec()[1]))
-      console.log(tag.asVec())
-    }
-    if (checkispaid.length === 0){
-        subscriptionstatus.isActive = false
-        return subscriptionstatus
-    }
-
-    for (let evt in evts){
-      event7001id = evts[0].id
-    }
-
-    event7001id = evts[0].id
-
-    const filter = new Filter().kind(7002).pubkey(PublicKey.parse(tierauthorid)).event(event7001id).limit(1)  // get latest with these conditons   # customTag(SingleLetterTag.lowercase(Alphabet.A), [eventid])
-    let cancelevts = await client.getEventsOf([filter], Duration.fromSecs(5))
-    if (cancelevts.length > 0) {
-      if (cancelevts[0].createdAt.asSecs() > evts[0].createdAt.asSecs()) {
-        console.log("A subscription exists, but has been canceled")
-        subscriptionstatus.isActive = false
-        subscriptionstatus.subscriptionId = event7001id.toHex()
-        return subscriptionstatus
-      }
-      }
-    else {
-      console.log("A subscription exists, checking payment status")
-
-
-
-
-      const zapfilter = new Filter().kind(9735).pubkeys(splitids).event(event7001id).limit(checkispaid.length)
-      let zapevents = await client.getEventsOf([zapfilter], Duration.fromSecs(5))
-      if (zapevents.length > 0) {
-        console.log(zapevents)
-        let timeofourlastzap = 0
-
-          let overallamount = 0
-
-          let overall = 0
-          for (let tag of checkispaid){
-            let split = parseInt(tag.asVec()[2])
-            overall += split
+    let subscriptionfilter = new Filter().kind(7003).pubkey(PublicKey.parse(tierauthorid)).customTag(SingleLetterTag.uppercase(Alphabet.P), [pubkeystring]).limit(1)
+    let evts = await client.getEventsOf([subscriptionfilter], Duration.fromSecs(5))
+       console.log(evts)
+    if (evts.length > 0){
+       console.log(evts[0].asJson())
+        let matchesdtag = false
+        for (let tag of evts[0].tags){
+          if (tag.asVec()[0] === "valid"){
+            subscriptionstatus["validUntil"] = parseInt(tag.asVec()[2])
           }
-        for(let zapevent of zapevents) {
-
-
-          if (zapevent.createdAt.asSecs() > timeofourlastzap) {
-            timeofourlastzap = zapevent.createdAt.asSecs()
+          else if (tag.asVec()[0] === "e"){
+            subscriptionstatus["subscriptionId"] = tag.asVec()[1]
           }
-
-            for (let tag of zapevent.tags) {
-              if (tag.asVec()[0] === "description") {
-
-                let event9734 = Event.fromJson(tag.asVec()[1])
-
-
-                for (let tag of event9734.tags) {
-                  if (tag.asVec()[0] === "amount") {
-                    let amount = parseInt(tag.asVec()[1])
-                    console.log("AMOUNT: " + amount)
-                    overallamount = overallamount + amount
-                  }
-                }
-              }
+          else if (tag.asVec()[0] === "tier"){
+            if (tag.asVec()[1] === tiereventdtag)
+            {
+              matchesdtag = true
+            }
           }
         }
 
+        if (subscriptionstatus["validUntil"] > Timestamp.now().asSecs() && matchesdtag){
+            subscriptionstatus["isActive"] = true
+        }
 
-                let entry
-                for (let index in amounts){
-                 if(parseInt(amounts[index].amount) === overallamount ){
-                   entry = amounts[index]
-                 }
-                }
+        if(  subscriptionstatus["isActive"] === true){
+          const filter = new Filter().kind(7002).author(PublicKey.parse(pubkeystring)).pubkey(PublicKey.parse(tierauthorid)).event(EventId.parse(subscriptionstatus["subscriptionId"])).limit(1)  // get latest with these conditons   # customTag(SingleLetterTag.lowercase(Alphabet.A), [eventid])
+          let cancelevts = await client.getEventsOf([filter], Duration.fromSecs(5))
+          if (cancelevts.length > 0) {
+            if (cancelevts[0].createdAt.asSecs() > evts[0].createdAt.asSecs()) {
+                subscriptionstatus["expires"] = true
+            }
+          }
 
-                if(!entry){
-                  console.log("Undefined amount")
-                   subscriptionstatus.isActive = false
-                   subscriptionstatus.subscriptionId = event7001id.toHex()
-                   //subscriptionstatus.validuntil = zapevent.createdAt.asSecs() + 24*60*60
-                   return subscriptionstatus
-                }
-                else{
-                     console.log(entry.amount + " " + entry.cadence)
-                     if (entry.cadence === "daily"){
-                       if (timeofourlastzap + 24*60*60 > Timestamp.now().asSecs()){
-                           console.log("A daily subscription exists, and is active")
-                           subscriptionstatus.isActive = true
-                           subscriptionstatus.subscriptionId = event7001id.toHex()
-                           subscriptionstatus.validuntil = timeofourlastzap + 24*60*60
-                          return subscriptionstatus
+        }
 
-                       }
-                     }
-                     else if (entry.cadence === "monthly"){
-                       if (timeofourlastzap + 31*24*60*60 > Timestamp.now().asSecs()){
-                           console.log("A monthly subscription exists, and is active")
-                           subscriptionstatus.isActive = true
-                           subscriptionstatus.subscriptionId = event7001id.toHex()
-                           subscriptionstatus.validuntil = timeofourlastzap + 31*24*60*60
-                          return subscriptionstatus
-
-                       }
-                     }
-                       else if (entry.cadence === "yearly"){
-                       if (timeofourlastzap + 366*24*60*60 > Timestamp.now().asSecs()){
-                           console.log("A yearly subscription exists, and is active")
-                           subscriptionstatus.isActive = true
-                           subscriptionstatus.subscriptionId = event7001id.toHex()
-                           subscriptionstatus.validuntil = timeofourlastzap + 366*24*60*60
-                          return subscriptionstatus
-
-                       }
-                     }
-
-
-
-
-
-            /*else if (tag.asVec()[0] === "bolt11"){
-              let lnurl = tag.asVec()[1]
-                console.log(lnurl)
-            } */
-
-
-
-
-
-      }
-        // todo check that subscription is within the range
-
-
-
-      } else {
-        console.log("A subscription exists, but no payment has been made")
-        subscriptionstatus.isActive = false
-        subscriptionstatus.subscriptionId = event7001id.toHex()
         return subscriptionstatus
-      }
 
     }
 
 }
-
-  else {
-    console.log("No subscription exists")
-    subscriptionstatus.isActive = false
-    return subscriptionstatus
-  }
-}
-
 
 
 
