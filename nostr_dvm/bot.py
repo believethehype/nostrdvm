@@ -5,7 +5,8 @@ import time
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event)
+                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, Kind, KindEnum,
+                       UnsignedEvent, nip59_extract_rumor)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
@@ -55,10 +56,10 @@ class Bot:
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
-                kinds.append(dvm.KIND + 1000)
+                kinds.append(Kind(dvm.KIND.as_u64() + 1000))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
-        self.client.subscribe([zap_filter, dm_filter, dvm_filter])
+        self.client.subscribe([zap_filter, dm_filter, dvm_filter], None)
 
         create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
@@ -68,16 +69,33 @@ class Bot:
             dvm_config = self.dvm_config
             keys = self.keys
 
-            def handle(self, relay_url, nostr_event):
-                if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT + 1000 <= nostr_event.kind()
-                        <= EventDefinitions.KIND_NIP90_GENERIC + 1000):
+            def handle(self, relay_url, subscription_id, nostr_event):
+                if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() + 1000 <= nostr_event.kind().as_u64()
+                        <= EventDefinitions.KIND_NIP90_GENERIC.as_u64() + 1000):
                     handle_nip90_response_event(nostr_event)
-                elif nostr_event.kind() == EventDefinitions.KIND_FEEDBACK:
+                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_FEEDBACK.as_u64():
                     handle_nip90_feedback(nostr_event)
-                elif nostr_event.kind() == EventDefinitions.KIND_DM:
-                    handle_dm(nostr_event)
-                elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
+
+                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_ZAP.as_u64():
                     handle_zap(nostr_event)
+
+                elif nostr_event.kind().match_enum(KindEnum.ENCRYPTED_DIRECT_MESSAGE()):
+                    try:
+                        handle_dm(nostr_event)
+                    except Exception as e:
+                        print(f"Error during content NIP04 decryption: {e}")
+                elif nostr_event.kind().match_enum(KindEnum.GIFT_WRAP()):
+                    print("Decrypting NIP59 event")
+                    try:
+                        rumor: UnsignedEvent = nip59_extract_rumor(self.keys, nostr_event)
+                        if rumor.kind().match_enum(KindEnum.SEALED_DIRECT()):
+                            msg = rumor.content()
+                            print(f"Received new msg [sealed]: {msg}")
+                            self.client.send_sealed_msg(rumor.author(), "Nip44 is not supported yet, but coming soon", None)
+                        else:
+                            print(f"{rumor.as_json()}")
+                    except Exception as e:
+                        print(f"Error during content NIP59 decryption: {e}")
 
             def handle_msg(self, relay_url, msg):
                 return
@@ -265,7 +283,7 @@ class Bot:
                                     update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
                                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
                                                      nip05=user.nip05, lud16=user.lud16, name=user.name,
-                                                     lastactive=Timestamp.now().as_secs())
+                                                     lastactive=Timestamp.now().as_secs(), subscribed=user.subscribed)
                                     evt = EventBuilder.encrypted_direct_msg(self.keys,
                                                                                 PublicKey.from_hex(entry["npub"]),
                                                                                 "Paid " + str(

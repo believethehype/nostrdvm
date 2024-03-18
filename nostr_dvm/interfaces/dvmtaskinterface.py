@@ -7,17 +7,18 @@ import sys
 from sys import platform
 from threading import Thread
 from venv import create
-from nostr_sdk import Keys
+from nostr_sdk import Keys, Kind
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_result
 
 
 class DVMTaskInterface:
     NAME: str
-    KIND: int
+    KIND: Kind
     TASK: str = ""
     FIX_COST: float = 0
     PER_UNIT_COST: float = 0
@@ -30,13 +31,14 @@ class DVMTaskInterface:
     admin_config: AdminConfig
     dependencies = []
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, admin_config: AdminConfig = None,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config,
+                 admin_config: AdminConfig = None,
                  options=None, task=None):
-        self.init(name, dvm_config, admin_config, nip89config, task)
+        self.init(name, dvm_config, admin_config, nip88config, nip89config, task)
         self.options = options
         self.install_dependencies(dvm_config)
 
-    def init(self, name, dvm_config, admin_config=None, nip89config=None, task=None):
+    def init(self, name, dvm_config, admin_config=None, nip88config=None, nip89config=None, task=None):
         self.NAME = name
         self.PRIVATE_KEY = dvm_config.PRIVATE_KEY
         if dvm_config.PUBLIC_KEY == "" or dvm_config.PUBLIC_KEY is None:
@@ -55,6 +57,12 @@ class DVMTaskInterface:
             self.KIND = nip89config.KIND
 
         dvm_config.NIP89 = self.NIP89_announcement(nip89config)
+
+        if nip88config is None:
+            dvm_config.NIP88 = NIP88Config()
+        else:
+            dvm_config.NIP88 = nip88config
+
         self.dvm_config = dvm_config
         self.admin_config = admin_config
 
@@ -150,4 +158,3 @@ def process_venv(identifier):
         DVMTaskInterface.write_output(result, args.output)
     except Exception as e:
         DVMTaskInterface.write_output("Error: " + str(e), args.output)
-

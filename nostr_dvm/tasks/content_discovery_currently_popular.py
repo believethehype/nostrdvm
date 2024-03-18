@@ -2,12 +2,14 @@ import json
 import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
+from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events, post_process_list_to_users
 
@@ -20,22 +22,23 @@ Params:  None
 
 
 class DicoverContentCurrentlyPopular(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
+    KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
     TASK: str = "discover-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
     last_schedule: int
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
+
         self.last_schedule = Timestamp.now().as_secs()
 
         use_logger = False
         if use_logger:
             init_logger(LogLevel.DEBUG)
-
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
 
         self.sync_db()
 
@@ -94,20 +97,20 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         # Query events from database
         timestamp_hour_ago = Timestamp.now().as_secs() - 3600
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
-        filter1 = Filter().kind(1).since(lasthour)
+        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(lasthour)
         events = cli.database().query([filter1])
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 ns.finallist[event.id().to_hex()] = 0
-                filt = Filter().kinds([9735, 7, 1]).event(event.id()).since(lasthour)
+                filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(lasthour)
                 reactions = cli.database().query([filt])
                 ns.finallist[event.id().to_hex()] = len(reactions)
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
-            print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
+            #print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
 
@@ -146,7 +149,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
         timestamp_hour_ago = Timestamp.now().as_secs() - 3600
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
-        filter1 = Filter().kinds([1, 7, 9735]).since(lasthour)  # Notes, reactions, zaps
+
+        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
         print("Syncing Notes of last hour.. this might take a while..")
@@ -163,13 +167,20 @@ def build_example(name, identifier, admin_config):
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    # Activate these to use a subscription based model instead
+    # dvm_config.SUBSCRIPTION_REQUIRED = True
+    # dvm_config.SUBSCRIPTION_DAILY_COST = 1
+    dvm_config.FIX_COST = 0
+
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/f720192abfbfbcc21ce78281aca4bbd1ccf89ee7c90b54ae16b71ae9c1ad88e0.png",
-        "about": "I show popular content",
+        "image": "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+        "about": "I show notes that are currently popular",
+        "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
+        "amount": "free",
         "nip90Params": {
             "max_results": {
                 "required": False,
@@ -183,8 +194,68 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
+    admin_config.UPDATE_PROFILE = False
+    admin_config.REBROADCAST_NIP89 = True
+
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                      admin_config=admin_config)
+                                          admin_config=admin_config)
+
+
+def build_example_subscription(name, identifier, admin_config):
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    # Activate these to use a subscription based model instead
+    # dvm_config.SUBSCRIPTION_DAILY_COST = 1
+    dvm_config.FIX_COST = 0
+
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+        "about": "I show notes that are currently popular, just like the free DVM, I'm also used for testing subscriptions. (beta, might break"
+                 ")",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "amount": "subscription",
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 100)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+
+    nip88config = NIP88Config()
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
+    nip89config.NAME = name
+    nip88config.IMAGE = nip89info["image"]
+    nip88config.TITLE = name
+    nip88config.AMOUNT_DAILY = 100
+    nip88config.AMOUNT_MONTHLY = 2000
+    nip88config.CONTENT = "Subscribe to the DVM for unlimited use during your subscription"
+    nip88config.PERK1DESC = "Unlimited requests"
+    nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
+
+    admin_config.UPDATE_PROFILE = False
+    admin_config.REBROADCAST_NIP89 = True
+    admin_config.REBROADCAST_NIP88 = False
+
+   # admin_config.FETCH_NIP88 = True
+   # admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
+   # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
+
+    return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                          nip88config=nip88config,
+                                          admin_config=admin_config)
 
 
 if __name__ == '__main__':

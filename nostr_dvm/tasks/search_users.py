@@ -2,12 +2,13 @@ import json
 import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events, post_process_list_to_users
 
@@ -20,22 +21,21 @@ Params:  None
 
 
 class SearchUser(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_USER_SEARCH
+    KIND: Kind = EventDefinitions.KIND_NIP90_USER_SEARCH
     TASK: str = "search-user"
     FIX_COST: float = 0
     dvm_config: DVMConfig
     last_schedule: int
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        self.last_schedule = Timestamp.now().as_secs()
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
         use_logger = False
         if use_logger:
             init_logger(LogLevel.DEBUG)
-
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
 
         self.sync_db()
 
