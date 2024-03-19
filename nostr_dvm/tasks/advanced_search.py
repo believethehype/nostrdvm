@@ -1,7 +1,7 @@
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -95,7 +95,9 @@ class AdvancedSearch(DVMTaskInterface):
         signer = NostrSigner.keys(keys)
         cli = Client.with_opts(signer, opts)
 
-        cli.add_relay(options["relay"])
+        ropts = RelayOptions().ping(False)
+        cli.add_relay_with_opts(options["relay"], ropts)
+
         cli.connect()
 
         #earch_since_seconds = int(options["since"]) * 24 * 60 * 60
