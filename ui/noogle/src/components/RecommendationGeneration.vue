@@ -1081,7 +1081,7 @@ const closeNWCModal = () => {
         <dialog id="subscr" class="modal">
                  <div  className="modal-box rounded-3xl inner shadow-lg p-6 flex flex-col items-center transition-all duration-1000 bg-gradient-to-br from-pink-500 to-orange-400 ">
                          <h3 class="font-bold text-lg">Manage your Subscription</h3>
-                      <img style="flex: content" :src="dvm.nip88.image"></img>
+                      <img style="flex: content; width: 300px" :src="dvm.nip88.image"></img>
                       <div class="glass" className="card-body">
 
                         <h3 className="card-title">{{dvm.nip88.title}}</h3>
@@ -1091,8 +1091,6 @@ const closeNWCModal = () => {
                           <h3 className="card-title">Perks:</h3>
                           <div v-for="perk in dvm.nip88.perks">
                           <p  style="text-align: left">{{perk}}</p>
-
-
                         </div>
                         <br>
                            <h3 v-if="dvm.nip88.hasActiveSubscription && !dvm.nip88.expires ">Subscription renewing at
