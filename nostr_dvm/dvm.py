@@ -118,6 +118,8 @@ class DVM:
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
 
                     # if we stored in the database that the user has an active subscription, we don't need to check it
+                    print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
+                        Timestamp.now().as_secs()))
                     if user.subscribed > Timestamp.now().as_secs():
                         print("User subscribed until: " + str(Timestamp.from_secs(user.subscribed).to_human_datetime()))
                         user_has_active_subscription = True
