@@ -157,6 +157,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         print("Syncing Notes of last hour.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
+        database.delete(Filter().until(Timestamp.now().as_secs() - 4600)) #Clear old events so db doesnt get too full.
         print("Done Syncing Notes of Last hour.")
 
 
