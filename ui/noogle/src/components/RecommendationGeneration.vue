@@ -790,9 +790,8 @@ const datetopost = ref(Date.now());
 
 const nwc = ref("");
 const nwcmutiny = ref("");
-const  nwcalby= ref("");
-const  hasNWC= ref("");
-const  nwcconnector= ref("user");
+const nwcalby= ref("");
+const nwcconnector= ref("user");
 
 
 const openModal = result => {
@@ -983,7 +982,7 @@ const closeNWCModal = () => {
               <img class="avatar"  :src="dvm.nip88.image" alt="" />
             <h3 class="text-lg">{{dvm.nip88.title}}</h3>
           </div>
-        <div v-if="!this.hasNWC">
+        <div>
            <p  class="py-4">Enter a Nostr Wallet connect to subscribe</p>
         <div class="collapse bg-base-200">
   <input type="radio" name="my-accordion-1" />
@@ -1040,7 +1039,7 @@ const closeNWCModal = () => {
           <li class="step">Wallet Connections</li>
           <li class="step">Add Connection</li><li class="step">copy the connection string.</li>
         </ul>
-          <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"   placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="this.nwcmutiny"></textarea>
+          <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"   placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="nwcmutiny"></textarea>
           </div>
         </div>
         <div class="collapse bg-base-200">
@@ -1055,7 +1054,7 @@ const closeNWCModal = () => {
 
         </div>
         <div class="collapse-content">
-        <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"  placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="this.nwc"></textarea>
+        <textarea class="nwc-Input" style="width: 400px; margin-left: 10px; margin-top: 10px" name="Text1" type="password"  placeholder="nostr+walletconnect://..." cols="40" rows="5"  v-model="nwc"></textarea>
 
         </div>
       </div>
