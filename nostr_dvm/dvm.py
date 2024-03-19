@@ -82,30 +82,25 @@ class DVM:
                 return
 
         def handle_nip90_job_event(nip90_event):
-
+            # decrypted encrypted events
             nip90_event = check_and_decrypt_tags(nip90_event, self.dvm_config)
-
+            # if event is encrypted, but we can't decrypt it (e.g. because its directed to someone else), return
             if nip90_event is None:
                 return
-
-            user = get_or_add_user(self.dvm_config.DB, nip90_event.author().to_hex(), client=self.client,
-                                   config=self.dvm_config)
-            cashu = ""
-            p_tag_str = ""
-            for tag in nip90_event.tags():
-                if tag.as_vec()[0] == "cashu":
-                    cashu = tag.as_vec()[1]
-                elif tag.as_vec()[0] == "p":
-                    p_tag_str = tag.as_vec()[1]
-
+            # check if task is supported by the current DVM
             task_supported, task = check_task_is_supported(nip90_event, client=self.client,
                                                            config=self.dvm_config)
-            #print(task_supported)
-            if user.isblacklisted:
-                send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
-                print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
+            # if task is supported, continue, else do nothing.
+            if task_supported:
+                # fetch or add user contacting the DVM from/to local database
+                user = get_or_add_user(self.dvm_config.DB, nip90_event.author().to_hex(), client=self.client,
+                                       config=self.dvm_config)
+                # if user is blacklisted for some reason, send an error reaction and return
+                if user.isblacklisted:
+                    send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
+                    print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
+                    return
 
-            elif task_supported:
                 print("[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name)
                 duration = input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
@@ -114,17 +109,25 @@ class DVM:
 
                 task_is_free = False
                 user_has_active_subscription = False
-
+                cashu = ""
+                p_tag_str = ""
+                for tag in nip90_event.tags():
+                    if tag.as_vec()[0] == "cashu":
+                        cashu = tag.as_vec()[1]
+                    elif tag.as_vec()[0] == "p":
+                        p_tag_str = tag.as_vec()[1]
+                # If this is a subscription DVM and the Task is directed to us, check for active subscription
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
 
                     # if we stored in the database that the user has an active subscription, we don't need to check it
                     print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
                         Timestamp.now().as_secs()))
+                    # if we have an entry in the db that user is subscribed, continue
                     if user.subscribed > Timestamp.now().as_secs():
                         print("User subscribed until: " + str(Timestamp.from_secs(user.subscribed).to_human_datetime()))
                         user_has_active_subscription = True
+                    # otherwise we check for an active subscription by checking recipie events
                     else:
-                        # otherwise we check for an active subscription
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
                         subscription_status = nip88_has_active_subscription(PublicKey.parse(user.npub),
                                                                             self.dvm_config.NIP88.DTAG, self.client,
@@ -173,7 +176,8 @@ class DVM:
                 # if task is directed to us via p tag and user has balance or is subscribed, do the job and update balance
                 elif (p_tag_str == self.dvm_config.PUBLIC_KEY and (
                         user.balance >= int(
-                    amount) and dvm_config.NIP88 is None) or (p_tag_str == self.dvm_config.PUBLIC_KEY and user_has_active_subscription)):
+                    amount) and dvm_config.NIP88 is None) or (
+                              p_tag_str == self.dvm_config.PUBLIC_KEY and user_has_active_subscription)):
 
                     if not user_has_active_subscription:
                         balance = max(user.balance - int(amount), 0)
@@ -436,7 +440,8 @@ class DVM:
                 content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
                                         content)
 
-            reply_event = EventBuilder(Kind(original_event.kind().as_u64() + 1000), str(content), reply_tags).to_event(self.keys)
+            reply_event = EventBuilder(Kind(original_event.kind().as_u64() + 1000), str(content), reply_tags).to_event(
+                self.keys)
 
             send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.NAME + "] " + str(
@@ -541,7 +546,8 @@ class DVM:
             return reaction_event.as_json()
 
         def do_work(job_event, amount):
-            if ((EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= job_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64())
+            if ((
+                    EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= job_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64())
                     or job_event.kind().as_u64() == EventDefinitions.KIND_DM.as_u64()):
 
                 task = get_task(job_event, client=self.client, dvm_config=self.dvm_config)
