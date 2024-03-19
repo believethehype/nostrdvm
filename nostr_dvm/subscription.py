@@ -314,7 +314,7 @@ class Subscription:
                             delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
                             print("Delete expired subscription")
 
-                print(str(Timestamp.now().as_secs()) + ": Checking " + str(len(subscriptions)) + "Subscription entries..")
+                print(str(Timestamp.now().as_secs()) + ": Checking " + str(len(subscriptions)) + " Subscription entries..")
 
         except KeyboardInterrupt:
             print('Stay weird!')
