@@ -87,6 +87,23 @@ class DVM:
             # if event is encrypted, but we can't decrypt it (e.g. because its directed to someone else), return
             if nip90_event is None:
                 return
+            
+            task_is_free = False
+            user_has_active_subscription = False
+            cashu = ""
+            p_tag_str = ""
+
+            for tag in nip90_event.tags():
+                if tag.as_vec()[0] == "cashu":
+                    cashu = tag.as_vec()[1]
+                elif tag.as_vec()[0] == "p":
+                    p_tag_str = tag.as_vec()[1]
+
+            if p_tag_str != "" and p_tag_str != self.dvm_config.PUBLIC_KEY:
+                print("[" + self.dvm_config.NIP89.NAME + "] No public request, also not addressed to me.")
+                return
+
+
             # check if task is supported by the current DVM
             task_supported, task = check_task_is_supported(nip90_event, client=self.client,
                                                            config=self.dvm_config)
@@ -107,15 +124,7 @@ class DVM:
                 if amount is None:
                     return
 
-                task_is_free = False
-                user_has_active_subscription = False
-                cashu = ""
-                p_tag_str = ""
-                for tag in nip90_event.tags():
-                    if tag.as_vec()[0] == "cashu":
-                        cashu = tag.as_vec()[1]
-                    elif tag.as_vec()[0] == "p":
-                        p_tag_str = tag.as_vec()[1]
+
                 # If this is a subscription DVM and the Task is directed to us, check for active subscription
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
 
@@ -123,7 +132,7 @@ class DVM:
                     print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
                         Timestamp.now().as_secs()))
                     # if we have an entry in the db that user is subscribed, continue
-                    if user.subscribed > Timestamp.now().as_secs():
+                    if int(user.subscribed) > int(Timestamp.now().as_secs()):
                         print("User subscribed until: " + str(Timestamp.from_secs(user.subscribed).to_human_datetime()))
                         user_has_active_subscription = True
                     # otherwise we check for an active subscription by checking recipie events
