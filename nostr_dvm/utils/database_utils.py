@@ -117,7 +117,7 @@ def get_from_sql_table(db, npub):
             try:
                 user.subscribed = row[8]
             except:
-                user.subscribed = False
+                user.subscribed = 0
 
 
             return user
