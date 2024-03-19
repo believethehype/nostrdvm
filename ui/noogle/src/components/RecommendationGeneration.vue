@@ -33,6 +33,13 @@ import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
 import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, get_zaps, get_reactions, nextInput, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
 import {zap, createBolt11Lud16, zaprequest} from "../components/helper/Zap.vue"
+import { ref } from "vue";
+import ModalComponent from "../components/Newnote.vue";
+import VueDatePicker from "@vuepic/vue-datepicker";
+import {timestamp} from "@vueuse/core";
+import NoteTable from "@/components/NoteTable.vue";
+import {webln} from "@getalby/sdk";
+
 
 import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
@@ -51,18 +58,17 @@ await addAllContentDVMs()
 
 })
 
-const current_subscription_amount = ref("")
-const current_subscription_cadence = ref("")
-const current_subscription_dvm = ref(null)
-const current_subscription_nwc = ref("")
+
 
 function set_subscription_props(amount, cadence, dvm) {
-  this.current_subscription_amount = amount
-  this.current_subscription_cadence = cadence
-  this.current_subscription_dvm = dvm
-  this.nwcalby = ""
-  this.nwcmutiny = ""
-  this.nwc = ""
+  console.log(dvm)
+  current_subscription_dvm.value = dvm
+  current_subscription_amount.value = amount
+  current_subscription_cadence.value = cadence
+  current_subscription_nwc.value = ""
+  nwcalby.value = ""
+  nwcmutiny.value = ""
+  nwc.value = ""
 
 }
 
@@ -495,23 +501,44 @@ async function addDVM(event){
 async function cancelSubscription(kind7001, recipent){
         console.log(kind7001)
         console.log(recipent)
+        let client = store.state.client
+        let res;
+        let requestid;
         let content = "Canceled from Noogle"
         let kind = 7002
         let tags = [
               ["p", recipent],
               ["e", kind7001]
             ]
-        let tags_t = []
-        for (let tag of tags){
-            tags_t.push(Tag.parse(tag))
+
+       if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+          let draft = {
+            content: content,
+            kind: kind,
+            pubkey: store.state.pubkey.toHex(),
+            tags: tags,
+            createdAt: Date.now()
+          };
+
+          res = await amberSignerService.signEvent(draft)
+          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+          requestid = res.id;
+          console.log(requestid)
+       }
+       else{
+          let tags_t = []
+          for (let tag of tags){
+              tags_t.push(Tag.parse(tag))
           }
           let evt = new EventBuilder(kind, content, tags_t)
-          let client = store.state.client
-          let res = await client.sendEventBuilder(evt);
-          let requestid = res.toHex();
+          res = await client.sendEventBuilder(evt);
+          requestid = res.toHex();
+          console.log(requestid)
 
-       dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.hasActiveSubscription = true
-       dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.expires = true
+       }
+
+       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.hasActiveSubscription = true
+       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.expires = true
 }
 
 async function subscribe_to_dvm() {
@@ -523,26 +550,50 @@ async function subscribe_to_dvm() {
 
   // We only arrive here if no subscription exists, we might create a 7001 if it doesnt exist and we zap it
   let client = store.state.client
-  if (this.current_subscription_dvm.nip88.subscriptionId === ""){
-    console.log("Creating 7001 event")
-    let tags = [
-        Tag.parse([ "p", this.current_subscription_dvm.id]),
-         Tag.parse([ "e" , this.current_subscription_dvm.nip88.eventid]),
-         Tag.parse([ "event", JSON.stringify(this.current_subscription_dvm.nip88.event)]),
-         Tag.parse([ "amount", (this.current_subscription_amount).toString(), "msats", this.current_subscription_cadence]),
-    ]
+  if (current_subscription_dvm.value.nip88.subscriptionId === ""){
+      let res;
+      let requestid;
+      let kind = 7001
+      let content = "Subscription from noogle.lol"
+      let tags = [
+         [ "p", this.current_subscription_dvm.id],
+         [ "e" , this.current_subscription_dvm.nip88.eventid],
+         [ "event", JSON.stringify(this.current_subscription_dvm.nip88.event)],
+         [ "amount", (current_subscription_amount.value).toString(), "msats", current_subscription_cadence.value],
+      ]
+      for(let zap of current_subscription_dvm.value.nip88.zaps){
+        let zaptag = [ "zap", zap.key, zap.split]
+        tags.push(zaptag)
+      }
 
-    console.log(this.current_subscription_dvm.nip88.zaps)
+     console.log("Creating 7001 event")
+      if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+          let draft = {
+            content: content,
+            kind: kind,
+            pubkey: store.state.pubkey.toHex(),
+            tags: tags,
+            createdAt: Date.now()
+          };
 
-    for(let zap of this.current_subscription_dvm.nip88.zaps){
-      let zaptag = Tag.parse([ "zap", zap.key, zap.split])
-      tags.push(zaptag)
-    }
+          res = await amberSignerService.signEvent(draft)
+          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+          requestid = res.id;
+          console.log(requestid)
+       }
+      else{
+         let tags_t = []
+         for (let tag of tags){
+           tags_t.push(Tag.parse(tag))
+         }
+         let evt = new EventBuilder(kind, content, tags)
+        res = await client.sendEventBuilder(evt);
+        requestid = res.id
+        console.log(res)
+      }
 
-      let evt = new EventBuilder(7001, "Subscription from noogle.lol", tags)
-      let res = await client.sendEventBuilder(evt);
-      console.log(res)
-      this.current_subscription_dvm.nip88.subscriptionId = res.toHex()
+
+      current_subscription_dvm.value.nip88.subscriptionId = requestid
 
   }
 
@@ -557,32 +608,32 @@ async function subscribe_to_dvm() {
        await nclient.connect()
 
       let encnwc = nip44_encrypt(SecretKey.parse(store.state.nooglekey), PublicKey.parse(store.state.subscription_verifier_pubkey),
-      this.current_subscription_nwc, NIP44Version.V2)
+      current_subscription_nwc.value, NIP44Version.V2)
 
       let content = {
-        "subscribe_event":  this.current_subscription_dvm.nip88.subscriptionId,
+        "subscribe_event":  current_subscription_dvm.value.nip88.subscriptionId,
         "nwc": encnwc,
-        "cadence" : this.current_subscription_cadence,
-        "overall_amount" : this.current_subscription_amount,
-        "tier_dtag" : this.current_subscription_dvm.nip88.d,
-        "recipient" : this.current_subscription_dvm.id,
+        "cadence" : current_subscription_cadence.value,
+        "overall_amount" : current_subscription_amount.value,
+        "tier_dtag" : current_subscription_dvm.value.nip88.d,
+        "recipient" : current_subscription_dvm.value.id,
         "subscriber" : store.state.pubkey.toHex(),
-        "zaps" : this.current_subscription_dvm.nip88.zaps
+        "zaps" : current_subscription_dvm.value.nip88.zaps
 
       }
 
        // TODO this is only for viewing, check event (happens on page reload now)
        let subscribeduntil = Timestamp.now().asSecs()
-       if (this.current_subscription_cadence === "daily"){
+       if (current_subscription_cadence.value === "daily"){
          subscribeduntil = Timestamp.now().asSecs() + 60*60*24
        }
-       else if (this.current_subscription_cadence === "weekly"){
+       else if (current_subscription_cadence.value === "weekly"){
          subscribeduntil = Timestamp.now().asSecs() + 60*60*24 * 7
        }
-        else if (this.current_subscription_cadence === "monthly"){
+        else if (current_subscription_cadence.value === "monthly"){
          subscribeduntil = Timestamp.now().asSecs() + 60*60*24 * 31
        }
-        else if (this.current_subscription_cadence === "yearly"){
+        else if (current_subscription_cadence.value === "yearly"){
          subscribeduntil = Timestamp.now().asSecs() + 60*60*24 * 365
        }
     console.log(content)
@@ -591,9 +642,9 @@ async function subscribe_to_dvm() {
       let id = await nclient.sendDirectMsg(receiver, msg)
       console.log(id)
 
-       dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.hasActiveSubscription = true
-       dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.expires = false
-       dvms.find(x => x.nip88.eventid === this.current_subscription_dvm.nip88.eventid).nip88.subscribedUntil = subscribeduntil
+       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.hasActiveSubscription = true
+       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.expires = false
+       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.subscribedUntil = subscribeduntil
 
 
   }
@@ -615,17 +666,17 @@ async function zap_local(invoice) {
 
 async  function store_nwc(){
 
-  if (this.nwcalby.startsWith("nostr")){
+  if (nwcalby.value.startsWith("nostr")){
 
-    this.current_subscription_nwc  = this.nwcalby
+    current_subscription_nwc.value  = nwcalby.value
   }
-  else if (this.nwcmutiny.startsWith("nostr") ){
+  else if (nwcmutiny.value.startsWith("nostr") ){
 
-    this.current_subscription_nwc  = this.nwcmutiny
+    current_subscription_nwc.value  = nwcmutiny.value
   }
   else{
 
-    this.current_subscription_nwc  = this.nwc
+    current_subscription_nwc.value  = nwc.value
   }
 
 }
@@ -637,8 +688,8 @@ let result = await alby.client.initNWC({
       });
 
  if (result.payload.success){
-   this.nwcalby =  alby.client.getNostrWalletConnectUrl(true);
-   await this.store_nwc()
+   nwcalby.value =  alby.client.getNostrWalletConnectUrl(true);
+   await store_nwc()
  }
 }
 
@@ -650,12 +701,8 @@ defineProps({
   },
 })
 
-import { ref } from "vue";
-import ModalComponent from "../components/Newnote.vue";
-import VueDatePicker from "@vuepic/vue-datepicker";
-import {timestamp} from "@vueuse/core";
-import NoteTable from "@/components/NoteTable.vue";
-import {webln} from "@getalby/sdk";
+
+
 
 
 
@@ -668,7 +715,10 @@ const datetopost = ref(Date.now());
 const nwc = ref("");
 const nwcmutiny = ref("");
 const nwcalby= ref("");
-const nwcconnector= ref("user");
+const current_subscription_amount = ref(0)
+const current_subscription_cadence = ref("")
+const current_subscription_dvm = ref(null)
+const current_subscription_nwc = ref("")
 
 
 const openModal = result => {
