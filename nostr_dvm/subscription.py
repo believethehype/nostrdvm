@@ -26,7 +26,7 @@ class Subscription:
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
     def __init__(self, dvm_config, admin_config=None):
         self.NAME = "Subscription Handler"
-        dvm_config.DB = "db/" + self.NAME + ".db"
+        dvm_config.DB = "db/" + "subscriptions" + ".db"
         self.dvm_config = dvm_config
         nip89config = NIP89Config()
         nip89config.NAME = self.NAME
@@ -61,7 +61,7 @@ class Subscription:
 
         self.client.subscribe([zap_filter, dm_filter, cancel_subscription_filter], None)
 
-        create_subscription_sql_table("db/subscriptions")
+        create_subscription_sql_table(dvm_config.DB)
 
         #  admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
 
@@ -95,10 +95,10 @@ class Subscription:
                     kind7001eventid = tag.as_vec()[1]
 
             if kind7001eventid != "":
-                subscription = get_from_subscription_sql_table("db/subscriptions", kind7001eventid)
+                subscription = get_from_subscription_sql_table(dvm_config.DB, kind7001eventid)
 
                 if subscription is not None:
-                    update_subscription_sql_table("db/subscriptions", kind7001eventid, recipient,
+                    update_subscription_sql_table(dvm_config.DB, kind7001eventid, recipient,
                                                   subscription.subscriber, subscription.nwc, subscription.cadence,
                                                   subscription.amount, subscription.begin, subscription.end,
                                                   subscription.tier_dtag, subscription.zaps, subscription.recipe,
@@ -199,7 +199,7 @@ class Subscription:
                     isactivesubscription = False
                     recipe = ""
 
-                    subscription = get_from_subscription_sql_table("db/subscriptions", event7001)
+                    subscription = get_from_subscription_sql_table(dvm_config.DB, event7001)
                     #if subscription is not None and subscription.end > start:
                     #    start = subscription.end
                     #    isactivesubscription = True
@@ -233,12 +233,12 @@ class Subscription:
                         isactivesubscription = True
 
                     if subscription is None:
-                        add_to_subscription_sql_table("db/subscriptions", event7001, recipient, subscriber, nwc,
+                        add_to_subscription_sql_table(dvm_config.DB, event7001, recipient, subscriber, nwc,
                                                       cadence, overall_amount, start, end, tier_dtag,
                                                       zapsstr, recipe, isactivesubscription, Timestamp.now().as_secs())
                         print("new subscription entry")
                     else:
-                        update_subscription_sql_table("db/subscriptions", event7001, recipient, subscriber, nwc,
+                        update_subscription_sql_table(dvm_config.DB, event7001, recipient, subscriber, nwc,
                                                       cadence, overall_amount, start, end,
                                                       tier_dtag, zapsstr, recipe, isactivesubscription,
                                                       Timestamp.now().as_secs())
@@ -256,7 +256,7 @@ class Subscription:
         try:
             while True:
                 time.sleep(60.0)
-                subscriptions = get_all_subscriptions_from_sql_table("db/subscriptions")
+                subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
                 print("Checking " + str(len(subscriptions)) + " entries..")
                 for subscription in subscriptions:
                     if subscription.active:
@@ -267,7 +267,7 @@ class Subscription:
                                 subscription.tier_dtag, self.client, subscription.recipent)
 
                             if not subscription_status["isActive"] or subscription_status["expires"]:
-                                update_subscription_sql_table("db/subscriptions", subscription.id,
+                                update_subscription_sql_table(dvm_config.DB, subscription.id,
                                                               subscription.recipent,
                                                               subscription.subscriber, subscription.nwc,
                                                               subscription.cadence, subscription.amount,
@@ -288,7 +288,7 @@ class Subscription:
                                     end = Timestamp.now().as_secs()
                                     recipe = subscription.recipe
 
-                                update_subscription_sql_table("db/subscriptions", subscription.id,
+                                update_subscription_sql_table(dvm_config.DB, subscription.id,
                                                               subscription.recipent,
                                                               subscription.subscriber, subscription.nwc,
                                                               subscription.cadence, subscription.amount,
@@ -311,7 +311,7 @@ class Subscription:
                             delete_threshold = 60 * 60 * 24 * 500  # After 500 days, delete the subscription, user can make a new one
 
                         if subscription.end < (Timestamp.now().as_secs() - delete_threshold):
-                            delete_from_subscription_sql_table("db/subscriptions", subscription.id)
+                            delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
                             print("Delete expired subscription")
 
                 print(str(Timestamp.now().as_secs()) + " Checking Subscription")
