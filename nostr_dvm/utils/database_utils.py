@@ -118,8 +118,7 @@ def get_from_sql_table(db, npub):
                 user.subscribed = row[8]
             except:
                 user.subscribed = 0
-
-
+                print("Couldn't read subscribed, add it by calling add_sql_table_column(db) in your module once")
             return user
 
     except Error as e:

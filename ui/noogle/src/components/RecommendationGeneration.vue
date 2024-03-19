@@ -838,14 +838,13 @@ const closeNWCModal = () => {
 
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
     Algorithms, but you are the one in control.</h2>
-    <h3>
+
      <br>
-      <div class="align-content-center">
-             <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs..</button>
 
-      </div>
+    <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs..</button>
 
-    </h3>
+
+
   </div>
   <br>
 

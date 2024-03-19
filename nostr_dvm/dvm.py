@@ -100,7 +100,7 @@ class DVM:
 
             task_supported, task = check_task_is_supported(nip90_event, client=self.client,
                                                            config=self.dvm_config)
-            print(task_supported)
+            #print(task_supported)
             if user.isblacklisted:
                 send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
                 print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
