@@ -209,7 +209,7 @@ class Bot:
                 print("Error in bot " + str(e))
 
         def handle_nip90_feedback(nostr_event):
-            print(nostr_event.as_json())
+            #print(nostr_event.as_json())
             try:
                 is_encrypted = False
                 status = ""
