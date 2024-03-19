@@ -105,6 +105,12 @@ def get_from_sql_table(db, npub):
         if row is None:
             return None
         else:
+
+            if len(row) != 9:
+                add_sql_table_column(db)
+                # Migrate 
+
+
             user = User
             user.npub = row[0]
             user.balance = row[1]
@@ -114,11 +120,10 @@ def get_from_sql_table(db, npub):
             user.lud16 = row[5]
             user.name = row[6]
             user.lastactive = row[7]
-            try:
-                user.subscribed = row[8]
-            except:
+            user.subscribed = row[8]
+            if user.subscribed is None:
                 user.subscribed = 0
-                print("Couldn't read subscribed, add it by calling add_sql_table_column(db) in your module once")
+
             return user
 
     except Error as e:
@@ -178,16 +183,17 @@ def update_user_balance(db, npub, additional_sats, client, config):
                          user.name,
                          Timestamp.now().as_secs(), user.subscribed)
         print("Updated user balance for: " + str(user.name) +
-              " Zap amount: " + str(additional_sats) + " Sats. New balance: " + str(new_balance) +" Sats")
+              " Zap amount: " + str(additional_sats) + " Sats. New balance: " + str(new_balance) + " Sats")
 
         if config is not None:
             keys = Keys.parse(config.PRIVATE_KEY)
-            #time.sleep(1.0)
+            # time.sleep(1.0)
 
-            message = ("Added " + str(additional_sats) + " Sats to balance. New balance is " + str(new_balance) + " Sats.")
+            message = ("Added " + str(additional_sats) + " Sats to balance. New balance is " + str(
+                new_balance) + " Sats.")
 
             evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.from_hex(npub), message,
-                                                        None).to_event(keys)
+                                                    None).to_event(keys)
             send_event(evt, client=client, dvm_config=config)
 
 
@@ -195,26 +201,27 @@ def update_user_subscription(npub, subscribed_until, client, dvm_config):
     user = get_from_sql_table(dvm_config.DB, npub)
     if user is None:
         name, nip05, lud16 = fetch_user_metadata(npub, client)
-        add_to_sql_table(dvm_config.DB, npub,  dvm_config.NEW_USER_BALANCE, False, False,
+        add_to_sql_table(dvm_config.DB, npub, dvm_config.NEW_USER_BALANCE, False, False,
                          nip05, lud16, name, Timestamp.now().as_secs(), 0)
         print("Adding User: " + npub + " (" + npub + ")")
     else:
         user = get_from_sql_table(dvm_config.DB, npub)
 
-        update_sql_table(dvm_config.DB, npub, user.balance, user.iswhitelisted, user.isblacklisted, user.nip05, user.lud16,
+        update_sql_table(dvm_config.DB, npub, user.balance, user.iswhitelisted, user.isblacklisted, user.nip05,
+                         user.lud16,
                          user.name,
                          Timestamp.now().as_secs(), subscribed_until)
         print("Updated user subscription for: " + str(user.name))
 
         if dvm_config is not None:
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            #time.sleep(1.0)
+            # time.sleep(1.0)
 
-            message = ("Subscribed to DVM " + dvm_config.NIP89.NAME + " until: " + str(Timestamp.from_secs(subscribed_until).to_human_datetime().replace("Z", " ").replace("T", " ")))
-
+            message = ("Subscribed to DVM " + dvm_config.NIP89.NAME + " until: " + str(
+                Timestamp.from_secs(subscribed_until).to_human_datetime().replace("Z", " ").replace("T", " ")))
 
             evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.from_hex(npub), message,
-                                                        None).to_event(keys)
+                                                    None).to_event(keys)
             send_event(evt, client=client, dvm_config=dvm_config)
 
 
