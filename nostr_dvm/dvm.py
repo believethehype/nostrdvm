@@ -129,7 +129,7 @@ class DVM:
                                                                             self.dvm_config.PUBLIC_KEY)
 
                         if subscription_status["isActive"]:
-                            print("User subscribed until: " + str(
+                            print("Checked Recipe: User subscribed until: " + str(
                                 Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime()))
                             user_has_active_subscription = True
                             update_user_subscription(user.npub,
