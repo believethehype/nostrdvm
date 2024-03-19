@@ -401,6 +401,7 @@ class DVM:
                             post_processed = dvm.post_process(data, original_event)
                             send_nostr_reply_event(post_processed, original_event.as_json())
                         except Exception as e:
+                            print(e)
                             # Zapping back by error in post-processing is a risk for the DVM because work has been done,
                             # but maybe something with parsing/uploading failed. Try to avoid errors here as good as possible
                             send_job_status_reaction(original_event, "error",
@@ -596,9 +597,11 @@ class DVM:
                                 post_processed = dvm.post_process(result, job_event)
                                 send_nostr_reply_event(post_processed, job_event.as_json())
                             except Exception as e:
+                                print(e)
                                 send_job_status_reaction(job_event, "error", content=str(e),
                                                          dvm_config=self.dvm_config)
                     except Exception as e:
+                        print(e)
                         # we could send the exception here to the user, but maybe that's not a good idea after all.
                         send_job_status_reaction(job_event, "error", content=result,
                                                  dvm_config=self.dvm_config)
