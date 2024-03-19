@@ -257,7 +257,7 @@ class Subscription:
             while True:
                 time.sleep(60.0)
                 subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
-                print("Checking " + str(len(subscriptions)) + " entries..")
+
                 for subscription in subscriptions:
                     if subscription.active:
                         if subscription.end < Timestamp.now().as_secs():
@@ -314,7 +314,8 @@ class Subscription:
                             delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
                             print("Delete expired subscription")
 
-                print(str(Timestamp.now().as_secs()) + " Checking Subscription")
+                print(str(Timestamp.now().as_secs()) + ": Checking " + str(len(subscriptions)) + "Subscription entries..")
+
         except KeyboardInterrupt:
             print('Stay weird!')
             os.kill(os.getpid(), signal.SIGTERM)
