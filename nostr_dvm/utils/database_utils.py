@@ -106,7 +106,7 @@ def get_from_sql_table(db, npub):
             return None
         else:
 
-            if len(row) != 9:
+            if len(row) < 9:
                 add_sql_table_column(db)
                 # Migrate 
 
