@@ -29,6 +29,7 @@ class NIP88Config:
     AMOUNT_MONTHLY: int = None
     AMOUNT_YEARLY: int = None
 
+
 def nip88_create_d_tag(name, pubkey, image):
     key_str = str(name + image + pubkey)
     d_tag = sha256(key_str.encode('utf-8')).hexdigest()[:16]
@@ -98,7 +99,7 @@ def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client
 
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
         PublicKey.parse(receiver_public_key_hex)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
-                                                           [user.to_hex()]).limit(1)
+                                                             [user.to_hex()]).limit(1)
     evts = client.get_events_of([subscriptionfilter], timedelta(seconds=5))
     if len(evts) > 0:
         print(evts[0].as_json())
@@ -112,19 +113,18 @@ def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client
                 if tag.as_vec()[1] == tiereventdtag:
                     matchesdtag = True
 
-        if subscription_status["validUntil"] > Timestamp.now().as_secs() & matchesdtag:
+        if (subscription_status["validUntil"] > Timestamp.now().as_secs()) & matchesdtag:
             subscription_status["isActive"] = True
 
         if subscription_status["isActive"]:
+            # if subscription seems active, check if it has been canceled, and if so mark it as expiring.
             cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
-                user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(EventId.parse(subscription_status["subscriptionId"])).limit(1)
+                user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
+                EventId.parse(subscription_status["subscriptionId"])).limit(1)
             cancel_events = client.get_events_of([cancel_filter], timedelta(seconds=5))
             if len(cancel_events) > 0:
                 if cancel_events[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True
-
-
-
 
     return subscription_status
 
@@ -209,5 +209,3 @@ def nip88_add_dtag_to_env_file(dtag, oskey):
         print(f'loading environment from {env_path.resolve()}')
         dotenv.load_dotenv(env_path, verbose=True, override=True)
         dotenv.set_key(env_path, dtag, oskey)
-
-
