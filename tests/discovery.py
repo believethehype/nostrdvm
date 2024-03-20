@@ -38,7 +38,9 @@ def playground():
     subscription_config.LNBITS_INVOICE_KEY = invoice_key
     subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config),))
+    sub_admin_config = AdminConfig()
+    sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
+    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
     x.start()
 
     #keep_alive()

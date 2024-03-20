@@ -54,16 +54,16 @@ class Subscription:
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         cancel_subscription_filter = Filter().kinds([EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT]).since(
             Timestamp.now())
-        # TODO define allowed senders somewhere
-        dm_filter = Filter().author(
-            Keys.parse("ece3c0aa759c3e895ecb3c13ab3813c0f98430c6d4bd22160b9c2219efc9cf0e").public_key()).pubkey(
-            pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
+        authors = []
+        if admin_config is not None:
+            for key in admin_config.USERNPUBS:
+                authors.append(PublicKey.parse(key))
+        dm_filter = Filter().authors(authors).pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
 
         self.client.subscribe([zap_filter, dm_filter, cancel_subscription_filter], None)
 
         create_subscription_sql_table(dvm_config.DB)
 
-        #  admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
 
         class NotificationHandler(HandleNotification):
             client = self.client
