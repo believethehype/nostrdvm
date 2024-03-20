@@ -757,7 +757,7 @@ export default {
                       if(!jsonentry.amount){
                         jsonentry.amount = ""
                       }
-                      if(jsonentry.amount === "subscription"){
+                      if(jsonentry.subscription === true){
                      // if(susbcrition_tier) {
                         const filter = new Filter().kind(37001).author(entry.author)
                         let tiers = await client.getEventsOf([filter], Duration.fromSecs(5))
@@ -817,11 +817,13 @@ export default {
 
 
                           }
+                          console.log("hello")
                           let subscription_status = await hasActiveSubscription(store.state.pubkey.toHex(), nip88.d, evt.author.toHex(), nip88.amounts)
                           nip88.hasActiveSubscription  = subscription_status.isActive
                           nip88.subscribedUntil = subscription_status.validUntil
                           nip88.subscriptionId = subscription_status.subscriptionId
                           nip88.expires = subscription_status.expires
+                           console.log(subscription_status)
 
 
                           jsonentry.nip88 = nip88

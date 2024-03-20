@@ -1,12 +1,13 @@
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
@@ -19,15 +20,16 @@ Params:  None
 
 
 class AdvancedSearch(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_CONTENT_SEARCH
+    KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_SEARCH
     TASK: str = "search-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -93,7 +95,9 @@ class AdvancedSearch(DVMTaskInterface):
         signer = NostrSigner.keys(keys)
         cli = Client.with_opts(signer, opts)
 
-        cli.add_relay(options["relay"])
+        ropts = RelayOptions().ping(False)
+        cli.add_relay_with_opts(options["relay"], ropts)
+
         cli.connect()
 
         #earch_since_seconds = int(options["since"]) * 24 * 60 * 60
@@ -121,12 +125,12 @@ class AdvancedSearch(DVMTaskInterface):
             userkeys.append(userkey)
 
         if not options["users"]:
-            notes_filter = Filter().kind(1).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(Kind(1)).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
         elif options["search"] == "":
-                notes_filter = Filter().kind(1).authors(userkeys).since(search_since).until(
+                notes_filter = Filter().kind(Kind(1)).authors(userkeys).since(search_since).until(
                     search_until).limit(options["max_results"])
         else:
-                notes_filter = Filter().kind(1).authors(userkeys).search(options["search"]).since(
+                notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
                     search_since).until(search_until).limit(options["max_results"])
 
 
@@ -163,7 +167,7 @@ def build_example(name, identifier, admin_config):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/a99ab925084029d9468fef8330ff3d9be2cf67da473b024f2a6d48b5cd77197f.jpg",
+        "image": "https://nostr.band/android-chrome-192x192.png",
         "about": "I search notes on Nostr.band.",
         "encryptionSupported": True,
         "cashuAccepted": True,

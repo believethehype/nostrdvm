@@ -1,6 +1,10 @@
 import json
 import os
 
+from nostr_sdk import Kind
+
+from nostr_dvm.utils.nip88_utils import NIP88Config
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 from pathlib import Path
 import urllib.request
@@ -22,17 +26,18 @@ Outputs: Generated Audiofile
 
 
 class TextToSpeech(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH
+    KIND: Kind = EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH
     TASK: str = "text-to-speech"
     FIX_COST: float = 50
     PER_UNIT_COST = 0.5
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("TTS", "TTS==0.22.0")]
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
