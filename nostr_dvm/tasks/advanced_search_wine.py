@@ -3,12 +3,13 @@ import os
 from datetime import timedelta
 
 import requests
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Event
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Event, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
@@ -21,15 +22,16 @@ Params:  None
 
 
 class AdvancedSearchWine(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_CONTENT_SEARCH
+    KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_SEARCH
     TASK: str = "search-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:

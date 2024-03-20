@@ -1,12 +1,17 @@
 import os
+import threading
 from pathlib import Path
 
 import dotenv
 from nostr_sdk import Keys
 
+from nostr_dvm.subscription import Subscription
 from nostr_dvm.tasks import content_discovery_currently_popular
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
+from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.nostr_utils import check_and_set_private_key
+from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
 def playground():
@@ -19,10 +24,24 @@ def playground():
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
 
-    discovery_test = content_discovery_currently_popular.build_example("Currently Popular Notes DVM", "discovery_content_test", admin_config)
-    discovery_test.run()
+    discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
+    discovery_test_sub.run()
 
-    keep_alive()
+    #discovery_test = content_discovery_currently_popular.build_example("Currently Popular Notes DVM",
+    #                                                                   "discovery_content_test", admin_config)
+    #discovery_test.run()
+
+    subscription_config = DVMConfig()
+    subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
+    npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
+    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
+    subscription_config.LNBITS_INVOICE_KEY = invoice_key
+    subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
+    subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config),))
+    x.start()
+
+    #keep_alive()
 
 
 if __name__ == '__main__':

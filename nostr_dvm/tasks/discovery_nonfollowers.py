@@ -3,12 +3,13 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_users
 
@@ -22,16 +23,17 @@ Params:  None
 
 
 class DiscoverNonFollowers(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
+    KIND: Kind = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
     TASK: str = "non-followers"
     FIX_COST: float = 50
     client: Client
     dvm_config: DVMConfig
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         # no input required
@@ -66,15 +68,15 @@ class DiscoverNonFollowers(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
         cli = Client.with_opts(signer, opts)
-        #cli.add_relay("wss://relay.nostr.band")
+        # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
-           cli.add_relay(relay)
+            cli.add_relay(relay)
         cli.connect()
 
         options = DVMTaskInterface.set_options(request_form)
         step = 20
 
-        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(3)
+        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         if len(followers) > 0:
@@ -96,7 +98,6 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     ns.dic[following] = "True"
             print("Followings: " + str(len(followings)))
 
-
             def scanList(users, instance, i, st):
                 from nostr_sdk import Filter
 
@@ -109,10 +110,9 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     cli.add_relay(relay)
                 cli.connect()
 
-
                 for i in range(i, i + st):
                     filters = []
-                    filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(3)
+                    filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(Kind(3))
                     filters.append(filter1)
                     followers = cli.get_events_of(filters, timedelta(seconds=3))
 
@@ -130,12 +130,12 @@ class DiscoverNonFollowers(DVMTaskInterface):
                             if tag.as_vec()[0] == "p":
                                 if len(tag.as_vec()) > 1:
                                     if tag.as_vec()[1] == options["user"]:
-                                         foundfollower = True
-                                         break
+                                        foundfollower = True
+                                        break
 
                         if not foundfollower:
                             instance.dic[best_entry.author().to_hex()] = "False"
-                            print( "DIDNT FIND " + best_entry.author().to_nostr_uri())
+                            print("DIDNT FIND " + best_entry.author().to_nostr_uri())
 
                 print(str(i) + "/" + str(len(users)))
                 cli.disconnect()
@@ -147,7 +147,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                 args = [followings, ns, begin, step]
                 t = Thread(target=scanList, args=args)
                 threads.append(t)
-                begin = begin + step -1
+                begin = begin + step - 1
 
             # last to step size
             missing_scans = (len(followings) - begin)
@@ -216,7 +216,7 @@ def build_example(name, identifier, admin_config):
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DiscoverNonFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                   admin_config=admin_config)
+                                admin_config=admin_config)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,12 @@
 import json
 import os
-from nostr_sdk import Tag
+from nostr_sdk import Tag, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
@@ -18,15 +19,16 @@ Params:  None
 
 
 class TrendingNotesNostrBand(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
+    KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
     TASK: str = "trending-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -76,8 +78,9 @@ class TrendingNotesNostrBand(DVMTaskInterface):
 
             return json.dumps(result_list)
 
-        except:
-            return "error"
+        except Exception as e:
+            print(e)
+            return json.dumps([])
 
     def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
@@ -102,7 +105,7 @@ def build_example(name, identifier, admin_config):
 
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/4dc758923c7bfc5ba92030e6419272ec7470c3809d36e88e99f3a9daece88bac.png",
+        "image": "https://nostr.band/android-chrome-192x192.png",
         "about": "I show trending notes from nostr.band",
         "amount": "Free",
         "encryptionSupported": True,
