@@ -89,7 +89,7 @@ def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, c
     send_event(event, client, config)
 
 
-def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, receiver_public_key_hex):
+def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, receiver_public_key_hex, checkCanceled = True):
     subscription_status = {
         "isActive": False,
         "validUntil": 0,
@@ -100,7 +100,7 @@ def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
         PublicKey.parse(receiver_public_key_hex)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
                                                              [user.to_hex()]).limit(1)
-    evts = client.get_events_of([subscriptionfilter], timedelta(seconds=5))
+    evts = client.get_events_of([subscriptionfilter], timedelta(seconds=3))
     if len(evts) > 0:
         print(evts[0].as_json())
         matchesdtag = False
@@ -116,12 +116,12 @@ def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client
         if (subscription_status["validUntil"] > Timestamp.now().as_secs()) & matchesdtag:
             subscription_status["isActive"] = True
 
-        if subscription_status["isActive"]:
+        if subscription_status["isActive"] and checkCanceled:
             # if subscription seems active, check if it has been canceled, and if so mark it as expiring.
             cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
                 user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
                 EventId.parse(subscription_status["subscriptionId"])).limit(1)
-            cancel_events = client.get_events_of([cancel_filter], timedelta(seconds=5))
+            cancel_events = client.get_events_of([cancel_filter], timedelta(seconds=3))
             if len(cancel_events) > 0:
                 if cancel_events[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True

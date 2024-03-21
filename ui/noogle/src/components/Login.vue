@@ -728,10 +728,6 @@ export default {
 
                     let jsonentry = JSON.parse(entry.content)
 
-
-                    let susbcrition_tier = subscription_tiers.find(x => x.author.toHex() === entry.author.toHex())
-
-
                      let nip88    = {
                         title: "",
                         image: "",
@@ -817,8 +813,8 @@ export default {
 
 
                           }
-                          console.log("hello")
-                          let subscription_status = await hasActiveSubscription(store.state.pubkey.toHex(), nip88.d, evt.author.toHex(), nip88.amounts)
+
+                          let subscription_status = await hasActiveSubscription(store.state.pubkey.toHex(), nip88.d, evt.author.toHex())
                           nip88.hasActiveSubscription  = subscription_status.isActive
                           nip88.subscribedUntil = subscription_status.validUntil
                           nip88.subscriptionId = subscription_status.subscriptionId

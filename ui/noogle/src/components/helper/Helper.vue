@@ -369,7 +369,7 @@ export async function fetchAsync (url) {
 
 
 
-export async function hasActiveSubscription(pubkeystring, tiereventdtag, tierauthorid, amounts) {
+export async function hasActiveSubscription(pubkeystring, tiereventdtag, tierauthorid) {
 
     console.log("Checking for subscription")
     let client = store.state.client

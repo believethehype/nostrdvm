@@ -225,11 +225,16 @@ def update_user_subscription(npub, subscribed_until, client, dvm_config):
             send_event(evt, client=client, dvm_config=dvm_config)
 
 
-def get_or_add_user(db, npub, client, config, update=False):
+def get_or_add_user(db, npub, client, config, update=False, skip_meta = False):
     user = get_from_sql_table(db, npub)
     if user is None:
         try:
-            name, nip05, lud16 = fetch_user_metadata(npub, client)
+            if skip_meta:
+                name = npub
+                nip05 = ""
+                lud16 = ""
+            else:
+                name, nip05, lud16 = fetch_user_metadata(npub, client)
             print("Adding User: " + npub + " (" + npub + ")")
             add_to_sql_table(db, npub, config.NEW_USER_BALANCE, False, False, nip05,
                              lud16, name, Timestamp.now().as_secs(), 0)
