@@ -36,7 +36,7 @@ class DVM:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        wait_for_send = True
+        wait_for_send = False
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
@@ -111,7 +111,7 @@ class DVM:
             if task_supported:
                 # fetch or add user contacting the DVM from/to local database
                 user = get_or_add_user(self.dvm_config.DB, nip90_event.author().to_hex(), client=self.client,
-                                       config=self.dvm_config)
+                                       config=self.dvm_config, skip_meta=False)
                 # if user is blacklisted for some reason, send an error reaction and return
                 if user.isblacklisted:
                     send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
@@ -127,7 +127,8 @@ class DVM:
 
                 # If this is a subscription DVM and the Task is directed to us, check for active subscription
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
-
+                    send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                                             "Checking Subscription Status, please wait..",self.dvm_config)
                     # if we stored in the database that the user has an active subscription, we don't need to check it
                     print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
                         Timestamp.now().as_secs()))
@@ -135,14 +136,24 @@ class DVM:
                     if int(user.subscribed) > int(Timestamp.now().as_secs()):
                         print("User subscribed until: " + str(Timestamp.from_secs(user.subscribed).to_human_datetime()))
                         user_has_active_subscription = True
+                        send_job_status_reaction(nip90_event, "subscription-required", True, amount,
+                                                 self.client, "User subscripton active until " +
+                                                 Timestamp.from_secs(int(user.subscribed)).to_human_datetime().replace("Z", " ").replace("T", " ") + " GMT", self.dvm_config)
                     # otherwise we check for an active subscription by checking recipie events
                     else:
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
+                        send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                                                 "I Don't have information about subscription status, checking on the Nostr. This might take a few seconds",
+                                                 self.dvm_config)
+
                         subscription_status = nip88_has_active_subscription(PublicKey.parse(user.npub),
                                                                             self.dvm_config.NIP88.DTAG, self.client,
                                                                             self.dvm_config.PUBLIC_KEY)
 
                         if subscription_status["isActive"]:
+                            send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                                                     "User subscripton active until " + Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime().replace("Z", " ").replace("T", " ") + " GMT",
+                                                     self.dvm_config)
                             print("Checked Recipe: User subscribed until: " + str(
                                 Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime()))
                             user_has_active_subscription = True
@@ -151,6 +162,9 @@ class DVM:
                                                      self.client, self.dvm_config)
                         else:
                             print("No active subscription found")
+                            send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                                                     "No active subscription found..",
+                                                     self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     if dvm.TASK == task and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:

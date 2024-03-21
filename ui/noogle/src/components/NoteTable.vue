@@ -48,7 +48,7 @@
 </div>
 
 
-<div  class="flex" v-if="!zapped"  @click="zap_local(lud16, id, authorid)">
+<div  class="flex" v-if="lud16 != null && lud16 != '' && !zapped"  @click="zap_local(lud16, id, authorid)">
      <div  style="margin-left: auto; margin-right: 5px; float: left;">
           <svg  style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
               <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/>
@@ -58,7 +58,7 @@
     <p style="float: left;">{{zapAmount/1000}}</p>
   </div>
 </div>
-<div  class="flex" v-if="zapped" @click="zap_local(lud16, id, authorid)"  >
+<div  class="flex" v-if="lud16 != null && lud16 != '' && zapped" @click="zap_local(lud16, id, authorid)"  >
      <div style="margin-left: auto; margin-right: 5px;">
           <svg style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" class="bi bi-lightning fill-amber-400" viewBox="0 0 16 20">
     <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641z"/>
@@ -92,7 +92,6 @@ import {requestProvider} from "webln";
 import {Event, EventBuilder, EventId, PublicKey} from "@rust-nostr/nostr-sdk";
 import amberSignerService from "@/components/android-signer/AndroidSigner";
 import {zap, zap_lud16, createBolt11Lud16, zaprequest} from "@/components/helper/Zap.vue";
-
 
 const props =  defineProps<{
   data: any[]
@@ -140,23 +139,50 @@ async function react(eventid, authorid){
 
                     objects.reacted = true
                     objects.reactions += 1
+
+
+
+
+
+
+                    //props.data.push.apply(props.data.find(x=> x.id === eventid), objects)
+
+                    console.log("reacted")
                    }
 
                 }
 
 }
 
-async function zap_local(lud16, eventid, authorid){
-
-  let success = await zap_lud16(lud16, eventid, authorid)
-  if (success){
-     let objects = props.data.find(x=> x.id === eventid)
-          if (objects !== undefined){
-            objects.zapped = true
-            objects.zapAmount += 21000
+async function zap_local(lud16, eventid, authorid) {
+  if (lud16 == undefined || lud16 == ""){
+      console.log("User has no lightning address")
+    return
   }
 
+
+  let success = await zap_lud16(lud16, eventid, authorid)
+  try {
+    if (success) {
+      let objects = props.data.find(x => x.id === eventid)
+      console.log(objects)
+      if (objects !== undefined) {
+        objects.zapped = true
+        objects.zapAmount += 21000
+        let index = props.data.indexOf(x => x.id === eventid)
+        props.data[index] = objects
+
+        console.log("zapped")
+      }
     }
+     }
+    catch (error)
+      {
+        console.log(error)
+      }
+
+
+
 }
 
 

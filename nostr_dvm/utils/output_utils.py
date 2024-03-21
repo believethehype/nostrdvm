@@ -186,8 +186,12 @@ def build_status_reaction(status, task, amount, content, dvm_config):
     alt_description = "This is a reaction to a NIP90 DVM AI task. "
 
     if status == "processing":
-        alt_description = "NIP90 DVM AI task " + task + " started processing. "
-        reaction = alt_description + emoji.emojize(":thumbs_up:")
+        if content is not None and content != "":
+            alt_description = content
+            reaction = alt_description
+        else:
+            alt_description = "NIP90 DVM AI task " + task + " started processing. "
+            reaction = alt_description + emoji.emojize(":thumbs_up:")
     elif status == "success":
         alt_description = "NIP90 DVM AI task " + task + " finished successfully. "
         reaction = alt_description + emoji.emojize(":call_me_hand:")
@@ -207,8 +211,13 @@ def build_status_reaction(status, task, amount, content, dvm_config):
         reaction = alt_description + emoji.emojize(":orange_heart:")
 
     elif status == "subscription-required":
-        alt_description = "NIP90 DVM AI task " + task + " requires payment for subscription"
-        reaction = alt_description + emoji.emojize(":orange_heart:")
+        if content is not None and content != "":
+            alt_description = content
+            reaction = alt_description
+
+        else:
+            alt_description = "NIP90 DVM AI task " + task + " requires payment for subscription"
+            reaction = alt_description + emoji.emojize(":orange_heart:")
 
 
 

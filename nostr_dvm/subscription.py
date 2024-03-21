@@ -33,7 +33,7 @@ class Subscription:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        wait_for_send = True
+        wait_for_send = False
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays))
@@ -213,7 +213,7 @@ class Subscription:
                         #rather check nostr if our db is right
                         subscription_status = nip88_has_active_subscription(
                             PublicKey.parse(subscriber),
-                            tier_dtag, self.client, recipient)
+                            tier_dtag, self.client, recipient, checkCanceled=False)
 
                         if not subscription_status["isActive"]:
                             success = pay_zap_split(nwc, overall_amount, jsonevent['zaps'])
@@ -307,7 +307,7 @@ class Subscription:
                             delete_threshold = 60 * 60 * 24 * 21  # After 21 days, delete the subscription, user can make a new one
                         elif subscription.cadence == "monthly":
                             delete_threshold = 60 * 60 * 24 * 60  # After 60 days, delete the subscription, user can make a new one
-                        elif subscription.cadence == "yearoy":
+                        elif subscription.cadence == "yearly":
                             delete_threshold = 60 * 60 * 24 * 500  # After 500 days, delete the subscription, user can make a new one
 
                         if subscription.end < (Timestamp.now().as_secs() - delete_threshold):
