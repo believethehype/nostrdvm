@@ -134,12 +134,19 @@ def nip88_announce_tier(dvm_config, client):
     image_tag = Tag.parse(["image", str(dvm_config.NIP88.IMAGE)])
     d_tag = Tag.parse(["d", dvm_config.NIP88.DTAG])
 
-    # may todo
-    zaptag1 = Tag.parse(["zap", dvm_config.PUBLIC_KEY, "wss://damus.io", "19"])
-    zaptag2 = Tag.parse(["zap", "", "wss://damus.io", "1"])
+    # zap splits. Feel free to change this for your DVM
+
+    # By default, 80% of subscription go to the current's DVM lightning address (make sure to update profile for it to work)
+    # 5% go to NostrDVM developers
+    # 5% go to NostrSDK developers
+    # 10% optionally go to clients that support this subscription DVM
+    zaptag1 = Tag.parse(["zap", dvm_config.PUBLIC_KEY, "wss://damus.io", "16"])
+    zaptag2 = Tag.parse(["zap", "npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8", "wss://damus.io", "1"]) # NostrDVM
+    zaptag3 = Tag.parse(["zap", "npub1drvpzev3syqt0kjrls50050uzf25gehpz9vgdw08hvex7e0vgfeq0eseet", "wss://damus.io", "1"]) # NostrSDK
+    zaptag4 = Tag.parse(["zap", "", "wss://damus.io", "2"]) # Client might use this for splits
     p_tag = Tag.parse(["p", dvm_config.NIP88.PAYMENT_VERIFIER_PUBKEY])
 
-    tags = [title_tag, image_tag, zaptag1, zaptag2, d_tag, p_tag]
+    tags = [title_tag, image_tag, zaptag1, zaptag2, zaptag3, zaptag4, d_tag, p_tag]
 
     if dvm_config.NIP88.AMOUNT_DAILY is not None:
         amount_tag = Tag.parse(["amount", str(dvm_config.NIP88.AMOUNT_DAILY * 1000), "msats", "daily"])
