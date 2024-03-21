@@ -218,8 +218,7 @@ def build_example_subscription(name, identifier, admin_config):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
-        "about": "I show notes that are currently popular, just like the free DVM, I'm also used for testing subscriptions. (beta, might break"
-                 ")",
+        "about": "I show notes that are currently popular, just like the free DVM, I'm also used for testing subscriptions. (beta)",
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -247,10 +246,11 @@ def build_example_subscription(name, identifier, admin_config):
     nip88config.AMOUNT_MONTHLY = 2000
     nip88config.CONTENT = "Subscribe to the DVM for unlimited use during your subscription"
     nip88config.PERK1DESC = "Unlimited requests"
+    nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
     admin_config.UPDATE_PROFILE = False
-    admin_config.REBROADCAST_NIP89 = True
+    admin_config.REBROADCAST_NIP89 = False
     admin_config.REBROADCAST_NIP88 = False
 
    # admin_config.FETCH_NIP88 = True
