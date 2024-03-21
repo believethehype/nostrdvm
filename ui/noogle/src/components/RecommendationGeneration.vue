@@ -699,11 +699,11 @@ async  function store_nwc(){
   }
 
 }
-async function connect_alby_nwc(){
+async function connect_alby_nwc(dvm_name){
 
 const alby = webln.NostrWebLNProvider.withNewSecret();
 let result = await alby.client.initNWC({
-        name: `Noogle`,
+        name: dvm_name,
       });
 
  if (result.payload.success){
@@ -895,7 +895,7 @@ const closeNWCModal = () => {
 
                 </div>
                   <div class="collapse-content">
-                          <button v-if="!nwcalby.startsWith('nostr')" style="margin-top: 20px;" @click="connect_alby_nwc()">
+                          <button v-if="!nwcalby.startsWith('nostr')" style="margin-top: 20px;" @click="connect_alby_nwc(dvm.nip88.title)">
                           <svg width="211" height="40" viewBox="0 0 211 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <rect x="0.5" width="210" height="40" rx="6" fill="url(#paint0_linear_1_148)"/>
                           <circle cx="1.575" cy="1.575" r="1.575" transform="matrix(-1 0 0 1 22.1176 13.8575)" fill="black"/>

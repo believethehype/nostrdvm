@@ -8,6 +8,8 @@ import {bech32} from "bech32";
 import {webln} from "@getalby/sdk";
 
 import amberSignerService from "@/components/android-signer/AndroidSigner";
+import miniToastr from "mini-toastr";
+import VueNotifications from "vue-notifications";
 
 
 
@@ -24,9 +26,17 @@ async function zap_nwc(invoice){
       await nwc.enable();
 
       // now you can send payments by passing in the invoice
-      const response = await nwc.sendPayment(invoice);
+  try{
+     const response = await nwc.sendPayment(invoice);
       console.log(response)
-    return true
+      return true
+  }
+  catch (error){
+    miniToastr.showMessage(error, "This didn't work", VueNotifications.types.error)
+    console.log(error)
+     return false
+  }
+
     }
 
 
