@@ -112,23 +112,7 @@ def get_all_subscriptions_from_sql_table(db):
         records = cursor.fetchall()
         subscriptions = []
         for row in records:
-            subscription = Subscription
-            subscription.id = row[0]
-            subscription.recipent = row[1]
-            subscription.subscriber = row[2]
-            subscription.nwc = row[3]
-            subscription.cadence = row[4]
-            subscription.amount = row[5]
-            subscription.begin = row[6]
-            subscription.end = row[7]
-            subscription.tier_dtag = row[8]
-            subscription.zaps = row[9]
-            subscription.recipe = row[10]
-            subscription.active = row[11]
-            subscription.lastupdate = row[12]
-            subscriptions.append(subscription)
-
-
+            subscriptions.append(Subscription(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12]))
         cursor.close()
         return subscriptions
 
