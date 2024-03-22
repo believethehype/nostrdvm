@@ -77,15 +77,46 @@ async function generate_feed(id) {
    try {
 
         let client = store.state.client
+        //console.log(dvms.find(i => i.id === id).encryptionSupported)
+
+        let current_dvm = dvms.find(i => i.id === id)
 
         let content = "NIP 90 Content Discovery request"
         let kind = 5300
         let tags = []
-        tags.push(["p", id])
+
         let res;
         let requestid;
 
-        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+        // for now we only want to use encrypted events for subscribed dvms (might change later)
+        if(current_dvm.encryptionSupported && current_dvm.nip88 && current_dvm.nip88.hasActiveSubscription){
+             let  tags_str = []
+            for (let tag in tags){
+               tags_str.append(tag)
+            }
+
+            let params_as_str = JSON.stringify(tags_str)
+            //console.log(params_as_str)
+
+              let client = store.state.client
+              let signer = store.state.signer
+              let content = await signer.nip04Encrypt(PublicKey.parse(id), params_as_str)
+
+              let tags_t = []
+              tags_t.push(Tag.parse(["p", id]))
+              tags_t.push(Tag.parse(["encrypted"]))
+              tags_t.push(Tag.parse(["client", "noogle"]))
+
+
+              let evt = new EventBuilder(kind, content, tags_t)
+              res = await client.sendEventBuilder(evt);
+              requestid = res.toHex();
+
+        }
+
+        else{
+           tags.push(["p", id])
+             if (localStorage.getItem('nostr-key-method') === 'android-signer') {
           let draft = {
             content: content,
             kind: kind,
@@ -99,7 +130,7 @@ async function generate_feed(id) {
           requestid = res.id;
 
         }
-        else {
+             else {
 
           let tags_t = []
           for (let tag of tags){
@@ -111,6 +142,13 @@ async function generate_feed(id) {
 
           requestid = res.toHex();
         }
+
+        }
+
+
+
+
+
 
         store.commit('set_current_request_id_recommendation', requestid)
         if (!store.state.recommendationehasEventListener){
@@ -157,6 +195,49 @@ async function  listen() {
                     dvms.find(i => i.id === event.author.toHex()).laststatusid = event.id.toHex()
                     let ob = dvms.find(i => i.id === event.author.toHex())
                     console.log(ob)
+                    let is_encrypted = false
+                    let ptag = ""
+
+                    console.log(event.content)
+                    for (const tag in event.tags) {
+                      if (event.tags[tag].asVec()[0] === "encrypted") {
+                        is_encrypted = true
+                        console.log("encrypted response")
+                      }
+                      else if (event.tags[tag].asVec()[0] === "p") {
+                        ptag = event.tags[tag].asVec()[1]
+                      }
+                    }
+
+                    if (is_encrypted){
+                       if (ptag === store.state.pubkey.toHex()){
+                            let signer = store.state.signer
+                            let tags_str = await signer.nip04Decrypt(event.author, event.content)
+
+                            let params = JSON.parse(tags_str)
+                            //console.log(params)
+                           // params.push(["p", ptag])
+                           // params.push(["encrypted"])
+                            let event_as_json = JSON.parse(event.asJson())
+                            event_as_json['tags'] = params
+                           let content = ""
+                           for (const tag in params){
+                             if (params[tag][0] === "content"){
+                               content = params[tag][1]
+                             }
+                           }
+                            event_as_json['content'] = content
+                            event = Event.fromJson(JSON.stringify(event_as_json))
+                       }
+                        else {
+                          console.log("not addressed to us")
+                          console.log(ptag)
+
+                          return
+                        }
+                    }
+
+
                     for (const tag in event.tags) {
                       if (event.tags[tag].asVec()[0] === "status") {
 
@@ -221,8 +302,35 @@ async function  listen() {
                 else if (event.kind === 6300) {
                   let entries = []
                   //console.log("6300:", event.content);
+                    let is_encrypted = false
+                    let ptag = ""
 
-                  let event_etags = JSON.parse(event.content)
+                    for (const tag in event.tags) {
+                      if (event.tags[tag].asVec()[0] === "encrypted") {
+                        is_encrypted = true
+                        console.log("encrypted reply")
+                      }
+                      else if (event.tags[tag].asVec()[0] === "p") {
+                        ptag = event.tags[tag].asVec()[1]
+                      }
+                    }
+
+                    let content = event.content
+
+                    if (is_encrypted){
+                      if (ptag === store.state.pubkey.toHex()){
+                        let signer = store.state.signer
+                        content = await signer.nip04Decrypt(event.author, event.content)
+                      }
+                      else {
+                        console.log("not addressed to us")
+                        return
+                      }
+                    }
+
+
+
+                  let event_etags = JSON.parse(content)
                   if (event_etags.length > 0) {
                     for (let etag of event_etags) {
                       const eventid = EventId.fromHex(etag[1]).toHex()
@@ -395,6 +503,8 @@ async function addAllContentDVMs() {
       about: el.about,
       image: el.image,
       amount: el.amount,
+      encryptionSupported: el.encryptionSupported,
+      cashuAccepted: el.cashuAccepted,
       bolt11: "",
       lud16: el.lud16,
       subscription: "",
@@ -426,7 +536,9 @@ async function addDVM(event){
     amount: 0,
     bolt11: "",
     lud16: "",
-    subscription: ""
+    subscription: "",
+    encryptionSupported: false,
+    cashuAccepted: false
   }
 
   for (const tag in event.tags) {
@@ -475,6 +587,8 @@ async function addDVM(event){
       jsonentry.about = el.about
       jsonentry.image = el.image
       jsonentry.lud16 = el.lud16
+     jsonentry.encryptionSupported = el.encryptionSupported
+     jsonentry.cashuAccepted = el.cashuAccepted
 
       console.log(jsonentry)
 
@@ -860,14 +974,24 @@ const closeNWCModal = () => {
             <div style="margin-left: auto; margin-right: 3px;">
        <p v-if="!dvm.subscription && dvm.amount.toString().toLowerCase()==='free'" class="badge bg-nostr" >Free</p>
         <p v-if="!dvm.subscription && dvm.amount.toString().toLowerCase()==='flexible'" class="badge bg-nostr2" >Flexible</p>
+
+
        <!-- <p v-if="dvm.nip88 && !dvm.nip88.hasActiveSubscription" class="badge text-white bg-gradient-to-br from-pink-500 to-orange-400"  onclick='subscr.showModal()' >Subscription</p> -->
 
-
+                 <div class="flex">
+                   <div class="tooltip">
+                       <svg v-if="dvm.encryptionSupported && dvm.nip88" style="margin-left: auto; margin-right: 5px" class="w-4 h-4 text-gray-800 dark:text-white flex" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M18 10v-4c0-3.313-2.687-6-6-6s-6 2.687-6 6v4h-3v14h18v-14h-3zm-5 7.723v2.277h-2v-2.277c-.595-.347-1-.984-1-1.723 0-1.104.896-2 2-2s2 .896 2 2c0 .738-.404 1.376-1 1.723zm-5-7.723v-4c0-2.206 1.794-4 4-4 2.205 0 4 1.794 4 4v4h-8z"/>
+                       </svg>
+                  <span class="tooltiptext">This DVM uses encrypted communication. Only the DVM can see your request, and only you can see the results.</span>
+                </div>
                   <button v-if="dvm.nip88 && dvm.nip88.hasActiveSubscription"  onclick='subscr.showModal()' class=" badge relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
                                   <span class="relative px-5 py-2.5 transition-all ease-in duration-75  rounded-md group-hover:bg-opacity-0">
                                    Subscription</span>
                  </button>
 
+
+                </div>
         </div>
             <div>
               <div class="playeauthor-wrapper" v-if="dvm.nip88">
@@ -1064,9 +1188,9 @@ const closeNWCModal = () => {
               </div>
             </details>
 
-             <div data-tip="Make Summarization"   v-if="dvm.status === 'finished' && store.state.pubkey.toHex() !== Keys.parse(store.state.nooglekey).publicKey.toHex()" >
+             <div v-if="dvm.status === 'finished' && store.state.pubkey.toHex() !== Keys.parse(store.state.nooglekey).publicKey.toHex()"  style="margin-left: 10px; margin-right: auto"  >
                          <button @click="openModal(dvm.result)"  class="w-8 h-8 rounded-full bg-nostr border-white border-1 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black tooltip" data-top='Share' aria-label="make note" role="button">
-                             <svg class="w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                             <svg class="w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"  style="margin-left: 7px; margin-right: auto" >
                               <path d="M9 19V.352A3.451 3.451 0 0 0 7.5 0a3.5 3.5 0 0 0-3.261 2.238A3.5 3.5 0 0 0 2.04 6.015a3.518 3.518 0 0 0-.766 1.128c-.042.1-.064.209-.1.313a3.34 3.34 0 0 0-.106.344 3.463 3.463 0 0 0 .02 1.468A4.016 4.016 0 0 0 .3 10.5l-.015.036a3.861 3.861 0 0 0-.216.779A3.968 3.968 0 0 0 0 12a4.032 4.032 0 0 0 .107.889 4 4 0 0 0 .2.659c.006.014.015.027.021.041a3.85 3.85 0 0 0 .417.727c.105.146.219.284.342.415.072.076.148.146.225.216.1.091.205.179.315.26.11.081.2.14.308.2.02.013.039.028.059.04v.053a3.506 3.506 0 0 0 3.03 3.469 3.426 3.426 0 0 0 4.154.577A.972.972 0 0 1 9 19Zm10.934-7.68a3.956 3.956 0 0 0-.215-.779l-.017-.038a4.016 4.016 0 0 0-.79-1.235 3.417 3.417 0 0 0 .017-1.468 3.387 3.387 0 0 0-.1-.333c-.034-.108-.057-.22-.1-.324a3.517 3.517 0 0 0-.766-1.128 3.5 3.5 0 0 0-2.202-3.777A3.5 3.5 0 0 0 12.5 0a3.451 3.451 0 0 0-1.5.352V19a.972.972 0 0 1-.184.546 3.426 3.426 0 0 0 4.154-.577A3.506 3.506 0 0 0 18 15.5v-.049c.02-.012.039-.027.059-.04.106-.064.208-.13.308-.2s.214-.169.315-.26c.077-.07.153-.14.225-.216a4.007 4.007 0 0 0 .459-.588c.115-.176.215-.361.3-.554.006-.014.015-.027.021-.041.087-.213.156-.434.205-.659.013-.057.024-.115.035-.173.046-.237.07-.478.073-.72a3.948 3.948 0 0 0-.066-.68Z"/>
                              </svg>
                          </button>
@@ -1165,6 +1289,32 @@ h3 {
 .center {
   text-align: center;
   justify-content: center;
+}
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 250px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+
+  /* Position the tooltip text - see examples below! */
+  position: absolute;
+  z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
 }
 
 

@@ -683,7 +683,7 @@ export default {
 
         //let keys = Keys.generate()
             let keys = Keys.parse(store.state.nooglekey)
-            let signer = NostrSigner.keys(keys) //TODO store keys
+            let signer = NostrSigner.keys(keys)
             let client = new ClientBuilder().signer(signer).build()
 
             for (const relay of store.state.relays) {
@@ -753,6 +753,15 @@ export default {
                       if(!jsonentry.amount){
                         jsonentry.amount = ""
                       }
+
+                       if(!jsonentry.encryptionSupported){
+                        jsonentry.encryptionSupported = false
+                      }
+
+                     if(!jsonentry.cashuAccepted){
+                        jsonentry.cashuAccepted = false
+                      }
+
                       if(jsonentry.subscription === true){
                      // if(susbcrition_tier) {
                         const filter = new Filter().kind(37001).author(entry.author)
