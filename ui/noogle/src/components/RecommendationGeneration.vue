@@ -88,8 +88,9 @@ async function generate_feed(id) {
         let res;
         let requestid;
 
-        // for now we only want to use encrypted events for subscribed dvms (might change later)
-        if(current_dvm.encryptionSupported && current_dvm.nip88 && current_dvm.nip88.hasActiveSubscription){
+        // for now we only want to use encrypted events for subscribed dvms (might change later, also we dont encrypt on amber because decryption and update doesnt work)
+        if(current_dvm.encryptionSupported && current_dvm.nip88 && current_dvm.nip88.hasActiveSubscription && localStorage.getItem('nostr-key-method') !== 'android-signer' ){
+
              let  tags_str = []
             for (let tag in tags){
                tags_str.append(tag)
@@ -100,6 +101,31 @@ async function generate_feed(id) {
 
               let client = store.state.client
               let signer = store.state.signer
+
+
+              if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+
+                  // let content = await amberSignerService.nip04Encrypt(id, params_as_str)
+
+                   let ttags = []
+                     ttags.push(["p", id])
+                     ttags.push(["encrypted"])
+                     ttags.push(["client", "noogle"])
+                  let draft = {
+                    content: "",
+                    kind: kind,
+                    pubkey: store.state.pubkey.toHex(),
+                    tags: ttags,
+                    createdAt: Date.now()
+                  };
+
+                  res = await amberSignerService.signEvent(draft)
+                  await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+                  requestid = res.id;
+
+              }
+              else{
+
               let content = await signer.nip04Encrypt(PublicKey.parse(id), params_as_str)
 
               let tags_t = []
@@ -111,6 +137,12 @@ async function generate_feed(id) {
               let evt = new EventBuilder(kind, content, tags_t)
               res = await client.sendEventBuilder(evt);
               requestid = res.toHex();
+
+              }
+
+
+
+
 
         }
 
@@ -210,9 +242,18 @@ async function  listen() {
                     }
 
                     if (is_encrypted){
+                      let tags_str = ""
                        if (ptag === store.state.pubkey.toHex()){
                             let signer = store.state.signer
-                            let tags_str = await signer.nip04Decrypt(event.author, event.content)
+                            if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+                              return
+                             // tags_str = await amberSignerService.nip04Decrypt(event.author.toHex(), event.content)
+                            }
+                            else{
+                                tags_str = await signer.nip04Decrypt(event.author, event.content)
+                            }
+
+
 
                             let params = JSON.parse(tags_str)
                             //console.log(params)
@@ -320,7 +361,14 @@ async function  listen() {
                     if (is_encrypted){
                       if (ptag === store.state.pubkey.toHex()){
                         let signer = store.state.signer
-                        content = await signer.nip04Decrypt(event.author, event.content)
+                         //content = await signer.nip04Decrypt(event.author, event.content)
+                         if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+
+                              content = await amberSignerService.nip04Decrypt(event.author.toHex(), event.content)
+                            }
+                            else{
+                               content = await signer.nip04Decrypt(event.author, event.content)
+                            }
                       }
                       else {
                         console.log("not addressed to us")
@@ -892,7 +940,7 @@ const closeNWCModal = () => {
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
     Algorithms, but you are the one in control.</h2>
      <br>
-    <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs..</button>
+    <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span></button>
   </div>
   <br>
 
@@ -983,7 +1031,7 @@ const closeNWCModal = () => {
                        <svg v-if="dvm.encryptionSupported && dvm.nip88" style="margin-left: auto; margin-right: 5px" class="w-4 h-4 text-gray-800 dark:text-white flex" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M18 10v-4c0-3.313-2.687-6-6-6s-6 2.687-6 6v4h-3v14h18v-14h-3zm-5 7.723v2.277h-2v-2.277c-.595-.347-1-.984-1-1.723 0-1.104.896-2 2-2s2 .896 2 2c0 .738-.404 1.376-1 1.723zm-5-7.723v-4c0-2.206 1.794-4 4-4 2.205 0 4 1.794 4 4v4h-8z"/>
                        </svg>
-                  <span class="tooltiptext">This DVM uses encrypted communication. Only the DVM can see your request, and only you can see the results.</span>
+                  <span class="tooltiptext">This DVM uses encrypted communication. Only the DVM can see your request, and only you can see the results. <br> Currently not encrypted when using Amber Signer.</span>
                 </div>
                   <button v-if="dvm.nip88 && dvm.nip88.hasActiveSubscription"  onclick='subscr.showModal()' class=" badge relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-pink-500 to-orange-400 group-hover:from-pink-500 group-hover:to-orange-400 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-pink-200 dark:focus:ring-pink-800">
                                   <span class="relative px-5 py-2.5 transition-all ease-in duration-75  rounded-md group-hover:bg-opacity-0">
@@ -1299,8 +1347,10 @@ h3 {
 
 /* Tooltip text */
 .tooltip .tooltiptext {
+   top: -5px;
+  right: 105%;
   visibility: hidden;
-  width: 250px;
+  width: 200px;
   background-color: black;
   color: #fff;
   text-align: center;
