@@ -494,8 +494,11 @@ class DVM:
 
             if encrypted:
                 encryption_tags.append(p_tag)
+                encryption_tags.append(e_tag)
+
             else:
                 reply_tags.append(p_tag)
+
 
             if status == "success" or status == "error":  #
                 for x in self.job_list:
