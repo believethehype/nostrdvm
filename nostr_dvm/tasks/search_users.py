@@ -25,7 +25,7 @@ class SearchUser(DVMTaskInterface):
     TASK: str = "search-user"
     FIX_COST: float = 0
     dvm_config: DVMConfig
-    last_schedule: int
+    last_schedule: int = 0
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
