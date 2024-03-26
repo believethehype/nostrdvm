@@ -280,10 +280,8 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             tags = [p_tag]
             if zapped_event is not None:
                 tags.append(e_tag)
-            print("hello")
             zap_request = EventBuilder(Kind(9733), content,
                                        tags).to_event(keys).as_json()
-            print("hello2")
             keys = Keys.parse(encryption_key)
             if zapped_event is not None:
                 encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
