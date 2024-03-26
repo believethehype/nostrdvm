@@ -8,7 +8,8 @@ import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
-from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key, Kind
+from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key, Kind, \
+    Timestamp
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
 import lnurl
@@ -268,13 +269,27 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             tags = [amount_tag, relays_tag, p_tag, lnurl_tag]
 
         if zaptype == "private":
-            key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(zapped_event.created_at().as_secs())
-            encryption_key = sha256(key_str.encode('utf-8')).hexdigest()
+            if zapped_event is not None:
+                key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(
+                    zapped_event.created_at().as_secs())
 
+            else:
+                key_str = keys.secret_key().to_hex() + str(Timestamp.now().as_secs())
+
+            encryption_key = sha256(key_str.encode('utf-8')).hexdigest()
+            tags = [p_tag]
+            if zapped_event is not None:
+                tags.append(e_tag)
+            print("hello")
             zap_request = EventBuilder(Kind(9733), content,
-                                       [p_tag, e_tag]).to_event(keys).as_json()
+                                       tags).to_event(keys).as_json()
+            print("hello2")
             keys = Keys.parse(encryption_key)
-            encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
+            if zapped_event is not None:
+                encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
+            else:
+                encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_user)
+
             anon_tag = Tag.parse(['anon', encrypted_content])
             tags.append(anon_tag)
             content = ""
@@ -288,7 +303,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
         return ob["pr"]
 
     except Exception as e:
-        print("ZAP REQUEST: " + e)
+        print("ZAP REQUEST: " + str(e))
         return None
 
 
