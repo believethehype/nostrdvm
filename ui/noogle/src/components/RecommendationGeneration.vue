@@ -919,6 +919,10 @@ const closeNWCModal = () => {
   isNWCModalOpened.value = false;
 };
 
+const submitHandler = async () => {
+}
+
+
 
 
 
