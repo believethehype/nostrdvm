@@ -4,7 +4,7 @@
                  :items="data"
                  :sort-by="sortBy"
                  :sort-type="sortType">
-   <template #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid, zapped, zapAmount, reacted, reactions}">
+   <template #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid, zapped, zapAmount, reacted, reactions, event}">
 
    <div class="playeauthor-wrapper">
 
@@ -31,14 +31,14 @@
 
           <div  class="flex" >
 
-          <div  class="flex" style="margin-left: auto; margin-right: 5px;" v-if="!reacted"  @click="react(id, authorid)">
+          <div  class="flex" style="margin-left: auto; margin-right: 5px;" v-if="!reacted"  @click="react(id, authorid, event)">
      <div  style="margin-left: auto; margin-right: 5px; float: left;">
          <svg  style="margin-top:4px"  width="14" height="12" xmlns="http://www.w3.org/2000/svg" class="bi bi-heart" fill-rule="evenodd" fill="currentColor" viewBox="0 0 20 25" clip-rule="evenodd"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402m5.726-20.583c-2.203 0-4.446 1.042-5.726 3.238-1.285-2.206-3.522-3.248-5.719-3.248-3.183 0-6.281 2.187-6.281 6.191 0 4.661 5.571 9.429 12 15.809 6.43-6.38 12-11.148 12-15.809 0-4.011-3.095-6.181-6.274-6.181"/></svg> </div>
   <div>
     <p style="float: left;">{{reactions}}</p>
   </div>
 </div>
-            <div  class="flex" v-if="reacted"  style="margin-left: auto; margin-right: 5px;" @click="react(id, authorid)">
+            <div  class="flex" v-if="reacted"  style="margin-left: auto; margin-right: 5px;" @click="react(id, authorid, event)">
      <div  style="margin-left: auto; margin-right: 5px; float: left;">
           <svg   style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="12" class="bi bi-heart fill-nostr" viewBox="0 0 20 25"><path d="M12 4.419c-2.826-5.695-11.999-4.064-11.999 3.27 0 7.27 9.903 10.938 11.999 15.311 2.096-4.373 12-8.041 12-15.311 0-7.327-9.17-8.972-12-3.27z"/></svg> </div>
 
@@ -108,7 +108,7 @@ const headers: Header[] = [
 ];
 
 
-async function react(eventid, authorid){
+async function react(eventid, authorid, evt){
 
 
    let event_id = EventId.parse(eventid)
@@ -133,8 +133,8 @@ async function react(eventid, authorid){
                         let requestid = res.id;
                         }
                    else {
-                      let event = new EventBuilder(7, "🧡", [])
-                     //let event = EventBuilder.reaction(event_id, "🧡")
+                     // let event = new EventBuilder(7, "🧡", [])
+                        let event = EventBuilder.reaction(evt, "🧡")
                         let requestid = await client.sendEventBuilder(event);
                    }
 
