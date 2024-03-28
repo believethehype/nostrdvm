@@ -14,12 +14,11 @@ import {
   Nip19Event,
   Alphabet,
   Keys,
-  nip04_decrypt,
   SecretKey,
   Duration,
   SingleLetterTag,
   NostrSigner,
-  nip44_encrypt,
+  nip44Encrypt,
   NIP44Version
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
@@ -206,7 +205,7 @@ async function  listen() {
 
     const handle = {
         // Handle event
-        handleEvent: async (relayUrl, event) => {
+        handleEvent: async (relayUrl, subscriptionId, event) => {
            let resonsetorequest = false
             sleep(1200).then(async () => {
               for (let tag in event.tags) {
@@ -779,7 +778,7 @@ async function subscribe_to_dvm() {
       }
        await nclient.connect()
 
-      let encnwc = nip44_encrypt(SecretKey.parse(store.state.nooglekey), PublicKey.parse(store.state.subscription_verifier_pubkey),
+      let encnwc = nip44Encrypt(SecretKey.parse(store.state.nooglekey), PublicKey.parse(store.state.subscription_verifier_pubkey),
       current_subscription_nwc.value, NIP44Version.V2)
 
       let content = {

@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@getalby/sdk": "^3.4.0",
-    "@rust-nostr/nostr-sdk": "^0.11.1",
+    "@rust-nostr/nostr-sdk": "^0.12.0",
     "@vuepic/vue-datepicker": "^7.4.1",
     "@vueuse/core": "^10.7.2",
     "bech32": "^2.0.0",

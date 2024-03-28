@@ -118,13 +118,13 @@ async function  listen() {
 
     const handle = {
         // Handle event
-        handleEvent: async (relayUrl, event) => {
+        handleEvent: async (relayUrl, subscriptionId, event) => {
              /* if (store.state.imagehasEventListener === false){
                 return true
               }*/
             //const dvmname =  getNamefromId(event.author.toHex())
             console.log("Received new event from", relayUrl);
-              console.log(event.asJson())
+             // console.log(event.asJ())
            let resonsetorequest = false
             sleep(0).then(async () => {
               for (let tag in event.tags) {

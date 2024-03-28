@@ -29,9 +29,12 @@ import VueDatePicker from "@vuepic/vue-datepicker";
 import {timestamp} from "@vueuse/core";
 import NoteTable from "@/components/NoteTable.vue";
 import {zap} from "@/components/helper/Zap.vue";
+import index from "vuex";
 
 let dvms =[]
 async function summarizefeed(eventids) {
+
+let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((b.index > a.index) ? -1 : 0);} );
 
    try {
      if(store.state.pubkey === undefined || localStorage.getItem('nostr-key-method') === "anon"){
@@ -47,9 +50,9 @@ async function summarizefeed(eventids) {
         let kind = 5001
 
          let tags = []
-         for (const tag of eventids){
+         for (const tag of sortedIds){
            try{
-              tags.push(["i", tag.id.toHex(), "event"])
+              tags.push(["i", tag.id, "event"])
            }
            catch{}
          }
@@ -110,7 +113,7 @@ async function  listen() {
 
     const handle = {
         // Handle event
-        handleEvent: async (relayUrl, event) => {
+        handleEvent: async (relayUrl, subscriptionId, event) => {
            /*   if (store.state.summarizationhasEventListener === false){
                 return true
               }*/
