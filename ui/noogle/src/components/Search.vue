@@ -178,7 +178,7 @@ async function  listen() {
 
     const handle = {
         // Handle event
-        handleEvent: async (relayUrl, event) => {
+        handleEvent: async (relayUrl, subscriptionId, event) => {
              /* if (store.state.hasEventListener === false){
                 return true
               }*/

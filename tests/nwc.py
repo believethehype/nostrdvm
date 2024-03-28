@@ -13,9 +13,7 @@ def playground():
 
     connectionstr = os.getenv("TEST_NWC")
     keys = Keys.parse(os.getenv("TEST_USER"))
-
     bolt11 = zaprequest("bot@nostrdvm.com", 5, "test", None, PublicKey.parse("npub1cc79kn3phxc7c6mn45zynf4gtz0khkz59j4anew7dtj8fv50aqrqlth2hf"), keys, dvmconfig.DVMConfig.RELAY_LIST, zaptype="private")
-
     print(bolt11)
     result = nwc_zap(connectionstr, bolt11, keys, externalrelay=None)
     print(result)

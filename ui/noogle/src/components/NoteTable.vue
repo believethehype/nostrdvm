@@ -119,22 +119,23 @@ async function react(eventid, authorid){
           if (objects !== undefined){
                 if(!objects.reacted ){
 
+
                    if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-                          let draft = {
+                       let draft = {
                             content: "🧡",
                             kind: 7,
                             pubkey: store.state.pubkey.toHex(),
                             tags: [],
                             createdAt: Date.now()
                           };
-
-                          let res = await amberSignerService.signEvent(draft)
-                          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-                          let requestid = res.id;
+                        let res = await amberSignerService.signEvent(draft)
+                        await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+                        let requestid = res.id;
                         }
                    else {
-                     let event = EventBuilder.reaction(event_id, public_key, "🧡")
-                        let res = await client.sendEventBuilder(event);
+                      let event = new EventBuilder(7, "🧡", [])
+                     //let event = EventBuilder.reaction(event_id, "🧡")
+                        let requestid = await client.sendEventBuilder(event);
                    }
 
                     objects.reacted = true

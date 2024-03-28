@@ -1,5 +1,6 @@
 import json
 import os
+import threading
 from pathlib import Path
 
 import dotenv
@@ -15,7 +16,6 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
-
 def playground():
     bot_config = DVMConfig()
     identifier = "bot_test"
@@ -26,7 +26,6 @@ def playground():
     bot_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     bot_config.LNBITS_URL = os.getenv("LNBITS_HOST")
 
-
     admin_config = AdminConfig()
 
     pdfextractor = textextraction_pdf.build_example("PDF Extractor", "pdf_extractor", admin_config)
@@ -34,12 +33,11 @@ def playground():
     pdfextractor.run()
     bot_config.SUPPORTED_DVMS.append(pdfextractor)  # We add translator to the bot
 
+    x = threading.Thread(target=Bot, args=([bot_config]))
+    x.start()
 
-
-
-    Bot(bot_config, admin_config)
     # Keep the main function alive for libraries that require it, like openai
-    keep_alive()
+    # keep_alive()
 
 
 if __name__ == '__main__':
