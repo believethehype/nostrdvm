@@ -438,6 +438,7 @@ async function  listen() {
                             items.push({
                               id: evt.id.toHex(),
                               content: await parseandreplacenpubsName(evt.content),
+                              event: evt,
                               author: name,
                               authorid: authorid,
                               authorurl: "https://njump.me/" + evt.author.toBech32(),
