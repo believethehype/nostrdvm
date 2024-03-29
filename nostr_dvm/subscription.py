@@ -266,7 +266,7 @@ class Subscription:
                                 PublicKey.parse(subscription.subscriber),
                                 subscription.tier_dtag, self.client, subscription.recipent)
 
-                            if not subscription_status["isActive"] or subscription_status["expires"]:
+                            if subscription_status["expires"]:
                                 update_subscription_sql_table(dvm_config.DB, subscription.id,
                                                               subscription.recipent,
                                                               subscription.subscriber, subscription.nwc,
