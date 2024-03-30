@@ -83,6 +83,8 @@ async function generate_feed(id) {
         let content = "NIP 90 Content Discovery request"
         let kind = 5300
         let tags = []
+        //tags.push(["param", "max_results", "100"])
+        //tags.push(["param", "user", store.state.pubkey.toHex()])
 
         let res;
         let requestid;
@@ -92,7 +94,7 @@ async function generate_feed(id) {
 
              let  tags_str = []
             for (let tag in tags){
-               tags_str.append(tag)
+               tags_str.push(tag)
             }
 
             let params_as_str = JSON.stringify(tags_str)
