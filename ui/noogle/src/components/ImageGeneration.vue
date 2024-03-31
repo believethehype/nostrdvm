@@ -38,6 +38,15 @@ let dvms =[]
 let hasmultipleinputs = false
 
 async function generate_image(message) {
+    if (!store.state.imagehasEventListener){
+       store.commit('set_imagehasEventListener', true)
+       listen()
+
+    }
+    else{
+      console.log("Already has event listener")
+    }
+
    try {
      if (message === undefined){
        message = "A purple Ostrich"
@@ -95,14 +104,7 @@ async function generate_image(message) {
         }
 
         store.commit('set_current_request_id_image', requestid)
-        if (!store.state.imagehasEventListener){
-           store.commit('set_imagehasEventListener', true)
-           listen()
 
-        }
-        else{
-          console.log("Already has event listener")
-        }
 
       } catch (error) {
         console.log(error);

@@ -75,6 +75,16 @@ async function generate_feed(id) {
 
    try {
 
+
+       if (!store.state.recommendationehasEventListener){
+           store.commit('set_recommendationEventListener', true)
+           listen()
+
+        }
+        else{
+          console.log("Already has event listener")
+        }
+
         let client = store.state.client
         //console.log(dvms.find(i => i.id === id).encryptionSupported)
 
@@ -185,14 +195,7 @@ async function generate_feed(id) {
 
 
         store.commit('set_current_request_id_recommendation', requestid)
-        if (!store.state.recommendationehasEventListener){
-           store.commit('set_recommendationEventListener', true)
-           listen()
 
-        }
-        else{
-          console.log("Already has event listener")
-        }
 
       } catch (error) {
         console.log(error);
@@ -966,7 +969,7 @@ const submitHandler = async () => {
             :key="dvm.id">
           <div className="card-body">
             <div className="playeauthor-wrapper">
-              <figure  className="w-20">
+              <figure  className="w-28">
                    <img className="avatar"  v-if="dvm.image" :src="dvm.image"  alt="DVM Picture" />
                    <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
               </figure>
@@ -1325,7 +1328,7 @@ h3 {
 
 
 .avatar {
-  margin-right: 10px;
+  margin-right: auto;
   margin-left: 0px;
   display: inline-block;
   width: 60px;
