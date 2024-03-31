@@ -60,6 +60,15 @@ onMounted(async () => {
 })
 
 async function send_search_request(msg) {
+
+   if (!store.state.hasEventListener){
+          store.commit('set_hasEventListener', true)
+          listen()
+
+      }
+      else{
+        console.log("Already has event listener")
+      }
    try {
      if (msg === undefined){
        msg = "Nostr"
@@ -154,14 +163,7 @@ async function send_search_request(msg) {
         store.commit('set_current_request_id_search', requestid)
         store.commit('set_current_request_profile_id_search', requestid_profile)
 
-        if (!store.state.hasEventListener){
-            store.commit('set_hasEventListener', true)
-            listen()
 
-        }
-        else{
-          console.log("Already has event listener")
-        }
         console.log(res)
       } catch (error) {
         console.log(error);

@@ -33,7 +33,14 @@ import index from "vuex";
 
 let dvms =[]
 async function summarizefeed(eventids) {
+  if (!store.state.summarizationhasEventListener){
+           store.commit('set_summariarizationEventListener', true)
+           listen()
 
+        }
+        else{
+          console.log("Already has event listener")
+        }
 let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((b.index > a.index) ? -1 : 0);} );
 
    try {
@@ -89,14 +96,7 @@ let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((
         }
 
         store.commit('set_current_request_id_summarization', requestid)
-        if (!store.state.summarizationhasEventListener){
-           store.commit('set_summariarizationEventListener', true)
-           listen()
 
-        }
-        else{
-          console.log("Already has event listener")
-        }
 
       } catch (error) {
         console.log(error);
