@@ -72,7 +72,6 @@ class Subscription:
 
             def handle(self, relay_url, subscription_id, nostr_event: Event):
                 if nostr_event.kind().as_u64() == 5906:  # TODO add to list of events
-                    print(nostr_event.as_json())
                     handle_nwc_request(nostr_event)
                 elif nostr_event.kind().as_u64() == EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT.as_u64():
                     handle_cancel(nostr_event)
@@ -158,11 +157,15 @@ class Subscription:
             print(overallsplit)
             zapped_amount = 0
             for zap in zaps:
+                if zap[1] == "":
+                    zap[1] = Keys.parse(self.dvm_config.PRIVATE_KEY).public_key().to_hex()
+
                 name, nip05, lud16 = fetch_user_metadata(zap[1], self.client)
                 splitted_amount = math.floor(
-                    (int(zap[2]) / overallsplit) * int(overall_amount) / 1000)
+                    (int(zap[1]) / overallsplit) * int(overall_amount) / 1000)
                 # invoice = create_bolt11_lud16(lud16, splitted_amount)
                 # TODO add details about DVM in message
+
                 invoice = zaprequest(lud16, splitted_amount, tier, None,
                                      PublicKey.parse(zap[1]), self.keys, DVMConfig.RELAY_LIST)
                 print(invoice)
@@ -177,7 +180,6 @@ class Subscription:
             if zapped_amount < overall_amount * 0.8:  # TODO how do we handle failed zaps for some addresses? we are ok with 80% for now
                 success = False
             else:
-                print("Zapped successfully")
                 success = True
                 # if no active subscription exists OR the subscription ended, pay
 
@@ -321,6 +323,14 @@ class Subscription:
                         send_status_success(nostr_event, "noogle.lol")
 
 
+                        keys = Keys.parse(dvm_config.PRIVATE_KEY)
+                        message = ("Subscribed to DVM " + subscription.tier + ". Renewing on: " + str(
+                            Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T", " ")))
+                        evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber), message,
+                                                                None).to_event(keys)
+                        send_event(evt, client=self.client, dvm_config=dvm_config)
+
+
 
                 except Exception as e:
                     print(e)
@@ -373,7 +383,17 @@ class Subscription:
                                                               subscription.tier_dtag, subscription.zaps, recipe,
                                                               success,
                                                               Timestamp.now().as_secs(), subscription.tier)
+
                                 print("updated subscription entry")
+
+                          
+                                keys = Keys.parse(dvm_config.PRIVATE_KEY)
+                                message = ("Renewed Subscription to DVM " + subscription.tier + ". Next renewal: " + str(
+                                    Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace( "T", " ")))
+                                evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber), message,
+                                                                        None).to_event(keys)
+                                send_event(evt, client=self.client, dvm_config=dvm_config)
+
 
 
                     else:

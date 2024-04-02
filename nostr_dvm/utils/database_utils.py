@@ -213,16 +213,6 @@ def update_user_subscription(npub, subscribed_until, client, dvm_config):
                          Timestamp.now().as_secs(), subscribed_until)
         print("Updated user subscription for: " + str(user.name))
 
-        if dvm_config is not None:
-            keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            # time.sleep(1.0)
-
-            message = ("Subscribed to DVM " + dvm_config.NIP89.NAME + " until: " + str(
-                Timestamp.from_secs(subscribed_until).to_human_datetime().replace("Z", " ").replace("T", " ")))
-
-            evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.from_hex(npub), message,
-                                                    None).to_event(keys)
-            send_event(evt, client=client, dvm_config=dvm_config)
 
 
 def get_or_add_user(db, npub, client, config, update=False, skip_meta = False):
