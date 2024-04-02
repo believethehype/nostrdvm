@@ -19,7 +19,7 @@ import {
   SingleLetterTag,
   NostrSigner,
   nip44Encrypt,
-  NIP44Version
+  NIP44Version, nip04Encrypt
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -723,7 +723,7 @@ async function subscribe_to_dvm() {
 
 
 
-  if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subscription_dvm.value.nip88.subscriptionId  ){
+
       let res;
       let requestid;
       let kind = 7001
@@ -773,39 +773,44 @@ async function subscribe_to_dvm() {
       current_subscription_dvm.value.nip88.subscriptionId = requestid
       console.log(current_subscription_dvm.value.nip88.subscriptionId)
 
-  }
+
 
   try{
-    let receiver = PublicKey.parse(store.state.subscription_verifier_pubkey)
-      let signer = NostrSigner.keys(Keys.parse(store.state.nooglekey))
-      let nclient = new Client(signer)
+      let nwcdvm = PublicKey.parse(store.state.subscription_verifier_pubkey)
+    let key = Keys.parse(store.state.nooglekey)
+      console.log(key.publicKey.toHex())
+      let nsigner = NostrSigner.keys(key)
+      let nclient = new Client(nsigner)
 
        for (const relay of store.state.relays) {
         await nclient.addRelay(relay);
       }
        await nclient.connect()
 
-      let encnwc = nip44Encrypt(SecretKey.parse(store.state.nooglekey), PublicKey.parse(store.state.subscription_verifier_pubkey),
-      current_subscription_nwc.value, NIP44Version.V2)
+      let tags_str = []
+      let nwctag = Tag.parse(["param", "nwc", current_subscription_nwc.value])
+      tags_str.push(nwctag.asVec())
 
-      let content = {
-        "subscribe_event":  current_subscription_dvm.value.nip88.subscriptionId,
-        "nwc": encnwc,
-        "cadence" : current_subscription_cadence.value,
-        "overall_amount" : current_subscription_amount.value,
-        "tier_dtag" : current_subscription_dvm.value.nip88.d,
-        "recipient" : current_subscription_dvm.value.id,
-        "subscriber" : store.state.pubkey.toHex(),
-        "zaps" : current_subscription_dvm.value.nip88.zaps
+      let ptag = Tag.parse(["param", "p", store.state.pubkey.toHex()])
+      tags_str.push(ptag.asVec())
+      let tags_as_str = JSON.stringify(tags_str)
 
-      }
+    try{
+
+       let msg =  await (await nclient.signer()).nip04Encrypt(nwcdvm, tags_as_str)
+        let tags_t = []
+        tags_t.push(Tag.parse(["p", store.state.subscription_verifier_pubkey]))
+        tags_t.push(Tag.parse(["encrypted"]))
+        tags_t.push(Tag.parse(["client", "noogle"]))
+        let evt = new EventBuilder(5906, msg, tags_t)
+        console.log(evt)
+        let res = await nclient.sendEventBuilder(evt);
+           }
+    catch (e){
+        console.log(e)
+    }
 
 
-       console.log(content)
-      let msg = JSON.stringify(content)
-      console.log(msg)
-      let id = await nclient.sendDirectMsg(receiver, msg)
-      console.log(id)
 
       let isSubscribed = false
      let timeout = 0
