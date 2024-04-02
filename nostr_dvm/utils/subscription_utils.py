@@ -19,6 +19,7 @@ class Subscription:
     recipe: str
     active: bool
     lastupdate: int
+    tier: str
 
 
 def create_subscription_sql_table(db):
@@ -44,7 +45,8 @@ def create_subscription_sql_table(db):
                                             zaps text,
                                             recipe text,
                                             active boolean,
-                                            lastupdate int
+                                            lastupdate int,
+                                            tier text
                                             
                                           
                                         ); """)
@@ -56,16 +58,16 @@ def create_subscription_sql_table(db):
 
 
 def add_to_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps,
-                                  recipe, active, lastupdate):
+                                  recipe, active, lastupdate, tier):
     try:
         con = sqlite3.connect(db)
         cur = con.cursor()
-        data = (id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate)
+        data = (id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate, tier)
         print(id)
         print(recipient)
         print(subscriber)
         print(nwc)
-        cur.execute("INSERT or IGNORE INTO subscriptions VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data)
+        cur.execute("INSERT or IGNORE INTO subscriptions VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data)
         con.commit()
         con.close()
     except Error as e:
@@ -97,6 +99,7 @@ def get_from_subscription_sql_table(db, id):
             subscription.recipe = row[11]
             subscription.active = row[12]
             subscription.lastupdate = row[13]
+            subscription.tier = row[14]
 
             return subscription
 
@@ -115,7 +118,7 @@ def get_all_subscriptions_from_sql_table(db):
         records = cursor.fetchall()
         subscriptions = []
         for row in records:
-            subscriptions.append(Subscription(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13]))
+            subscriptions.append(Subscription(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14]))
         cursor.close()
         return subscriptions
 
@@ -137,11 +140,11 @@ def delete_from_subscription_sql_table(db, id):
         print(e)
 
 def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps,
-                                  recipe, active, lastupdate):
+                                  recipe, active, lastupdate, tier):
     try:
         con = sqlite3.connect(db)
         cur = con.cursor()
-        data = (recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate, id)
+        data = (recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate, tier, id)
 
         cur.execute(""" UPDATE subscriptions
                   SET recipient = ? ,
@@ -156,7 +159,8 @@ def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, a
                       zaps = ?,
                       recipe = ?,
                       active = ?,
-                      lastupdate = ?
+                      lastupdate = ?,
+                      tier = ?
 
                   WHERE id = ?""", data)
         con.commit()
