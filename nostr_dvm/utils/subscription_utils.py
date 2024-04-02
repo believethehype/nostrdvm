@@ -11,6 +11,7 @@ class Subscription:
     nwc: str
     cadence: str
     amount: int
+    unit: str
     begin: int
     end: int
     tier_dtag: str
@@ -36,6 +37,7 @@ def create_subscription_sql_table(db):
                                             nwc text NOT NULL,
                                             cadence text,
                                             amount int,
+                                            unit text,
                                             begin int,
                                             end int,
                                             tier_dtag text,
@@ -53,17 +55,17 @@ def create_subscription_sql_table(db):
         print(e)
 
 
-def add_to_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, begin, end, tier_dtag, zaps,
+def add_to_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps,
                                   recipe, active, lastupdate):
     try:
         con = sqlite3.connect(db)
         cur = con.cursor()
-        data = (id, recipient, subscriber, nwc, cadence, amount, begin, end, tier_dtag, zaps, recipe, active, lastupdate)
+        data = (id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate)
         print(id)
         print(recipient)
         print(subscriber)
         print(nwc)
-        cur.execute("INSERT or IGNORE INTO subscriptions VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data)
+        cur.execute("INSERT or IGNORE INTO subscriptions VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data)
         con.commit()
         con.close()
     except Error as e:
@@ -87,13 +89,14 @@ def get_from_subscription_sql_table(db, id):
             subscription.nwc = row[3]
             subscription.cadence = row[4]
             subscription.amount = row[5]
-            subscription.begin = row[6]
-            subscription.end = row[7]
-            subscription.tier_dtag = row[8]
-            subscription.zaps = row[9]
-            subscription.recipe = row[10]
-            subscription.active = row[11]
-            subscription.lastupdate = row[12]
+            subscription.unit = row[6]
+            subscription.begin = row[7]
+            subscription.end = row[8]
+            subscription.tier_dtag = row[9]
+            subscription.zaps = row[10]
+            subscription.recipe = row[11]
+            subscription.active = row[12]
+            subscription.lastupdate = row[13]
 
             return subscription
 
@@ -112,7 +115,7 @@ def get_all_subscriptions_from_sql_table(db):
         records = cursor.fetchall()
         subscriptions = []
         for row in records:
-            subscriptions.append(Subscription(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12]))
+            subscriptions.append(Subscription(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13]))
         cursor.close()
         return subscriptions
 
@@ -133,12 +136,12 @@ def delete_from_subscription_sql_table(db, id):
     except Error as e:
         print(e)
 
-def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, begin, end, tier_dtag, zaps,
+def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps,
                                   recipe, active, lastupdate):
     try:
         con = sqlite3.connect(db)
         cur = con.cursor()
-        data = (recipient, subscriber, nwc, cadence, amount, begin, end, tier_dtag, zaps, recipe, active, lastupdate, id)
+        data = (recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate, id)
 
         cur.execute(""" UPDATE subscriptions
                   SET recipient = ? ,
@@ -146,6 +149,7 @@ def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, a
                       nwc = ? ,
                       cadence = ? ,
                       amount = ? ,
+                      unit = ? ,
                       begin = ? ,
                       end = ?,
                       tier_dtag = ?,
