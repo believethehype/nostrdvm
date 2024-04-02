@@ -5,7 +5,7 @@ from threading import Thread
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, NostrSigner
+    nip04_encrypt, NostrSigner, PublicKey, Event
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -40,12 +40,12 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     config = DVMConfig
     send_event(event, client=client, dvm_config=config)
     return event.as_json()
+
+
 def nostr_client_test_search_profile(input):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", input, "text"])
-
-
 
     relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
@@ -65,6 +65,7 @@ def nostr_client_test_search_profile(input):
     config = DVMConfig
     send_event(event, client=client, dvm_config=config)
     return event.as_json()
+
 
 def nostr_client_test_image(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
@@ -94,6 +95,33 @@ def nostr_client_test_image(prompt):
     return event.as_json()
 
 
+def nostr_client_test_censor_filter(users):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to find people to ignore based on people the user trusts"])
+    # pTag = Tag.parse(["p", user, "text"])
+    tags = [relaysTag, alttag]
+    for user in users:
+        iTag = Tag.parse(["i", user, "text"])
+        tags.append(iTag)
+
+    event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me bad actors"),
+                         tags).to_event(keys)
+
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    for relay in relay_list:
+        client.add_relay(relay)
+    client.connect()
+    config = DVMConfig
+    send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+
+
 def nostr_client_test_tts(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
@@ -108,7 +136,7 @@ def nostr_client_test_tts(prompt):
                          [iTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
-                  "wss://nostr-pub.wellorder.net"]
+                  ]
 
     signer = NostrSigner.keys(keys)
     client = Client(signer)
@@ -123,8 +151,6 @@ def nostr_client_test_tts(prompt):
 def nostr_client_test_image_private(prompt, cashutoken):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     receiver_keys = Keys.parse(check_and_set_private_key("replicate_sdxl"))
-
-    # TODO more advanced logic, more parsing, params etc, just very basic test functions for now
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
@@ -177,31 +203,34 @@ def nostr_client():
         Timestamp.now())  # events to us specific
     dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
                                   EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
-    client.subscribe([dm_zap_filter, dvm_filter])
+    client.subscribe([dm_zap_filter, dvm_filter], None)
 
     # nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
     # nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     # nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
-    #nostr_client_test_image("a beautiful purple ostrich watching the sunset")
-    nostr_client_test_search_profile("dontbelievew")
+    # nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+    # nostr_client_test_search_profile("dontbelieve")
+    wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
+    nostr_client_test_censor_filter(wot)
+
     # nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
 
     # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
     # nostr_client_test_image_private("a beautiful ostrich watching the sunset")
     class NotificationHandler(HandleNotification):
-        def handle(self, relay_url, event):
+        def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
-            if event.kind() == 7000:
+            if event.kind().as_u64() == 7000:
                 print("[Nostr Client]: " + event.as_json())
-            elif 6000 < event.kind() < 6999:
+            elif 6000 < event.kind().as_u64() < 6999:
                 print("[Nostr Client]: " + event.as_json())
                 print("[Nostr Client]: " + event.content())
 
-            elif event.kind() == 4:
+            elif event.kind().as_u64() == 4:
                 dec_text = nip04_decrypt(sk, event.author(), event.content())
                 print("[Nostr Client]: " + f"Received new msg: {dec_text}")
 
-            elif event.kind() == 9735:
+            elif event.kind().as_u64() == 9735:
                 print("[Nostr Client]: " + f"Received new zap:")
                 print(event.as_json())
 
