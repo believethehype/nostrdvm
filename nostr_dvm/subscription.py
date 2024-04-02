@@ -152,20 +152,22 @@ class Subscription:
             overallsplit = 0
 
             for zap in zaps:
-                overallsplit += int(zap['split'])
+                print(zap)
+                overallsplit += int(zap[2])
 
+            print(overallsplit)
             zapped_amount = 0
             for zap in zaps:
-                name, nip05, lud16 = fetch_user_metadata(zap['key'], self.client)
+                name, nip05, lud16 = fetch_user_metadata(zap[0], self.client)
                 splitted_amount = math.floor(
-                    (int(zap['split']) / overallsplit) * int(overall_amount) / 1000)
+                    (int(zap[2]) / overallsplit) * int(overall_amount) / 1000)
                 # invoice = create_bolt11_lud16(lud16, splitted_amount)
                 # TODO add details about DVM in message
                 invoice = zaprequest(lud16, splitted_amount, "DVM subscription", None,
-                                     PublicKey.parse(zap['key']), self.keys, DVMConfig.RELAY_LIST)
+                                     PublicKey.parse(zap[0]), self.keys, DVMConfig.RELAY_LIST)
                 print(invoice)
                 if invoice is not None:
-                    nwc_event_id = nwc_zap(nwc, invoice, self.keys, zap['relay'])
+                    nwc_event_id = nwc_zap(nwc, invoice, self.keys, zap[1])
                     if nwc_event_id is None:
                         print("error zapping " + lud16)
                     else:
@@ -212,7 +214,6 @@ class Subscription:
                 return
 
             try:
-                print("CONTENT:" + nostr_event.content())
                 decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
                 try:
                     jsonevent = json.loads(decrypted_text)
@@ -339,7 +340,7 @@ class Subscription:
                                 subscription.tier_dtag, self.client, subscription.recipent)
 
                             if subscription_status["expires"]:
-                                update_subscription_sql_table(dvm_config.DB, subscription.id,
+                                update_subscription_sql_table(dvm_config.DB, subscription_status["subscriptionId"],
                                                               subscription.recipent,
                                                               subscription.subscriber, subscription.nwc,
                                                               subscription.cadence, subscription.amount,
