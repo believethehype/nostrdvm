@@ -162,7 +162,7 @@ class Subscription:
 
                 name, nip05, lud16 = fetch_user_metadata(zap[1], self.client)
                 splitted_amount = math.floor(
-                    (int(zap[1]) / overallsplit) * int(overall_amount) / 1000)
+                    (int(zap[3]) / overallsplit) * int(overall_amount) / 1000)
                 # invoice = create_bolt11_lud16(lud16, splitted_amount)
                 # TODO add details about DVM in message
 
@@ -324,7 +324,7 @@ class Subscription:
 
 
                         keys = Keys.parse(dvm_config.PRIVATE_KEY)
-                        message = ("Subscribed to DVM " + subscription.tier + ". Renewing on: " + str(
+                        message = ("Subscribed to DVM " + tier + ". Renewing on: " + str(
                             Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T", " ")))
                         evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber), message,
                                                                 None).to_event(keys)
@@ -386,7 +386,7 @@ class Subscription:
 
                                 print("updated subscription entry")
 
-                          
+
                                 keys = Keys.parse(dvm_config.PRIVATE_KEY)
                                 message = ("Renewed Subscription to DVM " + subscription.tier + ". Next renewal: " + str(
                                     Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace( "T", " ")))
