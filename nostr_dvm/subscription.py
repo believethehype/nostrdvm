@@ -100,7 +100,7 @@ class Subscription:
                 if subscription is not None:
                     update_subscription_sql_table(dvm_config.DB, kind7001eventid, recipient,
                                                   subscription.subscriber, subscription.nwc, subscription.cadence,
-                                                  subscription.amount, subscription.begin, subscription.end,
+                                                  subscription.amount, subscription.unit, subscription.begin, subscription.end,
                                                   subscription.tier_dtag, subscription.zaps, subscription.recipe,
                                                   False, Timestamp.now().as_secs())
            # send_status_canceled(kind7001eventid, nostr_event) # TODO, waiting for spec
@@ -233,6 +233,7 @@ class Subscription:
                         tier_dtag = ""
                         recipient = ""
                         cadence = ""
+                        unit = "msats"
                         zaps = []
                         overall_amount = 0
                         for tag in evts[0].tags():
@@ -303,13 +304,13 @@ class Subscription:
 
                         if subscription is None:
                             add_to_subscription_sql_table(dvm_config.DB, event7001id, recipient, subscriber, nwc,
-                                                          cadence, overall_amount, start, end, tier_dtag,
+                                                          cadence, overall_amount, unit, start, end, tier_dtag,
                                                           zapsstr, recipe, isactivesubscription,
                                                           Timestamp.now().as_secs())
                             print("new subscription entry")
                         else:
                             update_subscription_sql_table(dvm_config.DB, event7001id, recipient, subscriber, nwc,
-                                                          cadence, overall_amount, start, end,
+                                                          cadence, overall_amount, unit, start, end,
                                                           tier_dtag, zapsstr, recipe, isactivesubscription,
                                                           Timestamp.now().as_secs())
                             print("updated subscription entry")
@@ -343,7 +344,7 @@ class Subscription:
                                 update_subscription_sql_table(dvm_config.DB, subscription_status["subscriptionId"],
                                                               subscription.recipent,
                                                               subscription.subscriber, subscription.nwc,
-                                                              subscription.cadence, subscription.amount,
+                                                              subscription.cadence, subscription.amount, subscription.unit,
                                                               subscription.begin, subscription.end,
                                                               subscription.tier_dtag, subscription.zaps,
                                                               subscription.recipe,
@@ -364,7 +365,7 @@ class Subscription:
                                 update_subscription_sql_table(dvm_config.DB, subscription.id,
                                                               subscription.recipent,
                                                               subscription.subscriber, subscription.nwc,
-                                                              subscription.cadence, subscription.amount,
+                                                              subscription.cadence, subscription.amount, subscription.unit,
                                                               subscription.begin, end,
                                                               subscription.tier_dtag, subscription.zaps, recipe,
                                                               success,
