@@ -722,58 +722,56 @@ async function subscribe_to_dvm() {
   store.commit('set_recommendation_dvms', dvms)
 
 
+if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subscription_dvm.value.nip88.subscriptionId  ) {
+
+  let res;
+  let requestid;
+  let kind = 7001
+  let content = "Subscription from noogle.lol"
 
 
-      let res;
-      let requestid;
-      let kind = 7001
-      let content = "Subscription from noogle.lol"
+  let tags = [
+    ["p", current_subscription_dvm.value.id],
+    ["e", current_subscription_dvm.value.nip88.eventid],
+    ["event", JSON.stringify(current_subscription_dvm.value.nip88.event)],
+    ["amount", (current_subscription_amount.value).toString(), "msats", current_subscription_cadence.value],
+  ]
+  for (let zap of current_subscription_dvm.value.nip88.zaps) {
+    console.log(zap.key + " " + zap.split)
+    let zaptag = ["zap", zap.key, zap.split]
+    tags.push(zaptag)
+  }
 
+  console.log("Creating 7001 event")
+  if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+    let draft = {
+      content: content,
+      kind: kind,
+      pubkey: store.state.pubkey.toHex(),
+      tags: tags,
+      createdAt: Date.now()
+    };
 
+    res = await amberSignerService.signEvent(draft)
+    await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+    requestid = res.id;
+    console.log(requestid)
 
-      let tags = [
-         [ "p", current_subscription_dvm.value.id],
-         [ "e" , current_subscription_dvm.value.nip88.eventid],
-         [ "event", JSON.stringify(current_subscription_dvm.value.nip88.event)],
-         [ "amount", (current_subscription_amount.value).toString(), "msats", current_subscription_cadence.value],
-      ]
-      for(let zap of current_subscription_dvm.value.nip88.zaps){
-        console.log(zap.key + " " + zap.split)
-        let zaptag = [ "zap", zap.key, zap.split]
-        tags.push(zaptag)
-      }
+  } else {
+    let tags_t = []
+    for (let tag of tags) {
+      tags_t.push(Tag.parse(tag))
+    }
+    let evt = new EventBuilder(kind, content, tags_t)
+    res = await client.sendEventBuilder(evt);
+    requestid = res.toHex()
+    console.log(res)
+  }
 
-     console.log("Creating 7001 event")
-      if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-          let draft = {
-            content: content,
-            kind: kind,
-            pubkey: store.state.pubkey.toHex(),
-            tags: tags,
-            createdAt: Date.now()
-          };
+  current_subscription_dvm.value.nip88.subscriptionId = requestid
+  console.log(current_subscription_dvm.value.nip88.subscriptionId)
 
-          res = await amberSignerService.signEvent(draft)
-          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = res.id;
-          console.log(requestid)
-
-       }
-      else{
-         let tags_t = []
-         for (let tag of tags){
-           tags_t.push(Tag.parse(tag))
-         }
-         let evt = new EventBuilder(kind, content, tags_t)
-        res = await client.sendEventBuilder(evt);
-        requestid = res.toHex()
-        console.log(res)
-      }
-
-      current_subscription_dvm.value.nip88.subscriptionId = requestid
-      console.log(current_subscription_dvm.value.nip88.subscriptionId)
-
-
+}
 
   try{
       let nwcdvm = PublicKey.parse(store.state.subscription_verifier_pubkey)
