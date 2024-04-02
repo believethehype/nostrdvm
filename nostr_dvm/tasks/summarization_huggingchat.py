@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -106,7 +107,9 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
 
         try:
             chatbot = hugchat.ChatBot(cookies=cookies.get_dict())  # or cookie_path="usercookies/<email>.json"
-            query_result = chatbot.query("Summarize the following notes: " + options["prompt"])
+            text = re.sub(r'^https?:\/\/.*[\r\n]*', '', str(options["prompt"]), flags=re.MULTILINE)
+
+            query_result = chatbot.query("Summarize the following notes: " + text[:3500])
             print(query_result["text"])  # or query_result.text or query_result["text"]
             return str(query_result["text"]).lstrip()
 
