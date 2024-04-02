@@ -813,7 +813,7 @@ if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subsc
       let isSubscribed = false
      let timeout = 0
      let subscription_status
-      while (!isSubscribed && timeout < 15){
+      while (!isSubscribed && timeout < 30){
          dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).status = "Subscribing, please wait.."
          await sleep(5000)
          timeout = timeout +1
