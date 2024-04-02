@@ -153,21 +153,21 @@ class Subscription:
 
             for zap in zaps:
                 print(zap)
-                overallsplit += int(zap[1])
+                overallsplit += int(zap[3])
 
             print(overallsplit)
             zapped_amount = 0
             for zap in zaps:
-                name, nip05, lud16 = fetch_user_metadata(zap[0], self.client)
+                name, nip05, lud16 = fetch_user_metadata(zap[1], self.client)
                 splitted_amount = math.floor(
                     (int(zap[2]) / overallsplit) * int(overall_amount) / 1000)
                 # invoice = create_bolt11_lud16(lud16, splitted_amount)
                 # TODO add details about DVM in message
-                invoice = zaprequest(lud16, splitted_amount, "DVM subscription", None,
-                                     PublicKey.parse(zap[0]), self.keys, DVMConfig.RELAY_LIST)
+                invoice = zaprequest(lud16, splitted_amount, tier, None,
+                                     PublicKey.parse(zap[1]), self.keys, DVMConfig.RELAY_LIST)
                 print(invoice)
                 if invoice is not None:
-                    nwc_event_id = nwc_zap(nwc, invoice, self.keys, zap[1])
+                    nwc_event_id = nwc_zap(nwc, invoice, self.keys, zap[2])
                     if nwc_event_id is None:
                         print("error zapping " + lud16)
                     else:
@@ -289,7 +289,7 @@ class Subscription:
 
                             if not subscription_status["isActive"]:
 
-                                success = pay_zap_split(nwc, overall_amount, zaps)
+                                success = pay_zap_split(nwc, overall_amount, zaps, tier, unit)
                                 start = Timestamp.now().as_secs()
                                 end = infer_subscription_end_time(start, cadence)
                             else:
@@ -355,7 +355,7 @@ class Subscription:
                                                               Timestamp.now().as_secs(), subscription.tier)
                             else:
                                 zaps = json.loads(subscription.zaps)
-                                success = pay_zap_split(subscription.nwc, subscription.amount, zaps)
+                                success = pay_zap_split(subscription.nwc, subscription.amount, zaps, subscription.tier, subscription.unit)
                                 if success:
                                     end = infer_subscription_end_time(Timestamp.now().as_secs(), subscription.cadence)
                                     recipe = make_subscription_zap_recipe(subscription.id, subscription.recipent,
