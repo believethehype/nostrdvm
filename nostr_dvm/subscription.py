@@ -102,7 +102,7 @@ class Subscription:
                                                   subscription.subscriber, subscription.nwc, subscription.cadence,
                                                   subscription.amount, subscription.unit, subscription.begin, subscription.end,
                                                   subscription.tier_dtag, subscription.zaps, subscription.recipe,
-                                                  False, Timestamp.now().as_secs())
+                                                  False, Timestamp.now().as_secs(), subscription.tier)
            # send_status_canceled(kind7001eventid, nostr_event) # TODO, waiting for spec
 
         def infer_subscription_end_time(start, cadence):
@@ -148,12 +148,12 @@ class Subscription:
                 EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + "success" + " " + reaction_event.as_json())
 
 
-        def pay_zap_split(nwc, overall_amount, zaps, unit="msats"):
+        def pay_zap_split(nwc, overall_amount, zaps, tier,  unit="msats"):
             overallsplit = 0
 
             for zap in zaps:
                 print(zap)
-                overallsplit += int(zap[2])
+                overallsplit += int(zap[1])
 
             print(overallsplit)
             zapped_amount = 0
@@ -235,6 +235,7 @@ class Subscription:
                         cadence = ""
                         unit = "msats"
                         zaps = []
+                        tier = "DVM"
                         overall_amount = 0
                         for tag in evts[0].tags():
                             if tag.as_vec()[0] == "amount":
@@ -254,8 +255,10 @@ class Subscription:
                                 for tag in subscription_event.tags():
                                     if tag.as_vec()[0] == "d":
                                         tier_dtag = tag.as_vec()[1]
-                                    if tag.as_vec()[0] == "zap":
+                                    elif tag.as_vec()[0] == "zap":
                                         zaps.append(tag.as_vec())
+                                    elif tag.as_vec()[0] == "title":
+                                        tier = tag.as_vec()[1]
 
                         if tier_dtag == "" or len(zaps) == 0:
                             tierfilter = Filter().id(EventId.parse(subscription_event_id))
@@ -306,13 +309,13 @@ class Subscription:
                             add_to_subscription_sql_table(dvm_config.DB, event7001id, recipient, subscriber, nwc,
                                                           cadence, overall_amount, unit, start, end, tier_dtag,
                                                           zapsstr, recipe, isactivesubscription,
-                                                          Timestamp.now().as_secs())
+                                                          Timestamp.now().as_secs(), tier)
                             print("new subscription entry")
                         else:
                             update_subscription_sql_table(dvm_config.DB, event7001id, recipient, subscriber, nwc,
                                                           cadence, overall_amount, unit, start, end,
                                                           tier_dtag, zapsstr, recipe, isactivesubscription,
-                                                          Timestamp.now().as_secs())
+                                                          Timestamp.now().as_secs(), tier)
                             print("updated subscription entry")
 
                         send_status_success(nostr_event, "noogle.lol")
@@ -349,7 +352,7 @@ class Subscription:
                                                               subscription.tier_dtag, subscription.zaps,
                                                               subscription.recipe,
                                                               False,
-                                                              Timestamp.now().as_secs())
+                                                              Timestamp.now().as_secs(), subscription.tier)
                             else:
                                 zaps = json.loads(subscription.zaps)
                                 success = pay_zap_split(subscription.nwc, subscription.amount, zaps)
@@ -369,7 +372,7 @@ class Subscription:
                                                               subscription.begin, end,
                                                               subscription.tier_dtag, subscription.zaps, recipe,
                                                               success,
-                                                              Timestamp.now().as_secs())
+                                                              Timestamp.now().as_secs(), subscription.tier)
                                 print("updated subscription entry")
 
 
