@@ -326,7 +326,7 @@ class Subscription:
                         keys = Keys.parse(dvm_config.PRIVATE_KEY)
                         message = ("Subscribed to DVM " + tier + ". Renewing on: " + str(
                             Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T", " ")))
-                        evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber), message,
+                        evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscriber), message,
                                                                 None).to_event(keys)
                         send_event(evt, client=self.client, dvm_config=dvm_config)
 
