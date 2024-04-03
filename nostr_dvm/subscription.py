@@ -57,7 +57,7 @@ class Subscription:
         if admin_config is not None:
             for key in admin_config.USERNPUBS:
                 authors.append(PublicKey.parse(key))
-        dvm_filter = Filter().authors(authors).pubkey(public_key).kinds([Kind(5906)]).since(Timestamp.now())
+        dvm_filter = Filter().authors(authors).pubkey(public_key).kinds([EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(Timestamp.now())
 
         self.client.subscribe([zap_filter, dvm_filter, cancel_subscription_filter], None)
 
@@ -208,7 +208,7 @@ class Subscription:
             self.subscription = subscription
 
         def handle(self, relay_url, subscription_id, nostr_event: Event):
-            if nostr_event.kind().as_u64() == 5906:  # TODO add to list of events
+            if nostr_event.kind().as_u64() == EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION.as_u64():
                 self.subscription.handle_nwc_request(nostr_event)
             elif nostr_event.kind().as_u64() == EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT.as_u64():
                 self.subscription.handle_cancel(nostr_event)
