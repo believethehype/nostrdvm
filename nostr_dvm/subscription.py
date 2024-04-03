@@ -1,4 +1,5 @@
 import json
+import os
 import signal
 import time
 from datetime import timedelta
@@ -62,7 +63,7 @@ class Subscription:
 
         create_subscription_sql_table(dvm_config.DB)
 
-        self.client.handle_notifications(self.NotificationHandler())
+        self.client.handle_notifications(self.NotificationHandler(self))
 
         try:
             while True:
@@ -198,7 +199,8 @@ class Subscription:
         return end
 
     def send_direct_message(self, recipient, message):
-        evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(recipient), message, None).to_event(self.keys)
+        evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(recipient), message, None).to_event(
+            self.keys)
         send_event(evt, client=self.client, dvm_config=self.dvm_config)
 
     class NotificationHandler(HandleNotification):
@@ -213,6 +215,32 @@ class Subscription:
 
         def handle_msg(self, relay_url, msg):
             pass
+
+    def send_status_success(self, original_event, domain):
+
+        e_tag = Tag.parse(["e", original_event.id().to_hex()])
+        p_tag = Tag.parse(["p", original_event.author().to_hex()])
+        status_tag = Tag.parse(["status", "success", "Job has been scheduled, you can manage it on " + domain])
+        reply_tags = [status_tag]
+        encryption_tags = []
+
+        encrypted_tag = Tag.parse(["encrypted"])
+        encryption_tags.append(encrypted_tag)
+        encryption_tags.append(p_tag)
+        encryption_tags.append(e_tag)
+
+        str_tags = []
+        for element in reply_tags:
+            str_tags.append(element.as_vec())
+
+        content = json.dumps(str_tags)
+        content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
+                                content)
+        reply_tags = encryption_tags
+
+        keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
+        reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
+        send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
 
     def handle_cancel(self, nostr_event):
         print(nostr_event.as_json())
@@ -234,7 +262,8 @@ class Subscription:
             if subscription is not None:
                 update_subscription_sql_table(self.dvm_config.DB, kind7001eventid, recipient,
                                               subscription.subscriber, subscription.nwc, subscription.cadence,
-                                              subscription.amount, subscription.unit, subscription.begin, subscription.end,
+                                              subscription.amount, subscription.unit, subscription.begin,
+                                              subscription.end,
                                               subscription.tier_dtag, subscription.zaps, subscription.recipe,
                                               False, Timestamp.now().as_secs(), subscription.tier)
 
@@ -308,8 +337,52 @@ class Subscription:
                     if tag.as_vec()[0] == "d":
                         tier_dtag = tag.as_vec()[0]
 
-        start = Timestamp.now().as_secs()
         isactivesubscription = False
         recipe = ""
 
-        subscription =
+        subscription = get_from_subscription_sql_table(self.dvm_config.DB, event7001id)
+        zapsstr = json.dumps(zaps)
+        print(zapsstr)
+        success = True
+        if subscription is None or subscription.end <= Timestamp.now().as_secs():
+            # rather check nostr if our db is right
+            subscription_status = nip88_has_active_subscription(
+                PublicKey.parse(subscriber),
+                tier_dtag, self.client, recipient, checkCanceled=False)
+
+            if not subscription_status["isActive"]:
+
+                success = self.pay_zap_split(nwc, overall_amount, zaps, tier, unit)
+                start = Timestamp.now().as_secs()
+                end = self.infer_subscription_end_time(start, cadence)
+            else:
+                start = Timestamp.now().as_secs()
+                end = subscription_status["validUntil"]
+        else:
+            start = subscription.begin
+            end = subscription.end
+
+        if success:
+            recipe = self.make_subscription_zap_recipe(event7001id, recipient, subscriber, start, end,
+                                                       tier_dtag)
+            print("RECIPE " + recipe)
+            isactivesubscription = True
+
+        if subscription is None:
+            add_to_subscription_sql_table(self.dvm_config.DB, event7001id, recipient, subscriber, nwc,
+                                          cadence, overall_amount, unit, start, end, tier_dtag,
+                                          zapsstr, recipe, isactivesubscription,
+                                          Timestamp.now().as_secs(), tier)
+            print("new subscription entry")
+        else:
+            update_subscription_sql_table(self.dvm_config.DB, event7001id, recipient, subscriber, nwc,
+                                          cadence, overall_amount, unit, start, end,
+                                          tier_dtag, zapsstr, recipe, isactivesubscription,
+                                          Timestamp.now().as_secs(), tier)
+            print("updated subscription entry")
+
+        self.send_status_success(subscription_event, "noogle.lol")
+
+        message = ("Subscribed to DVM " + tier + ". Renewing on: " + str(
+            Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T", " ")))
+        self.send_direct_message(subscriber, message)
