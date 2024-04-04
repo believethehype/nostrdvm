@@ -9,6 +9,7 @@ const store = createStore({
       signer: NostrSigner,
       dbclient: Client,
       pubkey: PublicKey,
+      followings: [],
       nooglekey: import.meta.env.VITE_NOOGLE_PK,
       subscription_verifier_pubkey: import.meta.env.VITE_SUBSCRIPTIPON_VERIFIER_PUBKEY,
       requestidSearch: String,
@@ -50,6 +51,10 @@ const store = createStore({
     },
      set_pubkey(state, pubkey) {
       state.pubkey = pubkey
+    },
+    set_followings(state, items) {
+      state.followings.length = 0
+      state.followings.push.apply(state.followings, items)
     },
     set_hasEventListener(state, hasEventListener) {
       state.hasEventListener = hasEventListener

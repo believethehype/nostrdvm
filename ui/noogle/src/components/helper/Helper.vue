@@ -381,7 +381,7 @@ export async function fetchAsync (url) {
   return data;
 }
 
-export async function dvmreactions(dvmid) {
+export async function dvmreactions(dvmid, authors) {
   let reactions = {
       positive: [],
       negative: [],
@@ -391,27 +391,21 @@ export async function dvmreactions(dvmid) {
 
     let client = store.state.client
 
-     if (store.state.dbclient.database === undefined){
-          console.log("not logged in, not getting profile suggestions")
-          return []
-        }
-        let dbclient = store.state.dbclient
-        let profiles = []
-        let filter1 = new Filter().kind(0)
-         let users = await dbclient.database.query([filter1])
-
-        console.log(users)
-
-      let authors = []
-      for (const entry of users){
-        authors.push(entry.author)
-      }
+  let authorscheck = []
+  for (let author of authors){
+    try{
+      authorscheck.push(PublicKey.parse(author))
+    }
+    catch{
+      console.log("err" + author)
+    }
+  }
 
 
-    let reactionfilter = new Filter().kind(7).pubkey (dvmid).authors(authors).since(Timestamp.fromSecs(Timestamp.now().asSecs() - 60*60*24*60)) // reactions by our followers in the last 2 months
+
+    let reactionfilter = new Filter().kind(7).pubkey (dvmid).authors(authorscheck).since(Timestamp.fromSecs(Timestamp.now().asSecs() - 60*60*24*60)) // reactions by our followers in the last 2 months
     let evts = await client.getEventsOf([reactionfilter], Duration.fromSecs(5))
 
-    console.log(evts)
     if (evts.length > 0){
       for (let reaction of evts){
         if (reaction.content === "👎"){
