@@ -214,13 +214,15 @@ async function  listen() {
                     }
 
                     //let dvm = store.state.nip89dvms.find(x => JSON.parse(x.event).pubkey === event.author.toHex())
+
+
                     for (const el of store.state.nip89dvms) {
                       if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
                         jsonentry.name = el.name
                         jsonentry.about = el.about
                         jsonentry.image = el.image
                         jsonentry.nip90Params = el.nip90Params
-                        jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id))
+                        jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id), store.state.followings)
                         jsonentry.reactions.negativeUser = false
                         jsonentry.reactions.positiveUser = false
                         jsonentry.event = Event.fromJson(el.event)

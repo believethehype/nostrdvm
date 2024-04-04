@@ -871,6 +871,7 @@ export default {
 
 
       let followings = []
+       let ids = []
       let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
       let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
       console.log(followers)
@@ -879,6 +880,7 @@ export default {
         if (tag.asVec()[0] === "p") {
           let following = tag.asVec()[1]
           followings.push(PublicKey.parse(following))
+          ids.push((following))
         }
     }
 
@@ -888,6 +890,8 @@ export default {
       console.log(followings)
       let filter = new Filter().kind(0).authors(followings)
 
+
+      store.commit('set_followings', ids)
 
       await dbclient.reconcile(filter, opts);
       console.log("Done syncing profiles")
