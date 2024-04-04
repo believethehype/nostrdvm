@@ -199,7 +199,7 @@ import nip49, {decryptwrapper} from "./android-signer/helpers/nip49";
 import { init as initNostrLogin  } from "nostr-login"
 import { launch as launchNostrLoginDialog } from "nostr-login"
 import { logout as logoutNostrLogin } from "nostr-login"
-import {parseandreplacenpubs, hasActiveSubscription} from "@/components/helper/Helper.vue"
+import {parseandreplacenpubs, hasActiveSubscription, dvmreactions} from "@/components/helper/Helper.vue"
 import {loadNWCObject} from "@/components/helper/Zap.vue"
 import {useDark, useToggle} from "@vueuse/core";
 import {ref} from "vue";
@@ -809,18 +809,8 @@ export default {
                                relay: tag.asVec()[2],
                                split: tag.asVec()[3]
                              }
-
-                             // TODO only use first tag for now, add others later.
-                            // if(tag.asVec()[1] !== "" ){
-                                 nip88.zaps.push(zap)
-                            // }
-
-
+                             nip88.zaps.push(zap)
                             }
-
-
-
-
                           }
 
                           let subscription_status = await hasActiveSubscription(store.state.pubkey.toHex(), nip88.d, evt.author.toHex())
@@ -828,19 +818,22 @@ export default {
                           nip88.subscribedUntil = subscription_status.validUntil
                           nip88.subscriptionId = subscription_status.subscriptionId
                           nip88.expires = subscription_status.expires
-                           console.log(subscription_status)
+                          // console.log(subscription_status)
 
 
                           jsonentry.nip88 = nip88
-                           console.log(jsonentry.nip88)
+                          // console.log(jsonentry.nip88)
 
                         }
                       }
 
+                      //jsonentry.reactions = await dvmreactions(entry.author.toHex())
+                  //     console.log("REACTIONS:" + jsonentry.reactions)
                       jsonentry.id = entry.author.toHex()
                       jsonentry.about = await parseandreplacenpubs(jsonentry.about)
                       jsonentry.event = entry.asJson()
                       jsonentry.kind = entry.tags[tag].asVec()[1]
+
 
 
                       //jsonentry.nip90Params = JSON.parse(jsonentry.nip90Params)
@@ -866,10 +859,11 @@ export default {
       let dbclient = Client
       let keys = Keys.parse(store.state.nooglekey)
       let db = NostrDatabase.indexeddb("profiles");
-      let signer = NostrSigner.keys(keys) //TODO store keys
+      let signer = NostrSigner.keys(keys)
       dbclient = new ClientBuilder().signer(signer).database(await db).build()
 
       await dbclient.addRelay("wss://relay.damus.io");
+       await dbclient.addRelay( "wss://purplepag.es");
       await dbclient.connect()
       store.commit('set_dbclient', dbclient)
       let direction = NegentropyDirection.Down;
@@ -879,21 +873,24 @@ export default {
       let followings = []
       let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
       let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
-
+      console.log(followers)
     if (followers.length > 0){
           for (let tag of followers[0].tags) {
         if (tag.asVec()[0] === "p") {
           let following = tag.asVec()[1]
-          followings.push(PublicKey.fromHex(following))
+          followings.push(PublicKey.parse(following))
         }
     }
 
       }
       console.log("Followings: " + (followings.length).toString())
 
-
+      console.log(followings)
       let filter = new Filter().kind(0).authors(followings)
+
+
       await dbclient.reconcile(filter, opts);
+      console.log("Done syncing profiles")
 
     }
    },
