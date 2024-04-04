@@ -45,7 +45,21 @@ export async function post_note(note){
     await client.publishTextNote(note, tags);
    }
 }
+export async function react_to_dvm(dvm, reaction) {
+    let client = store.state.client
+     let event = EventBuilder.reaction(dvm.event, reaction)
+    let requestid = await client.sendEventBuilder(event);
 
+    if (reaction === "👎"){
+      dvm.reactions.negativeUser = true
+      dvm.reactions.negative.push(store.state.pubkey.toHex())
+    }
+     else {
+      dvm.reactions.positiveUser = true
+      dvm.reactions.positive.push(store.state.pubkey.toHex())
+    }
+
+}
 export async function schedule(note, datetopost) {
 
 
@@ -69,7 +83,7 @@ export async function schedule(note, datetopost) {
   tags_str.push(tag.asVec())
   let tags_as_str = JSON.stringify(tags_str)
 
-
+  //shipyard dvm by default
   let content = await signer.nip04Encrypt(PublicKey.parse("85c20d3760ef4e1976071a569fb363f4ff086ca907669fb95167cdc5305934d1"), tags_as_str)
 
   let tags_t = []
@@ -367,7 +381,63 @@ export async function fetchAsync (url) {
   return data;
 }
 
+export async function dvmreactions(dvmid) {
+  let reactions = {
+      positive: [],
+      negative: [],
+      positiveUser: false,
+      negativeUser: false
+    }
 
+    let client = store.state.client
+
+     if (store.state.dbclient.database === undefined){
+          console.log("not logged in, not getting profile suggestions")
+          return []
+        }
+        let dbclient = store.state.dbclient
+        let profiles = []
+        let filter1 = new Filter().kind(0)
+         let users = await dbclient.database.query([filter1])
+
+        console.log(users)
+
+      let authors = []
+      for (const entry of users){
+        authors.push(entry.author)
+      }
+
+
+    let reactionfilter = new Filter().kind(7).pubkey (dvmid).authors(authors).since(Timestamp.fromSecs(Timestamp.now().asSecs() - 60*60*24*60)) // reactions by our followers in the last 2 months
+    let evts = await client.getEventsOf([reactionfilter], Duration.fromSecs(5))
+
+    console.log(evts)
+    if (evts.length > 0){
+      for (let reaction of evts){
+        if (reaction.content === "👎"){
+          reactions.negative.push(reaction.author.toHex())
+          /*if (reaction.author.toHex() === store.state.pubkey.toHex()){
+            reactions.negativeUser = true
+          }*/
+        }
+
+        else{
+           reactions.positive.push(reaction.author.toHex())
+             // if (reaction.author.toHex() === store.state.pubkey.toHex()){
+            //reactions.positiveUser = true
+             // }
+
+        }
+
+      }
+
+
+    }
+
+
+
+  return reactions
+}
 
 export async function hasActiveSubscription(pubkeystring, tiereventdtag, tierauthorid) {
 

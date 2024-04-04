@@ -403,16 +403,19 @@ async function get_user_from_search(name){
           console.log("not logged in, not getting profile suggestions")
           return []
         }
-        let dbclient = store.state.dbclient
+        let client = store.state.dbclient
         let profiles = []
-        let filter1 = new Filter().kind(0).search(name)
-        let evts = await dbclient.database.query([filter1])
-
-        for (const entry of evts){
+        let filter1 = new Filter().kind(0)
+         let evts = await client.database.query([filter1])
+ console.log(evts.length)
+      for (const entry of evts){
           try{
-            let contentjson = JSON.parse(entry.content)
-             //console.log(entry.content)
+
+               let contentjson = JSON.parse(entry.content)
+            console.log(entry.content)
             profiles.push({profile: contentjson, author: entry.author.toBech32(), createdAt: entry.createdAt});
+
+
           }
           catch(error){
             console.log(error)

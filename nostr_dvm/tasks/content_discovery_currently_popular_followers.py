@@ -96,8 +96,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         database = NostrDatabase.sqlite("db/nostr_recent_notes2.db")
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
         cli.add_relay("wss://relay.damus.io")
-        cli.add_relay( "wss://nos.lol")
-        cli.add_relay( "wss://pablof7z.nostr1.com")
+        cli.add_relay("wss://nos.lol")
+        cli.add_relay("wss://pablof7z.nostr1.com")
 
         cli.connect()
 
