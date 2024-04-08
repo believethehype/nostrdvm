@@ -23,6 +23,9 @@ def playground():
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
+    #admin_config.DELETE_NIP89 = True
+    #admin_config.PRIVKEY = ""
+    #admin_config.EVENTID = ""
 
     discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
     discovery_test_sub.run()
