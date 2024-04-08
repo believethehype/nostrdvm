@@ -424,6 +424,15 @@ async function  listen() {
                             if(!evt){
                             continue
                           }
+                          if(store.state.mutes.find(record => record === evt.author.toHex()) !== undefined){
+                             console.log("hidding muted user")
+
+
+                          }
+                          else{
+
+
+
                           let p = profiles.find(record => record.author === evt.author.toHex())
                           let bech32id = evt.id.toBech32()
                           let nip19 = new Nip19Event(evt.id, evt.author, store.state.relays)
@@ -441,6 +450,9 @@ async function  listen() {
                           if (items.find(e => e.id === evt.id.toHex()) === undefined) {
 
                             let react = zaps.find(x => x.id === evt.id.toHex())
+
+
+
                             items.push({
                               id: evt.id.toHex(),
                               content: await parseandreplacenpubsName(evt.content),
@@ -466,12 +478,14 @@ async function  listen() {
                             })
                             index = index + 1
                           }
+                             }
 
                         }
-                        if (dvms.find(i => i.id === event.author.toHex()) === undefined) {
+
+                       /* if (dvms.find(i => i.id === event.author.toHex()) === undefined) {
                           await addDVM(event)
                           console.log("add dvm because of bug")
-                        }
+                        } */
 
 
                         dvms.find(i => i.id === event.author.toHex()).result.length = 0

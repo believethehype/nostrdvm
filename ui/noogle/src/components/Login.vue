@@ -204,6 +204,7 @@ import {loadNWCObject} from "@/components/helper/Zap.vue"
 import {useDark, useToggle} from "@vueuse/core";
 import {ref} from "vue";
 import {webln} from "@getalby/sdk";
+import {nip04Decrypt} from "@rust-nostr/nostr-sdk/pkg/nostr_sdk_js_bg.wasm.js";
 const isDark = useDark();
 
 //const toggleDark = useToggle(isDark);
@@ -874,6 +875,10 @@ export default {
        let ids = []
       let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
       let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
+
+
+
+
       console.log(followers)
     if (followers.length > 0){
           for (let tag of followers[0].tags) {
@@ -887,11 +892,54 @@ export default {
       }
       console.log("Followings: " + (followings.length).toString())
 
-      console.log(followings)
+      //console.log(followings)
       let filter = new Filter().kind(0).authors(followings)
 
 
       store.commit('set_followings', ids)
+
+          let mute_filter = new Filter().author(publicKey).kind(10000)
+      let mutes = await dbclient.getEventsOf([mute_filter], Duration.fromSecs(5))
+      let mutelist = []
+      if(mutes.length > 0){
+
+        for (let list of mutes){
+
+        let client = store.state.client
+        let signer = client.signer()
+
+        for (let tag of list.tags){
+          if (tag.asVec()[0] === "p"){
+            //console.log(tag.asVec()[1])
+            mutelist.push(tag.asVec()[1])
+
+          }
+        }
+
+        console.log("Public mutes: " + mutelist.length)
+
+        //private mutes
+          try {
+            let content = await (await signer).nip04Decrypt(store.state.pubkey, list.content)
+            let json = JSON.parse(content)
+            for (let entry of json) {
+              if (entry[0] === "p") {
+                console.log(entry[1])
+                mutelist.push(entry[1])
+
+              }
+            }
+          }
+        catch(error){
+          //console.log(error)
+            }
+
+
+                console.log("Overall mutes: " + mutelist.length)
+}
+        store.commit('set_mutes', mutelist)
+      }
+
 
       await dbclient.reconcile(filter, opts);
       console.log("Done syncing profiles")

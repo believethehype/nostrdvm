@@ -4,7 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag
+from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import send_event
@@ -59,8 +59,8 @@ def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig):
 
 def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
     e_tag = Tag.parse(["e", eid])
-    a_tag = Tag.parse(["a", str(EventDefinitions.KIND_ANNOUNCEMENT) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(5, "", [e_tag, a_tag]).to_event(keys)
+    a_tag = Tag.parse(["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u64()) + ":" + keys.public_key().to_hex() + ":" + dtag])
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
     send_event(event, client, config)
 
 
