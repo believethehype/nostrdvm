@@ -276,7 +276,6 @@ class Subscription:
                         recipe = ""
                         subscription = get_from_subscription_sql_table(dvm_config.DB, event7001id)
 
-
                         zapsstr = json.dumps(zaps)
                         print(zapsstr)
                         success = True
@@ -290,7 +289,7 @@ class Subscription:
                                 start = Timestamp.now().as_secs()
                                 end = infer_subscription_end_time(start, cadence)
 
-                                #we add or update the subscription in the db, with non-active subscription to avoid double payments
+                                # we add or update the subscription in the db, with non-active subscription to avoid double payments
                                 if subscription is None:
                                     add_to_subscription_sql_table(dvm_config.DB, event7001id, recipient, subscriber,
                                                                   nwc,
@@ -347,87 +346,94 @@ class Subscription:
             except Exception as e:
                 print("Error in Subscriber " + str(e))
 
+        def handle_expired_subscription(subscription):
+            delete_threshold = 60 * 60 * 24 * 365
+            if subscription.cadence == "daily":
+                delete_threshold = 60 * 60 * 24 * 3  # After 3 days, delete the subscription, user can make a new one
+            elif subscription.cadence == "weekly":
+                delete_threshold = 60 * 60 * 24 * 21  # After 21 days, delete the subscription, user can make a new one
+            elif subscription.cadence == "monthly":
+                delete_threshold = 60 * 60 * 24 * 60  # After 60 days, delete the subscription, user can make a new one
+            elif subscription.cadence == "yearly":
+                delete_threshold = 60 * 60 * 24 * 500  # After 500 days, delete the subscription, user can make a new one
+
+            if subscription.end < (Timestamp.now().as_secs() - delete_threshold):
+                delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
+                print("Delete expired subscription")
+
+        def handle_subscription_renewal(subscription):
+            zaps = json.loads(subscription.zaps)
+            success = pay_zap_split(subscription.nwc, subscription.amount, zaps, subscription.tier,
+                                    subscription.unit)
+            if success:
+                end = infer_subscription_end_time(Timestamp.now().as_secs(), subscription.cadence)
+                recipe = make_subscription_zap_recipe(subscription.id, subscription.recipent,
+                                                      subscription.subscriber, subscription.begin,
+                                                      end, subscription.tier_dtag)
+            else:
+                end = Timestamp.now().as_secs()
+                recipe = subscription.recipe
+
+            update_subscription_sql_table(dvm_config.DB, subscription.id,
+                                          subscription.recipent,
+                                          subscription.subscriber, subscription.nwc,
+                                          subscription.cadence, subscription.amount,
+                                          subscription.unit,
+                                          subscription.begin, end,
+                                          subscription.tier_dtag, subscription.zaps, recipe,
+                                          success,
+                                          Timestamp.now().as_secs(), subscription.tier)
+
+            print("updated subscription entry")
+
+            keys = Keys.parse(dvm_config.PRIVATE_KEY)
+            message = (
+                    "Renewed Subscription to DVM " + subscription.tier + ". Next renewal: " + str(
+                Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
+                                                                                       " ")))
+            evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber),
+                                                    message,
+                                                    None).to_event(keys)
+            send_event(evt, client=self.client, dvm_config=dvm_config)
+
+        def check_subscriptions():
+            subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
+
+            for subscription in subscriptions:
+                if subscription.active:
+                    if subscription.end < Timestamp.now().as_secs():
+                        # We could directly zap, but let's make another check if our subscription expired
+                        subscription_status = nip88_has_active_subscription(
+                            PublicKey.parse(subscription.subscriber),
+                            subscription.tier_dtag, self.client, subscription.recipent)
+
+                        if subscription_status["expires"]:
+                            # if subscription expires, just note it as not active
+                            update_subscription_sql_table(dvm_config.DB, subscription_status["subscriptionId"],
+                                                          subscription.recipent,
+                                                          subscription.subscriber, subscription.nwc,
+                                                          subscription.cadence, subscription.amount,
+                                                          subscription.unit,
+                                                          subscription.begin, subscription.end,
+                                                          subscription.tier_dtag, subscription.zaps,
+                                                          subscription.recipe,
+                                                          False,
+                                                          Timestamp.now().as_secs(), subscription.tier)
+                        else:
+                            handle_subscription_renewal(subscription)
+
+                else:
+                    handle_expired_subscription(subscription)
+
+            print(str(Timestamp.now().as_secs()) + ": Checking " + str(
+                len(subscriptions)) + " Subscription entries..")
+
         self.client.handle_notifications(NotificationHandler())
 
         try:
             while True:
                 time.sleep(60.0)
-                subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
-
-                for subscription in subscriptions:
-                    if subscription.active:
-                        if subscription.end < Timestamp.now().as_secs():
-                            # We could directly zap, but let's make another check if our subscription expired
-                            subscription_status = nip88_has_active_subscription(
-                                PublicKey.parse(subscription.subscriber),
-                                subscription.tier_dtag, self.client, subscription.recipent)
-
-                            if subscription_status["expires"]:
-                                update_subscription_sql_table(dvm_config.DB, subscription_status["subscriptionId"],
-                                                              subscription.recipent,
-                                                              subscription.subscriber, subscription.nwc,
-                                                              subscription.cadence, subscription.amount,
-                                                              subscription.unit,
-                                                              subscription.begin, subscription.end,
-                                                              subscription.tier_dtag, subscription.zaps,
-                                                              subscription.recipe,
-                                                              False,
-                                                              Timestamp.now().as_secs(), subscription.tier)
-                            else:
-                                zaps = json.loads(subscription.zaps)
-                                success = pay_zap_split(subscription.nwc, subscription.amount, zaps, subscription.tier,
-                                                        subscription.unit)
-                                if success:
-                                    end = infer_subscription_end_time(Timestamp.now().as_secs(), subscription.cadence)
-                                    recipe = make_subscription_zap_recipe(subscription.id, subscription.recipent,
-                                                                          subscription.subscriber, subscription.begin,
-                                                                          end, subscription.tier_dtag)
-                                else:
-                                    end = Timestamp.now().as_secs()
-                                    recipe = subscription.recipe
-
-                                update_subscription_sql_table(dvm_config.DB, subscription.id,
-                                                              subscription.recipent,
-                                                              subscription.subscriber, subscription.nwc,
-                                                              subscription.cadence, subscription.amount,
-                                                              subscription.unit,
-                                                              subscription.begin, end,
-                                                              subscription.tier_dtag, subscription.zaps, recipe,
-                                                              success,
-                                                              Timestamp.now().as_secs(), subscription.tier)
-
-                                print("updated subscription entry")
-
-                                keys = Keys.parse(dvm_config.PRIVATE_KEY)
-                                message = (
-                                            "Renewed Subscription to DVM " + subscription.tier + ". Next renewal: " + str(
-                                        Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
-                                                                                                               " ")))
-                                evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber),
-                                                                        message,
-                                                                        None).to_event(keys)
-                                send_event(evt, client=self.client, dvm_config=dvm_config)
-
-
-
-                    else:
-                        delete_threshold = 60 * 60 * 24 * 365
-                        if subscription.cadence == "daily":
-                            delete_threshold = 60 * 60 * 24 * 3  # After 3 days, delete the subscription, user can make a new one
-                        elif subscription.cadence == "weekly":
-                            delete_threshold = 60 * 60 * 24 * 21  # After 21 days, delete the subscription, user can make a new one
-                        elif subscription.cadence == "monthly":
-                            delete_threshold = 60 * 60 * 24 * 60  # After 60 days, delete the subscription, user can make a new one
-                        elif subscription.cadence == "yearly":
-                            delete_threshold = 60 * 60 * 24 * 500  # After 500 days, delete the subscription, user can make a new one
-
-                        if subscription.end < (Timestamp.now().as_secs() - delete_threshold):
-                            delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
-                            print("Delete expired subscription")
-
-                print(str(Timestamp.now().as_secs()) + ": Checking " + str(
-                    len(subscriptions)) + " Subscription entries..")
-
+                check_subscriptions()
         except KeyboardInterrupt:
             print('Stay weird!')
             os.kill(os.getpid(), signal.SIGTERM)
