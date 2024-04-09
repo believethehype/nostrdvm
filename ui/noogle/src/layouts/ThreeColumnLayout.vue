@@ -1,6 +1,5 @@
 <script setup>
 import Login from "@/components/Login.vue";
-import Donate from "@/components/Donate.vue"
 import {isVisible} from "bootstrap/js/src/util/index.js";
 </script>
 
@@ -14,7 +13,6 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
     <router-link  class="menu" to="/">Search</router-link>
     <router-link class="menu" to="/discover">Discover</router-link>
     <router-link class="menu" to="/image">Create</router-link>
-    <!--<router-link class="menu" to="/about">About</router-link> -->
     <router-link class="menu" to="/nip89">DVMs</router-link>
   </div>
  <Login/>
