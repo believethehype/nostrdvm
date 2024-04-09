@@ -190,23 +190,23 @@ def build_status_reaction(status, task, amount, content, dvm_config):
             alt_description = content
             reaction = alt_description
         else:
-            alt_description = "NIP90 DVM AI task " + task + " started processing. "
+            alt_description = "NIP90 DVM task " + task + " started processing. "
             reaction = alt_description + emoji.emojize(":thumbs_up:")
     elif status == "success":
-        alt_description = "NIP90 DVM AI task " + task + " finished successfully. "
+        alt_description = "NIP90 DVM task " + task + " finished successfully. "
         reaction = alt_description + emoji.emojize(":call_me_hand:")
     elif status == "chain-scheduled":
-        alt_description = "NIP90 DVM AI task " + task + " Chain Task scheduled"
+        alt_description = "NIP90 DVM task " + task + " Chain Task scheduled"
         reaction = alt_description + emoji.emojize(":thumbs_up:")
     elif status == "error":
-        alt_description = "NIP90 DVM AI task " + task + " had an error. "
+        alt_description = "NIP90 DVM task " + task + " had an error. "
         if content is None:
             reaction = alt_description + emoji.emojize(":thumbs_down:")
         else:
             reaction = alt_description + emoji.emojize(":thumbs_down:") + " " + content
 
     elif status == "payment-required":
-        alt_description = "NIP90 DVM AI task " + task + " requires payment of min " + str(
+        alt_description = "NIP90 DVM task " + task + " requires payment of min " + str(
             amount) + " Sats. "
         reaction = alt_description + emoji.emojize(":orange_heart:")
 
@@ -216,17 +216,17 @@ def build_status_reaction(status, task, amount, content, dvm_config):
             reaction = alt_description
 
         else:
-            alt_description = "NIP90 DVM AI task " + task + " requires payment for subscription"
+            alt_description = "NIP90 DVM task " + task + " requires payment for subscription"
             reaction = alt_description + emoji.emojize(":orange_heart:")
 
 
 
     elif status == "payment-rejected":
-        alt_description = "NIP90 DVM AI task " + task + " payment is below required amount of " + str(
+        alt_description = "NIP90 DVM task " + task + " payment is below required amount of " + str(
             amount) + " Sats. "
         reaction = alt_description + emoji.emojize(":thumbs_down:")
     elif status == "user-blocked-from-service":
-        alt_description = "NIP90 DVM AI task " + task + " can't be performed. User has been blocked from Service. "
+        alt_description = "NIP90 DVM task " + task + " can't be performed. User has been blocked from Service. "
         reaction = alt_description + emoji.emojize(":thumbs_down:")
     else:
         reaction = emoji.emojize(":thumbs_down:")
