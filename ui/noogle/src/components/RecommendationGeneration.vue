@@ -45,6 +45,7 @@ import StringUtil from "@/components/helper/string.ts";
 
 
 let dvms =[]
+let requestids = []
 
 
 onMounted(async () => {
@@ -73,17 +74,19 @@ function set_subscription_props(amount, cadence, dvm) {
 
 async function generate_feed(id) {
 
+       // if (!store.state.recommendationehasEventListener){
+      //     store.commit('set_recommendationEventListener', true)
+           listen()
+
+      //  }
+      //  else{
+      //    console.log("Already has event listener")
+      //  }
+
+
    try {
 
 
-       if (!store.state.recommendationehasEventListener){
-           store.commit('set_recommendationEventListener', true)
-           listen()
-
-        }
-        else{
-          console.log("Already has event listener")
-        }
 
         let client = store.state.client
         //console.log(dvms.find(i => i.id === id).encryptionSupported)
@@ -134,6 +137,9 @@ async function generate_feed(id) {
                   res = await amberSignerService.signEvent(draft)
                   await client.sendEvent(Event.fromJson(JSON.stringify(res)))
                   requestid = res.id;
+                   requestids.push(requestid)
+                  store.commit('set_current_request_id_recommendation', requestids)
+                  await client.sendEvent(Event.fromJson(JSON.stringify(res)))
 
               }
               else{
@@ -146,9 +152,14 @@ async function generate_feed(id) {
               tags_t.push(Tag.parse(["client", "noogle"]))
 
 
-              let evt = new EventBuilder(kind, content, tags_t)
-              res = await client.sendEventBuilder(evt);
-              requestid = res.toHex();
+
+                let evt = new EventBuilder(kind, content, tags_t)
+                let unsigned =   evt.toUnsignedEvent(store.state.pubkey)
+               let signedEvent = await (await client.signer()).signEvent(unsigned)
+               console.log(signedEvent.id.toHex())
+                requestids.push(signedEvent.id.toHex())
+               store.commit('set_current_request_id_recommendation', requestids)
+               res = await client.sendEvent(signedEvent)
 
               }
 
@@ -170,8 +181,12 @@ async function generate_feed(id) {
           };
 
           res = await amberSignerService.signEvent(draft)
+                requestid = res.id;
+               requestids.push(requestid)
+
+                store.commit('set_current_request_id_recommendation', requestids)
           await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = res.id;
+
 
         }
              else {
@@ -181,20 +196,19 @@ async function generate_feed(id) {
             tags_t.push(Tag.parse(tag))
           }
           let evt = new EventBuilder(kind, content, tags_t)
-          res = await client.sendEventBuilder(evt);
+           let unsigned =   evt.toUnsignedEvent(store.state.pubkey)
+               let signedEvent = await (await client.signer()).signEvent(unsigned)
+               console.log(signedEvent.id.toHex())
+               requestids.push(signedEvent.id.toHex())
+               store.commit('set_current_request_id_recommendation', requestids)
+               res = await client.sendEvent(signedEvent)
 
-
-          requestid = res.toHex();
         }
 
         }
 
 
 
-
-
-
-        store.commit('set_current_request_id_recommendation', requestid)
 
 
       } catch (error) {
@@ -213,10 +227,10 @@ async function  listen() {
         // Handle event
         handleEvent: async (relayUrl, subscriptionId, event) => {
            let resonsetorequest = false
-            sleep(1200).then(async () => {
+            //sleep(1200).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  if (event.tags[tag].asVec()[1] ===  store.state.requestidRecommendation) {
+                  if (store.state.requestidRecommendation.includes(event.tags[tag].asVec()[1])){
                     resonsetorequest = true
 
                   }
@@ -500,7 +514,7 @@ async function  listen() {
                 }
 
               }
-            })
+          //  })
         },
         // Handle relay message
         handleMsg: async (relayUrl, message) => {

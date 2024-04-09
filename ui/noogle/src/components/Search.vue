@@ -137,9 +137,9 @@ async function send_search_request(msg) {
           };
 
           res = await amberSignerService.signEvent(draft)
-          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = res.id;
-          res = res.id;
+          let result = await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+          requestid = result.toHex()
+
         }
 
         else {
@@ -164,7 +164,7 @@ async function send_search_request(msg) {
         store.commit('set_current_request_profile_id_search', requestid_profile)
 
 
-        console.log(res)
+
       } catch (error) {
         console.log(error);
       }

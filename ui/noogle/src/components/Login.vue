@@ -864,8 +864,9 @@ export default {
       dbclient = new ClientBuilder().signer(signer).database(await db).build()
 
       await dbclient.addRelay("wss://relay.damus.io");
-       await dbclient.addRelay( "wss://purplepag.es");
+      //await dbclient.addRelay( "wss://purplepag.es");
       await dbclient.connect()
+
       store.commit('set_dbclient', dbclient)
       let direction = NegentropyDirection.Down;
       let opts = new NegentropyOptions().direction(direction);
