@@ -16,7 +16,7 @@ const store = createStore({
       requestidSearch: String,
       requestidSearchProfile: String,
       requestidImage: String,
-      requestidRecommendation: String,
+      requestidRecommendation: [],
       requestidSummarization: String,
       hasEventListener: false,
       imagehasEventListener: false,
@@ -118,7 +118,9 @@ const store = createStore({
        state.requestidImage = requestid
     },
     set_current_request_id_recommendation(state, requestid){
-       state.requestidRecommendation = requestid
+        state.requestidRecommendation.length = 0
+      state.requestidRecommendation.push.apply(state.requestidRecommendation, requestid)
+       //state.requestidRecommendation = requestid
     },
 
     set_search_results(state, results){

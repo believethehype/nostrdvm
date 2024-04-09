@@ -88,8 +88,10 @@ async function generate_image(message) {
           };
 
           res = await amberSignerService.signEvent(draft)
-          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = res.id;
+            requestid = res.id
+             store.commit('set_current_request_id_image', requestid)
+            await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+
         }
         else {
 
@@ -97,13 +99,19 @@ async function generate_image(message) {
           for (let tag of tags){
             tags_t.push(Tag.parse(tag))
           }
-          let evt = new EventBuilder(kind, content, tags_t)
 
-          res = await client.sendEventBuilder(evt);
-          requestid = res.toHex();
+
+           let evt = new EventBuilder(kind, content, tags_t)
+                let unsigned =   evt.toUnsignedEvent(store.state.pubkey)
+               let signedEvent = await (await client.signer()).signEvent(unsigned)
+               console.log(signedEvent.id.toHex())
+               requestid = signedEvent.id.toHex()
+               store.commit('set_current_request_id_image', requestid)
+               await client.sendEvent(signedEvent)
+
+
         }
 
-        store.commit('set_current_request_id_image', requestid)
 
 
       } catch (error) {

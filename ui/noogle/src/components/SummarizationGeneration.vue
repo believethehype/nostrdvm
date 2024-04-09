@@ -78,8 +78,8 @@ let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((
           };
 
           res = await amberSignerService.signEvent(draft)
-          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = res.id;
+          let result = await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+          requestid = result.toHex()
         }
         else {
 
