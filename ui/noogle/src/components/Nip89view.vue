@@ -17,10 +17,10 @@
                 <div class="card-title text-base-100-content font-bold">
                   What is this?
                 </div>
-              <p>Data Vending Machines are data-processing tools on top of th Nostr protocol.
+              <p>Data Vending Machines are data-processing tools on top of the Nostr protocol.
                 </p>
                  <p>
-                You give them some data, a few sats, and they give you back some data.</p>
+                You give them some data, sometimes a few sats, and they give you back some data.</p>
                 <p>
                     This page is just a demo client, showcasing a variety of DVM use-cases. Search Content, Search Profiles, Content Discovery, Summarization of events, Image Generation, Scheduling Notes.
 
@@ -40,6 +40,7 @@
                    A List of all DVMs that have a NIP89 announcement is available below, ordered by latest announcement.
                 </p>
             </div>
+
         </div>
 
 
@@ -146,6 +147,7 @@ import {Alphabet, ClientBuilder, NostrSigner, Filter, Keys, NostrDatabase, Tag} 
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 import StringUtil from "@/components/helper/string.ts";
+import Donate from "@/components/Donate.vue"
 
 import deadnip89s from './data/deadnip89s.json'
 
@@ -180,6 +182,16 @@ async mounted(){
 }
 </script>
 <style scoped>
+  donate{
 
+    position: fixed;
+    bottom:0;
+    background: rgba(0, 0, 0, 0.5);;
+    grid-area: footer;
+    width: 100vw;
+    height: 32px;
 
+    z-index: 10;
+    text-align: center;
+  }
 </style>

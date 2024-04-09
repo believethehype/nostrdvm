@@ -38,7 +38,7 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
 
     </aside>
 <footer>
-     <Donate style="margin-top: 4px"/>
+    <!--<Donate style="margin-top: 4px"/> -->
     </footer>
  </div>
 </template>
