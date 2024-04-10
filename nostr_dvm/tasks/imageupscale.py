@@ -59,12 +59,12 @@ class ImageUpscale(DVMTaskInterface):
             elif tag.as_vec()[0] == 'param':
                 print("Param: " + tag.as_vec()[1] + ": " + tag.as_vec()[2])
                 if tag.as_vec()[1] == "upscale":
-                    out_scale = tag.as_vec()[2]
+                    out_scale = int(tag.as_vec()[2])
 
         io_input_image = {
             "id": "input_image",
             "type": "input",
-            "src": "url:Image",
+            "src": "url:image",
             "uri": url
         }
 
@@ -76,10 +76,15 @@ class ImageUpscale(DVMTaskInterface):
 
         request_form['data'] = json.dumps([io_input_image, io_output])
 
-        options = {
-            "outscale": out_scale,
+        options = {"model": "RealESRGAN_x4plus",
+                   "outscale": out_scale,
+                   "denoise_strength": 0.5,
+                   "tile": 0,
+                   "tile_pad": 10,
+                   "pre_pad": 0,
+                   "compute_type": "fp32",
+                   "face_enhance": False}
 
-        }
         request_form['options'] = json.dumps(options)
 
         return request_form

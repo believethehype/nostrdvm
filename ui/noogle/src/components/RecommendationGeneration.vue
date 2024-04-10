@@ -974,7 +974,7 @@ const submitHandler = async () => {
   <div class="greetings">
    <br>
     <br>
-    <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
+    <h1 class="text-7xl font-black tracking-wide">Nostr</h1>
     <h1 class="text-7xl font-black tracking-wide">Content</h1>
     <h1 class="text-7xl font-black tracking-wide">Discovery</h1>
 

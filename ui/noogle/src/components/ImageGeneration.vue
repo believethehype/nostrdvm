@@ -331,7 +331,7 @@ const submitHandler = async () => {
   <div class="greetings">
    <br>
     <br>
-    <h1 class="text-7xl font-black tracking-wide">Noogle</h1>
+    <h1 class="text-7xl font-black tracking-wide">DVM</h1>
     <h1 class="text-7xl font-black tracking-wide">Image Generation</h1>
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
     Generate Images, the decentralized way</h2>
