@@ -405,18 +405,27 @@ export async function dvmreactions(dvmid, authors) {
 
     let reactionfilter = new Filter().kind(7).pubkey (dvmid).authors(authorscheck).since(Timestamp.fromSecs(Timestamp.now().asSecs() - 60*60*24*60)) // reactions by our followers in the last 2 months
     let evts = await client.getEventsOf([reactionfilter], Duration.fromSecs(5))
+    let npubs = []
+    for (let evt of evts){
+      npubs.push(evt.author)
+    }
+
+  let users = await get_user_infos(npubs)
+  console.log(users)
 
     if (evts.length > 0){
       for (let reaction of evts){
         if (reaction.content === "👎"){
-          reactions.negative.push(reaction.author.toHex())
+         let profile =  users.find(x => x.author === reaction.author.toHex() )
+          reactions.negative.push(profile)
           /*if (reaction.author.toHex() === store.state.pubkey.toHex()){
             reactions.negativeUser = true
           }*/
         }
 
         else{
-           reactions.positive.push(reaction.author.toHex())
+           let profile =  users.find(x => x.author === reaction.author.toHex() )
+           reactions.positive.push(profile)
              // if (reaction.author.toHex() === store.state.pubkey.toHex()){
             //reactions.positiveUser = true
              // }
