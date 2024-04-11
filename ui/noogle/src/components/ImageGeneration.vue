@@ -485,7 +485,7 @@ const submitHandler = async () => {
            <div  v-for="user in dvm.reactions.positive">
                 <div className="wotplayeauthor-wrapper">
                   <figure>
-                       <img className="wotavatar" v-if="user.profile.picture" :src="user.profile.picture"  onerror="this.src='https://noogle.lol/favicon.ico'" alt="DVM Picture" />
+                       <img className="wotavatar" v-if="user.profile && user.profile.picture" :src="user.profile.picture"  onerror="this.src='https://noogle.lol/favicon.ico'" alt="DVM Picture" />
                      <img class="wotavatar" v-else src="@/assets/nostr-purple.svg" />
                   </figure>
                 </div>
@@ -521,7 +521,7 @@ const submitHandler = async () => {
 
                       <figure>
 
-                       <img className="wotavatar" v-if="user.profile.picture" :src="user.profile.picture"  onerror="this.src='https://noogle.lol/favicon.ico'" alt="DVM Picture" />
+                       <img className="wotavatar" v-if="user.profile && user.profile.picture" :src="user.profile.picture"  onerror="this.src='https://noogle.lol/favicon.ico'" alt="DVM Picture" />
                      <img class="wotavatar" v-else src="@/assets/nostr-purple.svg" />
                   </figure>
 
@@ -616,8 +616,7 @@ h3 {
 .wotplayeauthor-wrapper {
   padding: 0px;
   display: flex;
-  align-items: start;
-  justify-items: start
+
 ;
 }
 .wotavatar {

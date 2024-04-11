@@ -30,7 +30,7 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {sleep, get_user_infos, get_zaps, hasActiveSubscription, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
+import {sleep, get_user_infos, get_event_reactions, hasActiveSubscription, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
 import {zap, createBolt11Lud16, zaprequest} from "../components/helper/Zap.vue"
 import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
@@ -431,7 +431,7 @@ async function  listen() {
                               }
 
                             }
-                          let zaps = await get_zaps(ids)
+                          let zaps = await get_event_reactions(ids)
                         let items = []
                         let index = 0
                         for (const evt of events) {
@@ -488,6 +488,8 @@ async function  listen() {
                               zapAmount: react.amount,
                               reacted: react.reactedbyUser,
                               reactions: react.reactions,
+                              boosts: react.reposts,
+                              boosted: react.repostedbyUser
 
                             })
                             index = index + 1

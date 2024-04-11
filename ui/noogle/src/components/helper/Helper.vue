@@ -47,16 +47,37 @@ export async function post_note(note){
 }
 export async function react_to_dvm(dvm, reaction) {
     let client = store.state.client
-     let event = EventBuilder.reaction(dvm.event, reaction)
-    let requestid = await client.sendEventBuilder(event);
+     if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+         let draft = {
+              content: reaction,
+              kind: 7,
+              pubkey: store.state.pubkey.toHex(),
+              tags: [["e", dvm.event.id.toHex()]],
+              createdAt: Date.now()
+            };
+          let res = await amberSignerService.signEvent(draft)
+          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+          let requestid = res.id;
+          }
+     else {
+         let event = EventBuilder.reaction(dvm.event, reaction)
+         let requestid = await client.sendEventBuilder(event);
+     }
 
+
+   let pk = PublicKey.parse(store.state.pubkey.toHex())
+
+    let users = await get_user_infos([pk])
+     console.log(users[0])
     if (reaction === "👎"){
       dvm.reactions.negativeUser = true
-      dvm.reactions.negative.push(store.state.pubkey.toHex())
+
+
+      dvm.reactions.negative.push(users[0])
     }
      else {
       dvm.reactions.positiveUser = true
-      dvm.reactions.positive.push(store.state.pubkey.toHex())
+      dvm.reactions.positive.push(users[0])
     }
 
 }
@@ -164,7 +185,7 @@ export async function get_user_infos(pubkeys){
         return profiles
 
     }
-export async function get_zaps(ids){
+export async function get_event_reactions(ids){
         let zapsandreactions = []
 
         for (let id of ids){
@@ -172,12 +193,14 @@ export async function get_zaps(ids){
              id: id.toHex(),
              amount: 0,
               reactions: 0,
+              reposts: 0,
             zappedbyUser: false,
-            reactedbyUser: false,})
+            reactedbyUser: false,
+             repostedbyUser: false,})
         }
 
         let client = store.state.client
-        const zap_filter = new Filter().kinds([9735, 7]).events(ids)
+        const zap_filter = new Filter().kinds([9735, 6, 7]).events(ids)
         let evts = await client.getEventsOf([zap_filter],  Duration.fromSecs(10))
 
         for (const entry of evts){
@@ -214,6 +237,20 @@ export async function get_zaps(ids){
                         zapsandreactions.find(x => x.id === tag.asVec()[1]).reactedbyUser = true
                       }
                       zapsandreactions.find(x => x.id === tag.asVec()[1]).reactions += 1
+
+                    }
+                  }
+
+
+                }
+                else if (entry.kind === 6) {
+                  for (let tag of entry.tags) {
+
+                    if (tag.asVec()[0] === "e") {
+                      if (entry.author.toHex() === localStorage.getItem("nostr-key")) {
+                        zapsandreactions.find(x => x.id === tag.asVec()[1]).repostedbyUser = true
+                      }
+                      zapsandreactions.find(x => x.id === tag.asVec()[1]).reposts += 1
 
                     }
                   }
