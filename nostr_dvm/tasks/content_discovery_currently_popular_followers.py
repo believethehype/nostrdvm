@@ -137,7 +137,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 if event.created_at().as_secs() > timestamp_hour_ago:
                     ns.finallist[event.id().to_hex()] = 0
                     filt = Filter().kinds(
-                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_REPOST,
                          definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(lasthour)
                     reactions = cli.database().query([filt])
                     ns.finallist[event.id().to_hex()] = len(reactions)
