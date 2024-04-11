@@ -4,7 +4,7 @@
                  :items="data"
                  :sort-by="sortBy"
                  :sort-type="sortType">
-   <template #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid, zapped, zapAmount, reacted, reactions, event}">
+   <template #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid, zapped, zapAmount, reacted, reactions, boosts, boosted, event}">
 
    <div class="playeauthor-wrapper">
 
@@ -31,6 +31,10 @@
 
           <div  class="flex" >
 
+
+
+
+
           <div  class="flex" style="margin-left: auto; margin-right: 5px;" v-if="!reacted"  @click="react(id, authorid, event)">
      <div  style="margin-left: auto; margin-right: 5px; float: left;">
          <svg  style="margin-top:4px"  width="14" height="12" xmlns="http://www.w3.org/2000/svg" class="bi bi-heart" fill-rule="evenodd" fill="currentColor" viewBox="0 0 20 25" clip-rule="evenodd"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402m5.726-20.583c-2.203 0-4.446 1.042-5.726 3.238-1.285-2.206-3.522-3.248-5.719-3.248-3.183 0-6.281 2.187-6.281 6.191 0 4.661 5.571 9.429 12 15.809 6.43-6.38 12-11.148 12-15.809 0-4.011-3.095-6.181-6.274-6.181"/></svg> </div>
@@ -40,15 +44,15 @@
 </div>
             <div  class="flex" v-if="reacted"  style="margin-left: auto; margin-right: 5px;" @click="react(id, authorid, event)">
      <div  style="margin-left: auto; margin-right: 5px; float: left;">
-          <svg   style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="12" class="bi bi-heart fill-nostr" viewBox="0 0 20 25"><path d="M12 4.419c-2.826-5.695-11.999-4.064-11.999 3.27 0 7.27 9.903 10.938 11.999 15.311 2.096-4.373 12-8.041 12-15.311 0-7.327-9.17-8.972-12-3.27z"/></svg> </div>
+          <svg   style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="12" class="bi bi-heart fill-red-500" viewBox="0 0 20 25"><path d="M12 4.419c-2.826-5.695-11.999-4.064-11.999 3.27 0 7.27 9.903 10.938 11.999 15.311 2.096-4.373 12-8.041 12-15.311 0-7.327-9.17-8.972-12-3.27z"/></svg> </div>
 
               <div>
-    <p className="text-nostr" style="float: left;">{{reactions}}</p>
+    <p className="text-red-500" style="float: left;">{{reactions}}</p>
   </div>
 </div>
 
 
-<div  class="flex" v-if="lud16 != null && lud16 != '' && !zapped"  @click="zap_local(lud16, id, authorid)">
+<div  class="flex" v-if="lud16 != null && lud16 != '' && !zapped" style="margin-right: 5px;"  @click="zap_local(lud16, id, authorid)">
      <div  style="margin-left: auto; margin-right: 5px; float: left;">
           <svg  style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
               <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/>
@@ -58,13 +62,30 @@
     <p style="float: left;">{{zapAmount/1000}}</p>
   </div>
 </div>
-<div  class="flex" v-if="lud16 != null && lud16 != '' && zapped" @click="zap_local(lud16, id, authorid)"  >
+<div  class="flex" v-if="lud16 != null && lud16 != '' && zapped"  style="margin-right: 5px;"  @click="zap_local(lud16, id, authorid)"  >
      <div style="margin-left: auto; margin-right: 5px;">
           <svg style="margin-top:4px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" class="bi bi-lightning fill-amber-400" viewBox="0 0 16 20">
     <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641z"/>
           </svg></div>
     <div>
     <p style="float: left;" className="text-amber-400">{{zapAmount/1000}}</p>
+  </div>
+</div>
+
+            <div  class="flex" v-if="!boosted"  @click="boost(id, authorid, event)">
+     <div  style="margin-left: auto; margin-right: 5px; float: left;">
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="28" viewBox="0 0 20 34"><path class="bi" fill="currentColor" d="M19 7a1 1 0 0 0-1-1h-8v2h7v5h-3l3.969 5L22 13h-3zM5 17a1 1 0 0 0 1 1h8v-2H7v-5h3L6 6l-4 5h3z"/></svg>     </div>
+
+              <div>
+    <p  style="float: left;">{{boosts}}</p>
+  </div>
+</div>
+             <div  class="flex" v-if="boosted"  @click="boost(id, authorid, event)">
+     <div  style="margin-left: auto; margin-right: 5px; float: left;">
+<svg xmlns="http://www.w3.org/2000/svg" width="14" height="28" viewBox="0 0 20 34"><path class="bi fill-green-700" d="M19 7a1 1 0 0 0-1-1h-8v2h7v5h-3l3.969 5L22 13h-3zM5 17a1 1 0 0 0 1 1h8v-2H7v-5h3L6 6l-4 5h3z"/></svg>     </div>
+
+              <div>
+    <p className="text-green-700" style="float: left;">{{boosts}}</p>
   </div>
 </div>
 
@@ -125,7 +146,7 @@ async function react(eventid, authorid, evt){
                             content: "🧡",
                             kind: 7,
                             pubkey: store.state.pubkey.toHex(),
-                            tags: [],
+                            tags: [["e", eventid]],
                             createdAt: Date.now()
                           };
                         let res = await amberSignerService.signEvent(draft)
@@ -133,22 +154,65 @@ async function react(eventid, authorid, evt){
                         let requestid = res.id;
                         }
                    else {
-                     // let event = new EventBuilder(7, "🧡", [])
                         let event = EventBuilder.reaction(evt, "🧡")
                         let requestid = await client.sendEventBuilder(event);
                    }
 
                     objects.reacted = true
                     objects.reactions += 1
+                    console.log("reacted")
+                   }
 
+                }
 
+}
 
+async function boost(eventid, authorid, evt){
+
+// TODO
+   let event_id = EventId.parse(eventid)
+    let public_key = PublicKey.parse(authorid);
+    let signer = store.state.signer
+    let client = store.state.client
+        let objects =  (props.data.find(x=> x.id === eventid))
+          if (objects !== undefined){
+                if(!objects.boosted ){
+
+                    console.log(evt.asJson())
+                     let relay = "wss://relay.damus.io"
+                     for (let tag of evt.tags){
+                       if (tag.asVec()[0] == "relays"){
+                         console.log(tag.asVec()[1])
+                       }
+
+                     }
+
+                   if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+
+                       let draft = {
+                            content: evt.asJson(),
+                            kind: 6,
+                            pubkey: store.state.pubkey.toHex(),
+                            tags: [["e", eventid]],
+                            createdAt: Date.now()
+                          };
+                        let res = await amberSignerService.signEvent(draft)
+                        await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+                        let requestid = res.id;
+                        }
+                   else {
+                        let event = EventBuilder.repost(evt)
+                        let requestid = await client.sendEventBuilder(event);
+                   }
+
+                    objects.boosted = true
+                    objects.boosts += 1
 
 
 
                     //props.data.push.apply(props.data.find(x=> x.id === eventid), objects)
 
-                    console.log("reacted")
+                    console.log("boosted")
                    }
 
                 }
