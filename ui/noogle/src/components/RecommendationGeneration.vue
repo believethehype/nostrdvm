@@ -489,7 +489,9 @@ async function  listen() {
                               reacted: react.reactedbyUser,
                               reactions: react.reactions,
                               boosts: react.reposts,
-                              boosted: react.repostedbyUser
+                              boosted: react.repostedbyUser,
+                              replied: false,
+                              response:  ref("")
 
                             })
                             index = index + 1
