@@ -103,7 +103,7 @@ async function generate_feed(id) {
         let requestid;
 
         // for now we only want to use encrypted events for subscribed dvms (might change later, also we dont encrypt on amber because decryption and update doesnt work)
-        if(current_dvm.encryptionSupported && current_dvm.nip88 && current_dvm.nip88.hasActiveSubscription && localStorage.getItem('nostr-key-method') !== 'android-signer' ){
+        if(current_dvm.encryptionSupported && current_dvm.nip88 && current_dvm.nip88.hasActiveSubscription && localStorage.getItem('nostr-key-method') !== 'android-signer'  && localStorage.getItem('nostr-key-method') !== 'nostr-login'){
 
              let  tags_str = []
             for (let tag of tags){
