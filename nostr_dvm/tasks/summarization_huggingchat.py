@@ -54,8 +54,8 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
                     prompt += tag.as_vec()[1] + "\n"
                 elif input_type == "event":
                     collect_events.append(tag.as_vec()[1])
-                    #evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
-                    #prompt += evt.content() + "\n"
+                    # evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    # prompt += evt.content() + "\n"
                 elif input_type == "job":
                     evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
                                                      kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
@@ -66,7 +66,7 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
                     if evt is None:
                         print("Event not found")
                         raise Exception
-                    
+
                     if evt.kind() == EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY:
                         result_list = json.loads(evt.content())
                         prompt = ""
@@ -83,9 +83,11 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
             for evt in evts:
                 prompt += evt.content() + "\n"
 
+        clean_prompt = re.sub(r'^https?:\/\/.*[\r\n]*', '', prompt, flags=re.MULTILINE)
         options = {
-            "prompt": prompt,
+            "prompt": clean_prompt[:4000],
         }
+
         request_form['options'] = json.dumps(options)
 
         return request_form
@@ -102,21 +104,17 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
             cookies = sign.login()
             sign.saveCookiesToDir(cookie_path_dir)
 
-
         options = DVMTaskInterface.set_options(request_form)
 
         try:
             chatbot = hugchat.ChatBot(cookies=cookies.get_dict())  # or cookie_path="usercookies/<email>.json"
-            text = re.sub(r'^https?:\/\/.*[\r\n]*', '', str(options["prompt"]), flags=re.MULTILINE)
-
-            query_result = chatbot.query("Summarize the following notes: " + text[:3500])
+            query_result = chatbot.query("Summarize the following notes: " + str(options["prompt"]))
             print(query_result["text"])  # or query_result.text or query_result["text"]
             return str(query_result["text"]).lstrip()
 
         except Exception as e:
             print("Error in Module: " + str(e))
             raise Exception(e)
-
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
@@ -140,7 +138,7 @@ def build_example(name, identifier, admin_config):
     nip89config.CONTENT = json.dumps(nip89info)
 
     return TextSummarizationHuggingChat(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                     admin_config=admin_config)
+                                        admin_config=admin_config)
 
 
 if __name__ == '__main__':
