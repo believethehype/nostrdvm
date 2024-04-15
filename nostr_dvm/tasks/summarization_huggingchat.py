@@ -67,7 +67,7 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
                         print("Event not found")
                         raise Exception
                     
-                    if evt.kind().as_u64() == EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY:
+                    if evt.kind() == EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY:
                         result_list = json.loads(evt.content())
                         prompt = ""
                         for tag in result_list:

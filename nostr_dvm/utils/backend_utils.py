@@ -12,7 +12,7 @@ from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by
 
 def get_task(event, client, dvm_config):
     try:
-        if event.kind().as_u64() == EventDefinitions.KIND_NIP90_GENERIC.as_u64():  # use this for events that have no id yet, inclufr j tag
+        if event.kind() == EventDefinitions.KIND_NIP90_GENERIC:  # use this for events that have no id yet, inclufr j tag
             for tag in event.tags():
                 if tag.as_vec()[0] == 'j':
                     return tag.as_vec()[1]
@@ -26,7 +26,7 @@ def get_task(event, client, dvm_config):
                 return "unknown job: " + event.as_json()
 
         # This looks a bit more complicated, but we do several tasks for text-extraction in the future
-        elif event.kind().as_u64() == EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64():
+        elif event.kind() == EventDefinitions.KIND_NIP90_EXTRACT_TEXT:
             for tag in event.tags():
                 if tag.as_vec()[0] == "i":
                     if tag.as_vec()[2] == "url":
@@ -57,7 +57,7 @@ def get_task(event, client, dvm_config):
                                 return "unknown type"
                     else:
                         return "unknown job"
-        elif event.kind().as_u64() == EventDefinitions.KIND_NIP90_GENERATE_IMAGE.as_u64():
+        elif event.kind() == EventDefinitions.KIND_NIP90_GENERATE_IMAGE:
             has_image_tag = False
             has_text_tag = False
             for tag in event.tags():

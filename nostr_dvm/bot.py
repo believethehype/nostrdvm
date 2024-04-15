@@ -74,22 +74,22 @@ class Bot:
                 if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() + 1000 <= nostr_event.kind().as_u64()
                         <= EventDefinitions.KIND_NIP90_GENERIC.as_u64() + 1000):
                     handle_nip90_response_event(nostr_event)
-                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_FEEDBACK.as_u64():
+                elif nostr_event.kind() == EventDefinitions.KIND_FEEDBACK:
                     handle_nip90_feedback(nostr_event)
 
-                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_ZAP.as_u64():
+                elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
                     handle_zap(nostr_event)
 
-                elif nostr_event.kind().match_enum(KindEnum.ENCRYPTED_DIRECT_MESSAGE()):
+                elif nostr_event.kind() == EventDefinitions.KIND_DM:
                     try:
                         handle_dm(nostr_event)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
-                elif nostr_event.kind().match_enum(KindEnum.GIFT_WRAP()):
+                elif nostr_event.kind() == KindEnum.GIFT_WRAP():
                     print("Decrypting NIP59 event")
                     try:
                         rumor: UnsignedEvent = nip59_extract_rumor(self.keys, nostr_event)
-                        if rumor.kind().match_enum(KindEnum.SEALED_DIRECT()):
+                        if rumor.kind() == KindEnum.SEALED_DIRECT():
                             msg = rumor.content()
                             print(f"Received new msg [sealed]: {msg}")
                             self.client.send_sealed_msg(rumor.author(), "Nip44 is not supported yet, but coming soon", None)
