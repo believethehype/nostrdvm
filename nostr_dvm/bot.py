@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
                        Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, Kind, KindEnum,
-                       UnsignedEvent, nip59_extract_rumor)
+                       UnsignedEvent, UnwrappedGift)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
@@ -53,13 +53,15 @@ class Bot:
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
+        nip59_filter = Filter().pubkey(pk).kind(Kind.from_enum(KindEnum.GIFT_WRAP())).since(
+            Timestamp.from_secs(Timestamp.now().as_secs() - 60 * 60 * 24 * 7))
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
                 kinds.append(Kind(dvm.KIND.as_u64() + 1000))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
-        self.client.subscribe([zap_filter, dm_filter, dvm_filter], None)
+        self.client.subscribe([zap_filter, dm_filter, nip59_filter, dvm_filter], None)
 
         create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
@@ -82,34 +84,54 @@ class Bot:
 
                 elif nostr_event.kind() == EventDefinitions.KIND_DM:
                     try:
-                        handle_dm(nostr_event)
+                        handle_dm(nostr_event, False)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
                 elif nostr_event.kind() == KindEnum.GIFT_WRAP():
-                    print("Decrypting NIP59 event")
                     try:
-                        rumor: UnsignedEvent = nip59_extract_rumor(self.keys, nostr_event)
-                        if rumor.kind() == KindEnum.SEALED_DIRECT():
-                            msg = rumor.content()
-                            print(f"Received new msg [sealed]: {msg}")
-                            self.client.send_sealed_msg(rumor.author(), "Nip44 is not supported yet, but coming soon", None)
-                        else:
-                            print(f"{rumor.as_json()}")
+                        handle_dm(nostr_event, True)
                     except Exception as e:
                         print(f"Error during content NIP59 decryption: {e}")
+
+
 
             def handle_msg(self, relay_url, msg):
                 return
 
-        def handle_dm(nostr_event):
+        def handle_dm(nostr_event, giftwrap):
             sender = nostr_event.author().to_hex()
             if sender == self.keys.public_key().to_hex():
                 return
 
             try:
-                decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
+                sealed = " "
+                if giftwrap:
+                    print("Decrypting NIP59 event")
+                    try:
+                        # Extract rumor
+                        unwrapped_gift = UnwrappedGift.from_gift_wrap(self.keys, nostr_event)
+                        sender = unwrapped_gift.sender()
+                        rumor: UnsignedEvent = unwrapped_gift.rumor()
+
+                        # Check timestamp of rumor
+                        if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
+                            if rumor.kind().match_enum(KindEnum.SEALED_DIRECT()):
+                                decrypted_text = rumor.content()
+                                print(f"Received new msg [sealed]: {decrypted_text}")
+                                sealed = " [sealed] "
+                                # client.send_sealed_msg(sender, f"Echo: {msg}", None)
+                            else:
+                                print(f"{rumor.as_json()}")
+                    except Exception as e:
+                        print(f"Error during content NIP59 decryption: {e}")
+
+                else:
+                    decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
+
+
+
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
-                print("[" + self.NAME + "] Message from " + user.name + ": " + decrypted_text)
+                print("[" + self.NAME + "]" + sealed + "Message from " + user.name + ": " + decrypted_text)
 
                 # if user selects an index from the overview list...
                 if decrypted_text[0].isdigit():
