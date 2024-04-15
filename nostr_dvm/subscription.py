@@ -56,11 +56,17 @@ class Subscription:
         cancel_subscription_filter = Filter().kinds([EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT]).since(
             Timestamp.now())
         authors = []
-        if admin_config is not None:
+        if admin_config is not None and len(admin_config.USERNPUBS) > 0:
+            #we might want to limit which services can connect to the subscription handler
             for key in admin_config.USERNPUBS:
                 authors.append(PublicKey.parse(key))
-        dvm_filter = Filter().authors(authors).pubkey(pk).kinds([EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
-            Timestamp.now())
+            dvm_filter = Filter().authors(authors).pubkey(pk).kinds([EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
+                Timestamp.now())
+        else:
+            # or we don't
+            dvm_filter = Filter().pubkey(pk).kinds(
+                [EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
+                Timestamp.now())
 
         self.client.subscribe([zap_filter, dvm_filter, cancel_subscription_filter], None)
 
@@ -333,7 +339,7 @@ class Subscription:
 
                             keys = Keys.parse(dvm_config.PRIVATE_KEY)
                             message = ("Subscribed to DVM " + tier + ". Renewing on: " + str(
-                                Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T", " ")))
+                                Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T", " ") + " GMT"))
                             evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscriber), message,
                                                                     None).to_event(keys)
                             send_event(evt, client=self.client, dvm_config=dvm_config)

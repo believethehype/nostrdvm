@@ -32,6 +32,7 @@ class DVMConfig:
     USE_OWN_VENV = True  # Make an own venv for each dvm's process function.Disable if you want to install packages into main venv. Only recommended if you dont want to run dvms with different dependency versions
     DB: str
     NEW_USER_BALANCE: int = 0  # Free credits for new users
+    SUBSCRIPTION_MANAGEMENT = 'https://noogle.lol/discovery'
     NIP88: NIP88Config
     NIP89: NIP89Config
     SEND_FEEDBACK_EVENTS = True
