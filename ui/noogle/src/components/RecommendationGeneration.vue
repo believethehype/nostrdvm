@@ -770,6 +770,10 @@ if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subsc
   ]
   for (let zap of current_subscription_dvm.value.nip88.zaps) {
     console.log(zap.key + " " + zap.split)
+    if(zap.key === ""){
+      //if Tier allows an empty key, the client might add itself for the zap share here
+      zap.key = Keys.parse(store.state.nooglekey).publicKey.toHex()
+    }
     let zaptag = ["zap", zap.key, zap.split]
     tags.push(zaptag)
   }
