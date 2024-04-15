@@ -5,7 +5,7 @@ from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind, SubscribeAutoCloseOptions
+    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind
 
 import time
 
