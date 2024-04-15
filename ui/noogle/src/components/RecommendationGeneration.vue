@@ -1015,8 +1015,8 @@ const submitHandler = async () => {
               <h2 className="card-title">{{ dvm.name }}</h2>
               </div>
             <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
-            <div className="card-actions justify-end mt-auto" >
-              <div className="tooltip mt-auto">
+            <div className="card-actions justify-end mt-auto"  >
+              <div className="tooltip mt-auto" style="border-width: 0" >
 
 
                  <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'subscription-required' && dvm.status !== 'subscription-success' && dvm.status !== 'error' && dvm.status !== 'announced'" className="btn">{{dvm.status}}</button>
@@ -1076,8 +1076,8 @@ const submitHandler = async () => {
        <!-- <p v-if="dvm.nip88 && !dvm.nip88.hasActiveSubscription" class="badge text-white bg-gradient-to-br from-pink-500 to-orange-400"  onclick='subscr.showModal()' >Subscription</p> -->
 
                  <div class="flex">
-                   <div class="tooltip">
-                       <svg v-if="dvm.encryptionSupported && dvm.nip88" style="margin-left: auto; margin-right: 5px" class="w-4 h-4 text-gray-800 dark:text-white flex" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                   <div class="tooltip" style="border-width: 0">
+                       <svg v-if="dvm.encryptionSupported && dvm.nip88" style="margin-left: auto; margin-right: 5px" class="w-4 h-4 text-gray-800 dark:text-white flex" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 22">
                             <path d="M18 10v-4c0-3.313-2.687-6-6-6s-6 2.687-6 6v4h-3v14h18v-14h-3zm-5 7.723v2.277h-2v-2.277c-.595-.347-1-.984-1-1.723 0-1.104.896-2 2-2s2 .896 2 2c0 .738-.404 1.376-1 1.723zm-5-7.723v-4c0-2.206 1.794-4 4-4 2.205 0 4 1.794 4 4v4h-8z"/>
                        </svg>
                   <span class="tooltiptext">This DVM uses encrypted communication. Only the DVM can see your request, and only you can see the results. <br> Currently not encrypted when using Amber Signer.</span>
