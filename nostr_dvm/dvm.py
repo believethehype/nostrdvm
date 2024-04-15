@@ -164,7 +164,7 @@ class DVM:
                         else:
                             print("No active subscription found")
                             send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                                     "No active subscription found..",
+                                                     "No active subscription found. Manage your subscription at: " + self.dvm_config.SUBSCRIPTION_MANAGEMENT,
                                                      self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
