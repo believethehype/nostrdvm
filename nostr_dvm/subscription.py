@@ -166,6 +166,7 @@ class Subscription:
             zapped_amount = 0
             for zap in zaps:
                 if zap[1] == "":
+                    #If the client did decide to not add itself to the zap split, or if a slot is left we add the subscription service in the empty space
                     zap[1] = Keys.parse(self.dvm_config.PRIVATE_KEY).public_key().to_hex()
 
                 name, nip05, lud16 = fetch_user_metadata(zap[1], self.client)
