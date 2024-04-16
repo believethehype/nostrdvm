@@ -5,7 +5,7 @@ from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind, SubscribeAutoCloseOptions
+    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind
 
 import time
 
@@ -272,7 +272,7 @@ class DVM:
                 user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
 
                 if zapped_event is not None:
-                    if zapped_event.kind().as_u64() == EventDefinitions.KIND_FEEDBACK.as_u64():
+                    if zapped_event.kind() == EventDefinitions.KIND_FEEDBACK:
 
                         amount = 0
                         job_event = None
@@ -295,7 +295,7 @@ class DVM:
 
                             # if a reaction by us got zapped
                         print(status)
-                        if job_event.kind().as_u64() == EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT.as_u64():
+                        if job_event.kind() == EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT:
                             send_job_status_reaction(job_event, "subscription-success", client=self.client,
                                                      dvm_config=self.dvm_config, user=user)
 
@@ -334,7 +334,7 @@ class DVM:
                                                              False, invoice_amount, client=self.client,
                                                              dvm_config=self.dvm_config)
                                     print("[" + self.dvm_config.NIP89.NAME + "] Invoice was not paid sufficiently")
-                    elif zapped_event.kind().as_u64() == EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT.as_u64():
+                    elif zapped_event.kind() == EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT:
                         print("new subscription, doing nothing")
 
                     elif zapped_event.kind() in EventDefinitions.ANY_RESULT:

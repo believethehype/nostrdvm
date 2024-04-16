@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
                        Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, Kind, KindEnum,
-                       UnsignedEvent, nip59_extract_rumor)
+                       UnsignedEvent, UnwrappedGift)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
@@ -53,16 +53,19 @@ class Bot:
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
+        nip59_filter = Filter().pubkey(pk).kind(Kind.from_enum(KindEnum.GIFT_WRAP())).since(
+            Timestamp.from_secs(Timestamp.now().as_secs() - 60 * 60 * 24 * 7))
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
                 kinds.append(Kind(dvm.KIND.as_u64() + 1000))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
-        self.client.subscribe([zap_filter, dm_filter, dvm_filter], None)
+        self.client.subscribe([zap_filter, dm_filter, nip59_filter, dvm_filter], None)
 
         create_sql_table(self.dvm_config.DB)
         admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
+
         # add_sql_table_column(dvm_config.DB)
 
         class NotificationHandler(HandleNotification):
@@ -74,142 +77,186 @@ class Bot:
                 if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() + 1000 <= nostr_event.kind().as_u64()
                         <= EventDefinitions.KIND_NIP90_GENERIC.as_u64() + 1000):
                     handle_nip90_response_event(nostr_event)
-                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_FEEDBACK.as_u64():
+                elif nostr_event.kind() == EventDefinitions.KIND_FEEDBACK:
                     handle_nip90_feedback(nostr_event)
 
-                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_ZAP.as_u64():
+                elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
                     handle_zap(nostr_event)
 
-                elif nostr_event.kind().match_enum(KindEnum.ENCRYPTED_DIRECT_MESSAGE()):
+                elif nostr_event.kind() == EventDefinitions.KIND_DM:
                     try:
-                        handle_dm(nostr_event)
+                        handle_dm(nostr_event, False)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
                 elif nostr_event.kind().match_enum(KindEnum.GIFT_WRAP()):
-                    print("Decrypting NIP59 event")
                     try:
-                        rumor: UnsignedEvent = nip59_extract_rumor(self.keys, nostr_event)
-                        if rumor.kind().match_enum(KindEnum.SEALED_DIRECT()):
-                            msg = rumor.content()
-                            print(f"Received new msg [sealed]: {msg}")
-                            self.client.send_sealed_msg(rumor.author(), "Nip44 is not supported yet, but coming soon", None)
-                        else:
-                            print(f"{rumor.as_json()}")
+                      handle_dm(nostr_event, True)
                     except Exception as e:
                         print(f"Error during content NIP59 decryption: {e}")
 
             def handle_msg(self, relay_url, msg):
                 return
 
-        def handle_dm(nostr_event):
+        def handle_dm(nostr_event, giftwrap):
             sender = nostr_event.author().to_hex()
             if sender == self.keys.public_key().to_hex():
                 return
-
+            decrypted_text = ""
             try:
-                decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
-                user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
-                print("[" + self.NAME + "] Message from " + user.name + ": " + decrypted_text)
+                sealed = " "
+                if giftwrap:
+                    try:
+                        # Extract rumor
+                        unwrapped_gift = UnwrappedGift.from_gift_wrap(self.keys, nostr_event)
+                        sender = unwrapped_gift.sender().to_hex()
+                        rumor: UnsignedEvent = unwrapped_gift.rumor()
 
-                # if user selects an index from the overview list...
-                if decrypted_text[0].isdigit():
-                    split = decrypted_text.split(' ')
-                    index = int(split[0]) - 1
-                    # if user sends index info, e.g. 1 info, we fetch the nip89 information and reply with it.
-                    if len(split) > 1 and split[1].lower() == "info":
-                        answer_nip89(nostr_event, index)
-                    # otherwise we probably have to do some work, so build an event from input and send it to the DVM
-                    else:
-                        task = self.dvm_config.SUPPORTED_DVMS[index].TASK
-                        print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) +
-                              ", Balance: " + str(user.balance) + " Sats) Task: " + str(task))
-
-                        if user.isblacklisted:
-                            # If users are blacklisted for some reason, tell them.
-                            answer_blacklisted(nostr_event)
-
-                        else:
-                            # Parse inputs to params
-                            tags = build_params(decrypted_text, nostr_event, index)
-                            p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
-
-                            if self.dvm_config.SUPPORTED_DVMS[index].SUPPORTS_ENCRYPTION:
-                                tags_str = []
-                                for tag in tags:
-                                    tags_str.append(tag.as_vec())
-                                params_as_str = json.dumps(tags_str)
-                                print(params_as_str)
-                                #  and encrypt them
-                                encrypted_params = nip04_encrypt(self.keys.secret_key(),
-                                                                 PublicKey.from_hex(
-                                                                     self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY),
-                                                                 params_as_str)
-                                #  add encrypted and p tag on the outside
-                                encrypted_tag = Tag.parse(['encrypted'])
-                                #  add the encrypted params to the content
-                                nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
-                                                             encrypted_params, [p_tag, encrypted_tag]).
-                                                to_event(self.keys))
+                        # Check timestamp of rumor
+                        if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
+                            if rumor.kind().match_enum(KindEnum.SEALED_DIRECT()):
+                                decrypted_text = rumor.content()
+                                print(f"Received new msg [sealed]: {decrypted_text}")
+                                sealed = " [sealed] "
+                                # client.send_sealed_msg(sender, f"Echo: {msg}", None)
                             else:
-                                tags.append(p_tag)
-
-                                nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
-                                                             "", tags).
-                                                to_event(self.keys))
-
-                            # remember in the job_list that we have made an event, if anybody asks for payment,
-                            # we know we actually sent the request
-                            entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
-                                     "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False}
-                            self.job_list.append(entry)
-
-                            # send the event to the DVM
-                            send_event(nip90request, client=self.client, dvm_config=self.dvm_config)
-                            # print(nip90request.as_json())
-
-
-
-                elif decrypted_text.lower().startswith("balance"):
-                    time.sleep(3.0)
-                    evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                                "Your current balance is " + str(
-                                                                    user.balance) + " Sats. Zap me to add to your balance. I will use your balance interact with the DVMs for you.\n"
-                                                                                    "I support both public and private Zaps, as well as Zapplepay.\n"
-                                                                                    "Alternativly you can add a #cashu token with \"-cashu cashuASomeToken\" to your command.\n Make sure the token is worth the requested amount + "
-                                                                                    "mint fees (at least 3 sat).\n Not all DVMs might accept Cashu tokens."
-                                                                , None).to_event(self.keys)
-                    send_event(evt, client=self.client, dvm_config=dvm_config)
-
-                elif decrypted_text.startswith("cashuA"):
-                    print("Received Cashu token:" + decrypted_text)
-                    cashu_redeemed, cashu_message, total_amount, fees = redeem_cashu(decrypted_text, self.dvm_config,
-                                                                                     self.client)
-                    print(cashu_message)
-                    if cashu_message == "success":
-                        update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
-                                            config=self.dvm_config)
-                    else:
-                        time.sleep(2.0)
-                        message = "Error: " + cashu_message + ". Token has not been redeemed."
-                        evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.from_hex(sender), message,
-                                                                    None).to_event(self.keys)
-                        send_event(evt, client=self.client, dvm_config=self.dvm_config)
-                elif decrypted_text.lower().startswith("what's the second best"):
-                    time.sleep(3.0)
-                    evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                                "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4",
-                                                                nostr_event.id()).to_event(self.keys)
-                    send_event(evt, client=self.client, dvm_config=self.dvm_config)
+                                print(f"{rumor.as_json()}")
+                    except Exception as e:
+                        print(f"Error during content NIP59 decryption: {e}")
 
                 else:
-                    # Build an overview of known DVMs and send it to the user
-                    answer_overview(nostr_event)
+                    try:
+                        decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(),
+                                                       nostr_event.content())
+                    except Exception as e:
+                        print(f"Error during content NIP04 decryption: {e}")
+
+                if decrypted_text != "":
+                    user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
+                                           config=self.dvm_config)
+
+                    print("[" + self.NAME + "]" + sealed + "Message from " + user.name + ": " + decrypted_text)
+
+                    # if user selects an index from the overview list...
+                    if decrypted_text != "" and decrypted_text[0].isdigit():
+
+                        split = decrypted_text.split(' ')
+                        index = int(split[0]) - 1
+                        # if user sends index info, e.g. 1 info, we fetch the nip89 information and reply with it.
+                        if len(split) > 1 and split[1].lower() == "info":
+                            answer_nip89(nostr_event, index)
+                        # otherwise we probably have to do some work, so build an event from input and send it to the DVM
+                        else:
+                            task = self.dvm_config.SUPPORTED_DVMS[index].TASK
+                            print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) +
+                                  ", Balance: " + str(user.balance) + " Sats) Task: " + str(task))
+
+                            if user.isblacklisted:
+                                # If users are blacklisted for some reason, tell them.
+                                answer_blacklisted(nostr_event, giftwrap, sender)
+
+                            else:
+                                # Parse inputs to params
+                                tags = build_params(decrypted_text, nostr_event, index)
+                                p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
+
+                                if self.dvm_config.SUPPORTED_DVMS[index].SUPPORTS_ENCRYPTION:
+                                    tags_str = []
+                                    for tag in tags:
+                                        tags_str.append(tag.as_vec())
+                                    params_as_str = json.dumps(tags_str)
+                                    print(params_as_str)
+                                    #  and encrypt them
+                                    encrypted_params = nip04_encrypt(self.keys.secret_key(),
+                                                                     PublicKey.from_hex(
+                                                                         self.dvm_config.SUPPORTED_DVMS[
+                                                                             index].PUBLIC_KEY),
+                                                                     params_as_str)
+                                    #  add encrypted and p tag on the outside
+                                    encrypted_tag = Tag.parse(['encrypted'])
+                                    #  add the encrypted params to the content
+                                    nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
+                                                                 encrypted_params, [p_tag, encrypted_tag]).
+                                                    to_event(self.keys))
+                                else:
+                                    tags.append(p_tag)
+
+                                    nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
+                                                                 "", tags).
+                                                    to_event(self.keys))
+
+                                # remember in the job_list that we have made an event, if anybody asks for payment,
+                                # we know we actually sent the request
+                                entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
+                                         "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False, "giftwrap": giftwrap}
+                                self.job_list.append(entry)
+
+                                # send the event to the DVM
+                                send_event(nip90request, client=self.client, dvm_config=self.dvm_config)
+                                # print(nip90request.as_json())
+
+
+
+                    elif decrypted_text.lower().startswith("balance"):
+                        time.sleep(3.0)
+                        message = "Your current balance is " + str(user.balance) + ("Sats. Zap me to add to your "
+                                                                                    "balance. I will use your "
+                                                                                    "balance interact with the DVMs "
+                                                                                    "for you.\n I support both "
+                                                                                    "public and private Zaps, "
+                                                                                    "as well as "
+                                                                                    "Zapplepay.\nAlternativly you "
+                                                                                    "can add a #cashu token with "
+                                                                                    "\"-cashu cashuASomeToken\" to "
+                                                                                    "your command.\n Make sure the "
+                                                                                    "token is worth the requested "
+                                                                                    "amount mint fees (at least 3 "
+                                                                                    "sat).\n Not all DVMs might "
+                                                                                    "accept Cashu tokens.")
+                        if giftwrap:
+                            self.client.send_sealed_msg(PublicKey.parse(sender), message, None)
+                        else:
+                            evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
+                                                                    message,None).to_event(self.keys)
+                            send_event(evt, client=self.client, dvm_config=dvm_config)
+                    elif decrypted_text.startswith("cashuA"):
+                        print("Received Cashu token:" + decrypted_text)
+                        cashu_redeemed, cashu_message, total_amount, fees = redeem_cashu(decrypted_text,
+                                                                                         self.dvm_config,
+                                                                                         self.client)
+                        print(cashu_message)
+                        if cashu_message == "success":
+                            update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
+                                                config=self.dvm_config)
+                        else:
+                            time.sleep(2.0)
+                            message = "Error: " + cashu_message + ". Token has not been redeemed."
+
+                            if giftwrap:
+                                self.client.send_sealed_msg(PublicKey.parse(sender), message, None)
+                            else:
+                                evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.from_hex(sender), message,
+                                                                        None).to_event(self.keys)
+                                send_event(evt, client=self.client, dvm_config=self.dvm_config)
+                    elif decrypted_text.lower().startswith("what's the second best"):
+                        time.sleep(3.0)
+                        message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
+                        if giftwrap:
+                            self.client.send_sealed_msg(PublicKey.parse(sender), message, None)
+                        else:
+                            evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
+                                                                    message,
+                                                                    nostr_event.id()).to_event(self.keys)
+                            send_event(evt, client=self.client, dvm_config=self.dvm_config)
+
+                    else:
+                        # Build an overview of known DVMs and send it to the user
+                        answer_overview(nostr_event, giftwrap, sender)
 
             except Exception as e:
                 print("Error in bot " + str(e))
 
         def handle_nip90_feedback(nostr_event):
-            #print(nostr_event.as_json())
+            # print(nostr_event.as_json())
             try:
                 is_encrypted = False
                 status = ""
@@ -259,14 +306,18 @@ class Bot:
                         user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                                client=self.client, config=self.dvm_config)
                         time.sleep(2.0)
-                        reply_event = EventBuilder.encrypted_direct_msg(self.keys,
+                        if entry["giftwrap"]:
+                            self.client.send_sealed_msg(PublicKey.parse(entry["npub"]), content, None)
+                        else:
+                            reply_event = EventBuilder.encrypted_direct_msg(self.keys,
                                                                             PublicKey.from_hex(entry['npub']),
                                                                             content,
                                                                             None).to_event(self.keys)
+
+                            send_event(reply_event, client=self.client, dvm_config=dvm_config)
                         print(status + ": " + content)
                         print(
                             "[" + self.NAME + "] Received reaction from " + nostr_event.author().to_hex() + " message to orignal sender " + user.name)
-                        send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
                 elif status == "payment-required" or status == "partial":
                     for tag in nostr_event.tags():
@@ -285,28 +336,30 @@ class Bot:
                                                      iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
                                                      nip05=user.nip05, lud16=user.lud16, name=user.name,
                                                      lastactive=Timestamp.now().as_secs(), subscribed=user.subscribed)
-                                    evt = EventBuilder.encrypted_direct_msg(self.keys,
-                                                                                PublicKey.from_hex(entry["npub"]),
-                                                                                "Paid " + str(
-                                                                                    amount) + " Sats from balance to DVM. New balance is " +
-                                                                                str(balance)
-                                                                                + " Sats.\n",
-                                                                                None).to_event(self.keys)
 
+                                    message = "Paid " + str(amount) + " Sats from balance to DVM. New balance is " + str(balance) + " Sats.\n"
+                                    if entry["giftwrap"]:
+                                        self.client.send_sealed_msg(PublicKey.parse(entry["npub"]), message, None)
+                                    else:
+                                        evt = EventBuilder.encrypted_direct_msg(self.keys,
+                                                                                PublicKey.parse(entry["npub"]),
+                                                                                message,
+                                                                                None).to_event(self.keys)
+                                        send_event(evt, client=self.client, dvm_config=dvm_config)
                                     print(
                                         "[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
-                                    send_event(evt, client=self.client, dvm_config=dvm_config)
+
                                 else:
                                     print("Bot payment-required")
                                     time.sleep(2.0)
                                     evt = EventBuilder.encrypted_direct_msg(self.keys,
-                                                                                PublicKey.from_hex(entry["npub"]),
-                                                                                "Current balance: " + str(
-                                                                                    user.balance) + " Sats. Balance of " + str(
-                                                                                    amount) + " Sats required. Please zap me with at least " +
-                                                                                str(int(amount - user.balance))
-                                                                                + " Sats, then try again.",
-                                                                                None).to_event(self.keys)
+                                                                            PublicKey.parse(entry["npub"]),
+                                                                            "Current balance: " + str(
+                                                                                user.balance) + " Sats. Balance of " + str(
+                                                                                amount) + " Sats required. Please zap me with at least " +
+                                                                            str(int(amount - user.balance))
+                                                                            + " Sats, then try again.",
+                                                                            None).to_event(self.keys)
                                     send_event(evt, client=self.client, dvm_config=dvm_config)
                                     return
 
@@ -376,11 +429,14 @@ class Bot:
 
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     time.sleep(1.0)
-                    reply_event = EventBuilder.encrypted_direct_msg(self.keys,
-                                                                        PublicKey.from_hex(user.npub),
+                    if entry["giftwrap"]:
+                        self.client.send_sealed_msg(PublicKey.parse(user.npub), content, None)
+                    else:
+                        reply_event = EventBuilder.encrypted_direct_msg(self.keys,
+                                                                        PublicKey.parse(user.npub),
                                                                         content,
                                                                         None).to_event(self.keys)
-                    send_event(reply_event, client=self.client, dvm_config=dvm_config)
+                        send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
             except Exception as e:
                 print(e)
@@ -431,7 +487,7 @@ class Bot:
             except Exception as e:
                 print("[" + self.NAME + "] Error during content decryption:" + str(e))
 
-        def answer_overview(nostr_event):
+        def answer_overview(nostr_event, giftwrap, sender):
             message = "DVMs that I support:\n\n"
             index = 1
             for p in self.dvm_config.SUPPORTED_DVMS:
@@ -444,35 +500,39 @@ class Bot:
                 index += 1
 
             time.sleep(3.0)
-            evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                        message + "\nSelect an Index and provide an input ("
-                                                                  "e.g. \"2 A purple ostrich\")\nType \"index info\" to learn "
-                                                                  "more about each DVM. (e.g. \"2 info\")\n\n"
-                                                                  "Type \"balance\" to see your current balance",
+
+            text =  message + "\nSelect an Index and provide an input (e.g. \"2 A purple ostrich\")\nType \"index info\" to learn more about each DVM. (e.g. \"2 info\")\n\n Type \"balance\" to see your current balance"
+            if giftwrap:
+                self.client.send_sealed_msg(PublicKey.parse(sender), text, None)
+            else:
+                evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
+                                                        text,
                                                         nostr_event.id()).to_event(self.keys)
 
-            send_event(evt, client=self.client, dvm_config=dvm_config)
+                send_event(evt, client=self.client, dvm_config=dvm_config)
 
-        def answer_blacklisted(nostr_event):
-            # For some reason an admin might blacklist npubs, e.g. for abusing the service
-            evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                        "Your are currently blocked from all "
-                                                        "services.", None).to_event(self.keys)
-            send_event(evt, client=self.client, dvm_config=dvm_config)
-
-        def answer_nip89(nostr_event, index):
-            info = print_dvm_info(self.client, index)
-            time.sleep(2.0)
-            if info is not None:
-                evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                            info, None).to_event(self.keys)
+        def answer_blacklisted(nostr_event, giftwrap, sender):
+            message = "Your are currently blocked from this service."
+            if giftwrap:
+                self.client.send_sealed_msg(PublicKey.parse(sender), message, None)
             else:
+                 # For some reason an admin might blacklist npubs, e.g. for abusing the service
                 evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                            "No NIP89 Info found for " +
-                                                            self.dvm_config.SUPPORTED_DVMS[index].NAME,
-                                                            None).to_event(self.keys)
+                                                        message, None).to_event(self.keys)
+                send_event(evt, client=self.client, dvm_config=dvm_config)
 
-            send_event(evt, client=self.client, dvm_config=dvm_config)
+        def answer_nip89(nostr_event, index, giftwrap, sender):
+            info = print_dvm_info(self.client, index)
+            if info is None:
+                info =  "No NIP89 Info found for " + self.dvm_config.SUPPORTED_DVMS[index].NAME
+            time.sleep(2.0)
+
+            if giftwrap:
+                self.client.send_sealed_msg(PublicKey.parse(sender), info, None)
+            else:
+                    evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
+                                                            info, None).to_event(self.keys)
+                    send_event(evt, client=self.client, dvm_config=dvm_config)
 
         def build_params(decrypted_text, nostr_event, index):
             tags = []
