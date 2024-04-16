@@ -78,9 +78,9 @@ class Subscription:
             keys = self.keys
 
             def handle(self, relay_url, subscription_id, nostr_event: Event):
-                if nostr_event.kind().as_u64() == EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION.as_u64():
+                if nostr_event.kind() == EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION:
                     handle_nwc_request(nostr_event)
-                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT.as_u64():
+                elif nostr_event.kind() == EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT:
                     handle_cancel(nostr_event)
 
             def handle_msg(self, relay_url, msg):

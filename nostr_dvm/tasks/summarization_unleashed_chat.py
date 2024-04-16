@@ -4,7 +4,7 @@ import re
 from nostr_sdk import Tag, Kind
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions  import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -68,7 +68,7 @@ class SummarizationUnleashedChat(DVMTaskInterface):
                         print("Event not found")
                         raise Exception
 
-                    if evt.kind().as_u64() == EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY:
+                    if evt.kind() == EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY:
                         result_list = json.loads(evt.content())
                         prompt = ""
                         for tag in result_list:
@@ -84,9 +84,9 @@ class SummarizationUnleashedChat(DVMTaskInterface):
             for evt in evts:
                 prompt += evt.content() + "\n"
 
-        prompt = re.sub(r'http\S+', '', prompt)
+        clean_prompt = re.sub(r'^https?:\/\/.*[\r\n]*', '', prompt, flags=re.MULTILINE)
         options = {
-            "prompt": prompt,
+            "prompt": clean_prompt[:4000],
             "nostr": nostr_mode,
         }
         request_form['options'] = json.dumps(options)
@@ -108,14 +108,13 @@ class SummarizationUnleashedChat(DVMTaskInterface):
 
             for model in client.models.list():
                 print('- ' + model.id)
-            text = re.sub(r'^https?:\/\/.*[\r\n]*', '', str(options["prompt"]), flags=re.MULTILINE)
 
-            content = "Summarize the following notes: " + text[:3500]
+            content = "Summarize the following notes: " + str(options["prompt"])
             normal_stream = client.chat.completions.create(
                 messages=[
                     {
                         'role': 'user',
-                        'content':content,
+                        'content': content,
                     }
                 ],
                 model='dolphin-2.2.1-mistral-7b',
@@ -148,7 +147,6 @@ def build_example(name, identifier, admin_config):
     dvm_config.SEND_FEEDBACK_EVENTS = True
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-
     nip89info = {
         "name": name,
         "image": "https://unleashed.chat/_app/immutable/assets/hero.pehsu4x_.jpeg",
@@ -164,9 +162,9 @@ def build_example(name, identifier, admin_config):
     admin_config2 = AdminConfig()
     admin_config2.REBROADCAST_NIP89 = False
 
-    return SummarizationUnleashedChat(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config2)
+    return SummarizationUnleashedChat(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                      admin_config=admin_config2)
 
 
 if __name__ == '__main__':
     process_venv(SummarizationUnleashedChat)
-
