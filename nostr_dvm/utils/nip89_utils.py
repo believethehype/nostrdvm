@@ -76,12 +76,11 @@ def nip89_fetch_all_dvms(client):
 
 
 def nip89_fetch_events_pubkey(client, pubkey, kind):
-    ktags = [str(kind)]
-    # for i in range(5000, 5999):
-    #     ktags.append(str(i))
-    nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.from_hex(pubkey)).
+
+    ktags = [str(kind.as_u64())]
+    nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.parse(pubkey)).
                    custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags))
-    events = client.get_events_of([nip89filter], timedelta(seconds=2))
+    events = client.get_events_of([nip89filter], timedelta(seconds=4))
 
     dvms = {}
     for event in events:
