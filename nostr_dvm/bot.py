@@ -143,7 +143,7 @@ class Bot:
                         index = int(split[0]) - 1
                         # if user sends index info, e.g. 1 info, we fetch the nip89 information and reply with it.
                         if len(split) > 1 and split[1].lower() == "info":
-                            answer_nip89(nostr_event, index)
+                            answer_nip89(nostr_event, index, giftwrap, sender)
                         # otherwise we probably have to do some work, so build an event from input and send it to the DVM
                         else:
                             task = self.dvm_config.SUPPORTED_DVMS[index].TASK
