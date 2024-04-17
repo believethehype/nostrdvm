@@ -141,7 +141,7 @@
           <h3 className="card-title">Login</h3>
           <p>Use a Browser Nip07 Extension like getalby, nos2x or nsec.app, a nsec or ncryptsec or use Amber on Android to sign-in</p>
          <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
-         <!-- <button className="btn" @click="sign_in_nostr_login()">Nostr Login</button> -->
+         <button className="btn" @click="sign_in_nostr_login()">Nostr Login</button>
 
          <template v-if="supports_android_signer">
           <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
