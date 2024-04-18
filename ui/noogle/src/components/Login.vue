@@ -8,7 +8,8 @@
   <svg class="swap-off fill-current w-10 h-10" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/></svg>
 
 </label> -->
-  <div>
+  <div   >
+
      <div class="playeauthor-wrapper" v-if="current_user">
 
         <div className="dropdown">
@@ -197,14 +198,15 @@ import deadnip89s from "@/components/data/deadnip89s.json";
 import amberSignerService from "./android-signer/AndroidSigner";
 import nip49, {decryptwrapper} from "./android-signer/helpers/nip49";
 import { init as initNostrLogin  } from "nostr-login"
-import { launch as launchNostrLoginDialog } from "nostr-login"
+import { NostrLoginInitializer as launchNostrLoginDialog } from "nostr-login"
 import { logout as logoutNostrLogin } from "nostr-login"
 import {parseandreplacenpubs, hasActiveSubscription, dvmreactions} from "@/components/helper/Helper.vue"
 import {loadNWCObject} from "@/components/helper/Zap.vue"
-import {useDark, useToggle} from "@vueuse/core";
+import {useDark, useEventListener, useToggle} from "@vueuse/core";
 import {ref} from "vue";
 import {webln} from "@getalby/sdk";
 import {nip04Decrypt} from "@rust-nostr/nostr-sdk/pkg/nostr_sdk_js_bg.wasm.js";
+import app from "@/App.vue";
 const isDark = useDark();
 
 //const toggleDark = useToggle(isDark);
@@ -219,6 +221,9 @@ let logger = false
 
 
 export default {
+  created () {
+    document.addEventListener('nlAuth', this.handleNostrLoginEvent, false)
+  },
 
   data() {
     return {
@@ -279,18 +284,17 @@ export default {
 
       if(nwc != null && nwc.nwcUrl){
          this.hasNWC = true
-      }
 
-
-       if(nwc.connectorType === "alby"){
-        this.nwcalby = nwc.nwcUrl
-      }
-      else if(nwc.connectorType === "user"){
-        this.nwc = nwc.nwcUrl
-      }
-      else if (nwc.connectorType === "mutiny"){
-        this.nwcmutiny = nwc.nwcUrl
-      }
+        if(nwc.connectorType === "alby"){
+          this.nwcalby = nwc.nwcUrl
+        }
+        else if(nwc.connectorType === "user"){
+          this.nwc = nwc.nwcUrl
+        }
+        else if (nwc.connectorType === "mutiny"){
+          this.nwcmutiny = nwc.nwcUrl
+        }
+       }
 
 
 
@@ -311,18 +315,41 @@ export default {
         document.documentElement.classList.remove('dark')
       }
     },
+    async handleNostrLoginEvent(e){
+      console.log(e)
 
-    async sign_in_nostr_login() {
-      await initNostrLogin({bunkers: 'nsec.app,highlighter.com'})
+       if (e.detail.type === "login") {
+        //await this.state.client.shutdown()G;
+       // await this.sign_in_nostr_login(false)
+        let pubkeyinfo = localStorage.getItem('__nostrlogin_nip46')
+           console.log(JSON.parse(pubkeyinfo).pubkey)
+        //await this.get_user_info(JSON.parse(pubkeyinfo).pubkey)
+        //this.reconcile_all_profiles(JSON.parse(pubkeyinfo).pubkey)
+        console.log("Logged in")
+  }
+
+      if (e.detail.type === "logout") {
+        await this.sign_out()
+        //await this.state.client.shutdown()G;
+        await this.sign_in_anon()
+        console.log("Logged out")
+  }
+    },
+    async sign_in_nostr_login(launch=true) {
+      await initNostrLogin({bunkers: 'nsec.app,highlighter.com', iife: true})
 
       // launch signup screen
-      if (!localStorage.getItem('__nostrlogin_nip46')){
-           await launchNostrLoginDialog({
+      if (launch){
+          if (!localStorage.getItem('__nostrlogin_nip46')){
+           await new launchNostrLoginDialog({
         bunkers: 'nsec.app,highlighter.com'
       })
       }
+             await loadWasmAsync();
+      }
 
-      await loadWasmAsync();
+
+
       let nip07_signer = new Nip07Signer();
       try {
         this.signer = NostrSigner.nip07(nip07_signer);
@@ -972,8 +999,6 @@ export default {
 
           }
     },
-
-
     async sign_out(){
       this.current_user = ""
       if(localStorage.getItem('nostr-key-method') === "nostr-login"){
