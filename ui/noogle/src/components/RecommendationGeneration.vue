@@ -74,19 +74,10 @@ function set_subscription_props(amount, cadence, dvm) {
 
 async function generate_feed(id) {
 
-       // if (!store.state.recommendationehasEventListener){
-      //     store.commit('set_recommendationEventListener', true)
-           listen()
-
-      //  }
-      //  else{
-      //    console.log("Already has event listener")
-      //  }
+  listen()
 
 
    try {
-
-
 
         let client = store.state.client
         //console.log(dvms.find(i => i.id === id).encryptionSupported)
@@ -139,12 +130,14 @@ async function generate_feed(id) {
                   requestid = res.id;
                    requestids.push(requestid)
                   store.commit('set_current_request_id_recommendation', requestids)
-                  await client.sendEvent(Event.fromJson(JSON.stringify(res)))
+                 /* let evtjson = JSON.stringify(res)
+                  let evt = Event.fromJson(evtjson)
+                  await client.sendEvent(evt) */
 
               }
               else{
-
-              let content = await signer.nip04Encrypt(PublicKey.parse(id), params_as_str)
+              let pk = PublicKey.parse(id)
+              let content = await signer.nip04Encrypt(pk, params_as_str)
 
               let tags_t = []
               tags_t.push(Tag.parse(["p", id]))
@@ -155,11 +148,18 @@ async function generate_feed(id) {
 
                 let evt = new EventBuilder(kind, content, tags_t)
                 let unsigned =   evt.toUnsignedEvent(store.state.pubkey)
-               let signedEvent = await (await client.signer()).signEvent(unsigned)
-               console.log(signedEvent.id.toHex())
-                requestids.push(signedEvent.id.toHex())
-               store.commit('set_current_request_id_recommendation', requestids)
-               res = await client.sendEvent(signedEvent)
+                try{
+                      let sign = await client.signer()
+                    let signedEvent = await sign.signEvent(unsigned)
+                    requestids.push(signedEvent.id.toHex())
+                   store.commit('set_current_request_id_recommendation', requestids)
+
+                   res = await client.sendEvent(signedEvent)
+                    }
+                catch(e){
+                console.log(e)
+                }
+
 
               }
 

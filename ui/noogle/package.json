@@ -19,7 +19,7 @@
     "bootstrap": "^5.3.2",
     "daisyui": "^4.6.0",
     "mini-toastr": "^0.8.1",
-    "nostr-login": "^1.1.0",
+    "nostr-login": "^1.1.1",
     "nostr-tools": "^2.4.0",
     "vue": "^3.4.15",
     "vue-notifications": "^1.0.2",
