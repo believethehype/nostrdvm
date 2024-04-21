@@ -189,7 +189,7 @@ import {
   Options,
   Duration,
   PublicKey,
-  Nip46Signer, NegentropyDirection, NegentropyOptions, NostrSigner
+  Nip46Signer, NegentropyDirection, NegentropyOptions, NostrSigner, RelayLimits
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -246,6 +246,7 @@ export default {
 
   async mounted() {
     try {
+
 
 
 
@@ -354,11 +355,9 @@ export default {
       try {
         this.signer = NostrSigner.nip07(nip07_signer);
         console.log("SIGNER: " + this.signer.toString())
+        let limits = RelayLimits.disable()
 
-
-
-
-      let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+      let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
       let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
 
@@ -401,7 +400,8 @@ export default {
 
         let keys = Keys.parse(store.state.nooglekey)
         this.signer = NostrSigner.keys(keys) //TODO store keys
-        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+          let limits = RelayLimits.disable()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
         for (const relay of store.state.relays){
@@ -463,7 +463,8 @@ export default {
 
         let keys = Keys.parse(key)
         this.signer = NostrSigner.keys(keys)
-        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+          let limits = RelayLimits.disable()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
         for (const relay of store.state.relays){
@@ -530,7 +531,8 @@ export default {
           }
 
         //let zapper = ClientZapper.webln()
-        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+         let limits = RelayLimits.disable()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
 
@@ -611,7 +613,8 @@ export default {
           }
 
         //let zapper = ClientZapper.webln()
-        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+           let limits = RelayLimits.disable()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
         await client.addRelay(relay_url)
@@ -679,7 +682,8 @@ export default {
         let publicKey = PublicKey.fromHex(hexKey);
         let keys = Keys.fromPublicKey(publicKey)
         this.signer = NostrSigner.keys(keys)
-        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5));
+            let limits = RelayLimits.disable()
+        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
         for (const relay of store.state.relays){
           await client.addRelay(relay);
@@ -887,7 +891,9 @@ export default {
       let keys = Keys.parse(store.state.nooglekey)
       let db = NostrDatabase.indexeddb("profiles");
       let signer = NostrSigner.keys(keys)
-      dbclient = new ClientBuilder().signer(signer).database(await db).build()
+      let limits = RelayLimits.disable()
+      let relayopts = new Options().relayLimits(limits);
+      dbclient = new ClientBuilder().signer(signer).database(await db).opts(relayopts).build()
 
       await dbclient.addRelay("wss://relay.damus.io");
       await dbclient.addRelay( "wss://purplepag.es");
