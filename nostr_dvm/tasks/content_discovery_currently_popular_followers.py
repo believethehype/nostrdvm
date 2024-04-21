@@ -102,7 +102,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         cli.connect()
 
         user = PublicKey.parse(options["user"])
-        followers_filter = Filter().author(user).kinds([Kind(3)]).limit(1)
+        followers_filter = Filter().author(user).kinds([Kind(3)])
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
         print(followers)
 
