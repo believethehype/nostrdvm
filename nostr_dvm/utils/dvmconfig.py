@@ -19,7 +19,7 @@ class DVMConfig:
     RELAY_LIST = ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.wine",
                   "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
                   "wss://relay.f7z.io", "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://140.f7z.io",
-                  "wss://relay.snort.social", "wss://offchain.pub/"]
+                  ]
 
     RELAY_TIMEOUT = 5
     EXTERNAL_POST_PROCESS_TYPE = PostProcessFunctionType.NONE  # Leave this on None, except the DVM is external

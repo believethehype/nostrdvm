@@ -3,7 +3,8 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
+    RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -68,13 +69,37 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
+
+        #relaylimits = RelayLimits()
+        #relaylimits.event_max_num_tags(max_num_tags=None)
+        #relaylimits.event_max_size(None)
+
+        relaylimits = RelayLimits.disable()
+
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))).relay_limits(relaylimits)
+
+
         cli = Client.with_opts(signer, opts)
         for relay in self.dvm_config.RELAY_LIST:
             cli.add_relay(relay)
+
+
+
+        cli.add_relay("wss://relay.damus.io")
+        cli.add_relay("wss://nostr21.com")
+        cli.add_relay("wss://nos.lol")
+        cli.add_relay("wss://nostr.mom")
+        cli.add_relay("wss://TheForest.nostr1.com")
+        cli.add_relay("wss://nostr.wine")
+        cli.add_relay("wss://140.f7z.io")
+        cli.add_relay("wss://greensoul.space")
+        ropts = RelayOptions().ping(False)
+        cli.add_relay_with_opts("wss://nostr.band", ropts)
+
+
 
         #add nostr band, too.
         ropts = RelayOptions().ping(False)
@@ -86,7 +111,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        followers = cli.get_events_of([followers_filter], timedelta(seconds=10))
 
 
         if len(followers) > 0:
@@ -95,12 +120,16 @@ class DiscoverInactiveFollows(DVMTaskInterface):
             best_entry = followers[0]
             for entry in followers:
                 print(len(best_entry.tags()))
+                print(best_entry.created_at().as_secs())
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
 
             print(best_entry.as_json())
+            print(len(best_entry.tags()))
+            print(best_entry.created_at().as_secs())
+            print(Timestamp.now().as_secs())
             followings = []
             ns.dic = {}
             for tag in best_entry.tags():

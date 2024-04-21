@@ -5,7 +5,7 @@ from threading import Thread
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, NostrSigner, PublicKey, Event, Kind
+    nip04_encrypt, NostrSigner, PublicKey, Event, Kind, RelayOptions
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -125,7 +125,7 @@ def nostr_client_test_censor_filter(users):
 def nostr_client_test_inactive_filter(user):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz",
                   ]
 
     relaysTag = Tag.parse(relay_list)
@@ -143,6 +143,8 @@ def nostr_client_test_inactive_filter(user):
     client = Client(signer)
     for relay in relay_list:
         client.add_relay(relay)
+    ropts = RelayOptions().ping(False)
+    client.add_relay_with_opts("wss://nostr.band", ropts)
     client.connect()
     config = DVMConfig
     send_event(event, client=client, dvm_config=config)
