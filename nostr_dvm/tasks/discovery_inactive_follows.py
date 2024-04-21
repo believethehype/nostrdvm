@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -25,7 +25,7 @@ Params:  None
 class DiscoverInactiveFollows(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
     TASK: str = "inactive-follows"
-    FIX_COST: float = 50
+    FIX_COST: float = 0
     client: Client
     dvm_config: DVMConfig
 
@@ -75,12 +75,17 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         cli = Client.with_opts(signer, opts)
         for relay in self.dvm_config.RELAY_LIST:
             cli.add_relay(relay)
+
+        #add nostr band, too.
+        ropts = RelayOptions().ping(False)
+        cli.add_relay_with_opts("wss://nostr.band", ropts)
+
         cli.connect()
 
         options = DVMTaskInterface.set_options(request_form)
         step = 20
 
-        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
+        followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
 
@@ -89,9 +94,11 @@ class DiscoverInactiveFollows(DVMTaskInterface):
             newest = 0
             best_entry = followers[0]
             for entry in followers:
+                print(len(best_entry.tags()))
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
+
 
             print(best_entry.as_json())
             followings = []
