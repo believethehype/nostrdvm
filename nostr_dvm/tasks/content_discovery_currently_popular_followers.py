@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions
+    RelayOptions, RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -88,8 +88,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = DVMTaskInterface.set_options(request_form)
-
-        opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        relaylimits = RelayLimits.disable()
+        opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)).relay_limits(relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
@@ -99,7 +99,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         cli.add_relay("wss://relay.damus.io")
         cli.add_relay("wss://nos.lol")
         cli.add_relay("wss://pablof7z.nostr1.com")
-        #add nostr band, too.
+
         ropts = RelayOptions().ping(False)
         cli.add_relay_with_opts("wss://nostr.band", ropts)
 
