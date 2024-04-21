@@ -156,7 +156,7 @@ class Bot:
 
                             else:
                                 # Parse inputs to params
-                                tags = build_params(decrypted_text, nostr_event, index)
+                                tags = build_params(decrypted_text, sender, index)
                                 p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
 
                                 if self.dvm_config.SUPPORTED_DVMS[index].SUPPORTS_ENCRYPTION:
@@ -534,7 +534,7 @@ class Bot:
                                                             info, None).to_event(self.keys)
                     send_event(evt, client=self.client, dvm_config=dvm_config)
 
-        def build_params(decrypted_text, nostr_event, index):
+        def build_params(decrypted_text, author, index):
             tags = []
             splitzero = decrypted_text.split(' -')
             split = splitzero[0].split(' ')
@@ -542,7 +542,7 @@ class Bot:
             if len(split) == 1:
                 remaining_text = decrypted_text.replace(split[0], "")
                 params = remaining_text.split(" -")
-                tag = Tag.parse(["param", "user", nostr_event.author().to_hex()])
+                tag = Tag.parse(["param", "user", author])
                 tags.append(tag)
                 for i in params:
                     print(i)

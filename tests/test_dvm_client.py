@@ -5,7 +5,7 @@ from threading import Thread
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, NostrSigner, PublicKey, Event
+    nip04_encrypt, NostrSigner, PublicKey, Event, Kind
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -122,6 +122,32 @@ def nostr_client_test_censor_filter(users):
     return event.as_json()
 
 
+def nostr_client_test_inactive_filter(user):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to find people that are inactive"])
+    paramTag = Tag.parse(["param", "user", user])
+    paramTag2 = Tag.parse(["param", "since_days", "120"])
+
+    tags = [relaysTag, alttag, paramTag, paramTag2]
+
+
+    event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me inactive users"),
+                         tags).to_event(keys)
+
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    for relay in relay_list:
+        client.add_relay(relay)
+    client.connect()
+    config = DVMConfig
+    send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+
 def nostr_client_test_tts(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
@@ -201,8 +227,13 @@ def nostr_client():
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM,
                                                EventDefinitions.KIND_ZAP]).since(
         Timestamp.now())  # events to us specific
-    dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
-                                  EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
+    kinds = [EventDefinitions.KIND_NIP90_GENERIC]
+    SUPPORTED_KINDS = [Kind(6301)]
+
+    for kind in SUPPORTED_KINDS:
+        if kind not in kinds:
+            kinds.append(kind)
+    dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
     client.subscribe([dm_zap_filter, dvm_filter], None)
 
     # nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
@@ -211,7 +242,8 @@ def nostr_client():
     # nostr_client_test_image("a beautiful purple ostrich watching the sunset")
     # nostr_client_test_search_profile("dontbelieve")
     wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
-    nostr_client_test_censor_filter(wot)
+    #nostr_client_test_censor_filter(wot)
+    nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
 
     # nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
 
