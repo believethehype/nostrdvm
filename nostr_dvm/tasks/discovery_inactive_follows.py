@@ -73,10 +73,8 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        #relaylimits = RelayLimits()
-        #relaylimits.event_max_num_tags(max_num_tags=None)
+        #relaylimits = RelayLimits().event_max_num_tags(max_num_tags=10000)
         #relaylimits.event_max_size(None)
-
         relaylimits = RelayLimits.disable()
 
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))).relay_limits(relaylimits)
@@ -85,23 +83,6 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         cli = Client.with_opts(signer, opts)
         for relay in self.dvm_config.RELAY_LIST:
             cli.add_relay(relay)
-
-
-
-        cli.add_relay("wss://relay.damus.io")
-        cli.add_relay("wss://nostr21.com")
-        cli.add_relay("wss://nos.lol")
-        cli.add_relay("wss://nostr.mom")
-        cli.add_relay("wss://TheForest.nostr1.com")
-        cli.add_relay("wss://nostr.wine")
-        cli.add_relay("wss://140.f7z.io")
-        cli.add_relay("wss://greensoul.space")
-        ropts = RelayOptions().ping(False)
-        cli.add_relay_with_opts("wss://nostr.band", ropts)
-
-
-
-        #add nostr band, too.
         ropts = RelayOptions().ping(False)
         cli.add_relay_with_opts("wss://nostr.band", ropts)
 
@@ -111,7 +92,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = cli.get_events_of([followers_filter], timedelta(seconds=10))
+        followers = cli.get_events_of([followers_filter], timedelta(seconds=5))
 
 
         if len(followers) > 0:
@@ -132,12 +113,14 @@ class DiscoverInactiveFollows(DVMTaskInterface):
             print(Timestamp.now().as_secs())
             followings = []
             ns.dic = {}
+            tagcount = 0
             for tag in best_entry.tags():
+                tagcount += 1
                 if tag.as_vec()[0] == "p":
                     following = tag.as_vec()[1]
                     followings.append(following)
                     ns.dic[following] = "False"
-            print("Followings: " + str(len(followings)))
+            print("Followings: " + str(len(followings)) + " Tags: " + str(tagcount))
 
             not_active_since_seconds = int(options["since_days"]) * 24 * 60 * 60
             dif = Timestamp.now().as_secs() - not_active_since_seconds
