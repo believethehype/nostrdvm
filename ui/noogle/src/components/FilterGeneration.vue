@@ -874,19 +874,17 @@ async function unfollow(result){
 
   let client = store.state.client
   console.log(result.authorid)
- //TODO stop using 2 lists, but Contact elements currently not accesible
-  let element =  await store.state.followings.find(x => x === result.authorid)
+
+  let element  = await store.state.contacts.find(x => x.publicKey.toHex() === result.authorid)
 
   if (element  !== undefined){
 
   console.log(element)
-  let index =  store.state.followings.indexOf(element)
+  let index =  store.state.contacts.indexOf(element)
   console.log(index)
   console.log(store.state.contacts.length)
-  console.log(store.state.followings.length)
 
   let rm =  store.state.contacts.splice(index, 1)
-  let rm2 =   store.state.followings.splice(index, 1)
 
 
   let list = store.state.contacts
@@ -897,15 +895,6 @@ async function unfollow(result){
     return true
      }
   else {
-      for (let pk of store.state.followings){
-        if (pk === result.id){
-          console.log("found!")
-        }
-        if (pk === PublicKey.parse(result.id).toBech32()){
-          console.log("found bech32")
-        }
-      }
-
     console.log("not found")
     return false
   }
