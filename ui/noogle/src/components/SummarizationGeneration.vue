@@ -32,15 +32,13 @@ import {zap} from "@/components/helper/Zap.vue";
 import index from "vuex";
 
 let dvms =[]
+let requestids = []
 async function summarizefeed(eventids) {
-  if (!store.state.summarizationhasEventListener){
-           store.commit('set_summariarizationEventListener', true)
-           listen()
 
-        }
-        else{
-          console.log("Already has event listener")
-        }
+  listen()
+
+
+
 let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((b.index > a.index) ? -1 : 0);} );
 
    try {
@@ -94,8 +92,8 @@ let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((
 
 
         }
-
-        store.commit('set_current_request_id_summarization', requestid)
+        requestids.push(requestid)
+        store.commit('set_current_request_id_summarization', requestids)
 
 
       } catch (error) {
@@ -125,7 +123,7 @@ async function  listen() {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
 
-                  if (event.tags[tag].asVec()[1] === store.state.requestidSummarization) {
+                  if (store.state.requestidSummarization.includes(event.tags[tag].asVec()[1])){
                     resonsetorequest = true
                   }
                 }
@@ -163,7 +161,7 @@ async function  listen() {
                           jsonentry.bolt11 = event.tags[tag].asVec()[2]
                         }
                           else{
-                            let profiles = await get_user_infos([event.author])
+                            let profiles = await get_user_infos([event.author.toHex()])
                            let created = 0
                             let current
                           console.log("NUM KIND0 FOUND " + profiles.length)

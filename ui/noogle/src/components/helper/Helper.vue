@@ -65,9 +65,7 @@ export async function react_to_dvm(dvm, reaction) {
      }
 
 
-   let pk = PublicKey.parse(store.state.pubkey.toHex())
-
-    let users = await get_user_infos([pk])
+    let users = await get_user_infos([store.state.pubkey])
      console.log(users[0])
     if (reaction === "👎"){
       dvm.reactions.negativeUser = true
@@ -165,9 +163,13 @@ export function nextInput(e) {
 }
 
 export async function get_user_infos(pubkeys){
+        let pkeys = []
+        for (let pk of pubkeys){
+          pkeys.push(PublicKey.parse(pk))
+        }
         let profiles = []
         let client = store.state.client
-        const profile_filter = new Filter().kind(0).authors(pubkeys)
+        const profile_filter = new Filter().kind(0).authors(pkeys)
         let evts = await client.getEventsOf([profile_filter],  Duration.fromSecs(10))
 
         for (const entry of evts){
@@ -351,7 +353,7 @@ export async function parseandreplacenpubs(note){
        //console.log(pk.toBech32())
       try{
         let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
-        let profiles = await get_user_infos([pk])
+        let profiles = await get_user_infos([pk.toHex()])
         console.log(profiles)
         //console.log(profiles[0].profile.nip05)
         myArray[word] = profiles[0].profile.nip05 // replace with nip05 for now
@@ -392,7 +394,7 @@ export async function parseandreplacenpubsName(note){
        //console.log(pk.toBech32())
       try{
         let pk = PublicKey.parse(myArray[word].replace("nostr:", ""))
-        let profiles = await get_user_infos([pk])
+        let profiles = await get_user_infos([pk.toHex()])
         //console.log(profiles[0].profile.nip05)
 
        // myArray[word] =  "<a class='purple' target=\"_blank\"  href=\"https://njump.com/" + myArray[word].replace("nostr:", "") +" \">" + profiles[0].profile.name + "</a> "
@@ -444,7 +446,7 @@ export async function dvmreactions(dvmid, authors) {
     let evts = await client.getEventsOf([reactionfilter], Duration.fromSecs(5))
     let npubs = []
     for (let evt of evts){
-      npubs.push(evt.author)
+      npubs.push(evt.author.toHex())
     }
 
   let users = await get_user_infos(npubs)

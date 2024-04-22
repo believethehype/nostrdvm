@@ -278,7 +278,7 @@ async function  listen() {
                     const events = await getEvents(entries)
                     let authors = []
                     for (const evt of events) {
-                      authors.push(evt.author)
+                      authors.push(evt.author.toHex())
                     }
                     if (authors.length > 0) {
                       let profiles = await get_user_infos(authors)
@@ -337,7 +337,7 @@ async function  listen() {
                   let authors = []
                   if (event_ptags.length > 0) {
                     for (let ptag of event_ptags) {
-                        authors.push(PublicKey.parse(ptag[1]))
+                        authors.push(ptag[1])
                     }
 
                     if (authors.length > 0) {

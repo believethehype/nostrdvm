@@ -36,16 +36,11 @@ import StringUtil from "@/components/helper/string.ts";
 
 let dvms =[]
 let hasmultipleinputs = false
+let requestids = []
 
 async function generate_image(message) {
-    if (!store.state.imagehasEventListener){
-       store.commit('set_imagehasEventListener', true)
-       listen()
 
-    }
-    else{
-      console.log("Already has event listener")
-    }
+       listen()
 
    try {
      if (message === undefined){
@@ -89,7 +84,8 @@ async function generate_image(message) {
 
           res = await amberSignerService.signEvent(draft)
             requestid = res.id
-             store.commit('set_current_request_id_image', requestid)
+             requestids.push(requestid)
+             store.commit('set_current_request_id_image', requestids)
             await client.sendEvent(Event.fromJson(JSON.stringify(res)))
 
         }
@@ -106,7 +102,8 @@ async function generate_image(message) {
                let signedEvent = await (await client.signer()).signEvent(unsigned)
                console.log(signedEvent.id.toHex())
                requestid = signedEvent.id.toHex()
-               store.commit('set_current_request_id_image', requestid)
+               requestids.push(requestid)
+               store.commit('set_current_request_id_image', requestids)
                await client.sendEvent(signedEvent)
 
 
@@ -139,9 +136,7 @@ async function  listen() {
             sleep(0).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  //console.log("IMAGE ETAG: " + event.tags[tag].asVec()[1])
-                  //console.log("IMAGE LISTEN TO : " + store.state.requestidImage)
-                  if (event.tags[tag].asVec()[1] === store.state.requestidImage) {
+                   if (store.state.requestidImage.includes(event.tags[tag].asVec()[1])){
                     resonsetorequest = true
                   }
                 }
@@ -182,7 +177,7 @@ async function  listen() {
                           jsonentry.bolt11 = event.tags[tag].asVec()[2]
                         }
                         else{
-                            let profiles = await get_user_infos([event.author])
+                            let profiles = await get_user_infos([event.author.toHex()])
                            let created = 0
                             let current
                           console.log("NUM KIND0 FOUND " + profiles.length)

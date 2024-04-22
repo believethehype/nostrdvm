@@ -25,8 +25,8 @@ Params:  None
 
 class DiscoverInactiveFollows(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
-    TASK: str = "inactive-follows"
-    FIX_COST: float = 0
+    TASK: str = "inactive-followings"
+    FIX_COST: float = 100
     client: Client
     dvm_config: DVMConfig
 
@@ -204,6 +204,7 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I discover users you follow, but that have been inactive on Nostr",
+        "action": "unfollow", #follow, mute, unmute
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {
