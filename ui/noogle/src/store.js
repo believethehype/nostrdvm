@@ -10,31 +10,28 @@ const store = createStore({
       dbclient: Client,
       pubkey: PublicKey,
       followings: [],
+      contacts: [],
       mutes: [],
       nooglekey: import.meta.env.VITE_NOOGLE_PK,
       subscription_verifier_pubkey: import.meta.env.VITE_SUBSCRIPTIPON_VERIFIER_PUBKEY,
       requestidSearch: String,
       requestidSearchProfile: String,
-      requestidImage: String,
+      requestidImage: [],
       requestidRecommendation: [],
-      requestidSummarization: String,
-      hasEventListener: false,
-      imagehasEventListener: false,
-      recommendationehasEventListener: false,
-      summarizationhasEventListener: false,
+      requestidSummarization: [],
+      requestidFilter: [],
       imagedvmreplies: [],
       nip89dvms: [],
       activesearchdvms: [],
       recommendationdvms: [],
+      filterdvms: [],
       summarizationdvms: [],
       results:  [],
       profile_results: [],
-      relays: [
-          "wss://relay.damus.io",
-        "wss://nos.lol",
-        "wss://pablof7z.nostr1.com",
-
-      ],
+      relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.wine",
+                  "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                  "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://140.f7z.io",
+                  ],
     }
   },
   mutations: {
@@ -57,24 +54,16 @@ const store = createStore({
       state.followings.length = 0
       state.followings.push.apply(state.followings, items)
     },
+      set_contacts(state, items) {
+      state.contacts.length = 0
+      state.contacts.push.apply(state.contacts, items)
+    },
+
+
 
     set_mutes(state, items) {
       state.mutes.length = 0
       state.mutes.push.apply(state.mutes, items)
-    },
-    set_hasEventListener(state, hasEventListener) {
-      state.hasEventListener = hasEventListener
-    },
-    set_imagehasEventListener(state, imagehasEventListener) {
-      state.imagehasEventListener = imagehasEventListener
-    },
-
-    set_recommendationEventListener(state, recommendationehasEventListener) {
-      state.recommendationehasEventListener = recommendationehasEventListener
-    },
-
-    set_summariarizationEventListener(state, summarizationhasEventListener) {
-      state.summarizationhasEventListener = summarizationhasEventListener
     },
 
     set_nip89dvms(state, nip89dvms) {
@@ -91,9 +80,14 @@ const store = createStore({
     },
 
     set_current_request_id_summarization(state, requestid){
-      state.requestidSummarization = String(requestid)
+      state.requestidSummarization.length = 0
+      state.requestidSummarization.push.apply(state.requestidSummarization, requestid)
     },
 
+    set_current_request_id_filter(state, requestid){
+      state.requestidFilter.length = 0
+      state.requestidFilter.push.apply(state.requestidFilter, requestid)
+    },
     set_current_request_profile_id_search(state, requestid){
       state.requestidSearchProfile = String(requestid)
     },
@@ -106,6 +100,11 @@ const store = createStore({
       state.recommendationdvms.push.apply(state.recommendationdvms, dvms)
     },
 
+      set_filter_dvms(state, dvms) {
+      state.filterdvms.length = 0
+      state.filterdvms.push.apply(state.filterdvms, dvms)
+    },
+
     set_summarization_dvms(state, dvms) {
       state.summarizationdvms.length = 0
       state.summarizationdvms.push.apply(state.summarizationdvms, dvms)
@@ -115,7 +114,8 @@ const store = createStore({
       state.profile_results.push.apply(state.profile_results, items)
     },
     set_current_request_id_image(state, requestid){
-       state.requestidImage = requestid
+       state.requestidImage.length = 0
+       state.requestidImage.push.apply(state.requestidImage, requestid)
     },
     set_current_request_id_recommendation(state, requestid){
         state.requestidRecommendation.length = 0

@@ -19,7 +19,7 @@ import {
   SingleLetterTag,
   NostrSigner,
   nip44Encrypt,
-  NIP44Version, nip04Encrypt
+  NIP44Version, nip04Encrypt, Contact
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -84,8 +84,8 @@ async function generate_feed(id) {
 
         let current_dvm = dvms.find(i => i.id === id)
 
-        let content = "NIP 90 Content Discovery request"
-        let kind = 5300
+        let content = "NIP 90 Profile Discovery request"
+        let kind = 5301
         let tags = []
         tags.push(["param", "max_results", "200"])
         tags.push(["param", "user", store.state.pubkey.toHex()])
@@ -129,7 +129,7 @@ async function generate_feed(id) {
                   await client.sendEvent(Event.fromJson(JSON.stringify(res)))
                   requestid = res.id;
                    requestids.push(requestid)
-                  store.commit('set_current_request_id_recommendation', requestids)
+                  store.commit('set_current_request_id_filter', requestids)
                  /* let evtjson = JSON.stringify(res)
                   let evt = Event.fromJson(evtjson)
                   await client.sendEvent(evt) */
@@ -152,7 +152,7 @@ async function generate_feed(id) {
                       let sign = await client.signer()
                     let signedEvent = await sign.signEvent(unsigned)
                     requestids.push(signedEvent.id.toHex())
-                   store.commit('set_current_request_id_recommendation', requestids)
+                   store.commit('set_current_request_id_filter', requestids)
 
                    res = await client.sendEvent(signedEvent)
                     }
@@ -184,7 +184,7 @@ async function generate_feed(id) {
                 requestid = res.id;
                requestids.push(requestid)
 
-                store.commit('set_current_request_id_recommendation', requestids)
+                store.commit('set_current_request_id_filter', requestids)
           await client.sendEvent(Event.fromJson(JSON.stringify(res)))
 
 
@@ -200,7 +200,7 @@ async function generate_feed(id) {
                let signedEvent = await (await client.signer()).signEvent(unsigned)
                console.log(signedEvent.id.toHex())
                requestids.push(signedEvent.id.toHex())
-               store.commit('set_current_request_id_recommendation', requestids)
+               store.commit('set_current_request_id_filter', requestids)
                res = await client.sendEvent(signedEvent)
 
         }
@@ -220,7 +220,7 @@ async function  listen() {
     let client = store.state.client
     let pubkey = store.state.pubkey
 
-    const filter = new Filter().kinds([7000, 6300]).pubkey(pubkey).since(Timestamp.now());
+    const filter = new Filter().kinds([7000, 6301]).pubkey(pubkey).since(Timestamp.now());
     await client.subscribe([filter]);
 
     const handle = {
@@ -230,7 +230,7 @@ async function  listen() {
             //sleep(1200).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                  if (store.state.requestidRecommendation.includes(event.tags[tag].asVec()[1])){
+                  if (store.state.requestidFilter.includes(event.tags[tag].asVec()[1])){
                     resonsetorequest = true
 
                   }
@@ -350,7 +350,7 @@ async function  listen() {
                           }
                         }
                       }
-                      store.commit('set_recommendation_dvms', dvms)
+                      store.commit('set_filter_dvms', dvms)
                     }
                   } catch (error) {
                     console.log("Error: ", error);
@@ -359,9 +359,9 @@ async function  listen() {
 
                 }
 
-                else if (event.kind === 6300) {
+                else if (event.kind === 6301) {
                   let entries = []
-                  //console.log("6300:", event.content);
+                  console.log("6301:", event.content);
                     let is_encrypted = false
                     let ptag = ""
 
@@ -396,109 +396,83 @@ async function  listen() {
                     }
 
 
+                  if (content === "" || content === "[]" || content === "None" ){
+                        let items = []
+                        dvms.find(i => i.id === event.author.toHex()).result.length = 0
+                        dvms.find(i => i.id === event.author.toHex()).result.push.apply(dvms.find(i => i.id === event.author.toHex()).result, items)
+                        dvms.find(i => i.id === event.author.toHex()).status = "finished"
+                        store.commit('set_filter_dvms', dvms)
+                  }
+                  else{
 
-                  let event_etags = JSON.parse(content)
-                  if (event_etags.length > 0) {
-                    for (let etag of event_etags) {
-                      const eventid = EventId.fromHex(etag[1]).toHex()
+                  let event_ptags = JSON.parse(content)
+                  if (event_ptags.length > 0) {
+                    for (let ptag of event_ptags) {
+                      const eventid = ptag[1]
                       entries.push(eventid)
-                    }
-                    const events = await getEventsOriginalOrder(entries)
-                    let authors = []
-
-                   for (const evt of events) {
-                      try{
-                      authors.push(evt.author.toHex())
-                          }
-                          catch(error){
-                        //console.log(error)
-                     }
-
+                      console.log(eventid)
                     }
 
 
-                      if (authors.length > 0) {
+                      let items = []
+                      let index = 0
+
+                      if (entries.length > 0) {
 
                         try{
 
-                        let profiles = await get_user_infos(authors)
 
-                            let ids = []
-                            for (let evt of events){
-                              try {ids.push(evt.id)}
-                              catch(error){
-                                console.log(error)
-                              }
-
-                            }
-                          let zaps = await get_event_reactions(ids)
-                        let items = []
-                        let index = 0
-                        for (const evt of events) {
-                            if(!evt){
-                            continue
-                          }
-                          if(store.state.mutes.find(record => record === evt.author.toHex()) !== undefined){
-                             console.log("hidding muted user")
+                        let profiles = await get_user_infos(entries)
 
 
-                          }
-                          else{
+                        for (let profile of profiles){
+                          console.log(profile)
+                          let name = profile === undefined ? "" : profile["profile"]["name"]
+                          let picture = profile === undefined ? "../assets/nostr-purple.svg" : profile["profile"]["picture"]
+
+                          let highlighterurl = "https://highlighter.com/e/" + profile["author"]
+                          let njumpurl = "https://njump.me/" + profile["author"]
+                           let nostrudelurl = "https://nostrudel.ninja/#/n/" + profile["author"]
 
 
-
-                          let p = profiles.find(record => record.author === evt.author.toHex())
+                         /* let p = profiles.find(record => record.author === evt.author.toHex())
                           let bech32id = evt.id.toBech32()
                           let nip19 = new Nip19Event(evt.id, evt.author, store.state.relays)
                           let nip19bech32 = nip19.toBech32()
                           let picture = p === undefined ? "../assets/nostr-purple.svg" : p["profile"]["picture"]
                           let name = p === undefined ? bech32id : p["profile"]["name"]
                           let authorid = evt.author.toHex()
-                          let highlighterurl = "https://highlighter.com/e/" + nip19bech32
-                          let njumpurl = "https://njump.me/" + nip19bech32
+
                           let nostrudelurl = "https://nostrudel.ninja/#/n/" + bech32id
                           let uri = "nostr:" + bech32id //  nip19.toNostrUri()
                           let lud16 = p === undefined ? "" : (p["profile"] === undefined ? "" : p["profile"]["lud16"])
+*/
 
-
-                          if (items.find(e => e.id === evt.id.toHex()) === undefined) {
-
-                            let react = zaps.find(x => x.id === evt.id.toHex())
-
+                          if (items.find(e => e.id === profile["author"]) === undefined) {
 
 
                             items.push({
-                              id: evt.id.toHex(),
-                              content: await parseandreplacenpubsName(evt.content),
-                              event: evt,
+                              id: profile["author"],
+                              event: profile,
                               author: name,
-                              authorid: authorid,
-                              authorurl: "https://njump.me/" + evt.author.toBech32(),
+                              authorid: profile["author"],
+                              authorurl: "https://njump.me/" +profile["author"],
                               links: {
-                                "uri": uri,
                                 "highlighter": highlighterurl,
                                 "njump": njumpurl,
                                 "nostrudel": nostrudelurl
                               },
                               avatar: picture,
                               index: index,
-                              indicator: {"time": evt.createdAt.toHumanDatetime(), "index": index},
-                              lud16: lud16,
-                              zapped: react.zappedbyUser,
-                              zapAmount: react.amount,
-                              reacted: react.reactedbyUser,
-                              reactions: react.reactions,
-                              boosts: react.reposts,
-                              boosted: react.repostedbyUser,
-                              replied: false,
-                              response:  ref("")
-
+                              indicator: {"time": profile.createdAt.toHumanDatetime(), "index": index},
+                              active:  true,
                             })
+
                             index = index + 1
                           }
-                             }
 
-                        }
+                  }
+
 
                        /* if (dvms.find(i => i.id === event.author.toHex()) === undefined) {
                           await addDVM(event)
@@ -514,9 +488,9 @@ async function  listen() {
                         console.log(error)}
                       }
                      }
-                  store.commit('set_recommendation_dvms', dvms)
+                  store.commit('set_filter_dvms', dvms)
                 }
-
+}
               }
           //  })
         },
@@ -534,7 +508,7 @@ async function addAllContentDVMs() {
   let relevant_dvms = []
   for (const el of store.state.nip89dvms) {
     for (const tag of JSON.parse(el.event).tags) {
-      if (tag[0] === "k" && tag[1] === "5300") {
+      if (tag[0] === "k" && tag[1] === "5301") {
         relevant_dvms.push(PublicKey.parse(el.id))
       }
     }
@@ -551,7 +525,7 @@ async function addAllContentDVMs() {
 
   console.log(active_dvms)
 
-  const filtera = new Filter().authors(relevant_dvms).kinds([6300, 7000])
+  const filtera = new Filter().authors(relevant_dvms).kinds([6301, 7000])
   let client = store.state.client
   let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
 
@@ -595,7 +569,7 @@ async function addAllContentDVMs() {
       lud16: el.lud16,
       subscription: "",
       nip88: el.nip88,
-      action: el.action
+       action: el.action
     }
 
 
@@ -605,7 +579,7 @@ async function addAllContentDVMs() {
     }
   }
 
-  store.commit('set_recommendation_dvms', dvms)
+  store.commit('set_filter_dvms', dvms)
   }
 
 }
@@ -676,6 +650,7 @@ async function addDVM(event){
       jsonentry.lud16 = el.lud16
      jsonentry.encryptionSupported = el.encryptionSupported
      jsonentry.cashuAccepted = el.cashuAccepted
+       jsonentry.action = el.action
 
       console.log(jsonentry)
 
@@ -694,7 +669,7 @@ async function addDVM(event){
 
 
   //dvms.find(i => i.id === jsonentry.id).status = status
-  store.commit('set_recommendation_dvms', dvms)
+  store.commit('set_filter_dvms', dvms)
 
 }
 
@@ -752,7 +727,7 @@ async function subscribe_to_dvm() {
 
   let client = store.state.client
   dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).status = "Subscribing, this might take up to a minute.."
-  store.commit('set_recommendation_dvms', dvms)
+  store.commit('set_filter_dvms', dvms)
 
 
 if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subscription_dvm.value.nip88.subscriptionId  ) {
@@ -818,7 +793,7 @@ if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subsc
       let nclient = new Client(nsigner)
 
        for (const relay of store.state.relays) {
-        await nclient.addRelay(relay);
+        await nclient.addRelay(relay)
       }
        await nclient.connect()
 
@@ -872,7 +847,7 @@ if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subsc
           dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).status  = "Timeout, please refresh the page"
 
        }
-    store.commit('set_recommendation_dvms', dvms)
+    store.commit('set_filter_dvms', dvms)
 
   }
   catch(error){
@@ -886,9 +861,54 @@ async function zap_local(invoice) {
   let success = await zap(invoice)
   if (success){
     dvms.find(i => i.bolt11 === invoice).status = "paid"
-    store.commit('set_recommendation_dvms', dvms)
+    store.commit('set_filter_dvms', dvms)
   }
 
+}
+
+async function mute(result) {
+console.log("mute logic, not supported yet")
+}
+
+async function unfollow(result){
+
+  let client = store.state.client
+  console.log(result.authorid)
+ //TODO stop using 2 lists, but Contact elements currently not accesible
+  let element =  await store.state.followings.find(x => x === result.authorid)
+
+  if (element  !== undefined){
+
+  console.log(element)
+  let index =  store.state.followings.indexOf(element)
+  console.log(index)
+  console.log(store.state.contacts.length)
+  console.log(store.state.followings.length)
+
+  let rm =  store.state.contacts.splice(index, 1)
+  let rm2 =   store.state.followings.splice(index, 1)
+
+
+  let list = store.state.contacts
+  let event = EventBuilder.contactList(list)
+  let requestid = await client.sendEventBuilder(event);
+
+  console.log("unfollow logic for "  + result.event.profile.name)
+    return true
+     }
+  else {
+      for (let pk of store.state.followings){
+        if (pk === result.id){
+          console.log("found!")
+        }
+        if (pk === PublicKey.parse(result.id).toBech32()){
+          console.log("found bech32")
+        }
+      }
+
+    console.log("not found")
+    return false
+  }
 }
 
 async  function store_nwc(){
@@ -984,13 +1004,13 @@ const submitHandler = async () => {
    <br>
     <br>
     <h1 class="text-7xl font-black tracking-wide">Nostr</h1>
-    <h1 class="text-7xl font-black tracking-wide">Content</h1>
-    <h1 class="text-7xl font-black tracking-wide">Discovery</h1>
+    <h1 class="text-7xl font-black tracking-wide">Profile Filters</h1>
+    <!--<h1 class="text-7xl font-black tracking-wide">Filter</h1> -->
 
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
-    Algorithms, but you are the one in control.</h2>
+    Currate your feed with pubkeys you love.</h2>
      <br>
-    <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span></button>
+    <button v-if="store.state.filterdvms.length === 0" class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span></button>
   </div>
   <br>
 
@@ -1005,7 +1025,7 @@ const submitHandler = async () => {
 
   <div class=" relative space-y-3">
     <div class="grid grid-cols-1 gap-6">
-        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.recommendationdvms"
+        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in dvms"
             :key="dvm.id">
           <div className="card-body">
             <div className="playeauthor-wrapper">
@@ -1273,28 +1293,54 @@ const submitHandler = async () => {
              </div>
 
 
-             <p v-if="dvm.subscription ==='' && !isNaN(parseInt(dvm.amount)) && dvm.status !=='subscription-required' && dvm.status !=='subscription-success'" class="badge bg-amber" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
+           <!--  <p v-if="dvm.subscription ==='' && !isNaN(parseInt(dvm.amount)) && dvm.status !=='subscription-required' && dvm.status !=='subscription-success'" class="badge bg-amber" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
             <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
+          -->
             </div>
 
-
-
-            <details open v-if="dvm.status === 'finished'" class="collapse bg-base">
+ <details open v-if="dvm.status === 'finished'" class="collapse bg-base">
               <summary class="collapse-title   "><div class="btn">Show/Hide Results</div></summary>
               <div class="collapse-content font-size-0" className="z-10" id="collapse">
-                 <NoteTable  :data="dvm.result"  ></NoteTable>
+                  <div class="max-w-5xl relative space-y-3">
+    <div class="grid grid-cols-1 gap-6">
+                  <div   v-for="result in dvm.result">
+                    <div v-if="result.active"  className="card w-70 bg-base-200 shadow-xl flex flex-col">
+
+
+                   <div className="playeauthor-wrapper" style="margin-left: 10px; margin-top: 10px">
+                      <figure  className="w-28">
+                           <img className="avatar"  v-if="result.event.profile.picture" :src="result.event.profile.picture"  alt="DVM Picture" />
+                           <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
+                      </figure>
+                     <div>
+                       <h2 class="card-title" >{{ result.event.profile.name }} </h2>
+                     </div>
+
+                </div>
+                     <h2 className="card-body">{{ result.event.profile.about }} </h2>
+                      <div className="justify-end mt-auto" style="margin-left: auto; margin-right: 10px; margin-bottom: 10px" >
+                        <button v-if="dvm.action === 'unfollow'" class="v-Button" @click="unfollow(result);result.active = false; store.commit('set_filter_dvms', dvms)
+"> Unfollow</button>
+                         <button v-if="dvm.action === 'mute'" class="v-Button" @click="result.active = false; store.commit('set_filter_dvms', dvms)
+ mute(result)"> Unfollow</button>
+                     </div>
+
+      </div>
+</div>
+      </div>
+                  <!--   <div style=": inline">
+                  ({{ result.event.profile.nip05 }})
+
+                     </div> -->
+
+
+
+                    </div>
               </div>
             </details>
 
-             <div v-if="dvm.status === 'finished' && store.state.pubkey.toHex() !== Keys.parse(store.state.nooglekey).publicKey.toHex()"  style="margin-left: 10px; margin-right: auto"  >
-                         <button @click="openModal(dvm.result)"  class="w-8 h-8 rounded-full bg-nostr border-white border-1 text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-black tooltip" data-top='Share' aria-label="make note" role="button">
-                             <svg class="w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20"  style="margin-left: 7px; margin-right: auto" >
-                              <path d="M9 19V.352A3.451 3.451 0 0 0 7.5 0a3.5 3.5 0 0 0-3.261 2.238A3.5 3.5 0 0 0 2.04 6.015a3.518 3.518 0 0 0-.766 1.128c-.042.1-.064.209-.1.313a3.34 3.34 0 0 0-.106.344 3.463 3.463 0 0 0 .02 1.468A4.016 4.016 0 0 0 .3 10.5l-.015.036a3.861 3.861 0 0 0-.216.779A3.968 3.968 0 0 0 0 12a4.032 4.032 0 0 0 .107.889 4 4 0 0 0 .2.659c.006.014.015.027.021.041a3.85 3.85 0 0 0 .417.727c.105.146.219.284.342.415.072.076.148.146.225.216.1.091.205.179.315.26.11.081.2.14.308.2.02.013.039.028.059.04v.053a3.506 3.506 0 0 0 3.03 3.469 3.426 3.426 0 0 0 4.154.577A.972.972 0 0 1 9 19Zm10.934-7.68a3.956 3.956 0 0 0-.215-.779l-.017-.038a4.016 4.016 0 0 0-.79-1.235 3.417 3.417 0 0 0 .017-1.468 3.387 3.387 0 0 0-.1-.333c-.034-.108-.057-.22-.1-.324a3.517 3.517 0 0 0-.766-1.128 3.5 3.5 0 0 0-2.202-3.777A3.5 3.5 0 0 0 12.5 0a3.451 3.451 0 0 0-1.5.352V19a.972.972 0 0 1-.184.546 3.426 3.426 0 0 0 4.154-.577A3.506 3.506 0 0 0 18 15.5v-.049c.02-.012.039-.027.059-.04.106-.064.208-.13.308-.2s.214-.169.315-.26c.077-.07.153-.14.225-.216a4.007 4.007 0 0 0 .459-.588c.115-.176.215-.361.3-.554.006-.014.015-.027.021-.041.087-.213.156-.434.205-.659.013-.057.024-.115.035-.173.046-.237.07-.478.073-.72a3.948 3.948 0 0 0-.066-.68Z"/>
-                             </svg>
-                         </button>
 
 
-             </div>
           </div>
       </div>
     </div>

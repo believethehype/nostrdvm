@@ -189,7 +189,7 @@ import {
   Options,
   Duration,
   PublicKey,
-  Nip46Signer, NegentropyDirection, NegentropyOptions, NostrSigner, RelayLimits
+  Nip46Signer, NegentropyDirection, NegentropyOptions, NostrSigner, RelayLimits, Contact
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -372,7 +372,6 @@ export default {
         store.commit('set_client', client)
         store.commit('set_signer', this.signer)
       store.commit('set_pubkey', pubkey)
-      store.commit('set_hasEventListener', false)
       localStorage.setItem('nostr-key-method', "nostr-login")
       localStorage.setItem('nostr-key', pubkey.toHex())
       console.log("Client Nip46 connected")
@@ -426,7 +425,6 @@ export default {
         store.commit('set_client', client)
         store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
-        store.commit('set_hasEventListener', false)
         console.log("LOGINANON")
         localStorage.setItem('nostr-key-method', "anon")
         localStorage.setItem('nostr-key', "")
@@ -489,7 +487,6 @@ export default {
         store.commit('set_client', client)
         store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
-        store.commit('set_hasEventListener', false)
         console.log("LOGIN with Key")
         localStorage.setItem('nostr-key-method', "nsec")
         localStorage.setItem('nostr-key', keys.publicKey.toHex())
@@ -557,7 +554,6 @@ export default {
         store.commit('set_client', client)
         store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
-        store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "nip07")
         localStorage.setItem('nostr-key', pubkey.toHex())
 
@@ -629,7 +625,6 @@ export default {
         store.commit('set_client', client)
           store.commit('set_signer', this.signer)
         store.commit('set_pubkey', pubkey)
-        store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "nip46")
         localStorage.setItem('nostr-key', connectionstring)
         console.log("Client connected")
@@ -692,7 +687,6 @@ export default {
         store.commit('set_client', client)
           store.commit('set_signer', this.signer)
         store.commit('set_pubkey', publicKey)
-        store.commit('set_hasEventListener', false)
         localStorage.setItem('nostr-key-method', "android-signer")
         localStorage.setItem('nostr-key', hexKey)
 
@@ -787,6 +781,10 @@ export default {
 
                        if(!jsonentry.encryptionSupported){
                         jsonentry.encryptionSupported = false
+                      }
+
+                        if(!jsonentry.action){
+                        jsonentry.action = "None"
                       }
 
                      if(!jsonentry.cashuAccepted){
@@ -904,7 +902,8 @@ export default {
       let opts = new NegentropyOptions().direction(direction);
 
 
-      let followings = []
+      let followings = [] //TODO legacy, try to remove with contacts
+      let contacts = []
        let ids = []
       let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
       let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
@@ -917,19 +916,22 @@ export default {
           for (let tag of followers[0].tags) {
         if (tag.asVec()[0] === "p") {
           let following = tag.asVec()[1]
+          let contact = new Contact(PublicKey.parse(tag.asVec()[1]), tag.asVec()[2], tag.asVec()[3])
+          contacts.push(contact)
           followings.push(PublicKey.parse(following))
-          ids.push((following))
+          ids.push(following)
         }
     }
 
       }
-      console.log("Followings: " + (followings.length).toString())
+       console.log("Contacts: " + (contacts.length).toString())
 
       //console.log(followings)
       let filter = new Filter().kind(0).authors(followings)
 
 
       store.commit('set_followings', ids)
+      store.commit('set_contacts', contacts)
 
           let mute_filter = new Filter().author(publicKey).kind(10000)
       let mutes = await dbclient.getEventsOf([mute_filter], Duration.fromSecs(5))

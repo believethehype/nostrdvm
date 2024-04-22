@@ -10,10 +10,14 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
 
   </div>
   <div className="flex-1">
-    <router-link  class="menu" to="/">Search</router-link>
+    <div class="scroll">
+       <router-link  class="menu" to="/">Search</router-link>
     <router-link class="menu" to="/discover">Discover</router-link>
     <router-link class="menu" to="/image">Create</router-link>
+    <router-link class="menu" to="/filter">Filter</router-link>
     <router-link class="menu" to="/nip89">DVMs</router-link>
+    </div>
+
   </div>
  <Login/>
 
@@ -49,6 +53,16 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
     "main"
     "aside"
     "footer";
+
+   div.scroll {
+            margin: 4px;
+            padding: 4px;
+            background-color: #08c708;
+            width: 300px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
 
   header {
     grid-area: header;
