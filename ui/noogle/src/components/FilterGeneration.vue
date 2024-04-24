@@ -907,13 +907,21 @@ async function mute(result) {
 }
 
 async function unfollow(result){
-
   let client = store.state.client
   console.log(result.authorid)
+  let found = false
+  let element
+  for (let em of store.state.contacts){
+    if (em.publicKey.toHex() === result.authorid){
+      found = true
+      element = em
+      break
+    }
 
-  let element  = await store.state.contacts.find(x => x.publicKey.toHex() === result.authorid)
+  }
+ // let element  = store.state.contacts.find(x => x.publicKey.toHex() === result.authorid)
 
-  if (element  !== undefined){
+  if (found){
 
   console.log(element)
   let index =  store.state.contacts.indexOf(element)
@@ -1336,10 +1344,6 @@ const submitHandler = async () => {
                   <div   v-for="result in dvm.result">
                        <div v-if="dvm.action === 'mute' && store.state.mutes.find(x => x === result.authorid) === undefined || dvm.action !== 'mute'">
                     <div v-if="result.active"  className="card w-70 bg-base-200 shadow-xl flex flex-col">
-
-
-
-
 
                    <div className="playeauthor-wrapper" style="margin-left: 10px; margin-top: 10px">
                       <figure  className="w-28">
