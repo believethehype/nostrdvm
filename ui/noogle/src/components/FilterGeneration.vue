@@ -1033,7 +1033,7 @@ const submitHandler = async () => {
     <!--<h1 class="text-7xl font-black tracking-wide">Filter</h1> -->
 
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
-    Currate your feed with pubkeys you love.</h2>
+    Curate your feed with pubkeys you love.</h2>
      <br>
     <div style="text-align: center"  v-if="store.state.filterdvms.length === 0">
           <button  class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span>
