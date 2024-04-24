@@ -3,40 +3,22 @@
 
 import {
   Client,
-  Filter,
-  Timestamp,
-  Event,
-  Metadata,
-  PublicKey,
-  EventBuilder,
-  Tag,
-  EventId,
-  Nip19Event,
-  Alphabet,
-  Keys,
-  SecretKey,
   Duration,
-  SingleLetterTag,
+  Event,
+  EventBuilder,
+  Filter,
+  Keys,
   NostrSigner,
-  nip44Encrypt,
-  NIP44Version, nip04Encrypt, Contact
+  PublicKey,
+  Tag,
+  Timestamp,
+  UnsignedEvent
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
-import VueNotifications from "vue-notifications";
-import {computed, onMounted, watch} from "vue";
-import deadnip89s from "@/components/data/deadnip89s.json";
-import {data} from "autoprefixer";
-import {requestProvider} from "webln";
-import Newnote from "@/components/Newnote.vue";
-import SummarizationGeneration from "@/components/SummarizationGeneration.vue"
-import {sleep, get_user_infos, get_event_reactions, hasActiveSubscription, getEventsOriginalOrder, parseandreplacenpubsName} from "../components/helper/Helper.vue"
-import {zap, createBolt11Lud16, zaprequest} from "../components/helper/Zap.vue"
-import { ref } from "vue";
-import ModalComponent from "../components/Newnote.vue";
-import VueDatePicker from "@vuepic/vue-datepicker";
-import {timestamp} from "@vueuse/core";
-import NoteTable from "@/components/NoteTable.vue";
+import {onMounted, ref} from "vue";
+import {get_user_infos, hasActiveSubscription, sleep} from "../components/helper/Helper.vue"
+import {createBolt11Lud16, zap, zaprequest} from "../components/helper/Zap.vue"
 import {webln} from "@getalby/sdk";
 
 
@@ -867,7 +849,60 @@ async function zap_local(invoice) {
 }
 
 async function mute(result) {
-console.log("mute logic, not supported yet")
+    let client = store.state.client
+    let signer = store.state.signer
+    let publicKey = store.state.pubkey
+
+    let mute_filter = new Filter().author(publicKey).kind(10000)
+    let mutes = await client.getEventsOf([mute_filter], Duration.fromSecs(5))
+    console.log(mutes.length)
+    if (mutes.length > 0) {
+       let list = mutes[0]
+       let id = list.id.toHex()
+         try {
+            let eventasjson = JSON.parse(list.asJson())
+            let content = await (await signer).nip04Decrypt(store.state.pubkey, list.content)
+            let jsonObject = JSON.parse(content)
+            console.log(content)
+            let exists = false
+            for(let i = 0; i < jsonObject.length; i++)
+              {
+                if(jsonObject[i][1] === result.authorid)
+                {
+                 exists = true
+                }
+              }
+            if (exists){
+             console.log("already muted")
+            }
+            else{
+
+                jsonObject.push(["p", result.authorid])
+                let newcontent = JSON.stringify(jsonObject)
+                console.log(newcontent)
+                eventasjson.content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+                let newList = new EventBuilder(list.kind, eventasjson.content, list.tags).toUnsignedEvent(store.state.pubkey)
+
+                 try{
+                      let signedMuteList = await signer.signEvent(newList)
+                      //console.log(signedMuteList.asJson())
+                      await client.sendEvent(signedMuteList)
+                 }
+                 catch (error){
+                    console.log("Inner " + error)
+                 }
+              }
+          }
+        catch(error){
+          console.log(error)
+        }
+    }
+    else{
+      // TODO make new mute list
+    }
+
+
+
 }
 
 async function unfollow(result){
@@ -999,7 +1034,12 @@ const submitHandler = async () => {
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
     Currate your feed with pubkeys you love.</h2>
      <br>
-    <button v-if="store.state.filterdvms.length === 0" class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span></button>
+    <div style="text-align: center"  v-if="store.state.filterdvms.length === 0">
+          <button  class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span>
+
+
+    </button>
+          </div>
   </div>
   <br>
 
@@ -1311,7 +1351,7 @@ const submitHandler = async () => {
                         <button v-if="dvm.action === 'unfollow'" class="v-Button" @click="unfollow(result);result.active = false; store.commit('set_filter_dvms', dvms)
 "> Unfollow</button>
                          <button v-if="dvm.action === 'mute'" class="v-Button" @click="result.active = false; store.commit('set_filter_dvms', dvms)
- mute(result)"> Unfollow</button>
+ mute(result)"> Mute</button>
                      </div>
 
       </div>
