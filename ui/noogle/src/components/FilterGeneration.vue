@@ -413,7 +413,7 @@ async function  listen() {
                           let picture = profile === undefined ? "../assets/nostr-purple.svg" : profile["profile"]["picture"]
 
                           let highlighterurl = "https://highlighter.com/e/" + profile["author"]
-                          let njumpurl = "https://njump.me/" + profile["author"]
+                          let njumpurl = "https://njump.me/" + PublicKey.parse(profile["author"]).toBech32()
                            let nostrudelurl = "https://nostrudel.ninja/#/n/" + profile["author"]
 
 
@@ -438,7 +438,7 @@ async function  listen() {
                               event: profile,
                               author: name,
                               authorid: profile["author"],
-                              authorurl: "https://njump.me/" +profile["author"],
+                              authorurl: "https://njump.me/" + PublicKey.parse(profile["author"]).toBech32(),
                               links: {
                                 "highlighter": highlighterurl,
                                 "njump": njumpurl,
@@ -878,6 +878,7 @@ async function mute(result) {
             else{
 
                 jsonObject.push(["p", result.authorid])
+                store.state.mutes.push(result.authorid)
                 let newcontent = JSON.stringify(jsonObject)
                 console.log(newcontent)
                 eventasjson.content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
@@ -1333,7 +1334,11 @@ const submitHandler = async () => {
                   <div class="max-w-5xl relative space-y-3">
     <div class="grid grid-cols-1 gap-6">
                   <div   v-for="result in dvm.result">
+                       <div v-if="dvm.action === 'mute' && store.state.mutes.find(x => x === result.authorid) === undefined || dvm.action !== 'mute'">
                     <div v-if="result.active"  className="card w-70 bg-base-200 shadow-xl flex flex-col">
+
+
+
 
 
                    <div className="playeauthor-wrapper" style="margin-left: 10px; margin-top: 10px">
@@ -1342,7 +1347,8 @@ const submitHandler = async () => {
                            <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
                       </figure>
                      <div>
-                       <h2 class="card-title" >{{ result.event.profile.name }} </h2>
+
+                        <a class="purple" :href="result.authorurl" target="_blank">{{ result.event.profile.name }}</a>
                      </div>
 
                 </div>
@@ -1355,6 +1361,7 @@ const submitHandler = async () => {
                      </div>
 
       </div>
+                           </div>
 </div>
       </div>
                   <!--   <div style=": inline">
