@@ -382,7 +382,7 @@ margin-top: 15px;
 
   --easy-table-header-item-padding: 10px 15px;
 
-  --easy-table-body-even-row-font-color: bg-accenet;
+  --easy-table-body-even-row-font-color: bg-accent;
   --easy-table-body-even-row-background-color: bg-base;
 
   --easy-table-body-row-font-color: bg-accent;
