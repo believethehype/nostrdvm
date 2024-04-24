@@ -7,7 +7,7 @@
    <div class="playeauthor-wrapper" >
      <img class="avatar" v-if="avatar" :src="avatar" alt="Avatar" onerror="this.src='https://noogle.lol/favicon.ico'" />
      <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
-     <a class="white" :href="authorurl" target="_blank">{{ author }}</a>
+     <a class="purple" :href="authorurl" target="_blank">{{ author }}</a>
    </div>
 
    <!--   <p>{{content}}</p> -->
@@ -95,10 +95,10 @@ const headers: Header[] = [
 
   --easy-table-header-item-padding: 10px 15px;
 
-  --easy-table-body-even-row-font-color: bg-accenet;
+  --easy-table-body-even-row-font-color: bg-accent;
   --easy-table-body-even-row-background-color: bg-base;
 
-  --easy-table-body-row-font-color: bg-accents;
+  --easy-table-body-row-font-color: bg-accent;
   --easy-table-body-row-background-color: bg-base;
   --easy-table-body-row-height: 20px;
   --easy-table-body-row-font-size: 14px;
