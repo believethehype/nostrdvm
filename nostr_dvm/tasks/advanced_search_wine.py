@@ -113,11 +113,10 @@ class AdvancedSearchWine(DVMTaskInterface):
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
         response = requests.get(url, headers=headers)
         #print(response.text)
-
+        result_list = []
         try:
             ob = json.loads(response.text)
             data = ob['data']
-            result_list = []
             for el in data:
                 try:
                     e_tag = Tag.parse(["e", el['id']])
