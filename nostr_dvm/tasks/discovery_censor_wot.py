@@ -172,7 +172,7 @@ def build_example(name, identifier, admin_config):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/19872a2edd866258fa9eab137631efda89310d52b2c6ea8f99ef057325aa1c7b.jpg",
-        "about": "I show users that have been reported by either your followers or your Web of Trust.",
+        "about": "I show users that have been reported by either your followers or your Web of Trust. Note: Anyone can report, so you might double check and decide for yourself who to mute. Considers spam, illegal and impersonation reports. Notice: This works with NIP51 mute lists. Not all clients support the new mute list format.",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "action": "mute",  # follow, unfollow, mute, unmute
