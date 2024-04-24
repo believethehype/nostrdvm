@@ -240,7 +240,7 @@ def build_example(name, identifier, admin_config):
     nip89config.CONTENT = json.dumps(nip89info)
 
     admin_config.UPDATE_PROFILE = False
-    admin_config.REBROADCAST_NIP89 = True
+    admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                    admin_config=admin_config)
