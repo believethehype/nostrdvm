@@ -199,7 +199,7 @@ def build_example(name, identifier, admin_config):
     nip89config.CONTENT = json.dumps(nip89info)
 
     admin_config.UPDATE_PROFILE = False
-    admin_config.REBROADCAST_NIP89 = True
+    admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                           admin_config=admin_config)
@@ -250,7 +250,7 @@ def build_example_subscription(name, identifier, admin_config):
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
     admin_config.UPDATE_PROFILE = False
-    admin_config.REBROADCAST_NIP89 = True
+    admin_config.REBROADCAST_NIP89 = False
     admin_config.REBROADCAST_NIP88 = False
 
    # admin_config.FETCH_NIP88 = True
