@@ -25,7 +25,7 @@ Params:  None
 
 class DiscoverReports(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
-    TASK: str = "people to block"
+    TASK: str = "people to mute"
     FIX_COST: float = 0
     client: Client
     dvm_config: DVMConfig
@@ -47,7 +47,7 @@ class DiscoverReports(DVMTaskInterface):
         # default values
         users = []
         sender = event.author().to_hex()
-        since_days = 360
+        since_days = 90
         # users.append(event.author().to_hex())
 
         for tag in event.tags():
