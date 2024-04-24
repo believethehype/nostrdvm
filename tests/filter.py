@@ -24,11 +24,11 @@ def playground():
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
 
-    #discovery_test_sub = discovery_censor_wot.build_example("Censorship", "discovery_censor", admin_config)
-    #discovery_test_sub.run()
-
-    discovery_test_sub = discovery_inactive_follows.build_example("Inactive Followings", "discovery_inactive", admin_config)
+    discovery_test_sub = discovery_censor_wot.build_example("Censorship", "discovery_censor", admin_config)
     discovery_test_sub.run()
+
+    #discovery_test_sub = discovery_inactive_follows.build_example("Inactive Followings", "discovery_inactive", admin_config)
+    #discovery_test_sub.run()
 
 
 
