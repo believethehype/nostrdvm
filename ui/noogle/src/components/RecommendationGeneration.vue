@@ -990,7 +990,9 @@ const submitHandler = async () => {
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
     Algorithms, but you are the one in control.</h2>
      <br>
+     <div style="text-align: center">
     <button v-if="store.state.recommendationdvms.length === 0" class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span></button>
+    </div>
   </div>
   <br>
 
