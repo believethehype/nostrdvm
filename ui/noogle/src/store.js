@@ -29,8 +29,9 @@ const store = createStore({
       results:  [],
       profile_results: [],
       relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.wine",
-                  "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                  "wss://nostr.mom", "wss://nostr.oxtr.dev",
                   "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://140.f7z.io",
+                  //"wss://relay.nostr.bg",
                   ],
     }
   },
