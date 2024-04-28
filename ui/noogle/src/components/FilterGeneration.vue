@@ -408,13 +408,15 @@ async function  listen() {
 
 
                         for (let profile of profiles){
-                          console.log(profile)
+
                           let name = profile === undefined ? "" : profile["profile"]["name"]
                           let picture = profile === undefined ? "../assets/nostr-purple.svg" : profile["profile"]["picture"]
 
                           let highlighterurl = "https://highlighter.com/e/" + profile["author"]
                           let njumpurl = "https://njump.me/" + PublicKey.parse(profile["author"]).toBech32()
                            let nostrudelurl = "https://nostrudel.ninja/#/n/" + profile["author"]
+
+                        let isnip05valid = false
 
 
                          /* let p = profiles.find(record => record.author === evt.author.toHex())
@@ -435,6 +437,7 @@ async function  listen() {
 
                             items.push({
                               id: profile["author"],
+                              isnip05valid: isnip05valid,
                               event: profile,
                               author: name,
                               authorid: profile["author"],
@@ -485,6 +488,30 @@ async function  listen() {
     client.handleNotifications(handle);
 }
 
+async function isnip05valid(profile){
+         let  isnip05valid = false
+          if (profile["profile"]["nip05"] !== undefined && profile["profile"]["nip05"] !== ""){
+            try{
+              let domain = profile["profile"]["nip05"].split('@')[1]
+            let user = profile["profile"]["nip05"].split('@')[0]
+            let checknip05url = "https://" + domain + "/.well-known/nostr.json?name=" + user
+            //console.log(checknip05url)
+            let response = await fetch(checknip05url);
+            let data = await response.json();
+            let usernpub = data.names[user]
+              if (usernpub === profile["author"]){
+                isnip05valid = true
+              }
+            }
+            catch (error){
+              isnip05valid = false
+            }
+
+          }
+
+          return isnip05valid
+
+}
 async function addAllContentDVMs() {
 
   let relevant_dvms = []
@@ -1041,7 +1068,7 @@ const submitHandler = async () => {
     <!--<h1 class="text-7xl font-black tracking-wide">Filter</h1> -->
 
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
-    Curate your feed with pubkeys you love.</h2>
+    Curate your feed with pubkeys you love. And nothing else.</h2>
      <br>
     <div style="text-align: center"  v-if="store.state.filterdvms.length === 0">
           <button  class="v-Button">Loading DVMs <span class="loading loading-infinity loading-md"></span>
@@ -1072,6 +1099,7 @@ const submitHandler = async () => {
                    <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
               </figure>
               <h2 className="card-title">{{ dvm.name }}</h2>
+
               </div>
             <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
             <div className="card-actions justify-end mt-auto"  >
@@ -1353,6 +1381,8 @@ const submitHandler = async () => {
                      <div>
 
                         <a class="purple" :href="result.authorurl" target="_blank">{{ result.event.profile.name }}</a>
+                        <a v-if="result.event.profile.nip05 !== undefined && result.event.profile.nip05 !== '' " class="purple" :href="result.authorurl" target="_blank">({{result.event.profile.nip05 }})</a>
+                       <!-- <p v-if="isnip05valid(result.event) === true"> Valid</p> -->
                      </div>
 
                 </div>
