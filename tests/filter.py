@@ -6,7 +6,8 @@ import dotenv
 from nostr_sdk import Keys
 
 from nostr_dvm.subscription import Subscription
-from nostr_dvm.tasks import content_discovery_currently_popular, discovery_censor_wot, discovery_inactive_follows
+from nostr_dvm.tasks import content_discovery_currently_popular, discovery_censor_wot, discovery_inactive_follows, \
+    discovery_bot_farms
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -24,9 +25,11 @@ def playground():
     admin_config.REBROADCAST_NIP89 = False
     admin_config.UPDATE_PROFILE = False
 
-    discovery_test_sub = discovery_censor_wot.build_example("Censorship", "discovery_censor", admin_config)
-    discovery_test_sub.run()
+    #discovery_test_sub = discovery_censor_wot.build_example("Censorship", "discovery_censor", admin_config)
+    #discovery_test_sub.run()
 
+    discovery_test_sub = discovery_bot_farms.build_example("Bot Hunter", "discovery_botfarms", admin_config)
+    discovery_test_sub.run()
     #discovery_test_sub = discovery_inactive_follows.build_example("Inactive Followings", "discovery_inactive", admin_config)
     #discovery_test_sub.run()
 
