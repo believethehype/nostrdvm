@@ -55,7 +55,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        search = "@nostrich.house"
+        search = "@nostrich.house;Optimism Airdrop"
         max_results = 500
 
         for tag in event.tags():
