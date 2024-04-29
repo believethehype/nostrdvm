@@ -964,10 +964,10 @@ async function mute(result) {
          try {
             let eventasjson = JSON.parse(list.asJson())
            try{
-              console.log(list.content)
+            //  console.log(list.content)
             let signer = await store.state.signer
            content = await signer.nip04Decrypt(store.state.pubkey, list.content)
-                   console.log(content)
+               //    console.log(content)
 
            }
            catch(error){
