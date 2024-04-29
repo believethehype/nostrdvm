@@ -392,7 +392,7 @@ async function  listen() {
                     for (let ptag of event_ptags) {
                       const eventid = ptag[1]
                       entries.push(eventid)
-                      console.log(eventid)
+                      //console.log(eventid)
                     }
 
 
@@ -872,6 +872,75 @@ async function zap_local(invoice) {
     dvms.find(i => i.bolt11 === invoice).status = "paid"
     store.commit('set_filter_dvms', dvms)
   }
+
+}
+
+async function mute_all(results){
+  console.log(results)
+      let client = store.state.client
+    let signer = store.state.signer
+    let publicKey = store.state.pubkey
+
+    let mute_filter = new Filter().author(publicKey).kind(10000)
+    let mutes = await client.getEventsOf([mute_filter], Duration.fromSecs(5))
+    console.log(mutes.length)
+    if (mutes.length > 0) {
+       let list = mutes[0]
+       let id = list.id.toHex()
+         try {
+            let eventasjson = JSON.parse(list.asJson())
+            let content = await (await signer).nip04Decrypt(store.state.pubkey, list.content)
+            let jsonObject = JSON.parse(content)
+            console.log(content)
+
+           for (let result of results){
+          console.log(result)
+
+            let exists = false
+            for(let i = 0; i < jsonObject.length; i++)
+              {
+                if(jsonObject[i][1] === result.authorid)
+                {
+                 exists = true
+                  break;
+                }
+              }
+            if (exists){
+             console.log("already muted")
+            }
+            else{
+
+                jsonObject.push(["p", result.authorid])
+                store.state.mutes.push(result.authorid)
+
+
+
+              }
+            }
+
+             let newcontent = JSON.stringify(jsonObject)
+                console.log(newcontent)
+                eventasjson.content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+                let newList = new EventBuilder(list.kind, eventasjson.content, list.tags).toUnsignedEvent(store.state.pubkey)
+
+                 try{
+                      let signedMuteList = await signer.signEvent(newList)
+                      //console.log(signedMuteList.asJson())
+                      await client.sendEvent(signedMuteList)
+                 }
+                 catch (error){
+                    console.log("Inner " + error)
+                 }
+
+          }
+        catch(error){
+          console.log(error)
+        }
+    }
+    else{
+      // TODO make new mute list
+    }
+
 
 }
 
@@ -1368,19 +1437,27 @@ const submitHandler = async () => {
               <summary class="collapse-title   "><div class="btn">Show/Hide Results</div></summary>
               <div class="collapse-content font-size-0" className="z-10" id="collapse">
                   <div class="max-w-5xl relative space-y-3">
-    <div class="grid grid-cols-1 gap-6">
-                  <div   v-for="result in dvm.result">
-                       <div v-if="dvm.action === 'mute' && store.state.mutes.find(x => x === result.authorid) === undefined || dvm.action !== 'mute'">
-                    <div v-if="result.active"  className="card w-70 bg-base-200 shadow-xl flex flex-col">
+    <div class="grid grid-cols-1">
+      <button v-if="dvm.result.length > 0 && dvm.action === 'mute'" @click="mute_all(dvm.result);dvm.result = []
+       store.commit('set_filter_dvms', dvms)"><span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                Mute All
+                  </span></button>
+      <br>
 
-                   <div className="playeauthor-wrapper" style="margin-left: 10px; margin-top: 10px">
+
+                  <div v-for="result in dvm.result">
+                    <div v-if="result.active === true">
+                       <div v-if="dvm.action === 'mute' && store.state.mutes.find(x => x === result.authorid) === undefined || dvm.action !== 'mute'">
+                    <div v-if="result.active === true" className="card w-70 bg-base-200 shadow-xl flex flex-col">
+
+                   <div  className="playeauthor-wrapper" style="margin-left: 10px; margin-top: 10px">
                       <figure  className="w-28">
                            <img className="avatar"  v-if="result.event.profile.picture" :src="result.event.profile.picture"  alt="DVM Picture" />
                            <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
                       </figure>
                      <div>
 
-                        <a class="purple" :href="result.authorurl" target="_blank">{{ result.event.profile.name }}</a>
+                        <a  class="purple" :href="result.authorurl" target="_blank">{{ result.event.profile.name }}</a>
                         <a v-if="result.event.profile.nip05 !== undefined && result.event.profile.nip05 !== '' " class="purple" :href="result.authorurl" target="_blank">({{result.event.profile.nip05 }})</a>
                        <!-- <p v-if="isnip05valid(result.event) === true"> Valid</p> -->
                      </div>
@@ -1390,14 +1467,18 @@ const submitHandler = async () => {
                       <div className="justify-end mt-auto" style="margin-left: auto; margin-right: 10px; margin-bottom: 10px" >
                         <button v-if="dvm.action === 'unfollow'" class="v-Button" @click="unfollow(result);result.active = false; store.commit('set_filter_dvms', dvms)
 "> Unfollow</button>
-                         <button v-if="dvm.action === 'mute'" class="v-Button" @click="result.active = false; store.commit('set_filter_dvms', dvms)
+                         <button v-if="dvm.action === 'mute' && result.active !== false" class="v-Button" @click="result.active = false; store.commit('set_filter_dvms', dvms)
  mute(result)"> Mute</button>
                      </div>
 
-      </div>
+
+      </div></div>
+                      <div v-if="store.state.mutes.find(x => x === result.authorid) === undefined">
+                        <br>
+                      </div>
                            </div>
-</div>
-      </div>
+                    </div>
+                  </div>
                   <!--   <div style=": inline">
                   ({{ result.event.profile.nip05 }})
 
