@@ -6,12 +6,12 @@ import { getPubkeyFromDecodeResult, isHexKey } from "./helpers/nip19";
 import { NostrEvent } from "./types/nostr-event";
 
 export function createGetPublicKeyIntent() {
-  return `intent:#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=signature;S.type=get_public_key;end`;
+  return `nostrsigner:?compressionType=none&returnType=signature&type=get_public_key`;
 }
 export function createSignEventIntent(draft) {
-  return `intent:${encodeURIComponent(
+  return `nostrsigner:${encodeURIComponent(
     JSON.stringify(draft),
-  )}#Intent;scheme=nostrsigner;S.compressionType=none;S.returnType=event;S.type=sign_event;end`;
+  )}?compressionType=none&returnType=event&type=sign_event`;
 }
 
 let pendingRequest: Deferred<string> | null = null;
