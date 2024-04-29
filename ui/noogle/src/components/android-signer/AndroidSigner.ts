@@ -24,14 +24,14 @@ function rejectPending() {
 }
 
 export function createNip04EncryptIntent(pubkey: string, plainText: string) {
-  return `intent:${encodeURIComponent(
+  return `nostrsigner:${encodeURIComponent(
     plainText,
-  )}#Intent;scheme=nostrsigner;S.pubKey=${pubkey};S.compressionType=none;S.returnType=signature;S.type=nip04_encrypt;end`;
+  )}?pubKey=${pubkey}&compressionType=none&returnType=signature&type=nip04_encrypt`;
 }
 export function createNip04DecryptIntent(pubkey: string, data: string) {
-  return `intent:${encodeURIComponent(
+  return `nostrsigner:${encodeURIComponent(
     data,
-  )}#Intent;scheme=nostrsigner;S.pubKey=${pubkey};S.compressionType=none;S.returnType=signature;S.type=nip04_decrypt;end`;
+  )}?pubKey=${pubkey}&compressionType=none&returnType=signature&type=nip04_decrypt`;
 }
 
 
