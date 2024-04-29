@@ -73,6 +73,10 @@ function set_subscription_props(amount, cadence, dvm) {
 }
 
 async function generate_feed(id) {
+  if (!localStorage.getItem("nostr-key-method") || localStorage.getItem("nostr-key-method") === "anon"){
+    miniToastr.showMessage("Login to use Discovery DVMs.", "Not logged in", "error")
+    return
+  }
 
   listen()
 
