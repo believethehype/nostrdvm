@@ -1,11 +1,10 @@
 <script>
 import ImageGeneration from "@/components/ImageGeneration.vue";
-import Nip07 from "@/components/Nip07.vue";
 import Donate from "@/components/Donate.vue";
 
 export default {
-  name: "Home",
-  components: {Donate, Nip07, ResultsTable, ImageGeneration}
+  name: "Image",
+  components: {ImageGeneration}
 }
 </script>
 

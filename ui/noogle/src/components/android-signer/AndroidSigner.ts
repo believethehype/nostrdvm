@@ -1,9 +1,9 @@
 // taken from https://github.com/hzrd149/nostrudel
 
-import { nip19, verifySignature } from "nostr-tools";
-import createDefer, { Deferred } from "./classes/deffered";
-import { getPubkeyFromDecodeResult, isHexKey } from "./helpers/nip19";
-import { NostrEvent } from "./types/nostr-event";
+import {nip19, verifyEvent} from "nostr-tools";
+import createDefer, {Deferred} from "./classes/deffered";
+import {getPubkeyFromDecodeResult, isHexKey} from "./helpers/nip19";
+import {NostrEvent} from "./types/nostr-event";
 
 export function createGetPublicKeyIntent() {
   return `nostrsigner:?compressionType=none&returnType=signature&type=get_public_key`;
@@ -22,6 +22,26 @@ function rejectPending() {
     pendingRequest = null;
   }
 }
+
+export function createNip04EncryptIntent(pubkey: string, plainText: string) {
+  return `intent:${encodeURIComponent(
+    plainText,
+  )}#Intent;scheme=nostrsigner;S.pubKey=${pubkey};S.compressionType=none;S.returnType=signature;S.type=nip04_encrypt;end`;
+}
+export function createNip04DecryptIntent(pubkey: string, data: string) {
+  return `intent:${encodeURIComponent(
+    data,
+  )}#Intent;scheme=nostrsigner;S.pubKey=${pubkey};S.compressionType=none;S.returnType=signature;S.type=nip04_decrypt;end`;
+}
+
+
+async function nip04Encrypt(pubkey: string, plaintext: string): Promise<string> {
+  return await intentRequest(createNip04EncryptIntent(pubkey, plaintext));
+}
+async function nip04Decrypt(pubkey: string, data: string): Promise<string> {
+  return await intentRequest(createNip04DecryptIntent(pubkey, data));
+}
+
 
 function onVisibilityChange() {
   if (document.visibilityState === "visible") {
@@ -66,15 +86,17 @@ async function getPublicKey() {
 async function signEvent(draft): Promise<NostrEvent> {
   const signedEventJson = await intentRequest(createSignEventIntent(draft));
   const signedEvent = JSON.parse(signedEventJson) as NostrEvent;
-  
-  if (!verifySignature(signedEvent)) throw new Error("Invalid signature");
+
+  if (!verifyEvent(signedEvent)) throw new Error("Invalid signature");
   return signedEvent;
 }
 
 const amberSignerService = {
   supported: navigator.userAgent.includes("Android") && navigator.clipboard,
   getPublicKey,
-  signEvent
+  signEvent,
+  nip04Encrypt,
+  nip04Decrypt,
 };
 
 export default amberSignerService;

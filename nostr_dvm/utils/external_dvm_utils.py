@@ -1,7 +1,7 @@
 import json
 from datetime import timedelta
 
-from nostr_sdk import PublicKey, Options, Keys, Client, ClientSigner
+from nostr_sdk import PublicKey, Options, Keys, Client, NostrSigner
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -19,8 +19,8 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
 
     opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=config.RELAY_TIMEOUT))
             .skip_disconnected_relays(True))
-    keys = Keys.from_sk_str(config.PRIVATE_KEY)
-    signer = ClientSigner.keys(keys)
+    keys = Keys.parse(config.PRIVATE_KEY)
+    signer = NostrSigner.keys(keys)
     client = Client.with_opts(signer, opts)
 
 

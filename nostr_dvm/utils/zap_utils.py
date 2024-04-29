@@ -8,7 +8,8 @@ import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
-from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key
+from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key, Kind, \
+    Timestamp
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
 import lnurl
@@ -50,7 +51,7 @@ def parse_zap_event_tags(zap_event, keys, name, client, config):
                                                                         keys.secret_key(),
                                                                         zap_request_event.author())
                         decrypted_private_event = Event.from_json(decrypted_content)
-                        if decrypted_private_event.kind() == 9733:
+                        if decrypted_private_event.kind().as_u64() == 9733:
                             sender = decrypted_private_event.author().to_hex()
                             message = decrypted_private_event.content()
                             # if message != "":
@@ -132,7 +133,7 @@ def create_bolt11_lud16(lud16, amount):
 def create_lnbits_account(name):
     if os.getenv("LNBITS_ADMIN_ID") is None or os.getenv("LNBITS_ADMIN_ID") == "":
         print("No admin id set, no wallet created.")
-        return "","","","", "failed"
+        return "", "", "", "", "failed"
     data = {
         'admin_id': os.getenv("LNBITS_ADMIN_ID"),
         'wallet_name': name,
@@ -240,6 +241,10 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
 
 
 def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys, relay_list, zaptype="public"):
+    print(lud16)
+    print(str(amount))
+    print(content)
+    print(zapped_user.to_hex())
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
         url = lnurl.decode(lud16)
     elif '@' in lud16:  # LNaddress
@@ -250,6 +255,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
         response = requests.get(url)
         ob = json.loads(response.content)
         callback = ob["callback"]
+        print(ob["callback"])
         encoded_lnurl = lnurl.encode(url)
         amount_tag = Tag.parse(['amount', str(amount * 1000)])
         relays_tag = Tag.parse(['relays', str(relay_list)])
@@ -262,20 +268,31 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             p_tag = Tag.parse(['p', zapped_user.to_hex()])
             tags = [amount_tag, relays_tag, p_tag, lnurl_tag]
 
-
         if zaptype == "private":
-            key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(zapped_event.created_at().as_secs())
-            encryption_key = sha256(key_str.encode('utf-8')).hexdigest()
+            if zapped_event is not None:
+                key_str = keys.secret_key().to_hex() + zapped_event.id().to_hex() + str(
+                    zapped_event.created_at().as_secs())
 
-            zap_request = EventBuilder(9733, content,
-                                       [p_tag, e_tag]).to_event(keys).as_json()
-            keys = Keys.from_sk_str(encryption_key)
-            encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
+            else:
+                key_str = keys.secret_key().to_hex() + str(Timestamp.now().as_secs())
+
+            encryption_key = sha256(key_str.encode('utf-8')).hexdigest()
+            tags = [p_tag]
+            if zapped_event is not None:
+                tags.append(e_tag)
+            zap_request = EventBuilder(Kind(9733), content,
+                                       tags).to_event(keys).as_json()
+            keys = Keys.parse(encryption_key)
+            if zapped_event is not None:
+                encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
+            else:
+                encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_user)
+
             anon_tag = Tag.parse(['anon', encrypted_content])
             tags.append(anon_tag)
             content = ""
 
-        zap_request = EventBuilder(9734, content,
+        zap_request = EventBuilder(Kind(9734), content,
                                    tags).to_event(keys).as_json()
 
         response = requests.get(callback + "?amount=" + str(int(amount) * 1000) + "&nostr=" + urllib.parse.quote_plus(
@@ -284,22 +301,27 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
         return ob["pr"]
 
     except Exception as e:
-        print("ZAP REQUEST: " + e)
+        print("ZAP REQUEST: " + str(e))
         return None
+
 
 def get_price_per_sat(currency):
     import requests
 
-    url = "https://api.coinstats.app/public/v1/coins"
+    url = "https://openapiv1.coinstats.app/coins/bitcoin"
     params = {"skip": 0, "limit": 1, "currency": currency}
-    try:
-        response = requests.get(url, params=params)
-        response_json = response.json()
+    price_currency_per_sat = 0.0004
+    if os.getenv("COINSTATSOPENAPI_KEY"):
 
-        bitcoin_price = response_json["coins"][0]["price"]
-        price_currency_per_sat = bitcoin_price / 100000000.0
-    except:
-        price_currency_per_sat = 0.0004
+        header = {'accept': 'application/json', 'X-API-KEY': os.getenv("COINSTATSOPENAPI_KEY")}
+        try:
+            response = requests.get(url, headers=header, params=params)
+            response_json = response.json()
+
+            bitcoin_price = response_json["price"]
+            price_currency_per_sat = bitcoin_price / 100000000.0
+        except:
+            price_currency_per_sat = 0.0004
 
     return price_currency_per_sat
 
@@ -328,8 +350,6 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
     except Exception as e:
         print(e)
         return "", ""
-
-
 
 
 def check_and_set_ln_bits_keys(identifier, npub):

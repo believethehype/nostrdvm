@@ -1,29 +1,38 @@
 import {createStore} from "vuex";
-import {Client, ClientSigner, PublicKey} from "@rust-nostr/nostr-sdk";
+import {Client, NostrSigner, PublicKey} from "@rust-nostr/nostr-sdk";
 
 const store = createStore({
   state () {
     return {
       count: 0,
-      test: "hello",
       client: Client,
+      signer: NostrSigner,
+      dbclient: Client,
       pubkey: PublicKey,
+      followings: [],
+      contacts: [],
+      mutes: [],
+      nooglekey: import.meta.env.VITE_NOOGLE_PK,
+      subscription_verifier_pubkey: import.meta.env.VITE_SUBSCRIPTIPON_VERIFIER_PUBKEY,
       requestidSearch: String,
-      requestidImage: String,
-      hasEventListener: false,
-      imagehasEventListener: false,
+      requestidSearchProfile: String,
+      requestidImage: [],
+      requestidRecommendation: [],
+      requestidSummarization: [],
+      requestidFilter: [],
       imagedvmreplies: [],
       nip89dvms: [],
       activesearchdvms: [],
+      recommendationdvms: [],
+      filterdvms: [],
+      summarizationdvms: [],
       results:  [],
-      relays: [
-          //"wss://relay.damus.io",
-        "wss://nos.lol",
-        "wss://pablof7z.nostr1.com",
-        "wss://relay.nostr.net",
-        //"wss://relay.nostr.band",
-        //"wss://nostr-pub.wellorder.net",
-      ],
+      profile_results: [],
+      relays: ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.wine",
+                  "wss://nostr.mom", "wss://nostr.oxtr.dev",
+                  "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://140.f7z.io",
+                  //"wss://relay.nostr.bg",
+                  ],
     }
   },
   mutations: {
@@ -33,15 +42,31 @@ const store = createStore({
      set_client (state, client) {
       state.client = client
     },
+    set_dbclient (state, dbclient) {
+      state.dbclient = dbclient
+    },
+    set_signer (state, signer) {
+      state.signer = signer
+    },
      set_pubkey(state, pubkey) {
       state.pubkey = pubkey
     },
-    set_hasEventListener(state, hasEventListener) {
-      state.hasEventListener = hasEventListener
+    set_followings(state, items) {
+      state.followings.length = 0
+      state.followings.push.apply(state.followings, items)
     },
-    set_imagehasEventListener(state, imagehasEventListener) {
-      state.imagehasEventListener = imagehasEventListener
+      set_contacts(state, items) {
+      state.contacts.length = 0
+      state.contacts.push.apply(state.contacts, items)
     },
+
+
+
+    set_mutes(state, items) {
+      state.mutes.length = 0
+      state.mutes.push.apply(state.mutes, items)
+    },
+
     set_nip89dvms(state, nip89dvms) {
       state.nip89dvms.length = 0
       //console.log(nip89dvms)
@@ -54,13 +79,51 @@ const store = createStore({
     set_current_request_id_search(state, requestid){
       state.requestidSearch = String(requestid)
     },
+
+    set_current_request_id_summarization(state, requestid){
+      state.requestidSummarization.length = 0
+      state.requestidSummarization.push.apply(state.requestidSummarization, requestid)
+    },
+
+    set_current_request_id_filter(state, requestid){
+      state.requestidFilter.length = 0
+      state.requestidFilter.push.apply(state.requestidFilter, requestid)
+    },
+    set_current_request_profile_id_search(state, requestid){
+      state.requestidSearchProfile = String(requestid)
+    },
     set_active_search_dvms(state, dvms) {
       state.activesearchdvms.length = 0
       state.activesearchdvms.push.apply(state.activesearchdvms, dvms)
     },
-    set_current_request_id_image(state, requestid){
-       state.requestidImage = requestid
+    set_recommendation_dvms(state, dvms) {
+      state.recommendationdvms.length = 0
+      state.recommendationdvms.push.apply(state.recommendationdvms, dvms)
     },
+
+      set_filter_dvms(state, dvms) {
+      state.filterdvms.length = 0
+      state.filterdvms.push.apply(state.filterdvms, dvms)
+    },
+
+    set_summarization_dvms(state, dvms) {
+      state.summarizationdvms.length = 0
+      state.summarizationdvms.push.apply(state.summarizationdvms, dvms)
+    },
+    set_search_results_profiles(state, items){
+      state.profile_results.length = 0
+      state.profile_results.push.apply(state.profile_results, items)
+    },
+    set_current_request_id_image(state, requestid){
+       state.requestidImage.length = 0
+       state.requestidImage.push.apply(state.requestidImage, requestid)
+    },
+    set_current_request_id_recommendation(state, requestid){
+        state.requestidRecommendation.length = 0
+      state.requestidRecommendation.push.apply(state.requestidRecommendation, requestid)
+       //state.requestidRecommendation = requestid
+    },
+
     set_search_results(state, results){
       state.results.length = 0
       state.results.push.apply(state.results, results)
@@ -68,7 +131,7 @@ const store = createStore({
     set_imagedvm_results(state, results){
       state.imagedvmreplies.length = 0
       state.imagedvmreplies.push.apply(state.imagedvmreplies, results)
-    }
+    },
 
   }
 })
