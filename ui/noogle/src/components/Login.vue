@@ -189,7 +189,7 @@ import {
   Options,
   Duration,
   PublicKey,
-  Nip46Signer, NegentropyDirection, NegentropyOptions, NostrSigner, RelayLimits, Contact
+  Nip46Signer, NegentropyDirection, NegentropyOptions, NostrSigner, RelayLimits, Contact, Event
 } from "@rust-nostr/nostr-sdk";
 import VueNotifications from "vue-notifications";
 import store from '../store';
@@ -330,9 +330,9 @@ export default {
   }
 
       if (e.detail.type === "logout") {
-        await this.sign_out()
+        /*await this.sign_out()
         //await this.state.client.shutdown()G;
-        await this.sign_in_anon()
+        await this.sign_in_anon() */
         console.log("Logged out")
   }
     },
@@ -940,22 +940,31 @@ export default {
 
         for (let list of mutes){
 
-        let client = store.state.client
-        let signer = client.signer()
 
-        for (let tag of list.tags){
-          if (tag.asVec()[0] === "p"){
-            //console.log(tag.asVec()[1])
-            mutelist.push(tag.asVec()[1])
+          for (let tag of list.tags){
+            if (tag.asVec()[0] === "p"){
+              //console.log(tag.asVec()[1])
+              mutelist.push(tag.asVec()[1])
 
-          }
-        }
+            }
+
 
         console.log("Public mutes: " + mutelist.length)
 
         //private mutes
           try {
-            let content = await (await signer).nip04Decrypt(store.state.pubkey, list.content)
+          let content = ""
+            console.log(store.state.pubkey.toHex())
+            console.log(list.content)
+          if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+            content = await amberSignerService.nip04Decrypt(store.state.pubkey.toHex(), list.content)
+        }
+          else{
+            content = await this.signer.nip04Decrypt(store.state.pubkey, list.content)
+            console.log(content)
+          }
+
+
             let json = JSON.parse(content)
             for (let entry of json) {
               if (entry[0] === "p") {
@@ -969,7 +978,7 @@ export default {
           //console.log(error)
             }
 
-
+    }
                 console.log("Overall mutes: " + mutelist.length)
 }
         store.commit('set_mutes', mutelist)
