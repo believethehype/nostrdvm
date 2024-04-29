@@ -1,9 +1,13 @@
 import json
 import os
+
+from nostr_sdk import Kind
+
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
@@ -18,15 +22,16 @@ Params:  -language The target language
 
 
 class MediaConverter(DVMTaskInterface):
-    KIND = EventDefinitions.KIND_NIP90_CONVERT_VIDEO
+    KIND: Kind = EventDefinitions.KIND_NIP90_CONVERT_VIDEO
     TASK = "convert"
     FIX_COST = 20
     PER_UNIT_COST = 0.1
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -79,6 +84,7 @@ class MediaConverter(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
     nip89info = {

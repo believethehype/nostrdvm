@@ -1,12 +1,12 @@
 <template>
-  <EasyDataTable class="customize-table"  header-text-direction="left"  v-if="store.state.results.length != 0" table-class-name="customize-table"
+  <EasyDataTable  class="customize-table"  header-text-direction="left"  v-if="store.state.results.length != 0" table-class-name="customize-table"
     :headers="headers"
     :items="store.state.results" :sort-by="sortBy"
      :sort-type="sortType">
    <template #item-content="{ content, author, authorurl, avatar, indicator, links}">
    <div class="playeauthor-wrapper">
 
-     <img class="avatar" v-if="avatar" :src="avatar" alt="Avatar" />
+     <img class="avatar" v-if="avatar" :src="avatar" alt="Avatar" onerror="this.src='https://noogle.lol/favicon.ico'" />
      <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
 
          <a class="purple" :href="authorurl" target="_blank">{{ author }}</a>
@@ -21,21 +21,13 @@
           <a class="menusmall" :href="links.uri" target="_blank">Nostr Client</a>
           <a class="menusmall" :href="links.njump" target="_blank">NJump</a>
           <a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a>
-          <!-- <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a> -->
+          <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a>
       </div>
-   <!--   <p>{{content}}</p> -->
      </template>
-    <!--<template #expand="item">
-      <div style="padding: 15px; text-align: left;" >
-          <a class="menu" :href="item.links.uri" target="_blank">Nostr Client</a>
-          <a class="menu" :href="item.links.njump" target="_blank">NJump</a>
-          <a class="menu" :href="item.links.highlighter" target="_blank">Highlighter</a>
-          <a class="menu":href="item.links.nostrudel" target="_blank">Nostrudel</a>
-      </div>
-    </template> -->
-
 
       </EasyDataTable>
+
+
 </template>
 
 <script lang="ts" setup>
@@ -49,7 +41,6 @@ const sortType: SortType = "desc";
 
 const headers: Header[] = [
   { text: "Results:", value: "content", fixed:true},
- // { text: "Time", value: "indicator.time", sortable: true, },
 ];
 
 
@@ -95,7 +86,7 @@ const headers: Header[] = [
 }
 .customize-table {
   width: auto;
-  --easy-table-border: 1px solid #000000;
+  --easy-table-border: 2px solid #000000;
   --easy-table-row-border: 1px solid #000000;
 
   --easy-table-header-font-size: 14px;
@@ -128,16 +119,10 @@ const headers: Header[] = [
   --easy-table-rows-per-page-selector-option-padding: 10px;
   --easy-table-rows-per-page-selector-z-index: 1;
 
-
-
-
-
-
-
-  --easy-table-scrollbar-track-color: #2d3a4f;
-  --easy-table-scrollbar-color: #2d3a4f;
-  --easy-table-scrollbar-thumb-color: #4c5d7a;;
-  --easy-table-scrollbar-corner-color: #2d3a4f;
+  --easy-table-scrollbar-track-color: bg-base;
+  --easy-table-scrollbar-color: bg-base;
+  --easy-table-scrollbar-thumb-color: bg-base;
+  --easy-table-scrollbar-corner-color: bg-base;
 
   --easy-table-loading-mask-background-color: #2d3a4f;
 }

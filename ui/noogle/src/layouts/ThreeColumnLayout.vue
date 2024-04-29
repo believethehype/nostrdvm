@@ -1,24 +1,25 @@
 <script setup>
-import Nip07 from "@/components/Nip07.vue";
-import Donate from "@/components/Donate.vue"
+import Login from "@/components/Login.vue";
 import {isVisible} from "bootstrap/js/src/util/index.js";
 </script>
 
 <template>
 
-  <div className="navbar bg-base-100">
+  <div className="navbar bg-base-100 scroll-auto">
   <div className="flex-none">
 
   </div>
   <div className="flex-1">
-    <router-link  class="menu" to="/">Noogle</router-link>
-    <router-link class="menu" to="/image">ImageGen</router-link>
-    <router-link class="menu" to="/about">About</router-link>
+    <div class="scroll">
+       <router-link  class="menu" to="/">Search</router-link>
+    <router-link class="menu" to="/discover">Discover</router-link>
+    <router-link class="menu" to="/image">Create</router-link>
+    <router-link class="menu" to="/filter">Filter</router-link>
     <router-link class="menu" to="/nip89">DVMs</router-link>
-
+    </div>
 
   </div>
- <Nip07/>
+ <Login/>
 
 </div>
 
@@ -39,7 +40,7 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
 
     </aside>
 <footer>
-     <Donate style="margin-top: 4px"/>
+    <!--<Donate style="margin-top: 4px"/> -->
     </footer>
  </div>
 </template>
@@ -52,6 +53,16 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
     "main"
     "aside"
     "footer";
+
+   div.scroll {
+            margin: 4px;
+            padding: 4px;
+            background-color: #08c708;
+            width: 300px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+        }
 
   header {
     grid-area: header;

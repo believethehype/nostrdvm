@@ -9,6 +9,12 @@ import 'vue3-easy-data-table/dist/style.css';
 import router from './router'
 import Vue3EasyDataTable from 'vue3-easy-data-table';
 
+import VueDatePicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css'
+
+
+
+
 
 
 
@@ -32,13 +38,11 @@ const options = {
 }
 //This is all for notifications end
 
-
-
-
 createApp(App)
     .use(VueNotifications, options)
     .use(store)
     .use(router)
 
     .component('EasyDataTable', Vue3EasyDataTable)
+    .component('VueDatePicker', VueDatePicker)
     .mount('#app')

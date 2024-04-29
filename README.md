@@ -1,4 +1,4 @@
-# NostrAI: Nostr NIP90 Data Vending Machine Framework
+# NostrDVM: Nostr NIP90 Data Vending Machine Framework
 
 This framework provides a way to easily build and/or run `Nostr NIP90 DVMs in Python`.
 

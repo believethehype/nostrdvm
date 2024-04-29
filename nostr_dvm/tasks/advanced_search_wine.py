@@ -3,12 +3,13 @@ import os
 from datetime import timedelta
 
 import requests
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, ClientSigner, Event
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Event, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
@@ -21,16 +22,16 @@ Params:  None
 
 
 class AdvancedSearchWine(DVMTaskInterface):
-    KIND: int = EventDefinitions.KIND_NIP90_CONTENT_SEARCH
+    KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_SEARCH
     TASK: str = "search-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
-    dependencies = [("nostr-dvm", "nostr-dvm")]
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config,
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name, dvm_config, nip89config, admin_config, options)
+        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
+                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -50,8 +51,8 @@ class AdvancedSearchWine(DVMTaskInterface):
         # default values
         user = ""
         users = []
-        since_days = 800  # days ago
-        until_days = 365  # days ago
+        since_seconds = Timestamp.now().as_secs() - (365 * 24 * 60 * 60)
+        until_seconds = Timestamp.now().as_secs()
         search = ""
         max_results = 100
 
@@ -68,9 +69,9 @@ class AdvancedSearchWine(DVMTaskInterface):
                 elif param == "users":  # check for param type
                     users = json.loads(tag.as_vec()[2])
                 elif param == "since":  # check for param type
-                    since_days = int(tag.as_vec()[2])
+                    since_seconds = int(tag.as_vec()[2])
                 elif param == "until":  # check for param type
-                    until_days = int(tag.as_vec()[2])
+                    until_seconds = int(tag.as_vec()[2])
                 elif param == "max_results":  # check for param type
                     max_results = int(tag.as_vec()[2])
 
@@ -78,8 +79,8 @@ class AdvancedSearchWine(DVMTaskInterface):
             "search": search,
             "user": user,
             "users": users,
-            "since": since_days,
-            "until": until_days,
+            "since": since_seconds,
+            "until": until_seconds,
             "max_results": max_results,
 
         }
@@ -91,7 +92,8 @@ class AdvancedSearchWine(DVMTaskInterface):
         options = DVMTaskInterface.set_options(request_form)
         userkeys = []
         for user in options["users"]:
-            user = user[1]
+            tag = Tag.parse(user)
+            user = tag.as_vec()[1]
             user = str(user).lstrip("@")
             if str(user).startswith('npub'):
                 userkey = PublicKey.from_bech32(user)
@@ -102,23 +104,27 @@ class AdvancedSearchWine(DVMTaskInterface):
 
             userkeys.append(userkey)
 
-        print("Sending job to Server")
+        print("Sending job to nostr.wine API")
         if options["users"]:
-            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0] + "&limit=100" + "&sort=time")
+            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + '&pubkey=' + options["users"][0][1] + "&limit=100" + "&sort=time" + "&until=" + str(options["until"]) + "&since=" + str(options["since"]))
         else:
-            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + "&limit=100" + "&sort=time")
+            url = ('https://api.nostr.wine/search?query=' + options["search"] + '&kind=1' + "&limit=100" + "&sort=time" + "&until=" + str(options["until"]) + "&since=" + str(options["since"]))
 
         headers = {'Content-type': 'application/x-www-form-urlencoded'}
         response = requests.get(url, headers=headers)
-        print(response.text)
-        ob = json.loads(response.text)
-        data = ob['data']
-        print(data)
+        #print(response.text)
         result_list = []
-        for el in data:
-            e_tag = Tag.parse(["e", el['id']])
-            print(e_tag.as_vec())
-            result_list.append(e_tag.as_vec())
+        try:
+            ob = json.loads(response.text)
+            data = ob['data']
+            for el in data:
+                try:
+                    e_tag = Tag.parse(["e", el['id']])
+                    result_list.append(e_tag.as_vec())
+                except Exception as e:
+                    print("ERROR: " + str(e))
+        except Exception as e:
+            print(e)
 
 
         return json.dumps(result_list)
@@ -140,6 +146,7 @@ class AdvancedSearchWine(DVMTaskInterface):
 # playground or elsewhere
 def build_example(name, identifier, admin_config):
     dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
     # Add NIP89
     nip89info = {
         "name": name,

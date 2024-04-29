@@ -1,7 +1,9 @@
 <script setup>
-import Home from './components/Home.vue'
 import ThreeColumnLayout from "./layouts/ThreeColumnLayout.vue";
-import Nip07 from "@/components/Nip07.vue";
+import ProfileResultsTable from "@/components/ProfileResultTable.vue";
+import router from "@/router/index.js";
+
+
 
 </script>
 
@@ -11,9 +13,11 @@ import Nip07 from "@/components/Nip07.vue";
 
   <main>
     <ThreeColumnLayout>
-      <template #aside>
+  <template #aside>
 
+    <ProfileResultsTable style="margin-top: 450px"/>
     </template>
+
     </ThreeColumnLayout>
 
 
