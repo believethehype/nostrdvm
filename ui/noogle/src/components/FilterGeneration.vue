@@ -925,6 +925,7 @@ async function mute_all(results){
 
              let newcontent = JSON.stringify(jsonObject)
                 console.log(newcontent)
+                let lol = "[]"
                 eventasjson.content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
                 let newList = new EventBuilder(list.kind, eventasjson.content, list.tags).toUnsignedEvent(store.state.pubkey)
 
@@ -959,12 +960,21 @@ async function mute(result) {
     console.log(mutes.length)
     if (mutes.length > 0) {
        let list = mutes[0]
-       let id = list.id.toHex()
+       let content = ""
          try {
             let eventasjson = JSON.parse(list.asJson())
-            let content = await (await signer).nip04Decrypt(store.state.pubkey, list.content)
-            let jsonObject = JSON.parse(content)
-            console.log(content)
+           try{
+              console.log(list.content)
+            let signer = await store.state.signer
+           content = await signer.nip04Decrypt(store.state.pubkey, list.content)
+                   console.log(content)
+
+           }
+           catch(error){
+              console.log(error)
+           }
+
+             let jsonObject = JSON.parse(content)
             let exists = false
             for(let i = 0; i < jsonObject.length; i++)
               {
@@ -982,7 +992,7 @@ async function mute(result) {
                 store.state.mutes.push(result.authorid)
                 let newcontent = JSON.stringify(jsonObject)
                 console.log(newcontent)
-                eventasjson.content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+                eventasjson.content = await store.state.signer.nip04Encrypt(store.state.pubkey, newcontent)
                 let newList = new EventBuilder(list.kind, eventasjson.content, list.tags).toUnsignedEvent(store.state.pubkey)
 
                  try{
