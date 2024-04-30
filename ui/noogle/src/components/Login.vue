@@ -954,8 +954,8 @@ export default {
         //private mutes
           try {
           let content = ""
-            console.log(store.state.pubkey.toHex())
-            console.log(list.content)
+            //console.log(store.state.pubkey.toHex())
+            //console.log(list.content)
           if (localStorage.getItem('nostr-key-method') === 'android-signer') {
             content = await amberSignerService.nip04Decrypt(store.state.pubkey.toHex(), list.content)
         }
