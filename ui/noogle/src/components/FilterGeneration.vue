@@ -1042,12 +1042,18 @@ async function unfollow(result){
   let rm =  store.state.contacts.splice(index, 1)
 
 
-  let list = store.state.contacts
-  let event = EventBuilder.contactList(list)
-  let requestid = await client.sendEventBuilder(event);
+    try{
+     let event = EventBuilder.contactList(store.state.contacts).toUnsignedEvent(store.state.pubkey)
+      let signedevent = await store.state.signer.signEvent(event)
+      let requestid = await client.sendEvent(signedevent);
 
-  console.log("unfollow logic for "  + result.event.profile.name)
-    return true
+      console.log("unfollow logic for "  + result.event.profile.name + " " +  requestid.toHex())
+        return true
+    }
+    catch(error){
+    console.log(error)
+    }
+
      }
   else {
     console.log("not found")
