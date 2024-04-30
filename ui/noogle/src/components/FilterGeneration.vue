@@ -2,14 +2,14 @@
 
 
 import {
-  Client,
+  Client, ClientBuilder, Contact,
   Duration,
   Event,
   EventBuilder,
   Filter,
-  Keys,
-  NostrSigner,
-  PublicKey,
+  Keys, NostrDatabase,
+  NostrSigner, Options,
+  PublicKey, RelayLimits,
   Tag,
   Timestamp,
   UnsignedEvent
@@ -1017,12 +1017,42 @@ async function mute(result) {
 
 }
 
+
+
+
+
+
 async function unfollow(result){
-  let client = store.state.client
+  let dbclient = Client
+  let keys = Keys.parse(store.state.nooglekey)
+  let signer = NostrSigner.keys(keys)
+  let limits = RelayLimits.disable()
+  let relayopts = new Options().relayLimits(limits);
+  dbclient = new ClientBuilder().signer(signer).opts(relayopts).build()
+  await dbclient.addRelay("wss://relay.damus.io");
+  await dbclient.addRelay( "wss://purplepag.es");
+  await dbclient.connect()
   console.log(result.authorid)
   let found = false
   let element
-  for (let em of store.state.contacts){
+  let publicKey = store.state.pubkey
+  console.log(publicKey.toHex())
+   let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
+   let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
+     console.log(followers.length)
+   let contacts = []
+
+    if (followers.length > 0){
+          for (let tag of followers[0].tags) {
+            if (tag.asVec()[0] === "p") {
+              let contact = new Contact(PublicKey.parse(tag.asVec()[1]), tag.asVec()[2], tag.asVec()[3])
+              contacts.push(contact)
+            }
+          }
+
+
+  console.log(contacts)
+  for (let em of contacts){
     if (em.publicKey.toHex() === result.authorid){
       found = true
       element = em
@@ -1035,19 +1065,22 @@ async function unfollow(result){
   if (found){
 
   console.log(element)
-  let index =  store.state.contacts.indexOf(element)
+  let index = contacts.indexOf(element)
   console.log(index)
-  console.log(store.state.contacts.length)
+  console.log(contacts.length)
 
-  let rm =  store.state.contacts.splice(index, 1)
+  let rm =  contacts.splice(index, 1)
 
 
     try{
-     let event = EventBuilder.contactList(store.state.contacts).toUnsignedEvent(store.state.pubkey)
-      let signedevent = await store.state.signer.signEvent(event)
-      let requestid = await client.sendEvent(signedevent);
 
-      console.log("unfollow logic for "  + result.event.profile.name + " " +  requestid.toHex())
+     let event = EventBuilder.contactList(contacts)
+      let client = store.state.client
+      let requestid = await client.sendEventBuilder(event);
+
+      console.log("unfollowing "  + result.event.profile.name + " " +  requestid.toHex())
+      console.log( contacts)
+      store.commit('set_contacts', contacts)
         return true
     }
     catch(error){
@@ -1059,7 +1092,7 @@ async function unfollow(result){
     console.log("not found")
     return false
   }
-}
+}}
 
 async  function store_nwc(){
 

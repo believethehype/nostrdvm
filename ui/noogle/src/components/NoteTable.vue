@@ -23,6 +23,7 @@
      <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
 
      <a class="purple" :href="authorurl" target="_blank">{{ author }}</a>
+       <a className="white" style="background: #1f2937; font-size: xx-small" v-if="store.state.followings.find(x => x == authorid) !== undefined">Following</a>
     <div class="time">
           {{indicator.time.split("T")[1].split("Z")[0].trim()}}
           {{indicator.time.split("T")[0].split("-")[2].trim()}}.{{indicator.time.split("T")[0].split("-")[1].trim()}}.{{indicator.time.split("T")[0].split("-")[0].trim().slice(2)}}
@@ -196,6 +197,9 @@ async function react(eventid, authorid, evt){
                 }
 
 }
+
+
+
 async function reply (eventid, authorid, message){
 
    console.log(eventid)
