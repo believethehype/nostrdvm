@@ -1041,12 +1041,17 @@ async function unfollow(result){
    let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
      console.log(followers.length)
    let contacts = []
+     let followings = [] //TODO legacy, try to remove with contacts
+       let ids = []
 
     if (followers.length > 0){
           for (let tag of followers[0].tags) {
             if (tag.asVec()[0] === "p") {
+              let following = tag.asVec()[1]
               let contact = new Contact(PublicKey.parse(tag.asVec()[1]), tag.asVec()[2], tag.asVec()[3])
               contacts.push(contact)
+              followings.push(PublicKey.parse(following))
+              ids.push(following)
             }
           }
 
@@ -1070,6 +1075,8 @@ async function unfollow(result){
   console.log(contacts.length)
 
   let rm =  contacts.splice(index, 1)
+     store.commit('set_contacts', contacts)
+     store.commit('set_followings', ids)
 
 
     try{
@@ -1080,7 +1087,7 @@ async function unfollow(result){
 
       console.log("unfollowing "  + result.event.profile.name + " " +  requestid.toHex())
       console.log( contacts)
-      store.commit('set_contacts', contacts)
+
         return true
     }
     catch(error){
@@ -1512,7 +1519,10 @@ const submitHandler = async () => {
                      <div>
 
                         <a  class="purple" :href="result.authorurl" target="_blank">{{ result.event.profile.name }}</a>
+
                         <a v-if="result.event.profile.nip05 !== undefined && result.event.profile.nip05 !== '' " class="purple" :href="result.authorurl" target="_blank">({{result.event.profile.nip05 }})</a>
+                                                    <a className="white" style="background: #1f2937; font-size: xx-small" v-if="store.state.followings.find(x => x == result.authorid) !== undefined">Following</a>
+
                        <!-- <p v-if="isnip05valid(result.event) === true"> Valid</p> -->
                      </div>
 
