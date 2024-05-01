@@ -55,7 +55,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        search = "@nostrich.house;Optimism Airdrop"
+        search = "airdrop;@nostrich.house;just your average nostr enjoyer"
         max_results = 500
 
         for tag in event.tags():
@@ -153,6 +153,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
+        cli.add_relay("wss://nostr21.com")
         cli.connect()
 
         filter1 = Filter().kind(Kind(0))
