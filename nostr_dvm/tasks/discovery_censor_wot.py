@@ -57,6 +57,8 @@ class DiscoverReports(DVMTaskInterface):
                 param = tag.as_vec()[1]
                 if param == "since_days":  # check for param type
                     since_days = int(tag.as_vec()[2])
+                if param == "user":  # check for param type
+                    sender = tag.as_vec()[2]
 
         options = {
             "users": users,
