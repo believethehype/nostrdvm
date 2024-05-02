@@ -113,7 +113,7 @@ def post_process_list_to_users(result):
         return "No results found"
     for tag in result_list:
         p_tag = Tag.parse(tag)
-        result_str = result_str + "nostr:" + PublicKey.from_hex(
+        result_str = result_str + "nostr:" + PublicKey.parse(
             p_tag.as_vec()[1]).to_bech32() + "\n"
     return result_str
 
