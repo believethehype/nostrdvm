@@ -321,29 +321,29 @@ export default {
 
        if (e.detail.type === "login") {
         //await this.state.client.shutdown()G;
-        //await this.sign_in_nostr_login(false)
+        await this.sign_in_nostr_login(false)
         let pubkeyinfo = localStorage.getItem('__nostrlogin_nip46')
            console.log(JSON.parse(pubkeyinfo).pubkey)
         //await this.get_user_info(JSON.parse(pubkeyinfo).pubkey)
         //this.reconcile_all_profiles(JSON.parse(pubkeyinfo).pubkey)
         console.log("Logged in")
   }
-
+    console.log(logoutcounter)
       if (e.detail.type === "logout" && logoutcounter === 0) {
         logoutcounter  = logoutcounter + 1
        }
       else if (e.detail.type === "logout" && logoutcounter > 0) {
-       // await this.sign_out()
+        await this.sign_out_event()
         //await this.state.client.shutdown()G;
-        //await this.sign_in_anon()
         console.log("Logged out")
   }
     },
     async sign_in_nostr_login(launch=true) {
-      await initNostrLogin({bunkers: 'nsec.app,highlighter.com', iife: true})
+
 
       // launch signup screen
       if (launch){
+        await initNostrLogin({bunkers: 'nsec.app,highlighter.com', iife: true})
           if (!localStorage.getItem('__nostrlogin_nip46')){
            await new launchNostrLoginDialog({
         bunkers: 'nsec.app,highlighter.com'
@@ -1044,11 +1044,25 @@ export default {
         await logoutNostrLogin()
       }
       console.log("LOGOUT")
+       logoutcounter = 0
       localStorage.setItem('nostr-key-method', "anon")
       localStorage.setItem('nostr-key', "")
 
       //await this.state.client.shutdown();
       await this.sign_in_anon()
+
+    },
+
+    async sign_out_event(){
+      this.current_user = ""
+      console.log("LOGOUT")
+       logoutcounter = 0
+      localStorage.setItem('nostr-key-method', "anon")
+      localStorage.setItem('nostr-key', "")
+
+      //await this.state.client.shutdown();
+      await this.sign_in_anon()
+
     },
 
     async disconnect_nwc(){
