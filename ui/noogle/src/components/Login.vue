@@ -964,31 +964,24 @@ export default {
 
         //private mutes
           try {
-              console.log("HELLO")
           let content = ""
             //console.log(store.state.pubkey.toHex())
             //console.log(list.content)
-        /*  if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-            content = await amberSignerService.nip04Decrypt(store.state.pubkey.toHex(), list.content)
-
-        }
-          else{
-*/
-
-            try{
-              console.log("HELLO2")
-
-            content = await this.signer.nip04Decrypt(store.state.pubkey, list.content)
-                            console.log("HELL3")
-
-            console.log(content)
+            if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+              content = await amberSignerService.nip04Decrypt(store.state.pubkey.toHex(), list.content)
             }
 
+          else{
+
+            try{
+            content = await this.signer.nip04Decrypt(store.state.pubkey, list.content)
+            //console.log(content)
+            }
             catch(error){
                console.log(error)
             }
 
-        //  }
+          }
 
 
             let json = JSON.parse(content)
