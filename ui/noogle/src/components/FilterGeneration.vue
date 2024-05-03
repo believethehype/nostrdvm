@@ -889,9 +889,14 @@ async function mute_all(results){
     let mute_filter = new Filter().author(publicKey).kind(10000)
     let mutes = await client.getEventsOf([mute_filter], Duration.fromSecs(5))
     console.log(mutes.length)
+
+
+    let list = new Event()
+
     if (mutes.length > 0) {
-       let list = mutes[0]
-       let id = list.id.toHex()
+       list = mutes[0]
+
+
          try {
             let eventasjson = JSON.parse(list.asJson())
             let content = await (await signer).nip04Decrypt(store.state.pubkey, list.content)
@@ -938,14 +943,35 @@ async function mute_all(results){
                     console.log("Inner " + error)
                  }
 
+
           }
         catch(error){
           console.log(error)
         }
     }
-    else{
-      // TODO make new mute list
-    }
+
+       else{
+          let jsonObject = []
+          for (let result of results){
+                jsonObject.push(["p", result.authorid])
+                store.state.mutes.push(result.authorid)
+              }
+
+
+          let newcontent = JSON.stringify(jsonObject)
+          let content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+      let tags = []
+          let newList = new EventBuilder(10000, content, tags).toUnsignedEvent(store.state.pubkey)
+          try{
+            let signedMuteList = await signer.signEvent(newList)
+            //console.log(signedMuteList.asJson())
+            let id = await client.sendEvent(signedMuteList)
+            console.log(id)
+       }
+       catch (error){
+          console.log("Inner " + error)
+       }
+          }
 
 
 }
@@ -998,7 +1024,8 @@ async function mute(result) {
                  try{
                       let signedMuteList = await signer.signEvent(newList)
                       //console.log(signedMuteList.asJson())
-                      await client.sendEvent(signedMuteList)
+                      let id = await client.sendEvent(signedMuteList)
+                      console.log(id)
                  }
                  catch (error){
                     console.log("Inner " + error)
@@ -1010,7 +1037,26 @@ async function mute(result) {
         }
     }
     else{
-      // TODO make new mute list
+          let jsonObject = []
+
+          jsonObject.push(["p", result.authorid])
+          store.state.mutes.push(result.authorid)
+
+
+
+          let newcontent = JSON.stringify(jsonObject)
+          let content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+          let tags = []
+          let newList = new EventBuilder(10000, content, tags).toUnsignedEvent(store.state.pubkey)
+          try{
+            let signedMuteList = await signer.signEvent(newList)
+            //console.log(signedMuteList.asJson())
+            let id = await client.sendEvent(signedMuteList)
+            console.log(id)
+       }
+       catch (error){
+          console.log("Inner " + error)
+       }
     }
 
 
