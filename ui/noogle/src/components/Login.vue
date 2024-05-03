@@ -217,7 +217,7 @@ let nip89dvms = []
 
 let logger = false
 
-
+let logoutcounter = 0
 
 
 export default {
@@ -321,7 +321,7 @@ export default {
 
        if (e.detail.type === "login") {
         //await this.state.client.shutdown()G;
-       // await this.sign_in_nostr_login(false)
+        //await this.sign_in_nostr_login(false)
         let pubkeyinfo = localStorage.getItem('__nostrlogin_nip46')
            console.log(JSON.parse(pubkeyinfo).pubkey)
         //await this.get_user_info(JSON.parse(pubkeyinfo).pubkey)
@@ -329,10 +329,13 @@ export default {
         console.log("Logged in")
   }
 
-      if (e.detail.type === "logout") {
-        /*await this.sign_out()
+      if (e.detail.type === "logout" && logoutcounter === 0) {
+        logoutcounter  = logoutcounter + 1
+       }
+      else if (e.detail.type === "logout" && logoutcounter > 0) {
+       // await this.sign_out()
         //await this.state.client.shutdown()G;
-        await this.sign_in_anon() */
+        //await this.sign_in_anon()
         console.log("Logged out")
   }
     },
@@ -936,52 +939,78 @@ export default {
           let mute_filter = new Filter().author(publicKey).kind(10000)
       let mutes = await dbclient.getEventsOf([mute_filter], Duration.fromSecs(5))
       let mutelist = []
+      store.commit('set_mutes', mutelist)
       if(mutes.length > 0){
 
         for (let list of mutes){
 
+          try {
+            for (let tag of list.tags) {
+              if (tag.asVec()[0] === "p") {
+                //console.log(tag.asVec()[1])
+                mutelist.push(tag.asVec()[1])
 
-          for (let tag of list.tags){
-            if (tag.asVec()[0] === "p"){
-              //console.log(tag.asVec()[1])
-              mutelist.push(tag.asVec()[1])
-
+              }
             }
+          }
+
+         catch(error){
+           console.log(error)
+                }
+
 
 
         console.log("Public mutes: " + mutelist.length)
 
         //private mutes
           try {
+              console.log("HELLO")
           let content = ""
             //console.log(store.state.pubkey.toHex())
             //console.log(list.content)
-          if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+        /*  if (localStorage.getItem('nostr-key-method') === 'android-signer') {
             content = await amberSignerService.nip04Decrypt(store.state.pubkey.toHex(), list.content)
+
         }
           else{
+*/
+
+            try{
+              console.log("HELLO2")
+
             content = await this.signer.nip04Decrypt(store.state.pubkey, list.content)
+                            console.log("HELL3")
+
             console.log(content)
-          }
+            }
+
+            catch(error){
+               console.log(error)
+            }
+
+        //  }
 
 
             let json = JSON.parse(content)
             for (let entry of json) {
               if (entry[0] === "p") {
-                console.log(entry[1])
+                //console.log(entry[1])
                 mutelist.push(entry[1])
 
               }
             }
           }
         catch(error){
-          //console.log(error)
+          console.log(error)
             }
 
-    }
+
                 console.log("Overall mutes: " + mutelist.length)
 }
         store.commit('set_mutes', mutelist)
+      }
+      else{
+        console.log("No mute list found")
       }
 
 
