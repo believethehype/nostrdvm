@@ -28,6 +28,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
     FIX_COST: float = 0
     dvm_config: DVMConfig
     last_schedule: int
+    db_since = 2 * 3600
+    db_name = "db/nostr_recent_notes2.db"
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
@@ -94,7 +96,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        database = NostrDatabase.sqlite("db/nostr_recent_notes2.db")
+        database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
         cli.add_relay("wss://relay.damus.io")
         cli.add_relay("wss://nos.lol")
@@ -112,7 +114,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         # Negentropy reconciliation
         # Query events from database
-        timestamp_hour_ago = Timestamp.now().as_secs() - 7200
+        timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
 
 
@@ -182,13 +184,13 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite("db/nostr_recent_notes2.db")
+        database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
         cli.connect()
 
-        timestamp_hour_ago = Timestamp.now().as_secs() - 7200
+        timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
@@ -199,7 +201,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
         database.delete(Filter().until(Timestamp.from_secs(
-            Timestamp.now().as_secs() - 7200)))  # Clear old events so db doesnt get too full.
+            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesnt get too full.
 
         print("Done Syncing Notes of Last hour.")
 
