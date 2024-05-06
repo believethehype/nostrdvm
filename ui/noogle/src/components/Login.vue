@@ -379,7 +379,10 @@ export default {
       localStorage.setItem('nostr-key', pubkey.toHex())
       console.log("Client Nip46 connected")
       await this.get_user_info(pubkey)
-        this.reconcile_all_profiles(pubkey)
+        if (launch){
+                  this.reconcile_all_profiles(pubkey)
+
+        }
       console.log(pubkey.toBech32())
       //await this.reconcile_all_profiles()
 
@@ -943,7 +946,7 @@ export default {
       if(mutes.length > 0){
 
         for (let list of mutes){
-
+          console.log(list.id.toHex())
           try {
             for (let tag of list.tags) {
               if (tag.asVec()[0] === "p") {
