@@ -187,6 +187,8 @@ class Subscription:
                         print(str(zapped_amount) + "/" + str(overall_amount))
 
             if zapped_amount < overall_amount * 0.8:  # TODO how do we handle failed zaps for some addresses? we are ok with 80% for now
+            #if zapped_amount < int(zaps[0][3]):
+
                 success = False
             else:
                 success = True
@@ -404,36 +406,39 @@ class Subscription:
             send_event(evt, client=self.client, dvm_config=dvm_config)
 
         def check_subscriptions():
-            subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
+            try:
+                subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
 
-            for subscription in subscriptions:
-                if subscription.active:
-                    if subscription.end < Timestamp.now().as_secs():
-                        # We could directly zap, but let's make another check if our subscription expired
-                        subscription_status = nip88_has_active_subscription(
-                            PublicKey.parse(subscription.subscriber),
-                            subscription.tier_dtag, self.client, subscription.recipent)
+                for subscription in subscriptions:
+                    if subscription.active:
+                        if subscription.end < Timestamp.now().as_secs():
+                            # We could directly zap, but let's make another check if our subscription expired
+                            subscription_status = nip88_has_active_subscription(
+                                PublicKey.parse(subscription.subscriber),
+                                subscription.tier_dtag, self.client, subscription.recipent)
 
-                        if subscription_status["expires"]:
-                            # if subscription expires, just note it as not active
-                            update_subscription_sql_table(dvm_config.DB, subscription_status["subscriptionId"],
-                                                          subscription.recipent,
-                                                          subscription.subscriber, subscription.nwc,
-                                                          subscription.cadence, subscription.amount,
-                                                          subscription.unit,
-                                                          subscription.begin, subscription.end,
-                                                          subscription.tier_dtag, subscription.zaps,
-                                                          subscription.recipe,
-                                                          False,
-                                                          Timestamp.now().as_secs(), subscription.tier)
-                        else:
-                            handle_subscription_renewal(subscription)
+                            if subscription_status["expires"]:
+                                # if subscription expires, just note it as not active
+                                update_subscription_sql_table(dvm_config.DB, subscription_status["subscriptionId"],
+                                                              subscription.recipent,
+                                                              subscription.subscriber, subscription.nwc,
+                                                              subscription.cadence, subscription.amount,
+                                                              subscription.unit,
+                                                              subscription.begin, subscription.end,
+                                                              subscription.tier_dtag, subscription.zaps,
+                                                              subscription.recipe,
+                                                              False,
+                                                              Timestamp.now().as_secs(), subscription.tier)
+                            else:
+                                handle_subscription_renewal(subscription)
 
-                else:
-                    handle_expired_subscription(subscription)
+                    else:
+                        handle_expired_subscription(subscription)
 
-            print(str(Timestamp.now().as_secs()) + ": Checking " + str(
-                len(subscriptions)) + " Subscription entries..")
+                print(str(Timestamp.now().as_secs()) + ": Checking " + str(
+                    len(subscriptions)) + " Subscription entries..")
+            except Exception as e:
+                print(e)
 
         self.client.handle_notifications(NotificationHandler())
 
