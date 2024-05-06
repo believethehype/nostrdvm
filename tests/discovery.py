@@ -6,7 +6,7 @@ import dotenv
 from nostr_sdk import Keys
 
 from nostr_dvm.subscription import Subscription
-from nostr_dvm.tasks import content_discovery_currently_popular
+from nostr_dvm.tasks import content_discovery_currently_popular, content_discovery_currently_popular_topic
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -27,7 +27,10 @@ def playground():
     #admin_config.PRIVKEY = ""
     #admin_config.EVENTID = ""
 
-    discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
+    #discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
+    #discovery_test_sub.run()
+
+    discovery_test_sub = content_discovery_currently_popular_topic.build_example("Garden & Growth", "discovery_content_garden", admin_config)
     discovery_test_sub.run()
 
     #discovery_test = content_discovery_currently_popular.build_example("Currently Popular Notes DVM",
@@ -43,8 +46,8 @@ def playground():
     subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     sub_admin_config = AdminConfig()
     #sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
-    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
-    x.start()
+    #x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
+    #x.start()
 
     #keep_alive()
 

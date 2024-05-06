@@ -176,6 +176,35 @@ def nostr_client_test_tts(prompt):
     return event.as_json()
 
 
+def nostr_client_test_disovery(user, ptag):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to find content"])
+    paramTag = Tag.parse(["param", "user", user])
+    pTag = Tag.parse(["p", ptag])
+
+    tags = [relaysTag, alttag, paramTag, pTag]
+
+
+    event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content"),
+                         tags).to_event(keys)
+
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    for relay in relay_list:
+        client.add_relay(relay)
+    ropts = RelayOptions().ping(False)
+    client.add_relay_with_opts("wss://nostr.band", ropts)
+    client.connect()
+    config = DVMConfig
+    send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+
+
 def nostr_client_test_image_private(prompt, cashutoken):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     receiver_keys = Keys.parse(check_and_set_private_key("replicate_sdxl"))
@@ -244,8 +273,9 @@ def nostr_client():
     # nostr_client_test_image("a beautiful purple ostrich watching the sunset")
     # nostr_client_test_search_profile("dontbelieve")
     wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
+    nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "a21592a70ef9a00695efb3f7e816e17742d251559aff154b16d063a408bcd74d")
     #nostr_client_test_censor_filter(wot)
-    nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
+    #nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
 
     # nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
 
