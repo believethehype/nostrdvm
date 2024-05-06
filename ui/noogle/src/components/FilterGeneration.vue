@@ -880,6 +880,9 @@ async function zap_local(invoice) {
 
 }
 
+
+
+
 async function mute_all(results){
   console.log(results)
       let client = store.state.client
@@ -1066,15 +1069,92 @@ async function mute(result) {
 
 
 
+async function unfollow_all(results){
+    let keys = Keys.parse(store.state.nooglekey)
+  let signer = NostrSigner.keys(keys)
+  let limits = RelayLimits.disable()
+  let relayopts = new Options().relayLimits(limits);
+  let dbclient = new ClientBuilder().signer(signer).opts(relayopts).build()
+  await dbclient.addRelay("wss://relay.damus.io");
+  await dbclient.addRelay( "wss://purplepag.es");
+  await dbclient.connect()
+  let found = false
+  let element
+  let publicKey = store.state.pubkey
+  console.log(publicKey.toHex())
+   let followers_filter = new Filter().author(publicKey).kind(3).limit(1)
+   let followers = await dbclient.getEventsOf([followers_filter], Duration.fromSecs(5))
+     console.log(followers.length)
+   let contacts = []
+     let followings = [] //TODO legacy, try to remove with contacts
+       let ids = []
 
+    if (followers.length > 0){
+          for (let tag of followers[0].tags) {
+            if (tag.asVec()[0] === "p") {
+              let following = tag.asVec()[1]
+              let contact = new Contact(PublicKey.parse(tag.asVec()[1]), tag.asVec()[2], tag.asVec()[3])
+              contacts.push(contact)
+              followings.push(PublicKey.parse(following))
+              ids.push(following)
+            }
+          }
+
+
+  console.log(contacts)
+  for (let result of results) {
+      for (let em of contacts) {
+        if (em.publicKey.toHex() === result.authorid) {
+          found = true
+          element = em
+          break
+        }
+
+      }
+      // let element  = store.state.contacts.find(x => x.publicKey.toHex() === result.authorid)
+
+      if (found) {
+
+        console.log(element)
+        let index = contacts.indexOf(element)
+        console.log(index)
+        console.log(contacts.length)
+
+        let rm = contacts.splice(index, 1)
+        store.commit('set_contacts', contacts)
+        store.commit('set_followings', ids)
+
+
+        try {
+
+          let event = EventBuilder.contactList(contacts)
+          let client = store.state.client
+          let requestid = await client.sendEventBuilder(event);
+
+          console.log("unfollowing " + result.event.profile.name + " " + requestid.toHex())
+          console.log(contacts)
+
+          return true
+        } catch (error) {
+          console.log(error)
+        }
+
+      }
+      else {
+        console.log("not found")
+        return false
+      }
+
+  }}
+
+}
 
 async function unfollow(result){
-  let dbclient = Client
   let keys = Keys.parse(store.state.nooglekey)
   let signer = NostrSigner.keys(keys)
   let limits = RelayLimits.disable()
   let relayopts = new Options().relayLimits(limits);
-  dbclient = new ClientBuilder().signer(signer).opts(relayopts).build()
+  let dbclient = new ClientBuilder().signer(signer).opts(relayopts).build()
   await dbclient.addRelay("wss://relay.damus.io");
   await dbclient.addRelay( "wss://purplepag.es");
   await dbclient.connect()
@@ -1549,6 +1629,11 @@ const submitHandler = async () => {
        store.commit('set_filter_dvms', dvms)"><span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
                 Mute All
                   </span></button>
+       <button v-if="dvm.result.length > 0 && dvm.action === 'unfollow'" @click="unfollow_all(dvm.result);dvm.result = []
+       store.commit('set_filter_dvms', dvms)"><span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
+                Unfollow All
+                  </span></button>
+
       <br>
 
 
