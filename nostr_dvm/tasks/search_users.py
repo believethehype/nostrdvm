@@ -26,6 +26,7 @@ class SearchUser(DVMTaskInterface):
     FIX_COST: float = 0
     dvm_config: DVMConfig
     last_schedule: int = 0
+    db_name = "db/nostr_profiles.db"
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
@@ -84,7 +85,7 @@ class SearchUser(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        database = NostrDatabase.sqlite("db/nostr_profiles.db")
+        database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
@@ -147,7 +148,7 @@ class SearchUser(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite("db/nostr_profiles.db")
+        database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
