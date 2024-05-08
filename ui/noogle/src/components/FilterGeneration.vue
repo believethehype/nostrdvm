@@ -1023,10 +1023,17 @@ async function mute(result) {
                 console.log(newcontent)
                 eventasjson.content = await store.state.signer.nip04Encrypt(store.state.pubkey, newcontent)
                 let newList = new EventBuilder(list.kind, eventasjson.content, list.tags).toUnsignedEvent(store.state.pubkey)
-
-                 try{
-                      let signedMuteList = await signer.signEvent(newList)
                       //console.log(signedMuteList.asJson())
+                 try{
+                  let signedMuteList
+                       try{
+                            signedMuteList = await signer.signEvent(Event.fromJson(signedMuteList.asJson()))
+                            console.log(signedMuteList)
+                        }
+                        catch (error){
+                            console.log(error)
+                        }
+
                       let id = await client.sendEvent(signedMuteList)
                       console.log(id)
                  }
