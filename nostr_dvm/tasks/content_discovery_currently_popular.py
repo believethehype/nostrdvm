@@ -29,6 +29,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_notes.db"
+    min_reactions = 2
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
@@ -105,10 +106,10 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
-                ns.finallist[event.id().to_hex()] = 0
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(lasthour)
                 reactions = cli.database().query([filt])
-                ns.finallist[event.id().to_hex()] = len(reactions)
+                if len(reactions) >= self.min_reactions:
+                    ns.finallist[event.id().to_hex()] = len(reactions)
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
