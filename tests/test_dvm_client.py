@@ -273,7 +273,7 @@ def nostr_client():
     # nostr_client_test_image("a beautiful purple ostrich watching the sunset")
     # nostr_client_test_search_profile("dontbelieve")
     wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
-    nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "a21592a70ef9a00695efb3f7e816e17742d251559aff154b16d063a408bcd74d")
+    nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "7b7373dd58554ff4c0d28b401b9eae114bd92e30d872ae843b9a217375d66f9d")
     #nostr_client_test_censor_filter(wot)
     #nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
 
