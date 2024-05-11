@@ -32,12 +32,28 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
     db_name = "db/nostr_default_recent_notes.db"
     search_list = []
     avoid_list = []
+    must_list = []
+    individual_result = False
+    result = ""
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
-        dvm_config.SCRIPT = os.path.abspath(__file__)
+
+
         super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
                          admin_config=admin_config, options=options)
+
+        # Generate Generic request form for dvms that provide generic results (e.g only a calculation per update, not per call)
+        self.request_form = {"jobID": "generic"}
+        opts = {
+            "max_results": 200,
+        }
+        self.request_form['options'] = json.dumps(opts)
+
+        dvm_config.SCRIPT = os.path.abspath(__file__)
+
+        if self.options.get("individual_result"):
+            self.individual_result = bool(self.options.get("individual_result"))
 
         self.last_schedule = Timestamp.now().as_secs()
         if self.options.get("search_list"):
@@ -58,6 +74,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             init_logger(LogLevel.DEBUG)
 
         self.sync_db()
+        if not self.individual_result:
+            self.result = self.calculate_Result(self.request_form)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -76,7 +94,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         # default values
         search = ""
-        max_results = 100
+        max_results = 200
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -90,9 +108,29 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             "max_results": max_results,
         }
         request_form['options'] = json.dumps(options)
+        self.request_form = request_form
         return request_form
 
     def process(self, request_form):
+        # if the dvm supports individual results, recalculate it every time for the request
+        if self.individual_result:
+            return self.calculate_Result(request_form)
+        #else return the result that gets updated once every schenduled update. In this case on database update.
+        else:
+            return self.result
+
+
+    def post_process(self, result, event):
+        """Overwrite the interface function to return a social client readable format, if requested"""
+        for tag in event.tags():
+            if tag.as_vec()[0] == 'output':
+                format = tag.as_vec()[1]
+                if format == "text/plain":  # check for output type
+                    result = post_process_list_to_users(result)
+
+        # if not text/plain, don't post-process
+        return result
+    def calculate_Result(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
@@ -124,9 +162,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 if any(ele in event.content().lower() for ele in self.search_list):
                     if not any(ele in event.content().lower() for ele in self.avoid_list):
                         filt = Filter().kinds(
-                                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
-                                         definitions.EventDefinitions.KIND_REPOST,
-                                         definitions.EventDefinitions.KIND_NOTE]).event(event.id())
+                            [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                             definitions.EventDefinitions.KIND_REPOST,
+                             definitions.EventDefinitions.KIND_NOTE]).event(event.id())
                         reactions = cli.database().query([filt])
                         if len(reactions) >= self.min_reactions:
                             ns.finallist[event.id().to_hex()] = len(reactions)
@@ -134,22 +172,12 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
-            #print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
+            # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
         print(len(result_list))
         return json.dumps(result_list)
 
-    def post_process(self, result, event):
-        """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
-                if format == "text/plain":  # check for output type
-                    result = post_process_list_to_users(result)
-
-        # if not text/plain, don't post-process
-        return result
 
     def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
@@ -158,6 +186,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
                 self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
+                self.result = self.calculate_Result(self.request_form)
+                print(self.result)
                 return 1
 
     def sync_db(self):
@@ -177,13 +207,13 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("Syncing notes of the last " + str(self.db_since) + " seconds.. this might take a while..")
+        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
         database.delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
 
-        print("Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+        print("[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
