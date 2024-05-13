@@ -449,7 +449,9 @@ class Bot:
                                                                                            self.client, self.dvm_config)
 
                 etag = ""
-                for tag in zap_event.tags():
+                print(zap_event.tags())
+                print(zapped_event.tags())
+                for tag in zapped_event.tags():
                     if tag.as_vec()[0] == "e":
                         etag = tag.as_vec()[1]
 
