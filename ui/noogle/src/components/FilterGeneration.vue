@@ -37,7 +37,6 @@ onMounted(async () => {
   }
 await addAllContentDVMs()
   console.log(dvms)
-
 })
 
 
@@ -1027,7 +1026,7 @@ async function mute(result) {
                  try{
                   let signedMuteList
                        try{
-                            signedMuteList = await signer.signEvent(Event.fromJson(signedMuteList.asJson()))
+                            signedMuteList = await signer.signEvent(newList)
                             console.log(signedMuteList)
                         }
                         catch (error){
