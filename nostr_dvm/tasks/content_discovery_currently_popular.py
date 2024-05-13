@@ -30,12 +30,20 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     db_since = 3600
     db_name = "db/nostr_recent_notes.db"
     min_reactions = 2
+    personalized = False
+    result = ""
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
                          admin_config=admin_config, options=options)
+
+        self.request_form = {"jobID": "generic"}
+        opts = {
+            "max_results": 200,
+        }
+        self.request_form['options'] = json.dumps(opts)
 
         self.last_schedule = Timestamp.now().as_secs()
 
@@ -44,6 +52,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             init_logger(LogLevel.DEBUG)
 
         self.sync_db()
+        if not self.personalized:
+            self.result = self.calculate_result(self.request_form)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -79,6 +89,14 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         return request_form
 
     def process(self, request_form):
+        # if the dvm supports individual results, recalculate it every time for the request
+        if self.personalized:
+            return self.calculate_result(request_form)
+        #else return the result that gets updated once every schenduled update. In this case on database update.
+        else:
+            return self.result
+
+    def calculate_result(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
@@ -138,6 +156,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
                 self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
+                self.result = self.calculate_result(self.request_form)
                 return 1
 
     def sync_db(self):
@@ -187,6 +206,7 @@ def build_example(name, identifier, admin_config):
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
+        "personalized": False,
         "amount": "free",
         "nip90Params": {
             "max_results": {
@@ -226,6 +246,7 @@ def build_example_subscription(name, identifier, admin_config):
         "encryptionSupported": True,
         "cashuAccepted": True,
         "subscription": True,
+        "personalized": False,
         "nip90Params": {
             "max_results": {
                 "required": False,
