@@ -75,7 +75,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         self.sync_db()
         if not self.personalized:
-            self.result = self.calculate_Result(self.request_form)
+            self.result = self.calculate_result(self.request_form)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -130,7 +130,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         # if not text/plain, don't post-process
         return result
-    def calculate_Result(self, request_form):
+    def calculate_result(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
@@ -186,7 +186,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
                 self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
-                self.result = self.calculate_Result(self.request_form)
+                self.result = self.calculate_result(self.request_form)
                 print(self.result)
                 return 1
 
@@ -237,6 +237,7 @@ def build_example(name, identifier, admin_config, options, image, description):
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
+        "personalized": False,
         "amount": "free",
         "nip90Params": {
             "max_results": {
@@ -278,6 +279,7 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
         "encryptionSupported": True,
         "cashuAccepted": True,
         "subscription": True,
+        "personalized": False,
         "nip90Params": {
             "max_results": {
                 "required": False,
