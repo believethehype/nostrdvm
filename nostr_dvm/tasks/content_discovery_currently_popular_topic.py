@@ -33,7 +33,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
     search_list = []
     avoid_list = []
     must_list = []
-    individual_result = False
+    personalized = False
     result = ""
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
@@ -52,8 +52,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-        if self.options.get("individual_result"):
-            self.individual_result = bool(self.options.get("individual_result"))
+        if self.options.get("personalized"):
+            self.personalized = bool(self.options.get("personalized"))
 
         self.last_schedule = Timestamp.now().as_secs()
         if self.options.get("search_list"):
@@ -74,7 +74,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             init_logger(LogLevel.DEBUG)
 
         self.sync_db()
-        if not self.individual_result:
+        if not self.personalized:
             self.result = self.calculate_Result(self.request_form)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
@@ -113,7 +113,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
     def process(self, request_form):
         # if the dvm supports individual results, recalculate it every time for the request
-        if self.individual_result:
+        if self.personalized:
             return self.calculate_Result(request_form)
         #else return the result that gets updated once every schenduled update. In this case on database update.
         else:
