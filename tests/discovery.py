@@ -46,7 +46,8 @@ def playground():
                         "inkblot", "covid", "robot", "pandemic",  "bethesda", "zap farming", " defi ", " minister ",
                         "nostr-hotter-site", " ai ", "palestine", "https://boards.4chan", "https://techcrunch.com", "https://screenrant.com"],
         "db_name": "db/nostr_recent_notes_plants.db",
-        "db_since": 10 * 60 * 60}  # 10h
+        "db_since": 10 * 60 * 60, # 10h
+        "personalized": False}
 
     image = "https://image.nostr.build/a816f3f5e98e91e8a47d50f4cd7a2c17545f556d9bb0a6086a659b9abdf7ab68.jpg"
     description = "I show recent notes about plants and gardening"
@@ -72,8 +73,9 @@ def playground():
 
 
     "must_list": ["http"],
-        "db_name": "db/nostr_recent_notes_animals.db",
-        "db_since": 48 * 60 * 60}  # 10h
+    "db_name": "db/nostr_recent_notes_animals.db",
+    "db_since": 48 * 60 * 60,  # 48h,
+    "personalized": False}
 
     image = "https://image.nostr.build/f609311532c470f663e129510a76c9a1912ae9bc4aaaf058e5ba21cfb512c88e.jpg"
     description = "I show recent notes about animals"
