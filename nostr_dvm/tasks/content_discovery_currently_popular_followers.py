@@ -229,6 +229,7 @@ def build_example(name, identifier, admin_config):
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
+        "personalized": False,
         "amount": "free",
         "nip90Params": {
             "max_results": {
@@ -267,6 +268,7 @@ def build_example_subscription(name, identifier, admin_config):
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
+        "personalized": False,
         "subscription": True,
         "nip90Params": {
             "max_results": {
