@@ -73,7 +73,7 @@ async function generate_feed(id) {
         let content = "NIP 90 Profile Discovery request"
         let kind = 5301
         let tags = []
-        tags.push(["param", "max_results", "200"])
+        //tags.push(["param", "max_results", "200"])
         tags.push(["param", "user", store.state.pubkey.toHex()])
 
         let res;
