@@ -741,8 +741,8 @@ async function cancelSubscription(kind7001, recipent){
 
        }
 
-       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.hasActiveSubscription = true
-       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.expires = true
+       dvms.find(x => x.id === current_subscription_dvm.value.id).nip88.hasActiveSubscription = true
+       dvms.find(x => x.id === current_subscription_dvm.value.id).nip88.expires = true
 }
 
 async function subscribe_to_dvm() {
@@ -755,7 +755,7 @@ async function subscribe_to_dvm() {
   // We only arrive here if no subscription exists, we might create a 7001 if it doesnt exist and we zap it
 
   let client = store.state.client
-  dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).status = "Subscribing, this might take up to a minute.."
+  //dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).status = "Subscribing, this might take up to a minute.."
   store.commit('set_recommendation_dvms', dvms)
 
 
@@ -855,21 +855,21 @@ if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subsc
      let timeout = 0
      let subscription_status
       while (!isSubscribed && timeout < 30){
-         dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).status = "Subscribing, please wait.."
+         dvms.find(x => x.id === current_subscription_dvm.value.id).status = "Subscribing, please wait.."
          await sleep(5000)
          timeout = timeout +1
         subscription_status = await hasActiveSubscription(store.state.pubkey.toHex(), current_subscription_dvm.value.nip88.d, current_subscription_dvm.value.id)
          if (subscription_status["isActive"] === true){
            isSubscribed = true
-           dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).status = "announced"
+           dvms.find(x => x.id === current_subscription_dvm.value.id).status = "announced"
          }
       }
       console.log(subscription_status)
 
 
-       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.hasActiveSubscription = subscription_status["isActive"]
-       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.expires = false
-       dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.subscribedUntil = subscription_status.validUntil
+       dvms.find(x => x.id === current_subscription_dvm.value.id).nip88.hasActiveSubscription = subscription_status["isActive"]
+       dvms.find(x => x.id === current_subscription_dvm.value.id).nip88.expires = false
+       dvms.find(x => x.id === current_subscription_dvm.value.id).nip88.subscribedUntil = subscription_status.validUntil
 
 
        if (subscription_status["isActive"] === false){
