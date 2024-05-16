@@ -191,6 +191,7 @@ class DVM:
 
                     if dvm_config.SEND_FEEDBACK_EVENTS:
                         send_job_status_reaction(nip90_event, "processing", True, 0,
+                                                 content=dvm_config.CUSTOM_PROCESSING_MESSAGE,
                                                  client=self.client, dvm_config=self.dvm_config, user=user)
 
                     #  when we reimburse users on error make sure to not send anything if it was free
@@ -218,6 +219,7 @@ class DVM:
                               ". Starting processing.. Balance remains at: " + str(user.balance))
 
                     send_job_status_reaction(nip90_event, "processing", True, 0,
+                                             content=dvm_config.CUSTOM_PROCESSING_MESSAGE,
                                              client=self.client, dvm_config=self.dvm_config)
 
                     do_work(nip90_event, amount)
@@ -310,6 +312,7 @@ class DVM:
                                 if amount <= invoice_amount:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     send_job_status_reaction(job_event, "processing", client=self.client,
+                                                             content=dvm_config.CUSTOM_PROCESSING_MESSAGE,
                                                              dvm_config=self.dvm_config, user=user)
                                     indices = [i for i, x in enumerate(self.job_list) if
                                                x.event == job_event]

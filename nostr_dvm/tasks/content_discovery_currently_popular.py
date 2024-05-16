@@ -193,7 +193,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config):
+def build_example(name, identifier, admin_config, processing_msg=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -202,6 +202,10 @@ def build_example(name, identifier, admin_config):
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = 0
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+
 
     # Add NIP89
     nip89info = {
@@ -233,7 +237,7 @@ def build_example(name, identifier, admin_config):
                                           admin_config=admin_config)
 
 
-def build_example_subscription(name, identifier, admin_config):
+def build_example_subscription(name, identifier, admin_config, processing_msg=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -241,6 +245,10 @@ def build_example_subscription(name, identifier, admin_config):
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = 0
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+
 
     # Add NIP89
     nip89info = {

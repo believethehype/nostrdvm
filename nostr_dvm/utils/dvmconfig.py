@@ -38,6 +38,7 @@ class DVMConfig:
     SEND_FEEDBACK_EVENTS = True
     SHOW_RESULT_BEFORE_PAYMENT: bool = False  # if this is true show results even when not paid right after autoprocess
     SCHEDULE_UPDATES_SECONDS = 0
+    CUSTOM_PROCESSING_MESSAGE = None
 
 
 def build_default_config(identifier):
