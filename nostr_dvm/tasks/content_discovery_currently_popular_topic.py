@@ -43,7 +43,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
                          admin_config=admin_config, options=options)
 
-        # Generate Generic request form for dvms that provide generic results (e.g only a calculation per update, not per call)
+        # Generate Generic request form for dvms that provide generic results (e.g only a calculation per update,
+        # not per call)
         self.request_form = {"jobID": "generic"}
         opts = {
             "max_results": 200,
@@ -54,11 +55,10 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         if self.options.get("personalized"):
             self.personalized = bool(self.options.get("personalized"))
-
         self.last_schedule = Timestamp.now().as_secs()
         if self.options.get("search_list"):
             self.search_list = self.options.get("search_list")
-            print(self.search_list)
+            #print(self.search_list)
         if self.options.get("avoid_list"):
             self.avoid_list = self.options.get("avoid_list")
         if self.options.get("must_list"):
@@ -93,7 +93,6 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        search = ""
         max_results = 200
 
         for tag in event.tags():
@@ -114,7 +113,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
     def process(self, request_form):
         # if the dvm supports individual results, recalculate it every time for the request
         if self.personalized:
-            return self.calculate_Result(request_form)
+            return self.calculate_result(request_form)
         #else return the result that gets updated once every schenduled update. In this case on database update.
         else:
             return self.result
@@ -187,7 +186,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 self.result = self.calculate_result(self.request_form)
-                print(self.result)
+                #print(self.result)
                 return 1
 
     def sync_db(self):
@@ -267,7 +266,6 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
     # Activate these to use a subscription based model instead
-    # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = 0
 
     # Add NIP89

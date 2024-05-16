@@ -111,7 +111,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-        print(followers)
+        #print(followers)
 
         # Negentropy reconciliation
         # Query events from database
@@ -129,7 +129,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
-            print(best_entry.as_json())
+            #print(best_entry.as_json())
             followings = []
             for tag in best_entry.tags():
                 if tag.as_vec()[0] == "p":
@@ -199,13 +199,13 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                                   definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("Syncing Notes.. this might take a while..")
+        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
         database.delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesnt get too full.
 
-        print("Done Syncing Notes of Last hour.")
+        print("[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

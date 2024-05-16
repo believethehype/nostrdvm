@@ -71,7 +71,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
                     i += 1
                     if i < 20:
                         e_tag = Tag.parse(["e", note["id"]])
-                        print(e_tag.as_vec())
+                        #print(e_tag.as_vec())
                         result_list.append(e_tag.as_vec())
                     else:
                         break
