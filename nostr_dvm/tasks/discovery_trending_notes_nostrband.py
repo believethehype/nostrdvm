@@ -97,9 +97,10 @@ class TrendingNotesNostrBand(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config):
+def build_example(name, identifier, admin_config, custom_processing_msg):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
 
