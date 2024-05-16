@@ -1,6 +1,7 @@
 import json
 import datetime as datetime
 import os
+import random
 from types import NoneType
 
 import emoji
@@ -186,9 +187,14 @@ def build_status_reaction(status, task, amount, content, dvm_config):
     alt_description = "This is a reaction to a NIP90 DVM AI task. "
 
     if status == "processing":
-        if content is not None and content != "":
-            alt_description = content
+        if content is not None:
+            if isinstance(content, list) or isinstance(content, dict):
+                message = random.choice(content)
+            else:
+                message = content
+            alt_description = message
             reaction = alt_description
+
         else:
             alt_description = "NIP90 DVM task " + task + " started processing. "
             reaction = alt_description + emoji.emojize(":thumbs_up:")

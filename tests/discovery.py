@@ -34,7 +34,7 @@ def playground():
         "search_list": ["garden", "gardening", "nature", " plants ", " plant ", " herb ", " herbs " " pine ",
                         "homesteading", "rosemary", "chicken", "🪻", "🌿", "☘️", "🌲", "flower", "forest", "watering",
                         "permies", "planting", "farm", "vegetable", "fruit",  " grass ", "sunshine",
-                        "#flowerstr", "#bloomscrolling", "#treestr", "#plantstr"],
+                        "#flowerstr", "#bloomscrolling", "#treestr", "#plantstr", "touchgrass",],
          "avoid_list": ["porn", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
                        "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
                        "moderna", "pfizer",
@@ -51,7 +51,7 @@ def playground():
 
     image = "https://image.nostr.build/a816f3f5e98e91e8a47d50f4cd7a2c17545f556d9bb0a6086a659b9abdf7ab68.jpg"
     description = "I show recent notes about plants and gardening"
-    custom_processing_msg = "Finding the best notes for you. #blooming"
+    custom_processing_msg = ["Finding the best notes for you.. #blooming", "Looking for some positivity.. #touchgrass", "Looking for #goodvibes.."]
     discovery_test_sub = content_discovery_currently_popular_topic.build_example("Garden & Growth",
                                                                                  "discovery_content_garden",
                                                                                  admin_config_plants, options_plants, image,
@@ -85,7 +85,7 @@ def playground():
     image = "https://image.nostr.build/f609311532c470f663e129510a76c9a1912ae9bc4aaaf058e5ba21cfb512c88e.jpg"
     description = "I show recent notes about animals"
 
-    custom_processing_msg = "Looking for fluffy frens..."
+    custom_processing_msg = ["Looking for fluffy frens...", "Let's see if we find some animals for you..", "Looking for the goodest bois and girls.."]
 
     discovery_animals = content_discovery_currently_popular_topic.build_example("Fluffy Frens",
                                                                                   "discovery_content_fluffy",
@@ -97,7 +97,7 @@ def playground():
     admin_config_followers = AdminConfig()
     admin_config_followers.REBROADCAST_NIP89 = False
     admin_config_followers.UPDATE_PROFILE = False
-    custom_processing_msg = "Looking for popular notes from your followers.."
+    custom_processing_msg = ["Looking for popular notes from npubs you follow..", "Let's see what npubs you follow have been up to..", "Processing a personalized feed, just for you.."]
 
     discovery_followers = content_discovery_currently_popular_followers.build_example("Currently Popular Notes from npubs you follow",
                                                                                       "discovery_content_followers",
@@ -109,7 +109,7 @@ def playground():
     admin_config_global_popular = AdminConfig()
     admin_config_global_popular.REBROADCAST_NIP89 = False
     admin_config_global_popular.UPDATE_PROFILE = False
-    custom_processing_msg = "Looking for popular notes on the Nostr.."
+    custom_processing_msg = ["Looking for popular notes on the Nostr..", "Let's see what's trending on Nostr..", "Finding the best notes for you.."]
 
 
     discovery_global = content_discovery_currently_popular.build_example("Currently Popular Notes DVM",
