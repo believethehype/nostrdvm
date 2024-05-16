@@ -6,7 +6,8 @@ import dotenv
 from nostr_sdk import Keys
 
 from nostr_dvm.subscription import Subscription
-from nostr_dvm.tasks import content_discovery_currently_popular, content_discovery_currently_popular_topic
+from nostr_dvm.tasks import content_discovery_currently_popular, content_discovery_currently_popular_topic, \
+    discovery_trending_notes_nostrband, content_discovery_currently_popular_followers
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -20,15 +21,14 @@ def playground():
     # You can create individual admins configs and hand them over when initializing the dvm,
     # for example to whilelist users or add to their balance.
     # If you use this global config, options will be set for all dvms that use it.
-    admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP89 = False
-    admin_config.UPDATE_PROFILE = False
-    # admin_config.DELETE_NIP89 = True
-    # admin_config.PRIVKEY = ""
-    # admin_config.EVENTID = ""
 
-    # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
-    # discovery_test_sub.run()
+    # Popular Garden&Plants
+    admin_config_plants = AdminConfig()
+    admin_config_plants.REBROADCAST_NIP89 = False
+    admin_config_plants.UPDATE_PROFILE = False
+    # admin_config_plants.DELETE_NIP89 = True
+    # admin_config_plants.PRIVKEY = ""
+    # admin_config_plants.EVENTID = ""
 
     options_plants = {
         "search_list": ["garden", "gardening", "nature", " plants ", " plant ", " herb ", " herbs " " pine ",
@@ -53,10 +53,14 @@ def playground():
     description = "I show recent notes about plants and gardening"
     discovery_test_sub = content_discovery_currently_popular_topic.build_example("Garden & Growth",
                                                                                  "discovery_content_garden",
-                                                                                 admin_config, options_plants, image,
+                                                                                 admin_config_plants, options_plants, image,
                                                                                  description)
     discovery_test_sub.run()
 
+    # Popular Animals (Fluffy frens)
+    admin_config_animals = AdminConfig()
+    admin_config_animals.REBROADCAST_NIP89 = False
+    admin_config_animals.UPDATE_PROFILE = False
     options_animal = {
         "search_list": ["catstr", "pawstr", "dogstr", " cat ", " cats ", "🐾", "🐈", "🐕" , " dog ", " dogs ", " fluffy ", "animal",
                         " duck", " lion ", " lions ", " fox ", " foxes ", " koala ", " koalas ", "capybara", "squirrel", "monkey", "panda", "alpaca", " otter"],
@@ -79,16 +83,44 @@ def playground():
 
     image = "https://image.nostr.build/f609311532c470f663e129510a76c9a1912ae9bc4aaaf058e5ba21cfb512c88e.jpg"
     description = "I show recent notes about animals"
-    discovery_test_sub2 = content_discovery_currently_popular_topic.build_example("Fluffy Frens",
+    discovery_animals = content_discovery_currently_popular_topic.build_example("Fluffy Frens",
                                                                                   "discovery_content_fluffy",
-                                                                                  admin_config, options_animal, image,
+                                                                                  admin_config_animals, options_animal, image,
                                                                                   description)
-    discovery_test_sub2.run()
+    discovery_animals.run()
 
-    # discovery_test = content_discovery_currently_popular.build_example("Currently Popular Notes DVM",
-    #                                                                   "discovery_content_test", admin_config)
-    # discovery_test.run()
+    # Popular Followers
+    admin_config_followers = AdminConfig()
+    admin_config_followers.REBROADCAST_NIP89 = False
+    admin_config_followers.UPDATE_PROFILE = False
+    discovery_followers = content_discovery_currently_popular_followers.build_example("Currently Popular Notes from npubs you follow",
+                                                                                      "discovery_content_followers",
+                                                                                      admin_config_followers)
+    discovery_followers.run()
 
+    #Popular Global
+    admin_config_global_popular = AdminConfig()
+    admin_config_global_popular.REBROADCAST_NIP89 = False
+    admin_config_global_popular.UPDATE_PROFILE = False
+
+    discovery_global = content_discovery_currently_popular.build_example("Currently Popular Notes DVM",
+                                                                       "discovery_content_test",
+                                                                       admin_config_global_popular)
+    discovery_global.run()
+
+
+    # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
+    # discovery_test_sub.run()
+
+
+    #Popular NOSTR.band
+    admin_config_trending_nostr_band = AdminConfig()
+    trending_nb = discovery_trending_notes_nostrband.build_example("Trending Notes on nostr.band",
+                                    "trending_notes_nostrband", admin_config_trending_nostr_band)
+    trending_nb.run()
+
+
+    # Subscription Manager DVM
     subscription_config = DVMConfig()
     subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
     npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
@@ -98,8 +130,8 @@ def playground():
     subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     sub_admin_config = AdminConfig()
     # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
-    # x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
-    # x.start()
+    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
+    x.start()
 
     # keep_alive()
 

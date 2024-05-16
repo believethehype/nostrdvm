@@ -92,7 +92,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         # if the dvm supports individual results, recalculate it every time for the request
         if self.personalized:
             return self.calculate_result(request_form)
-        #else return the result that gets updated once every schenduled update. In this case on database update.
+        # else return the result that gets updated once every scheduled update. In this case on database update.
         else:
             return self.result
 
@@ -124,7 +124,9 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
-                filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(lasthour)
+                filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
+                                       definitions.EventDefinitions.KIND_REACTION,
+                                       definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(lasthour)
                 reactions = cli.database().query([filt])
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
@@ -132,7 +134,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
-            #print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
+            # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
 
@@ -173,16 +175,19 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
 
-        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
+        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
+                                  definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(self.db_since) + " seconds.. this might take a while..")
+        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+            self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
         database.delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesnt get too full.
 
-        print("[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+        print(
+            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
@@ -277,9 +282,9 @@ def build_example_subscription(name, identifier, admin_config):
     admin_config.REBROADCAST_NIP89 = False
     admin_config.REBROADCAST_NIP88 = False
 
-   # admin_config.FETCH_NIP88 = True
-   # admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
-   # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
+    # admin_config.FETCH_NIP88 = True
+    # admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
+    # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                           nip88config=nip88config,
