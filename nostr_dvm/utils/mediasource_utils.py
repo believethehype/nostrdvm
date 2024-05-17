@@ -19,14 +19,14 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
         if tag.as_vec()[0] == 'i':
             input_value = tag.as_vec()[1]
             input_type = tag.as_vec()[2]
-            count = count+1
+            count = count + 1
 
     if input_type == "text":
         return len(input_value)
 
     if input_type == "event":  # NIP94 event
         if count > 1:
-            return 1 # we ignore length for multiple event inputs for now
+            return 1  # we ignore length for multiple event inputs for now
         evt = get_event_by_id(input_value, client=client, config=dvm_config)
         if evt is not None:
             input_value, input_type = check_nip94_event_for_media(evt, input_value, input_type)

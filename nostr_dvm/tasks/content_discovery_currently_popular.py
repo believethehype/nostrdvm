@@ -11,7 +11,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.output_utils import post_process_list_to_events, post_process_list_to_users
+from nostr_dvm.utils.output_utils import post_process_list_to_events
 
 """
 This File contains a Module to discover popular notes
@@ -154,7 +154,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
-                    result = post_process_list_to_users(result)
+                    result = post_process_list_to_events(result)
 
         # if not text/plain, don't post-process
         return result
@@ -302,7 +302,7 @@ def build_example_subscription(name, identifier, admin_config, options, processi
     #admin_config.REBROADCAST_NIP88 = False
 
     # admin_config.FETCH_NIP88 = True
-    # admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
+    # admin_config.EVENTID = ""
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
