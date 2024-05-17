@@ -58,11 +58,12 @@ def playground():
     custom_processing_msg = ["Finding the best notes for you.. #blooming", "Looking for some positivity.. #touchgrass",
                              "Looking for #goodvibes.."]
     update_db = False
+    cost = 0
     discovery_test_sub = content_discovery_currently_popular_topic.build_example("Garden & Growth",
                                                                                  "discovery_content_garden",
                                                                                  admin_config_plants, options_plants,
                                                                                  image,
-                                                                                 description, custom_processing_msg,
+                                                                                 description, cost, custom_processing_msg,
                                                                                  update_db)
     discovery_test_sub.run()
 
@@ -97,12 +98,13 @@ def playground():
 
     custom_processing_msg = ["Looking for fluffy frens...", "Let's see if we find some animals for you..",
                              "Looking for the goodest bois and girls.."]
+    cost = 0
     update_db = True  #As this is our largerst DB we update it here, and the other dvms use it. TODO make an own scheduler that only updates the db
     discovery_animals = content_discovery_currently_popular_topic.build_example("Fluffy Frens",
                                                                                 "discovery_content_fluffy",
                                                                                 admin_config_animals, options_animal,
                                                                                 image,
-                                                                                description, custom_processing_msg,
+                                                                                description, cost, custom_processing_msg,
                                                                                 update_db)
     discovery_animals.run()
 
@@ -118,12 +120,14 @@ def playground():
         "db_name": "db/nostr_recent_notes.db",
         "db_since": 2 * 60 * 60,  # 2h since gmt,
     }
+    cost = 0
 
     discovery_followers = content_discovery_currently_popular_followers.build_example(
         "Currently Popular Notes from npubs you follow",
         "discovery_content_followers",
         admin_config=admin_config_followers,
         options=options_followers_popular,
+        cost=cost,
         processing_msg=custom_processing_msg,
         update_db=update_db)
     discovery_followers.run()
@@ -140,10 +144,12 @@ def playground():
         "db_name": "db/nostr_recent_notes.db",
         "db_since": 60 * 60,  # 1h since gmt,
     }
+    cost = 0
     discovery_global = content_discovery_currently_popular.build_example("Currently Popular Notes DVM",
                                                                          "discovery_content_test",
                                                                          admin_config=admin_config_global_popular,
                                                                          options=options_global_popular,
+                                                                         cost=cost,
                                                                          processing_msg=custom_processing_msg,
                                                                          update_db=update_db)
     discovery_global.run()

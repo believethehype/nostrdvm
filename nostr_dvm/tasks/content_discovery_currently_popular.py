@@ -202,7 +202,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options, processing_msg=None, update_db=True):
+def build_example(name, identifier, admin_config, options,  cost=0,  processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -211,7 +211,7 @@ def build_example(name, identifier, admin_config, options, processing_msg=None, 
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
-    dvm_config.FIX_COST = 0
+    dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 

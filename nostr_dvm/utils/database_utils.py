@@ -195,8 +195,6 @@ def update_user_balance(db, npub, additional_sats, client, config, giftwrap=Fals
             if giftwrap:
                 client.send_sealed_msg(PublicKey.parse(npub), message, None)
             else:
-
-
                 evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(npub), message,
                                                         None).to_event(keys)
                 send_event(evt, client=client, dvm_config=config)
