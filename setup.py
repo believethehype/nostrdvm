@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.4.4'
+VERSION = '0.4.5'
 DESCRIPTION = 'A framework to build and run Nostr NIP90 Data Vending Machines'
 LONG_DESCRIPTION = ('A framework to build and run Nostr NIP90 Data Vending Machines. See the github repository for more information')
 

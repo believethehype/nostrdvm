@@ -233,11 +233,11 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options, image, description, cost=0, processing_msg=None, update_db=True):
+def build_example(name, identifier, admin_config, options, image, description, update_rate=600, cost=0, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
-    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
