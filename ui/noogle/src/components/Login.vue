@@ -869,14 +869,14 @@ export default {
                       jsonentry.event = entry.asJson()
                       jsonentry.kind = entry.tags[tag].asVec()[1]
 
-
-
-                      //jsonentry.nip90Params = JSON.parse(jsonentry.nip90Params)
-                      nip89dvms.push(jsonentry);
-
+                     if(nip89dvms.find(x=> x.id === jsonentry.id && x.kind === jsonentry.kind) === undefined)
+                     {
+                         nip89dvms.push(jsonentry);
+                     }
+                  
                 }
                 catch (error){
-                  //console.log(error)
+                  console.log(error)
                 }
 
               }

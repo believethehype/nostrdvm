@@ -8,7 +8,7 @@ import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
-from nostr_sdk import nostr_sdk, PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key, Kind, \
+from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key, Kind, \
     Timestamp
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags

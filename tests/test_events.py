@@ -2,7 +2,6 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
-import nostr_sdk
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
     nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event
 

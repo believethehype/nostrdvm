@@ -5,8 +5,7 @@ from pathlib import Path
 
 import dotenv
 from nostr_sdk import Filter, Tag, Keys, EventBuilder, Client, EventId, PublicKey, Event, Timestamp, SingleLetterTag, \
-    Alphabet
-from nostr_sdk.nostr_sdk import Duration
+    Alphabet, Kind
 
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -85,7 +84,7 @@ def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, c
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_NIP88_TIER_EVENT) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(5, "", [e_tag, a_tag]).to_event(keys)
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
     send_event(event, client, config)
 
 
