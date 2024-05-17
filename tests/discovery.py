@@ -63,7 +63,7 @@ def playground():
                                                                                  "discovery_content_garden",
                                                                                  admin_config_plants, options_plants,
                                                                                  image,
-                                                                                 description, cost, custom_processing_msg,
+                                                                                 description, 180, cost, custom_processing_msg,
                                                                                  update_db)
     discovery_test_sub.run()
 
@@ -104,7 +104,7 @@ def playground():
                                                                                 "discovery_content_fluffy",
                                                                                 admin_config_animals, options_animal,
                                                                                 image,
-                                                                                description, cost, custom_processing_msg,
+                                                                                description,180, cost,   custom_processing_msg,
                                                                                 update_db)
     discovery_animals.run()
 
@@ -128,6 +128,7 @@ def playground():
         admin_config=admin_config_followers,
         options=options_followers_popular,
         cost=cost,
+        update_rate=180,
         processing_msg=custom_processing_msg,
         update_db=update_db)
     discovery_followers.run()
@@ -150,6 +151,7 @@ def playground():
                                                                          admin_config=admin_config_global_popular,
                                                                          options=options_global_popular,
                                                                          cost=cost,
+                                                                         update_rate=180,
                                                                          processing_msg=custom_processing_msg,
                                                                          update_db=update_db)
     discovery_global.run()
