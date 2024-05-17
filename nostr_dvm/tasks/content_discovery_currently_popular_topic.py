@@ -73,7 +73,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         if use_logger:
             init_logger(LogLevel.DEBUG)
 
-        self.sync_db()
+        if self.dvm_config.UPDATE_DATABASE:
+            self.sync_db()
         if not self.personalized:
             self.result = self.calculate_result(self.request_form)
 
@@ -149,8 +150,10 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         # Negentropy reconciliation
         # Query events from database
+        timestamp_since = Timestamp.now().as_secs() - self.db_since
+        since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE)
+        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
         events = cli.database().query([filter1])
         print(len(events))
@@ -160,10 +163,11 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             if all(ele in event.content().lower() for ele in self.must_list):
                 if any(ele in event.content().lower() for ele in self.search_list):
                     if not any(ele in event.content().lower() for ele in self.avoid_list):
+
                         filt = Filter().kinds(
                             [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                              definitions.EventDefinitions.KIND_REPOST,
-                             definitions.EventDefinitions.KIND_NOTE]).event(event.id())
+                             definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                         reactions = cli.database().query([filt])
                         if len(reactions) >= self.min_reactions:
                             ns.finallist[event.id().to_hex()] = len(reactions)
@@ -183,7 +187,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
-                self.sync_db()
+                if self.dvm_config.UPDATE_DATABASE:
+                    self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 self.result = self.calculate_result(self.request_form)
                 #print(self.result)
@@ -198,12 +203,22 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
+        cli.add_relay("wss://nostr.oxtr.dev")
+        cli.add_relay("wss://relay.nostr.net")
+        cli.add_relay("wss://relay.nostr.bg")
+        cli.add_relay("wss://nostr.wine")
+        cli.add_relay("wss://nostr21.com")
+
+        #RELAY_LIST = [ "wss://nostr.wine",
+        #              , "wss://relay.nostr.bg",
+        #              , "wss://relay.nostr.net"
+        #              ]
         cli.connect()
 
-        timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
-        lasthour = Timestamp.from_secs(timestamp_hour_ago)
+        timestamp_since = Timestamp.now().as_secs() - self.db_since
+        since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
+        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
         print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(self.db_since) + " seconds.. this might take a while..")
@@ -218,11 +233,12 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options, image, description, processing_msg=None):
+def build_example(name, identifier, admin_config, options, image, description, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
@@ -258,11 +274,12 @@ def build_example(name, identifier, admin_config, options, image, description, p
                                           admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, options, image, description, processing_msg=None):
+def build_example_subscription(name, identifier, admin_config, options, image, description, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
     dvm_config.FIX_COST = 0
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
