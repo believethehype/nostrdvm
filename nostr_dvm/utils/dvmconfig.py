@@ -18,7 +18,7 @@ class DVMConfig:
 
     RELAY_LIST = ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.wine",
                   "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                  "wss://relay.f7z.io", "wss://pablof7z.nostr1.com", "wss://relay.nostr.net", "wss://140.f7z.io",
+                  "wss://relay.f7z.io", "wss://relay.nostr.net"
                   ]
 
     RELAY_TIMEOUT = 5
@@ -38,6 +38,7 @@ class DVMConfig:
     SEND_FEEDBACK_EVENTS = True
     SHOW_RESULT_BEFORE_PAYMENT: bool = False  # if this is true show results even when not paid right after autoprocess
     SCHEDULE_UPDATES_SECONDS = 0
+    UPDATE_DATABASE = True  # DVMs that use a db manage their db by default. If a dvm should use the same db as another DVM, deactive it for those who do.
     CUSTOM_PROCESSING_MESSAGE = None
 
 

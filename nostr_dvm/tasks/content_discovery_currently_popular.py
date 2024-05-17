@@ -47,11 +47,19 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
         self.last_schedule = Timestamp.now().as_secs()
 
+        if self.options.get("db_name"):
+            self.db_name = self.options.get("db_name")
+        if self.options.get("db_since"):
+            self.db_since = int(self.options.get("db_since"))
+
+
         use_logger = False
         if use_logger:
             init_logger(LogLevel.DEBUG)
 
-        self.sync_db()
+        if self.dvm_config.UPDATE_DATABASE:
+            self.sync_db()
+
         if not self.personalized:
             self.result = self.calculate_result(self.request_form)
 
@@ -117,16 +125,16 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         # Negentropy reconciliation
         # Query events from database
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
-        lasthour = Timestamp.from_secs(timestamp_hour_ago)
+        since = Timestamp.from_secs(timestamp_hour_ago)
 
-        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(lasthour)
+        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
         events = cli.database().query([filter1])
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
                                        definitions.EventDefinitions.KIND_REACTION,
-                                       definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(lasthour)
+                                       definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = cli.database().query([filt])
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
@@ -156,7 +164,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
-                self.sync_db()
+                if self.dvm_config.UPDATE_DATABASE:
+                    self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 self.result = self.calculate_result(self.request_form)
                 return 1
@@ -193,11 +202,12 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, processing_msg=None):
+def build_example(name, identifier, admin_config, options, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
@@ -234,14 +244,15 @@ def build_example(name, identifier, admin_config, processing_msg=None):
     #admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                          admin_config=admin_config)
+                                          admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, processing_msg=None):
+def build_example_subscription(name, identifier, admin_config, options, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
-    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    dvm_config.SCHEDULE_UPDATES_SECONDS = 180  # Every 3 minutes
+    dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = 0
@@ -295,7 +306,7 @@ def build_example_subscription(name, identifier, admin_config, processing_msg=No
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                          nip88config=nip88config,
+                                          nip88config=nip88config, options=options,
                                           admin_config=admin_config)
 
 

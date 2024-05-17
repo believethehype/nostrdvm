@@ -40,11 +40,17 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         self.last_schedule = Timestamp.now().as_secs()
 
+        if self.options.get("db_name"):
+            self.db_name = self.options.get("db_name")
+        if self.options.get("db_since"):
+            self.db_since = int(self.options.get("db_since"))
+
         use_logger = False
         if use_logger:
             init_logger(LogLevel.DEBUG)
 
-        self.sync_db()
+        if self.dvm_config.UPDATE_DATABASE:
+            self.sync_db()
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -101,7 +107,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
         cli.add_relay("wss://relay.damus.io")
         cli.add_relay("wss://nos.lol")
-        cli.add_relay("wss://pablof7z.nostr1.com")
+        cli.add_relay("wss://nostr.mom")
 
         ropts = RelayOptions().ping(False)
         cli.add_relay_with_opts("wss://nostr.band", ropts)
@@ -115,8 +121,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         # Negentropy reconciliation
         # Query events from database
-        timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
-        lasthour = Timestamp.from_secs(timestamp_hour_ago)
+        timestamp_since = Timestamp.now().as_secs() - self.db_since
+        since = Timestamp.from_secs(timestamp_since)
 
 
         result_list = []
@@ -136,18 +142,18 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     following = PublicKey.parse(tag.as_vec()[1])
                     followings.append(following)
 
-            filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(lasthour)
+            filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
             events = cli.database().query([filter1])
 
             ns.finallist = {}
             for event in events:
-                if event.created_at().as_secs() > timestamp_hour_ago:
-                    filt = Filter().kinds(
-                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_REPOST,
-                         definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(lasthour)
-                    reactions = cli.database().query([filt])
-                    if len(reactions) >= self.min_reactions:
-                        ns.finallist[event.id().to_hex()] = len(reactions)
+                #if event.created_at().as_secs() > timestamp_since:
+                filt = Filter().kinds(
+                    [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_REPOST,
+                     definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+                reactions = cli.database().query([filt])
+                if len(reactions) >= self.min_reactions:
+                    ns.finallist[event.id().to_hex()] = len(reactions)
 
 
 
@@ -177,7 +183,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
-                self.sync_db()
+                if self.dvm_config.UPDATE_DATABASE:
+                    self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 return 1
 
@@ -211,11 +218,12 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, processing_msg=None):
+def build_example(name, identifier, admin_config, options, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
@@ -250,15 +258,16 @@ def build_example(name, identifier, admin_config, processing_msg=None):
     # admin_config.UPDATE_PROFILE = False
     # admin_config.REBROADCAST_NIP89 = False
 
-    return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
+    return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config, options=options,
                                                    admin_config=admin_config)
 
 
-def build_example_subscription(name, identifier, admin_config, processing_msg=None):
+def build_example_subscription(name, identifier, admin_config, options, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
-    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
+    dvm_config.SCHEDULE_UPDATES_SECONDS = 180  # Every 3 minutes
+    dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = 0
@@ -305,7 +314,7 @@ def build_example_subscription(name, identifier, admin_config, processing_msg=No
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                   nip88config=nip88config,
+                                                   nip88config=nip88config, options=options,
                                                    admin_config=admin_config)
 
 
