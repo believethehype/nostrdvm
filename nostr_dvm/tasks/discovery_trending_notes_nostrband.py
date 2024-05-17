@@ -44,13 +44,18 @@ class TrendingNotesNostrBand(DVMTaskInterface):
         print(self.dvm_config.PRIVATE_KEY)
 
         request_form = {"jobID": event.id().to_hex()}
+        max_results = 200
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
+            elif tag.as_vec()[0] == 'param':
+                param = tag.as_vec()[1]
+                if param == "max_results":  # check for param type
+                    max_results = int(tag.as_vec()[2])
 
         options = {
-
+            "max_results": max_results,
         }
         request_form['options'] = json.dumps(options)
         return request_form
@@ -69,7 +74,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
             if len(response_json["notes"]) > 0:
                 for note in response_json["notes"]:
                     i += 1
-                    if i < 20:
+                    if i < int(options["max_results"]):
                         e_tag = Tag.parse(["e", note["id"]])
                         #print(e_tag.as_vec())
                         result_list.append(e_tag.as_vec())
