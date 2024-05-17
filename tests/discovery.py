@@ -50,7 +50,7 @@ def playground():
                        "nostr-hotter-site", " ai ", "palestine", "https://boards.4chan", "https://techcrunch.com",
                        "https://screenrant.com"],
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 10 * 60 * 60,  # 10h since gmt
+        "db_since": 12 * 60 * 60,  # 10h since gmt
         "personalized": False}
 
     image = "https://image.nostr.build/a816f3f5e98e91e8a47d50f4cd7a2c17545f556d9bb0a6086a659b9abdf7ab68.jpg"
