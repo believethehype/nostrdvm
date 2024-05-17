@@ -346,15 +346,15 @@ class DVM:
                     elif not anon:
                         print("[" + self.dvm_config.NIP89.NAME + "] Note Zap received for DVM balance: " +
                               str(invoice_amount) + " Sats from " + str(user.name))
-                        update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                                            config=self.dvm_config)
+                    #    update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
+                    #                        config=self.dvm_config)
 
                         # a regular note
                 elif not anon and dvm_config.NIP88 is None:
                     print("[" + self.dvm_config.NIP89.NAME + "] Profile Zap received for DVM balance: " +
                           str(invoice_amount) + " Sats from " + str(user.name))
-                    update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                                        config=self.dvm_config)
+                   # update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
+                   #                     config=self.dvm_config)
 
             except Exception as e:
                 print("[" + self.dvm_config.NIP89.NAME + "] Error during content decryption: " + str(e))
