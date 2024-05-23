@@ -10,7 +10,7 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
-from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
 """
@@ -226,7 +226,7 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": False,
-        "amount": "free",
+        "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
                 "required": False,

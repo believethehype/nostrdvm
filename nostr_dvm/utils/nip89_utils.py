@@ -59,7 +59,8 @@ def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig):
 
 def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
     e_tag = Tag.parse(["e", eid])
-    a_tag = Tag.parse(["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u64()) + ":" + keys.public_key().to_hex() + ":" + dtag])
+    a_tag = Tag.parse(
+        ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u64()) + ":" + keys.public_key().to_hex() + ":" + dtag])
     event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
     send_event(event, client, config)
 
@@ -76,7 +77,6 @@ def nip89_fetch_all_dvms(client):
 
 
 def nip89_fetch_events_pubkey(client, pubkey, kind):
-
     ktags = [str(kind.as_u64())]
     nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.parse(pubkey)).
                    custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags))
@@ -112,3 +112,12 @@ def nip89_add_dtag_to_env_file(dtag, oskey):
         print(f'loading environment from {env_path.resolve()}')
         dotenv.load_dotenv(env_path, verbose=True, override=True)
         dotenv.set_key(env_path, dtag, oskey)
+
+
+def create_amount_tag(cost=None):
+    if cost is None:
+        return "flexible"
+    elif cost == 0:
+        return "free"
+    else:
+        return str(cost)
