@@ -24,6 +24,7 @@ class AdminConfig:
     DELETEUSER: bool = False
     LISTDATABASE: bool = False
     ClEANDB: bool = False
+    POW: bool = False
     INDEX: str = "1"
 
     USERNPUBS: list = []
@@ -93,7 +94,7 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
         event_id = adminconfig.EVENTID
         keys = Keys.parse(
             adminconfig.PRIVKEY)  # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
-        fetch_nip89_parameters_for_deletion(keys, event_id, client, dvmconfig)
+        fetch_nip89_parameters_for_deletion(keys, event_id, client, dvmconfig, adminconfig.POW)
 
     if adminconfig.DELETE_NIP88:
         event_id = adminconfig.EVENTID
