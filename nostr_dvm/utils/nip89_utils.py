@@ -34,7 +34,7 @@ def nip89_announce_tasks(dvm_config, client):
     print("Announced NIP 89 for " + dvm_config.NIP89.NAME)
 
 
-def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig):
+def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
     nip89events = client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""
@@ -52,6 +52,8 @@ def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig):
 
         if event.author().to_hex() == keys.public_key().to_hex():
             nip89_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
+            if pow:
+                nip89_delete_announcement_pow(event.id().to_hex(), keys, d_tag, client, dvmconfig)
             print("NIP89 announcement deleted from known relays!")
         else:
             print("Privatekey does not belong to event")
@@ -62,6 +64,15 @@ def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, c
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u64()) + ":" + keys.public_key().to_hex() + ":" + dtag])
     event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
+    print(f"POW event: {event.as_json()}")
+    send_event(event, client, config)
+
+def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client: Client, config):
+    e_tag = Tag.parse(["e", eid])
+    a_tag = Tag.parse(
+        ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u64()) + ":" + keys.public_key().to_hex() + ":" + dtag])
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_pow_event(keys, 28)
+    print(f"POW event: {event.as_json()}")
     send_event(event, client, config)
 
 
