@@ -184,3 +184,4 @@ search.py
 identifier.sqlite
 .idea/dataSources.xml
 todo.txt
+.env_bkp
