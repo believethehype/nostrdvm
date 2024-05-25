@@ -215,12 +215,13 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-
+    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
 
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+        "image": image,
+        "picture": image,
         "about": "I show notes that are currently popular",
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
@@ -259,12 +260,12 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-
-
+    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+        "image": image,
+        "picture": image,
         "about": "I show notes that are currently popular all over Nostr. I'm also used for testing subscriptions.",
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,

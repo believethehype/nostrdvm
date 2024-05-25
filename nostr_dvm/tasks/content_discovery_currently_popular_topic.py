@@ -251,6 +251,7 @@ def build_example(name, identifier, admin_config, options, image, description, u
     nip89info = {
         "name": name,
         "image": image,
+        "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
@@ -290,6 +291,7 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     nip89info = {
         "name": name,
         "image": image,
+        "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,

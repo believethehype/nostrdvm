@@ -112,6 +112,7 @@ def build_example(name, identifier, admin_config, custom_processing_msg):
     nip89info = {
         "name": name,
         "image": "https://nostr.band/android-chrome-192x192.png",
+        "picture": "https://nostr.band/android-chrome-192x192.png",
         "about": "I show trending notes from nostr.band",
         "amount": "Free",
         "encryptionSupported": True,

@@ -231,11 +231,12 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-
+    image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg",
+        "image": image,
+        "picture": image,
         "about": "I show notes that are currently popular from people you follow",
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
@@ -274,9 +275,11 @@ def build_example_subscription(name, identifier, admin_config, options, processi
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
 
     # Add NIP89
+    image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+        "image": image,
+        "picture": image,
         "about": "I show notes that are currently popular, just like the free DVM, I'm also used for testing subscriptions. (beta)",
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
