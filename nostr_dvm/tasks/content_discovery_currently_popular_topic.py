@@ -14,7 +14,7 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
 """
-This File contains a Module to discover popular notes
+This File contains a Module to discover popular notes by topic
 Accepted Inputs: none
 Outputs: A list of events 
 Params:  None
@@ -209,10 +209,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         cli.add_relay("wss://nostr.wine")
         cli.add_relay("wss://nostr21.com")
 
-        #RELAY_LIST = [ "wss://nostr.wine",
-        #              , "wss://relay.nostr.bg",
-        #              , "wss://relay.nostr.net"
-        #              ]
+
         cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
@@ -323,11 +320,6 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     nip88config.PERK1DESC = "Unlimited requests"
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
-
-
-   # admin_config.FETCH_NIP88 = True
-   # admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
-   # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
 
     return DicoverContentCurrentlyPopularbyTopic(name=name, dvm_config=dvm_config, nip89config=nip89config,
