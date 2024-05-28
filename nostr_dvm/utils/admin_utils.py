@@ -26,6 +26,7 @@ class AdminConfig:
     ClEANDB: bool = False
     POW: bool = False
     INDEX: str = "1"
+    LUD16: str = ""
 
     USERNPUBS: list = []
 
