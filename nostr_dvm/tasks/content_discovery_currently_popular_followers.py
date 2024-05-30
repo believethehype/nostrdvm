@@ -114,12 +114,10 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         cli.add_relay_with_opts("wss://nostr.band", ropts)
 
         cli.connect()
-        cli = ClientBuilder().database(database).build()
 
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
         followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-        cli = ClientBuilder().database(database).build()
 
         # Negentropy reconciliation
         # Query events from database
