@@ -12,16 +12,17 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
+from nostr_dvm.utils.zap_utils import parse_zap_event_tags, parse_amount_from_bolt11_invoice
 
 """
-This File contains a Module to discover popular notes
+This File contains a Module to discover popular notes by amount of zaps
 Accepted Inputs: none
 Outputs: A list of events 
 Params:  None
 """
 
 
-class DicoverContentCurrentlyPopular(DVMTaskInterface):
+class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
     TASK: str = "discover-content"
     FIX_COST: float = 0
@@ -29,7 +30,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_notes.db"
-    min_reactions = 2
+    min_reactions = 1
     personalized = False
     result = ""
 
@@ -51,7 +52,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             self.db_name = self.options.get("db_name")
         if self.options.get("db_since"):
             self.db_since = int(self.options.get("db_since"))
-
 
         use_logger = False
         if use_logger:
@@ -132,12 +132,22 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
-                filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
-                                       definitions.EventDefinitions.KIND_REACTION,
-                                       definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+                filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
                 reactions = cli.database().query([filt])
+                invoice_amount = 0
+                haspreimage = False
                 if len(reactions) >= self.min_reactions:
-                    ns.finallist[event.id().to_hex()] = len(reactions)
+                    for reaction in reactions:
+                        for tag in reaction.tags():
+                            print(tag.as_vec())
+                            if tag.as_vec()[0] == 'bolt11':
+                                print(tag.as_vec()[1])
+                                invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
+                                print(invoice_amount)
+                            if tag.as_vec()[0] == 'preimage':
+                                haspreimage = True # TODO further check preimage
+                    if haspreimage:
+                        ns.finallist[event.id().to_hex()] = invoice_amount
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
@@ -179,11 +189,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
-        cli.add_relay("wss://nostr.oxtr.dev")
-        cli.add_relay("wss://relay.nostr.net")
-        cli.add_relay("wss://relay.nostr.bg")
-        cli.add_relay("wss://nostr.wine")
-        cli.add_relay("wss://nostr21.com")
         cli.connect()
 
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
@@ -207,7 +212,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options,  cost=0, update_rate=180,  processing_msg=None, update_db=True):
+def build_example(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
+                  update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -220,14 +226,14 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg",
 
     # Add NIP89
     nip89info = {
         "name": name,
         "image": image,
         "picture": image,
-        "about": "I show notes that are currently popular",
+        "about": "I show notes that are currently zapped the most.",
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -246,14 +252,15 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    #admin_config.UPDATE_PROFILE = False
-    #admin_config.REBROADCAST_NIP89 = False
+    # admin_config.UPDATE_PROFILE = False
+    # admin_config.REBROADCAST_NIP89 = False
 
-    return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                          admin_config=admin_config, options=options)
+    return DicoverContentCurrentlyPopularZaps(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                              admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None, update_db=True):
+def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None,
+                               update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -265,7 +272,7 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg",
     # Add NIP89
     nip89info = {
         "name": name,
@@ -303,18 +310,18 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
-    #admin_config.UPDATE_PROFILE = False
-    #admin_config.REBROADCAST_NIP89 = False
-    #admin_config.REBROADCAST_NIP88 = False
+    # admin_config.UPDATE_PROFILE = False
+    # admin_config.REBROADCAST_NIP89 = False
+    # admin_config.REBROADCAST_NIP88 = False
 
     # admin_config.FETCH_NIP88 = True
     # admin_config.EVENTID = ""
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
-    return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                          nip88config=nip88config, options=options,
-                                          admin_config=admin_config)
+    return DicoverContentCurrentlyPopularZaps(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                              nip88config=nip88config, options=options,
+                                              admin_config=admin_config)
 
 
 if __name__ == '__main__':
-    process_venv(DicoverContentCurrentlyPopular)
+    process_venv(DicoverContentCurrentlyPopularZaps)

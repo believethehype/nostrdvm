@@ -8,6 +8,7 @@ from nostr_sdk import init_logger, LogLevel, Keys
 
 from nostr_dvm.subscription import Subscription
 from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCurrentlyPopular
+from nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps import DicoverContentCurrentlyPopularZaps
 from nostr_dvm.tasks.content_discovery_currently_popular_followers import DicoverContentCurrentlyPopularFollowers
 from nostr_dvm.tasks.content_discovery_currently_popular_topic import DicoverContentCurrentlyPopularbyTopic
 from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
@@ -161,7 +162,46 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
                                                    options=options,
                                                    admin_config=admin_config)
 
+def build_example_top_zapped(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
+                  update_db=True):
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.FIX_COST = cost
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
 
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": image,
+        "picture": image,
+        "about": "I show notes that are currently zapped the most.",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "personalized": False,
+        "amount": create_amount_tag(cost),
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 100)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+
+    # admin_config.UPDATE_PROFILE = False
+    # admin_config.REBROADCAST_NIP89 = False
+
+    return DicoverContentCurrentlyPopularZaps(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                              admin_config=admin_config, options=options)
 def playground():
     rebbroadcast_NIP89 = True #Announce NIP89 on startup
     use_logger = False
@@ -186,6 +226,32 @@ def playground():
                                           admin_config=admin_config_trending_nostr_band,
                                           custom_processing_msg=custom_processing_msg)
     trending_nb.run()
+
+    # Popular top zapped
+    admin_config_top_zaps = AdminConfig()
+    admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_top_zaps.UPDATE_PROFILE = True
+    custom_processing_msg = ["Looking for most zapped notes", "Let's see which notes people currently zap..",
+                             "Let's find valuable notes. #value4value"]
+    update_db = False
+
+    options_top_zapped = {
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 60 * 60 * 4,  # 4h since gmt,
+    }
+    cost = 0
+    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
+    discovery_topzaps = build_example_top_zapped("Top Zapped notes",
+                                             "discovery_content_top_zaps",
+                                             admin_config=admin_config_top_zaps,
+                                             options= options_top_zapped,
+                                             image=image,
+                                             cost=cost,
+                                             update_rate=180,
+                                             processing_msg=custom_processing_msg,
+                                             update_db=update_db)
+
+    discovery_topzaps.run()
 
     # Popular Garden&Plants
     admin_config_plants = AdminConfig()
