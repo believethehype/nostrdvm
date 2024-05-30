@@ -139,7 +139,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                 if len(reactions) >= self.min_reactions:
                     for reaction in reactions:
                         for tag in reaction.tags():
-                            print(tag.as_vec())
+                            #print(tag.as_vec())
                             if tag.as_vec()[0] == 'bolt11':
                                 #print(tag.as_vec()[1])
                                 invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
