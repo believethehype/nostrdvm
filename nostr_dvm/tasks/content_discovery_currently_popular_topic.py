@@ -28,17 +28,17 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
     dvm_config: DVMConfig
     last_schedule: int
     min_reactions = 2
-    db_since = 10*3600
+    db_since = 10 * 3600
     db_name = "db/nostr_default_recent_notes.db"
     search_list = []
     avoid_list = []
     must_list = []
     personalized = False
     result = ""
+    logger = False
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
-
 
         super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
                          admin_config=admin_config, options=options)
@@ -52,26 +52,26 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         self.request_form['options'] = json.dumps(opts)
 
         dvm_config.SCRIPT = os.path.abspath(__file__)
+        if self.options is not None:
+            if self.options.get("personalized"):
+                self.personalized = bool(self.options.get("personalized"))
+            self.last_schedule = Timestamp.now().as_secs()
+            if self.options.get("search_list"):
+                self.search_list = self.options.get("search_list")
+                # print(self.search_list)
+            if self.options.get("avoid_list"):
+                self.avoid_list = self.options.get("avoid_list")
+            if self.options.get("must_list"):
+                self.must_list = self.options.get("must_list")
+            if self.options.get("db_name"):
+                self.db_name = self.options.get("db_name")
+            if self.options.get("db_since"):
+                self.db_since = int(self.options.get("db_since"))
+            if self.options.get("logger"):
+                self.logger = bool(self.options.get("logger"))
 
-        if self.options.get("personalized"):
-            self.personalized = bool(self.options.get("personalized"))
-        self.last_schedule = Timestamp.now().as_secs()
-        if self.options.get("search_list"):
-            self.search_list = self.options.get("search_list")
-            #print(self.search_list)
-        if self.options.get("avoid_list"):
-            self.avoid_list = self.options.get("avoid_list")
-        if self.options.get("must_list"):
-            self.must_list = self.options.get("must_list")
-        if self.options.get("db_name"):
-            self.db_name = self.options.get("db_name")
-        if self.options.get("db_since"):
-            self.db_since = int(self.options.get("db_since"))
-
-
-        use_logger = False
-        if use_logger:
-            init_logger(LogLevel.DEBUG)
+            if self.logger:
+                init_logger(LogLevel.DEBUG)
 
         if self.dvm_config.UPDATE_DATABASE:
             self.sync_db()
@@ -115,10 +115,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         # if the dvm supports individual results, recalculate it every time for the request
         if self.personalized:
             return self.calculate_result(request_form)
-        #else return the result that gets updated once every schenduled update. In this case on database update.
+        # else return the result that gets updated once every schenduled update. In this case on database update.
         else:
             return self.result
-
 
     def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
@@ -130,6 +129,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         # if not text/plain, don't post-process
         return result
+
     def calculate_result(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
@@ -143,10 +143,10 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         signer = NostrSigner.keys(keys)
 
         database = NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        cli = ClientBuilder().database(database).build()
 
-        cli.add_relay("wss://relay.damus.io")
-        cli.connect()
+        # cli.add_relay("wss://relay.damus.io")
+        # cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -157,7 +157,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         events = cli.database().query([filter1])
         print(len(events))
-        ns.finallist = {}
+        ns.final_list = {}
 
         for event in events:
             if all(ele in event.content().lower() for ele in self.must_list):
@@ -170,28 +170,30 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                              definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                         reactions = cli.database().query([filt])
                         if len(reactions) >= self.min_reactions:
-                            ns.finallist[event.id().to_hex()] = len(reactions)
+                            ns.final_list[event.id().to_hex()] = len(reactions)
 
         result_list = []
-        finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
+        finallist_sorted = sorted(ns.final_list.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
-        print(len(result_list))
-        return json.dumps(result_list)
 
+        return json.dumps(result_list)
 
     def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
-                if self.dvm_config.UPDATE_DATABASE:
-                    self.sync_db()
-                self.last_schedule = Timestamp.now().as_secs()
-                self.result = self.calculate_result(self.request_form)
-                #print(self.result)
+                try:
+                    if self.dvm_config.UPDATE_DATABASE:
+                        self.sync_db()
+                    self.last_schedule = Timestamp.now().as_secs()
+                    if not self.personalized:
+                        self.result = self.calculate_result(self.request_form)
+                except Exception as e:
+                    print(e)
                 return 1
 
     def sync_db(self):
@@ -204,33 +206,33 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         cli.add_relay("wss://relay.damus.io")
         cli.add_relay("wss://nostr.oxtr.dev")
-        cli.add_relay("wss://relay.nostr.net")
-        cli.add_relay("wss://relay.nostr.bg")
-        cli.add_relay("wss://nostr.wine")
         cli.add_relay("wss://nostr21.com")
-
 
         cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+        filter1 = Filter().kinds([EventDefinitions.KIND_NOTE, EventDefinitions.KIND_REACTION, EventDefinitions.KIND_ZAP,
+                                  EventDefinitions.KIND_LONGFORM]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(self.db_since) + " seconds.. this might take a while..")
+        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+            self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
         database.delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
 
-        print("[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+        print(
+            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options, image, description, update_rate=600, cost=0, processing_msg=None, update_db=True):
+def build_example(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
+                  processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -242,7 +244,6 @@ def build_example(name, identifier, admin_config, options, image, description, u
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
-
 
     # Add NIP89
     nip89info = {
@@ -269,10 +270,11 @@ def build_example(name, identifier, admin_config, options, image, description, u
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentCurrentlyPopularbyTopic(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                          admin_config=admin_config, options=options)
+                                                 admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, options, image, description, processing_msg=None, update_db=True):
+def build_example_subscription(name, identifier, admin_config, options, image, description, processing_msg=None,
+                               update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -282,7 +284,6 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     dvm_config.FIX_COST = 0
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
-
 
     # Add NIP89
     nip89info = {
@@ -321,11 +322,10 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
-
     return DicoverContentCurrentlyPopularbyTopic(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                          nip88config=nip88config,
-                                          admin_config=admin_config,
-                                          options=options)
+                                                 nip88config=nip88config,
+                                                 admin_config=admin_config,
+                                                 options=options)
 
 
 if __name__ == '__main__':

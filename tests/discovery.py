@@ -18,6 +18,8 @@ from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_an
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
+global_update_rate = 180  # set this high on first sync so db can fully sync before another process trys to.
+
 
 def build_example_nostrband(name, identifier, admin_config, image, about, custom_processing_msg):
     dvm_config: DVMConfig = build_default_config(identifier)
@@ -87,14 +89,12 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
                           update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
-    #dvm_config.SHOWLOG = True
+    # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
-
-
 
     # Add NIP89
     nip89info = {
@@ -162,8 +162,10 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
                                                    options=options,
                                                    admin_config=admin_config)
 
-def build_example_top_zapped(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
-                  update_db=True):
+
+def build_example_top_zapped(name, identifier, admin_config, options, image, cost=0, update_rate=180,
+                             processing_msg=None,
+                             update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -202,8 +204,10 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
 
     return DicoverContentCurrentlyPopularZaps(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                               admin_config=admin_config, options=options)
+
+
 def playground():
-    rebbroadcast_NIP89 = True #Announce NIP89 on startup
+    rebbroadcast_NIP89 = True  # Announce NIP89 on startup
     use_logger = False
 
     if use_logger:
@@ -230,7 +234,7 @@ def playground():
     # Popular top zapped
     admin_config_top_zaps = AdminConfig()
     admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_top_zaps.UPDATE_PROFILE = True
+    admin_config_top_zaps.UPDATE_PROFILE = False
     custom_processing_msg = ["Looking for most zapped notes", "Let's see which notes people currently zap..",
                              "Let's find valuable notes. #value4value"]
     update_db = False
@@ -242,14 +246,14 @@ def playground():
     cost = 0
     image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
     discovery_topzaps = build_example_top_zapped("Top Zapped notes",
-                                             "discovery_content_top_zaps",
-                                             admin_config=admin_config_top_zaps,
-                                             options= options_top_zapped,
-                                             image=image,
-                                             cost=cost,
-                                             update_rate=180,
-                                             processing_msg=custom_processing_msg,
-                                             update_db=update_db)
+                                                 "discovery_content_top_zaps",
+                                                 admin_config=admin_config_top_zaps,
+                                                 options=options_top_zapped,
+                                                 image=image,
+                                                 cost=cost,
+                                                 update_rate=global_update_rate,
+                                                 processing_msg=custom_processing_msg,
+                                                 update_db=update_db)
 
     discovery_topzaps.run()
 
@@ -257,10 +261,10 @@ def playground():
     admin_config_plants = AdminConfig()
     admin_config_plants.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_plants.UPDATE_PROFILE = False
-    #admin_config_plants.DELETE_NIP89 = True
+    # admin_config_plants.DELETE_NIP89 = True
     # admin_config_plants.PRIVKEY = "430bacf525a2f6efd6db1f049eb7c04e0c0314182ef1c17df39f46fe66416ddf"
     # admin_config_plants.EVENTID = "f42adb15f4c67b884d58b09084907d94471d1a54185dce0217a69111c703aa14"
-    #admin_config_plants.POW = True
+    # admin_config_plants.POW = True
     options_plants = {
         "search_list": ["garden", "gardening", "nature", " plants ", " plant ", " herb ", " herbs " " pine ",
                         "homesteading", "rosemary", "chicken", "🪻", "🌿", "☘️", "🌲", "flower", "forest", "watering",
@@ -278,8 +282,9 @@ def playground():
                        "nostr-hotter-site", " ai ", "palestine", "https://boards.4chan", "https://techcrunch.com",
                        "https://screenrant.com"],
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 12 * 60 * 60,  # 10h since gmt
-        "personalized": False}
+        "db_since": 12 * 60 * 60,  # 12h since gmt
+        "personalized": False,
+        "logger": False}
 
     image = "https://image.nostr.build/a816f3f5e98e91e8a47d50f4cd7a2c17545f556d9bb0a6086a659b9abdf7ab68.jpg"
     description = "I show recent notes about plants and gardening"
@@ -291,7 +296,7 @@ def playground():
                                              admin_config_plants, options_plants,
                                              image=image,
                                              description=description,
-                                             update_rate=180,
+                                             update_rate=global_update_rate,
                                              cost=cost,
                                              processing_msg=custom_processing_msg,
                                              update_db=update_db)
@@ -331,7 +336,8 @@ def playground():
         "must_list": ["http"],
         "db_name": "db/nostr_recent_notes.db",
         "db_since": 48 * 60 * 60,  # 48h since gmt,
-        "personalized": False}
+        "personalized": False,
+        "logger": False}
 
     image = "https://image.nostr.build/f609311532c470f663e129510a76c9a1912ae9bc4aaaf058e5ba21cfb512c88e.jpg"
     description = "I show recent notes about animals"
@@ -345,7 +351,7 @@ def playground():
                                             admin_config_animals, options_animal,
                                             image=image,
                                             description=description,
-                                            update_rate=180,
+                                            update_rate=global_update_rate,
                                             cost=cost,
                                             processing_msg=custom_processing_msg,
                                             update_db=update_db)
@@ -378,7 +384,7 @@ def playground():
         options=options_followers_popular,
         cost=cost,
         image=image,
-        update_rate=180,
+        update_rate=global_update_rate,
         processing_msg=custom_processing_msg,
         update_db=update_db)
     discovery_followers.run()
@@ -406,7 +412,7 @@ def playground():
                                              options=options_global_popular,
                                              image=image,
                                              cost=cost,
-                                             update_rate=180,
+                                             update_rate=global_update_rate,
                                              processing_msg=custom_processing_msg,
                                              update_db=update_db)
     discovery_global.run()
@@ -415,19 +421,19 @@ def playground():
     # discovery_test_sub.run()
 
     # Subscription Manager DVM
-    #subscription_config = DVMConfig()
-    #subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
-    #npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
-    #invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
-    #subscription_config.LNBITS_INVOICE_KEY = invoice_key
-    #subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
-    #subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    #sub_admin_config = AdminConfig()
-    #sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
+    # subscription_config = DVMConfig()
+    # subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
+    # npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
+    # invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
+    # subscription_config.LNBITS_INVOICE_KEY = invoice_key
+    # subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
+    # subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    # sub_admin_config = AdminConfig()
+    # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
 
     # currently there is none, but add this once subscriptions are live.
-    #x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
-    #x.start()
+    # x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
+    # x.start()
 
     # keep_alive()
 

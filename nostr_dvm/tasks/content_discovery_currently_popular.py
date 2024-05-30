@@ -32,6 +32,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     min_reactions = 2
     personalized = False
     result = ""
+    logger = False
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
@@ -46,16 +47,17 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         self.request_form['options'] = json.dumps(opts)
 
         self.last_schedule = Timestamp.now().as_secs()
+        if self.options is not None:
+            if self.options.get("db_name"):
+                self.db_name = self.options.get("db_name")
+            if self.options.get("db_since"):
+                self.db_since = int(self.options.get("db_since"))
+            if self.options.get("logger"):
+                self.logger = bool(self.options.get("logger"))
 
-        if self.options.get("db_name"):
-            self.db_name = self.options.get("db_name")
-        if self.options.get("db_since"):
-            self.db_since = int(self.options.get("db_since"))
+            if self.logger:
+                init_logger(LogLevel.DEBUG)
 
-
-        use_logger = False
-        if use_logger:
-            init_logger(LogLevel.DEBUG)
 
         if self.dvm_config.UPDATE_DATABASE:
             self.sync_db()
@@ -111,16 +113,10 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
         options = DVMTaskInterface.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
 
         database = NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        cli = ClientBuilder().database(database).build()
 
-        cli.add_relay("wss://relay.damus.io")
-        cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -167,7 +163,11 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                 if self.dvm_config.UPDATE_DATABASE:
                     self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
-                self.result = self.calculate_result(self.request_form)
+                if not self.personalized:
+                    try:
+                        self.result = self.calculate_result(self.request_form)
+                    except Exception as e:
+                        print("EXCEPTION: "+ e)
                 return 1
 
     def sync_db(self):
@@ -180,10 +180,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
         cli.add_relay("wss://relay.damus.io")
         cli.add_relay("wss://nostr.oxtr.dev")
-        cli.add_relay("wss://relay.nostr.net")
-        cli.add_relay("wss://relay.nostr.bg")
-        cli.add_relay("wss://nostr.wine")
         cli.add_relay("wss://nostr21.com")
+
         cli.connect()
 
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
