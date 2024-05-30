@@ -18,7 +18,7 @@ class DVMConfig:
 
     RELAY_LIST = ["wss://dvms.f7z.io", "wss://relay.damus.io", "wss://nostr.wine",
                   "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                  "wss://relay.f7z.io", "wss://relay.nostr.net"
+                  "wss://relay.nostr.net"
                   ]
 
     RELAY_TIMEOUT = 5

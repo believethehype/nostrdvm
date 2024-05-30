@@ -11,6 +11,7 @@ class EventDefinitions:
     KIND_REACTION = Kind(7)
     KIND_ZAP = Kind(9735)
     KIND_ANNOUNCEMENT = Kind(31990)
+    KIND_LONGFORM = Kind(30023)
     KIND_NIP94_METADATA = Kind(1063)
     KIND_FEEDBACK = Kind(7000)
     KIND_NIP90_EXTRACT_TEXT = Kind(5000)

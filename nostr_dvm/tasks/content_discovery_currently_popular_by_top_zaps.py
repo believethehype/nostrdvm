@@ -33,6 +33,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
     min_reactions = 1
     personalized = False
     result = ""
+    logger = False
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
@@ -47,16 +48,17 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         self.request_form['options'] = json.dumps(opts)
 
         self.last_schedule = Timestamp.now().as_secs()
+        if self.options is not None:
+            if self.options.get("db_name"):
+                self.db_name = self.options.get("db_name")
+            if self.options.get("db_since"):
+                self.db_since = int(self.options.get("db_since"))
+            if self.options.get("logger"):
+                self.logger = bool(self.options.get("logger"))
 
-        if self.options.get("db_name"):
-            self.db_name = self.options.get("db_name")
-        if self.options.get("db_since"):
-            self.db_since = int(self.options.get("db_since"))
-
-        use_logger = False
-        if use_logger:
-            init_logger(LogLevel.DEBUG)
-
+            if self.logger:
+                init_logger(LogLevel.DEBUG)
+        print("UPDATEDB: " + str(self.dvm_config.UPDATE_DATABASE))
         if self.dvm_config.UPDATE_DATABASE:
             self.sync_db()
 
@@ -79,8 +81,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        search = ""
-        max_results = 100
+        max_results = 200
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -111,16 +112,8 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
         options = DVMTaskInterface.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-
         database = NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
-
-        cli.add_relay("wss://relay.damus.io")
-        cli.connect()
+        cli = ClientBuilder().database(database).build()
 
         # Negentropy reconciliation
         # Query events from database
@@ -139,13 +132,13 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                 if len(reactions) >= self.min_reactions:
                     for reaction in reactions:
                         for tag in reaction.tags():
-                            #print(tag.as_vec())
+                            # print(tag.as_vec())
                             if tag.as_vec()[0] == 'bolt11':
-                                #print(tag.as_vec()[1])
+                                # print(tag.as_vec()[1])
                                 invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
-                                #print(invoice_amount)
+                                # print(invoice_amount)
                             if tag.as_vec()[0] == 'preimage':
-                                haspreimage = True # TODO further check preimage
+                                haspreimage = True  # TODO further check preimage
                     if haspreimage:
                         ns.finallist[event.id().to_hex()] = invoice_amount
 
@@ -174,10 +167,14 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
-                if self.dvm_config.UPDATE_DATABASE:
-                    self.sync_db()
-                self.last_schedule = Timestamp.now().as_secs()
-                self.result = self.calculate_result(self.request_form)
+                try:
+                    if self.dvm_config.UPDATE_DATABASE:
+                        self.sync_db()
+                    self.last_schedule = Timestamp.now().as_secs()
+                    if not self.personalized:
+                        self.result = self.calculate_result(self.request_form)
+                except Exception as e:
+                    print(e)
                 return 1
 
     def sync_db(self):
@@ -189,6 +186,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         cli.add_relay("wss://relay.damus.io")
+        cli.add_relay("wss://nostr.oxtr.dev")
+        cli.add_relay("wss://nostr21.com")
+
         cli.connect()
 
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since

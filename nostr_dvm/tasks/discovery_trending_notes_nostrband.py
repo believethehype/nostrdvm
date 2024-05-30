@@ -1,6 +1,6 @@
 import json
 import os
-from nostr_sdk import Tag, Kind
+from nostr_sdk import Tag, Kind, init_logger, LogLevel
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -23,12 +23,20 @@ class TrendingNotesNostrBand(DVMTaskInterface):
     TASK: str = "trending-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
+    logger = False
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
                          admin_config=admin_config, options=options)
+
+        if self.options is not None:
+            if self.options.get("logger"):
+                self.logger = bool(self.options.get("logger"))
+
+            if self.logger:
+                init_logger(LogLevel.DEBUG)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
