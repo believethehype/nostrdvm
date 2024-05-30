@@ -141,9 +141,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                         for tag in reaction.tags():
                             print(tag.as_vec())
                             if tag.as_vec()[0] == 'bolt11':
-                                print(tag.as_vec()[1])
+                                #print(tag.as_vec()[1])
                                 invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
-                                print(invoice_amount)
+                                #print(invoice_amount)
                             if tag.as_vec()[0] == 'preimage':
                                 haspreimage = True # TODO further check preimage
                     if haspreimage:
