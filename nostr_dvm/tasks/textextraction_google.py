@@ -112,7 +112,7 @@ class SpeechToTextGoogle(DVMTaskInterface):
             api_key = self.options['api_key']
         else:
             api_key = None
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
         # Speech recognition instance
         asr = sr.Recognizer()
         with sr.AudioFile(options["filepath"]) as source:

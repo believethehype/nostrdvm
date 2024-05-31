@@ -80,7 +80,7 @@ class TranslationGoogle(DVMTaskInterface):
     def process(self, request_form):
         from translatepy.translators.google import GoogleTranslate
 
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
         gtranslate = GoogleTranslate()
         length = len(options["text"])
 

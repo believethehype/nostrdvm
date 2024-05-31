@@ -22,6 +22,7 @@ from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
     parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
 from nostr_dvm.utils.cashu_utils import redeem_cashu
+from nostr_dvm.utils.print import bcolors
 
 
 class DVM:
@@ -47,9 +48,10 @@ class DVM:
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
-
-        print("Nostr DVM public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Supported DVM tasks: " +
-              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
+        print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + "Nostr DVM public key: " + str(
+            pk.to_bech32()) + " Hex: " +
+              str(pk.to_hex()) + " Supported DVM tasks: " +
+              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + bcolors.ENDC)
 
         for relay in self.dvm_config.RELAY_LIST:
             self.client.add_relay(relay)
@@ -88,7 +90,7 @@ class DVM:
             # if event is encrypted, but we can't decrypt it (e.g. because its directed to someone else), return
             if nip90_event is None:
                 return
-            
+
             task_is_free = False
             user_has_active_subscription = False
             cashu = ""
@@ -104,7 +106,6 @@ class DVM:
                 print("[" + self.dvm_config.NIP89.NAME + "] No public request, also not addressed to me.")
                 return
 
-
             # check if task is supported by the current DVM
             task_supported, task = check_task_is_supported(nip90_event, client=self.client,
                                                            config=self.dvm_config)
@@ -119,17 +120,16 @@ class DVM:
                     print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
                     return
 
-                print("[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name)
+                print(bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name  + bcolors.ENDC)
                 duration = input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
                     return
 
-
                 # If this is a subscription DVM and the Task is directed to us, check for active subscription
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
                     send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                             "Checking Subscription Status, please wait..",self.dvm_config)
+                                             "Checking Subscription Status, please wait..", self.dvm_config)
                     # if we stored in the database that the user has an active subscription, we don't need to check it
                     print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
                         Timestamp.now().as_secs()))
@@ -139,7 +139,8 @@ class DVM:
                         user_has_active_subscription = True
                         send_job_status_reaction(nip90_event, "subscription-required", True, amount,
                                                  self.client, "User subscripton active until " +
-                                                 Timestamp.from_secs(int(user.subscribed)).to_human_datetime().replace("Z", " ").replace("T", " ") + " GMT", self.dvm_config)
+                                                 Timestamp.from_secs(int(user.subscribed)).to_human_datetime().replace(
+                                                     "Z", " ").replace("T", " ") + " GMT", self.dvm_config)
                     # otherwise we check for an active subscription by checking recipie events
                     else:
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
@@ -153,7 +154,11 @@ class DVM:
 
                         if subscription_status["isActive"]:
                             send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                                     "User subscripton active until " + Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime().replace("Z", " ").replace("T", " ") + " GMT",
+                                                     "User subscripton active until " + Timestamp.from_secs(int(
+                                                         subscription_status[
+                                                             "validUntil"])).to_human_datetime().replace("Z",
+                                                                                                         " ").replace(
+                                                         "T", " ") + " GMT",
                                                      self.dvm_config)
                             print("Checked Recipe: User subscribed until: " + str(
                                 Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime()))
@@ -349,12 +354,12 @@ class DVM:
                     #    update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                     #                        config=self.dvm_config)
 
-                        # a regular note
+                    # a regular note
                 elif not anon and dvm_config.NIP88 is None:
                     print("[" + self.dvm_config.NIP89.NAME + "] Profile Zap received for DVM balance: " +
                           str(invoice_amount) + " Sats from " + str(user.name))
-                   # update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                   #                     config=self.dvm_config)
+                # update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
+                #                     config=self.dvm_config)
 
             except Exception as e:
                 print("[" + self.dvm_config.NIP89.NAME + "] Error during content decryption: " + str(e))
@@ -472,8 +477,9 @@ class DVM:
                 self.keys)
 
             send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
-            print("[" + self.dvm_config.NIP89.NAME + "] " + str(
-                original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.as_json())
+
+            print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
+                original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
 
         def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None,
                                      content=None,
@@ -502,7 +508,6 @@ class DVM:
 
             else:
                 reply_tags.append(p_tag)
-
 
             if status == "success" or status == "error":  #
                 for x in self.job_list:
@@ -572,8 +577,9 @@ class DVM:
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
             send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
-            print("[" + self.dvm_config.NIP89.NAME + "]" + ": Sent Kind " + str(
-                EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json())
+
+            print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
+                EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
             return reaction_event.as_json()
 
         def do_work(job_event, amount):
@@ -618,11 +624,13 @@ class DVM:
                                 post_processed = dvm.post_process(result, job_event)
                                 send_nostr_reply_event(post_processed, job_event.as_json())
                             except Exception as e:
-                                print(e)
+                                print(bcolors.RED + "[" + self.dvm_config.NIP89.NAME + "] Error: " + str(e) + bcolors.ENDC)
                                 send_job_status_reaction(job_event, "error", content=str(e),
                                                          dvm_config=self.dvm_config)
                     except Exception as e:
-                        print(e)
+                        print(
+                            bcolors.RED + "[" + self.dvm_config.NIP89.NAME + "] Error: " + str(e) + bcolors.ENDC)
+
                         # we could send the exception here to the user, but maybe that's not a good idea after all.
                         send_job_status_reaction(job_event, "error", content=result,
                                                  dvm_config=self.dvm_config)

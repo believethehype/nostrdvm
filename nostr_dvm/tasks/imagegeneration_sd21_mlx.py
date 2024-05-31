@@ -99,7 +99,7 @@ class ImageGenerationMLX(DVMTaskInterface):
         try:
             import mlx.core as mx
             from nostr_dvm.backends.mlx.modules.stable_diffusion import StableDiffusion
-            options = DVMTaskInterface.set_options(request_form)
+            options = self.set_options(request_form)
 
             sd = StableDiffusion()
             cfg_weight = 7.5

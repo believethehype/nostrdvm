@@ -123,13 +123,13 @@ class DVMTaskInterface:
         """Post-process the data and return the result Use default function, if not overwritten"""
         return post_process_result(result, event)
 
-    @staticmethod
-    def set_options(request_form):
-        print("Setting options...")
+    def set_options(self, request_form):
+
+        print("[" + self.dvm_config.NIP89.NAME + "] " + "Setting options...")
         opts = []
         if request_form.get("options"):
             opts = json.loads(request_form["options"])
-            print(opts)
+            print("[" + self.dvm_config.NIP89.NAME + "] " + str(opts))
         return dict(opts)
 
     @staticmethod

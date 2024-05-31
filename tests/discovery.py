@@ -231,76 +231,6 @@ def playground():
                                           custom_processing_msg=custom_processing_msg)
     trending_nb.run()
 
-    # Popular top zapped
-    admin_config_top_zaps = AdminConfig()
-    admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_top_zaps.UPDATE_PROFILE = False
-    custom_processing_msg = ["Looking for most zapped notes", "Let's see which notes people currently zap..",
-                             "Let's find valuable notes. #value4value"]
-    update_db = False
-
-    options_top_zapped = {
-        "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 4,  # 4h since gmt,
-    }
-    cost = 0
-    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
-    discovery_topzaps = build_example_top_zapped("Top Zapped notes",
-                                                 "discovery_content_top_zaps",
-                                                 admin_config=admin_config_top_zaps,
-                                                 options=options_top_zapped,
-                                                 image=image,
-                                                 cost=cost,
-                                                 update_rate=global_update_rate,
-                                                 processing_msg=custom_processing_msg,
-                                                 update_db=update_db)
-
-    discovery_topzaps.run()
-
-    # Popular Garden&Plants
-    admin_config_plants = AdminConfig()
-    admin_config_plants.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_plants.UPDATE_PROFILE = False
-    # admin_config_plants.DELETE_NIP89 = True
-    # admin_config_plants.PRIVKEY = "430bacf525a2f6efd6db1f049eb7c04e0c0314182ef1c17df39f46fe66416ddf"
-    # admin_config_plants.EVENTID = "f42adb15f4c67b884d58b09084907d94471d1a54185dce0217a69111c703aa14"
-    # admin_config_plants.POW = True
-    options_plants = {
-        "search_list": ["garden", "gardening", "nature", " plants ", " plant ", " herb ", " herbs " " pine ",
-                        "homesteading", "rosemary", "chicken", "🪻", "🌿", "☘️", "🌲", "flower", "forest", "watering",
-                        "permies", "planting", "farm", "vegetable", "fruit", " grass ", "sunshine",
-                        "#flowerstr", "#bloomscrolling", "#treestr", "#plantstr", "touchgrass", ],
-        "avoid_list": ["porn", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
-                       "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
-                       "moderna", "pfizer", "corona", "socialism",
-                       "murder", "tax", "engagement", "hodlers", "hodl", "gdp", "global markets", "crypto", "wherostr",
-                       "presidency", "dollar", "asset", "microsoft", "amazon", "billionaire", "ceo", "industry",
-                       "white house", "blocks", "streaming", "summary", "wealth", "beef", "cunt", "nigger", "business",
-                       "retail", "bakery", "synth", "slaughterhouse", "hamas", "dog days", "ww3", "socialmedia",
-                       "nintendo", "signature", "deepfake", "congressman", "cypherpunk", "minister", "dissentwatch",
-                       "inkblot", "covid", "robot", "pandemic", "bethesda", "zap farming", " defi ", " minister ",
-                       "nostr-hotter-site", " ai ", "palestine", "https://boards.4chan", "https://techcrunch.com",
-                       "https://screenrant.com"],
-        "db_name": "db/nostr_recent_notes.db",
-        "db_since": 12 * 60 * 60,  # 12h since gmt
-        "personalized": False,
-        "logger": False}
-
-    image = "https://image.nostr.build/a816f3f5e98e91e8a47d50f4cd7a2c17545f556d9bb0a6086a659b9abdf7ab68.jpg"
-    description = "I show recent notes about plants and gardening"
-    custom_processing_msg = ["Finding the best notes for you.. #blooming", "Looking for some positivity.. #touchgrass",
-                             "Looking for #goodvibes..", "All I do is #blooming.."]
-    update_db = False
-    cost = 0
-    discovery_test_sub = build_example_topic("Garden & Growth", "discovery_content_garden",
-                                             admin_config_plants, options_plants,
-                                             image=image,
-                                             description=description,
-                                             update_rate=global_update_rate,
-                                             cost=cost,
-                                             processing_msg=custom_processing_msg,
-                                             update_db=update_db)
-    discovery_test_sub.run()
 
     # Popular Animals (Fluffy frens)
     admin_config_animals = AdminConfig()
@@ -357,6 +287,77 @@ def playground():
                                             update_db=update_db)
 
     discovery_animals.run()
+
+    # Popular Garden&Plants
+    admin_config_plants = AdminConfig()
+    admin_config_plants.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_plants.UPDATE_PROFILE = False
+    # admin_config_plants.DELETE_NIP89 = True
+    # admin_config_plants.PRIVKEY = "430bacf525a2f6efd6db1f049eb7c04e0c0314182ef1c17df39f46fe66416ddf"
+    # admin_config_plants.EVENTID = "f42adb15f4c67b884d58b09084907d94471d1a54185dce0217a69111c703aa14"
+    # admin_config_plants.POW = True
+    options_plants = {
+        "search_list": ["garden", "gardening", "nature", " plants ", " plant ", " herb ", " herbs " " pine ",
+                        "homesteading", "rosemary", "chicken", "🪻", "🌿", "☘️", "🌲", "flower", "forest", "watering",
+                        "permies", "planting", "farm", "vegetable", "fruit", " grass ", "sunshine",
+                        "#flowerstr", "#bloomscrolling", "#treestr", "#plantstr", "touchgrass", ],
+        "avoid_list": ["porn", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
+                       "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
+                       "moderna", "pfizer", "corona", "socialism",
+                       "murder", "tax", "engagement", "hodlers", "hodl", "gdp", "global markets", "crypto", "wherostr",
+                       "presidency", "dollar", "asset", "microsoft", "amazon", "billionaire", "ceo", "industry",
+                       "white house", "blocks", "streaming", "summary", "wealth", "beef", "cunt", "nigger", "business",
+                       "retail", "bakery", "synth", "slaughterhouse", "hamas", "dog days", "ww3", "socialmedia",
+                       "nintendo", "signature", "deepfake", "congressman", "cypherpunk", "minister", "dissentwatch",
+                       "inkblot", "covid", "robot", "pandemic", "bethesda", "zap farming", " defi ", " minister ",
+                       "nostr-hotter-site", " ai ", "palestine", "https://boards.4chan", "https://techcrunch.com",
+                       "https://screenrant.com"],
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 12 * 60 * 60,  # 12h since gmt
+        "personalized": False,
+        "logger": False}
+
+    image = "https://image.nostr.build/a816f3f5e98e91e8a47d50f4cd7a2c17545f556d9bb0a6086a659b9abdf7ab68.jpg"
+    description = "I show recent notes about plants and gardening"
+    custom_processing_msg = ["Finding the best notes for you.. #blooming", "Looking for some positivity.. #touchgrass",
+                             "Looking for #goodvibes..", "All I do is #blooming.."]
+    update_db = False
+    cost = 0
+    discovery_test_sub = build_example_topic("Garden & Growth", "discovery_content_garden",
+                                             admin_config_plants, options_plants,
+                                             image=image,
+                                             description=description,
+                                             update_rate=global_update_rate,
+                                             cost=cost,
+                                             processing_msg=custom_processing_msg,
+                                             update_db=update_db)
+    discovery_test_sub.run()
+
+    # Popular top zapped
+    admin_config_top_zaps = AdminConfig()
+    admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_top_zaps.UPDATE_PROFILE = False
+    custom_processing_msg = ["Looking for most zapped notes", "Let's see which notes people currently zap..",
+                             "Let's find valuable notes. #value4value"]
+    update_db = False
+
+    options_top_zapped = {
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 60 * 60 * 4,  # 4h since gmt,
+    }
+    cost = 0
+    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
+    discovery_topzaps = build_example_top_zapped("Top Zapped notes",
+                                                 "discovery_content_top_zaps",
+                                                 admin_config=admin_config_top_zaps,
+                                                 options=options_top_zapped,
+                                                 image=image,
+                                                 cost=cost,
+                                                 update_rate=global_update_rate,
+                                                 processing_msg=custom_processing_msg,
+                                                 update_db=update_db)
+
+    discovery_topzaps.run()
 
     # Popular Followers
     admin_config_followers = AdminConfig()

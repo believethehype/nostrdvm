@@ -177,7 +177,8 @@ def nip88_announce_tier(dvm_config, client):
     event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content, tags).to_event(keys)
     annotier_id = send_event(event, client=client, dvm_config=dvm_config)
 
-    print("Announced NIP 88 Tier for " + dvm_config.NIP89.NAME)
+    print("[" + dvm_config.NAME + "] Announced NIP 88 Tier for " + dvm_config.NIP89.NAME)
+
     return annotier_id
 
     # Relay and payment-verification

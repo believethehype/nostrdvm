@@ -73,7 +73,7 @@ class MediaConverter(DVMTaskInterface):
         return request_form
 
     def process(self, request_form):
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
         url = upload_media_to_hoster(options["filepath"])
 
         return url

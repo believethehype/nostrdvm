@@ -81,7 +81,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
 
     def process(self, request_form):
         try:
-            options = DVMTaskInterface.set_options(request_form)
+            options = self.set_options(request_form)
             print(options["url"])
             response = requests.get(options["url"])
             image = Image.open(BytesIO(response.content)).convert("RGB")

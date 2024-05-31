@@ -106,7 +106,7 @@ class TextToSpeech(DVMTaskInterface):
     def process(self, request_form):
         import torch
         from TTS.api import TTS
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
         device = "cuda" if torch.cuda.is_available() else "cpu"
         # else "mps" if torch.backends.mps.is_available() \
 

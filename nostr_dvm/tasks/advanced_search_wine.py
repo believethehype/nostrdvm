@@ -89,7 +89,7 @@ class AdvancedSearchWine(DVMTaskInterface):
 
     def process(self, request_form):
         from nostr_sdk import Filter
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
         userkeys = []
         for user in options["users"]:
             tag = Tag.parse(user)
