@@ -201,7 +201,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_since)
 
         filter1 = Filter().kinds([EventDefinitions.KIND_NOTE, EventDefinitions.KIND_REACTION, EventDefinitions.KIND_ZAP,
-                                  EventDefinitions.KIND_LONGFORM]).since(since)  # Notes, reactions, zaps
+                                  definitions.EventDefinitions.KIND_REPOST
+                                  ]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
         print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
