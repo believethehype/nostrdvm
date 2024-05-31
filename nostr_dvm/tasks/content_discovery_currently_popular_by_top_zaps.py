@@ -58,6 +58,20 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
             if self.logger:
                 init_logger(LogLevel.DEBUG)
+
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        keys = Keys.parse(sk.to_hex())
+        signer = NostrSigner.keys(keys)
+        database = NostrDatabase.sqlite(self.db_name)
+        self.client = ClientBuilder().signer(signer).database(database).opts(opts).build()
+
+        self.client.add_relay("wss://relay.damus.io")
+        self.client.add_relay("wss://nostr.oxtr.dev")
+        self.client.add_relay("wss://nostr21.com")
+
+        self.client.connect()
+
         if self.dvm_config.UPDATE_DATABASE:
             self.sync_db()
 
@@ -110,8 +124,6 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
         options = self.set_options(request_form)
 
-        database = NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).build()
 
         # Negentropy reconciliation
         # Query events from database
@@ -119,14 +131,14 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
-        events = cli.database().query([filter1])
+        events = self.client.database().query([filter1])
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
 
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
-                reactions = cli.database().query([filt])
+                reactions = self.client.database().query([filt])
                 invoice_amount = 0
                 haspreimage = False
                 if len(reactions) >= self.min_reactions:
@@ -180,18 +192,6 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                 return 1
 
     def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
-
-        cli.add_relay("wss://relay.damus.io")
-        cli.add_relay("wss://nostr.oxtr.dev")
-        cli.add_relay("wss://nostr21.com")
-
-        cli.connect()
 
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
@@ -203,9 +203,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        cli.reconcile(filter1, dbopts)
+        self.client.reconcile(filter1, dbopts)
         filter_delete = Filter().until(Timestamp.from_secs(Timestamp.now().as_secs() - self.db_since))
-        database.delete(filter_delete)  # Clear old events so db doesn't get too full.
+        self.client.database().delete(filter_delete)  # Clear old events so db doesn't get too full.
 
         print(
             "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")

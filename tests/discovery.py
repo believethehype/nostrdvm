@@ -4,7 +4,7 @@ import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import init_logger, LogLevel, Keys
+from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
 
 from nostr_dvm.subscription import Subscription
 from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCurrentlyPopular
@@ -18,9 +18,15 @@ from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_an
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
-global_update_rate = 180  # set this high on first sync so db can fully sync before another process trys to.
+rebbroadcast_NIP89 = False   # Announce NIP89 on startup
+global_update_rate = 180     # set this high on first sync so db can fully sync before another process trys to.
+use_logger = False
 
+#git_hash = NostrLibrary().git_hash_version()
+#print("GitHash " + git_hash)
 
+if use_logger:
+    init_logger(LogLevel.DEBUG)
 def build_example_nostrband(name, identifier, admin_config, image, about, custom_processing_msg):
     dvm_config: DVMConfig = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
@@ -207,11 +213,8 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
 
 
 def playground():
-    rebbroadcast_NIP89 = True  # Announce NIP89 on startup
-    use_logger = False
 
-    if use_logger:
-        init_logger(LogLevel.INFO)
+
 
     # Popular NOSTR.band
     admin_config_trending_nostr_band = AdminConfig()
