@@ -204,7 +204,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                                  definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
+                                  definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
         print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(

@@ -138,7 +138,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                                 invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
                                 # print(invoice_amount)
                             if tag.as_vec()[0] == 'preimage':
-                                haspreimage = True  # TODO further check preimage
+                                if len(tag.as_vec()) > 1:
+                                    if tag.as_vec()[1] != "":
+                                        haspreimage = True  # TODO further check preimage
                     if haspreimage:
                         ns.finallist[event.id().to_hex()] = invoice_amount
 
