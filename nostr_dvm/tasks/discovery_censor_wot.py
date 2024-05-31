@@ -89,7 +89,7 @@ class DiscoverReports(DVMTaskInterface):
 
         cli.connect()
 
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
         step = 20
 
         pubkeys = []

@@ -64,7 +64,7 @@ class TextGenerationUnleashedChat(DVMTaskInterface):
         from openai import OpenAI
         temp_open_ai_api_key = os.environ["OPENAI_API_KEY"]
         os.environ["OPENAI_API_KEY"] = os.getenv("UNLEASHED_API_KEY")
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
 
         try:
             client = OpenAI(

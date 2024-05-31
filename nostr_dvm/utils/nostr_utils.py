@@ -211,8 +211,7 @@ def update_profile(dvm_config, client, lud16=""):
             .set_lud16(lud16) \
             .set_nip05(lud16)
         # .set_banner("https://example.com/banner.png") \
-
-        print(f"Setting profile metadata for {keys.public_key().to_bech32()}...")
+        print("[" + dvm_config.NIP89.NAME + "] Setting profile metadata for " + keys.public_key().to_bech32() + "...")
         print(metadata.as_json())
         client.set_metadata(metadata)
 

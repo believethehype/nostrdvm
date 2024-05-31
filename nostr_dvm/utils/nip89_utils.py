@@ -8,6 +8,7 @@ from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Clie
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import send_event
+from nostr_dvm.utils.print import bcolors
 
 
 class NIP89Config:
@@ -31,7 +32,9 @@ def nip89_announce_tasks(dvm_config, client):
     content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
     send_event(event, client=client, dvm_config=dvm_config)
-    print("Announced NIP 89 for " + dvm_config.NIP89.NAME)
+
+    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME + bcolors.ENDC)
+
 
 
 def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):

@@ -78,7 +78,7 @@ class SearchUser(DVMTaskInterface):
 
     def process(self, request_form):
         from nostr_sdk import Filter
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
 
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)

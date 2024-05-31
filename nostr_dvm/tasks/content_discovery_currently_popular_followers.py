@@ -65,7 +65,6 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event: Event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
-        print(self.dvm_config.PRIVATE_KEY)
 
         request_form = {"jobID": event.id().to_hex()}
 
@@ -95,7 +94,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
 
         relaylimits = RelayLimits.disable()
         opts = (
@@ -143,6 +142,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
             filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
             events = cli.database().query([filter1])
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
 
             ns.finallist = {}
             for event in events:
@@ -207,15 +207,14 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                                   definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
-        database.delete(Filter().until(Timestamp.from_secs(
-            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesnt get too full.
-
+        filter_delete = Filter().until(Timestamp.from_secs(Timestamp.now().as_secs() - self.db_since))
+        database.delete(filter_delete)  # Clear old events so db doesn't get too full.
         print(
-            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+            "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

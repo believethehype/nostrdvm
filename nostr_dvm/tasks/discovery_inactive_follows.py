@@ -88,7 +88,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
         cli.connect()
 
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))

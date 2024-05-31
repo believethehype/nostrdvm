@@ -96,7 +96,7 @@ class ImageGenerationDALLE(DVMTaskInterface):
 
     def process(self, request_form):
         try:
-            options = DVMTaskInterface.set_options(request_form)
+            options = self.set_options(request_form)
 
             from openai import OpenAI
             client = OpenAI()

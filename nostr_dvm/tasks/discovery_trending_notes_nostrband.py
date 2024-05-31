@@ -68,7 +68,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
         return request_form
 
     def process(self, request_form):
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
 
         import requests
 

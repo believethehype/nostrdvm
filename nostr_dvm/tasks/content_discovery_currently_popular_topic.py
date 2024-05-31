@@ -89,8 +89,6 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
-        print(self.dvm_config.PRIVATE_KEY)
-
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
@@ -135,28 +133,18 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        options = DVMTaskInterface.set_options(request_form)
-
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
+        options = self.set_options(request_form)
 
         database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().database(database).build()
-
-        # cli.add_relay("wss://relay.damus.io")
-        # cli.connect()
-
-        # Negentropy reconciliation
-        # Query events from database
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
         events = cli.database().query([filter1])
-        print(len(events))
+        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+
         ns.final_list = {}
 
         for event in events:
@@ -197,7 +185,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 return 1
 
     def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
@@ -207,7 +195,6 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         cli.add_relay("wss://relay.damus.io")
         cli.add_relay("wss://nostr.oxtr.dev")
         cli.add_relay("wss://nostr21.com")
-
         cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
@@ -217,15 +204,15 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                                   EventDefinitions.KIND_LONGFORM]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
-        database.delete(Filter().until(Timestamp.from_secs(
-            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
+        filter_delete = Filter().until(Timestamp.from_secs(Timestamp.now().as_secs() - self.db_since))
+        database.delete(filter_delete)  # Clear old events so db doesn't get too full.
 
         print(
-            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+            "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

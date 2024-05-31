@@ -74,7 +74,7 @@ class TextExtractionPDF(DVMTaskInterface):
         from pathlib import Path
         import requests
 
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
 
         try:
             file_path = Path('temp.pdf')

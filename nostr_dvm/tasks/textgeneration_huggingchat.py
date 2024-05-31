@@ -71,7 +71,7 @@ class TextGenerationHuggingChat(DVMTaskInterface):
             sign.saveCookiesToDir(cookie_path_dir)
 
 
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
 
         try:
             chatbot = hugchat.ChatBot(cookies=cookies.get_dict())  # or cookie_path="usercookies/<email>.json"

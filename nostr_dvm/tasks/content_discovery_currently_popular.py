@@ -58,7 +58,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             if self.logger:
                 init_logger(LogLevel.DEBUG)
 
-
         if self.dvm_config.UPDATE_DATABASE:
             self.sync_db()
 
@@ -76,7 +75,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
     def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
-        print(self.dvm_config.PRIVATE_KEY)
 
         request_form = {"jobID": event.id().to_hex()}
 
@@ -111,12 +109,10 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        options = DVMTaskInterface.set_options(request_form)
-
+        options = self.set_options(request_form)
 
         database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().database(database).build()
-
 
         # Negentropy reconciliation
         # Query events from database
@@ -125,6 +121,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
         events = cli.database().query([filter1])
+        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
@@ -138,7 +136,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
-            # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
 
@@ -167,7 +164,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                     try:
                         self.result = self.calculate_result(self.request_form)
                     except Exception as e:
-                        print("EXCEPTION: "+ e)
+                        print("EXCEPTION: " + str(e))
                 return 1
 
     def sync_db(self):
@@ -191,21 +188,22 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                                   definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
-        database.delete(Filter().until(Timestamp.from_secs(
-            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesnt get too full.
+        filter_delete = Filter().until(Timestamp.from_secs(Timestamp.now().as_secs() - self.db_since))
+        database.delete(filter_delete)  # Clear old events so db doesn't get too full.
 
         print(
-            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+            "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options,  cost=0, update_rate=180,  processing_msg=None, update_db=True):
+def build_example(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
+                  update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -244,14 +242,15 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    #admin_config.UPDATE_PROFILE = False
-    #admin_config.REBROADCAST_NIP89 = False
+    # admin_config.UPDATE_PROFILE = False
+    # admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                           admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None, update_db=True):
+def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None,
+                               update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -301,9 +300,9 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
-    #admin_config.UPDATE_PROFILE = False
-    #admin_config.REBROADCAST_NIP89 = False
-    #admin_config.REBROADCAST_NIP88 = False
+    # admin_config.UPDATE_PROFILE = False
+    # admin_config.REBROADCAST_NIP89 = False
+    # admin_config.REBROADCAST_NIP88 = False
 
     # admin_config.FETCH_NIP88 = True
     # admin_config.EVENTID = ""

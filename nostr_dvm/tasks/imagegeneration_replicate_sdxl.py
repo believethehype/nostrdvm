@@ -93,7 +93,7 @@ class ImageGenerationReplicateSDXL(DVMTaskInterface):
 
     def process(self, request_form):
         try:
-            options = DVMTaskInterface.set_options(request_form)
+            options = self.set_options(request_form)
 
             import replicate
             width = int(options["size"].split("x")[0])

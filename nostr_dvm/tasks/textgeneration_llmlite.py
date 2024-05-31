@@ -71,7 +71,7 @@ class TextGenerationLLMLite(DVMTaskInterface):
     def process(self, request_form):
         from litellm import completion
 
-        options = DVMTaskInterface.set_options(request_form)
+        options = self.set_options(request_form)
 
         try:
             if options["model"].startswith("ollama"):
