@@ -393,10 +393,10 @@ def playground():
     admin_config_followers = AdminConfig()
     admin_config_followers.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_followers.UPDATE_PROFILE = False
-    admin_config_followers.DELETE_NIP89 = False
-    admin_config_followers.PRIVKEY = ""
-    admin_config_followers.EVENTID = ""
-    admin_config_followers.POW = True
+    #admin_config_followers.DELETE_NIP89 = True
+    #admin_config_followers.PRIVKEY = ""
+    #admin_config_followers.EVENTID = ""
+    #admin_config_followers.POW = True
     custom_processing_msg = ["Processing popular notes from npubs you follow..",
                              "Let's see what npubs you follow have been up to..",
                              "Processing a personalized feed, just for you.."]
