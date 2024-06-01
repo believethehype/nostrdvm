@@ -19,7 +19,7 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 rebbroadcast_NIP89 = False   # Announce NIP89 on startup
-global_update_rate = 300     # set this high on first sync so db can fully sync before another process trys to.
+global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
 #git_hash = NostrLibrary().git_hash_version()
@@ -46,6 +46,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
         "amount": "Free",
         "encryptionSupported": True,
         "cashuAccepted": True,
+        "relays": dvm_config.RELAY_LIST,
         "nip90Params": {}
     }
     nip89config = NIP89Config()
@@ -81,6 +82,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": False,
+        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -126,6 +128,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": False,
+        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -168,6 +171,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": True,
+        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -213,6 +217,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": False,
+        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -373,7 +378,7 @@ def playground():
 
     options_top_zapped = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 4,  # 4h since gmt,
+        "db_since": 60 * 60 * 6,  # 6h since gmt,
     }
     cost = 0
     image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
