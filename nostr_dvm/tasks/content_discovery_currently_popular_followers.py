@@ -143,7 +143,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 if tag.as_vec()[0] == "p":
                     following = PublicKey.parse(tag.as_vec()[1])
                     followings.append(following)
-
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(followings)) + " Followers")
             filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
             events = self.client.database().query([filter1])
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
