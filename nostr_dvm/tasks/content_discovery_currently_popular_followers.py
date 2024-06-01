@@ -58,12 +58,13 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         database = NostrDatabase.sqlite(self.db_name)
         self.client = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        self.client.add_relay("wss://relay.damus.io")
-        self.client.add_relay("wss://nostr.oxtr.dev")
-        self.client.add_relay("wss://nostr21.com")
-
         ropts = RelayOptions().ping(False)
-        self.client.add_relay_with_opts("wss://nostr.band", ropts)
+        self.client.add_relay_with_opts("wss://relay.damus.io", ropts)
+        self.client.add_relay_with_opts("wss://nostr.oxtr.dev", ropts)
+        self.client.add_relay_with_opts("wss://nostr21.com", ropts)
+
+        #ropts = RelayOptions().ping(False)
+        #self.client.add_relay_with_opts("wss://nostr.band", ropts)
 
         self.client.connect()
 
@@ -114,7 +115,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)).relay_limits(
+            Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)).relay_limits(
                 relaylimits))
 
         user = PublicKey.parse(options["user"])

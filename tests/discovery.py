@@ -19,18 +19,22 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 rebbroadcast_NIP89 = False   # Announce NIP89 on startup
-global_update_rate = 180     # set this high on first sync so db can fully sync before another process trys to.
-use_logger = False
+global_update_rate = 300     # set this high on first sync so db can fully sync before another process trys to.
+use_logger = True
 
 #git_hash = NostrLibrary().git_hash_version()
 #print("GitHash " + git_hash)
 
 if use_logger:
-    init_logger(LogLevel.DEBUG)
+    init_logger(LogLevel.INFO)
 def build_example_nostrband(name, identifier, admin_config, image, about, custom_processing_msg):
     dvm_config: DVMConfig = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
+    dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
+                  "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                  "wss://relay.nostr.net"
+                  ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
 
@@ -61,6 +65,10 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                             "wss://relay.nostr.net"
+                             ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -99,7 +107,13 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
+    #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+    #"wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                             "wss://relay.nostr.net"
+                             ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -138,6 +152,10 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                             "wss://relay.nostr.net"
+                             ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -179,6 +197,10 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                             "wss://relay.nostr.net"
+                             ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -340,8 +362,8 @@ def playground():
     # Popular top zapped
     admin_config_top_zaps = AdminConfig()
     admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_top_zaps.UPDATE_PROFILE = False
-    #admin_config_top_zaps.DELETE_NIP89 = True
+    #admin_config_top_zaps.UPDATE_PROFILE = False
+    #admin_config_top_zaps.DELETE_NIP89 = False
     #admin_config_top_zaps.PRIVKEY = ""
     #admin_config_top_zaps.EVENTID = ""
     #admin_config_top_zaps.POW = True
@@ -371,10 +393,10 @@ def playground():
     admin_config_followers = AdminConfig()
     admin_config_followers.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_followers.UPDATE_PROFILE = False
-    #admin_config_followers.DELETE_NIP89 = True
-    #admin_config_followers.PRIVKEY = ""
-    #admin_config_followers.EVENTID = ""
-    #admin_config_followers.POW = True
+    admin_config_followers.DELETE_NIP89 = False
+    admin_config_followers.PRIVKEY = ""
+    admin_config_followers.EVENTID = ""
+    admin_config_followers.POW = True
     custom_processing_msg = ["Processing popular notes from npubs you follow..",
                              "Let's see what npubs you follow have been up to..",
                              "Processing a personalized feed, just for you.."]

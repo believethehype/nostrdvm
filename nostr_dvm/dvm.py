@@ -5,7 +5,7 @@ from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind
+    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind, RelayLimits
 
 import time
 
@@ -39,8 +39,9 @@ class DVM:
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         wait_for_send = False
         skip_disconnected_relays = True
-        opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-                .skip_disconnected_relays(skip_disconnected_relays))
+        relaylimits = RelayLimits.disable()
+        opts = (Options().wait_for_send(wait_for_send). send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+                .skip_disconnected_relays(skip_disconnected_relays).relay_limits(relaylimits))
 
         signer = NostrSigner.keys(self.keys)
         self.client = Client.with_opts(signer, opts)
@@ -690,5 +691,22 @@ class DVM:
 
                 if Timestamp.now().as_secs() > job.timestamp + 60 * 20:  # remove jobs to look for after 20 minutes..
                     self.jobs_on_hold_list.remove(job)
+            advanced_log = False
+            if advanced_log:
+                for url, relay in self.client.relays().items():
+                    stats = relay.stats()
+                    print(f"Relay: {url}")
+                    print(f"Connected: {relay.is_connected()}")
+                    print(f"Status: {relay.status()}")
+                    print("Stats:")
+                    print(f"    Attempts: {stats.attempts()}")
+                    print(f"    Success: {stats.success()}")
+                    print(f"    Bytes sent: {stats.bytes_sent()}")
+                    print(f"    Bytes received: {stats.bytes_received()}")
+                    print(f"    Connected at: {stats.connected_at().to_human_datetime()}")
+                    if stats.latency() is not None:
+                        print(f"    Latency: {stats.latency().total_seconds() * 1000} ms")
+
+                    print("###########################################")
 
             time.sleep(1.0)
