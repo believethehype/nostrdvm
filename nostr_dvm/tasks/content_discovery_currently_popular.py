@@ -2,7 +2,8 @@ import json
 import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
+    RelayOptions
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -58,18 +59,20 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             if self.logger:
                 init_logger(LogLevel.DEBUG)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
         database = NostrDatabase.sqlite(self.db_name)
         self.client = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        self.client.add_relay("wss://relay.damus.io")
-        self.client.add_relay("wss://nostr.oxtr.dev")
-        self.client.add_relay("wss://nostr21.com")
+        ropts = RelayOptions().ping(False)
+        self.client.add_relay_with_opts("wss://relay.damus.io", ropts)
+        self.client.add_relay_with_opts("wss://nostr.oxtr.dev", ropts)
+        self.client.add_relay_with_opts("wss://nostr21.com", ropts)
 
         self.client.connect()
+
 
 
         if self.dvm_config.UPDATE_DATABASE:
@@ -141,6 +144,9 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                 reactions = self.client.database().query([filt])
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
+
+        if len(ns.finallist) == 0:
+            return self.result
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
