@@ -60,19 +60,6 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             if self.logger:
                 init_logger(LogLevel.DEBUG)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite(self.db_name)
-        self.client = ClientBuilder().signer(signer).database(database).opts(opts).build()
-
-        ropts = RelayOptions().ping(False)
-        self.client.add_relay_with_opts("wss://relay.damus.io", ropts)
-        self.client.add_relay_with_opts("wss://nostr.oxtr.dev", ropts)
-        self.client.add_relay_with_opts("wss://nostr21.com", ropts)
-
-        self.client.connect()
 
         if self.dvm_config.UPDATE_DATABASE:
             self.sync_db()
@@ -126,6 +113,15 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
         options = self.set_options(request_form)
 
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        keys = Keys.parse(sk.to_hex())
+        signer = NostrSigner.keys(keys)
+
+        database = NostrDatabase.sqlite(self.db_name)
+        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+
+        cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -133,14 +129,14 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
-        events = self.client.database().query([filter1])
+        events = cli.database().query([filter1])
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
 
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
-                reactions = self.client.database().query([filt])
+                reactions = cli.database().query([filt])
                 invoice_amount = 0
                 haspreimage = False
                 if len(reactions) >= self.min_reactions:
@@ -164,6 +160,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
+
+        cli.disconnect()
+        cli.shutdown()
 
         return json.dumps(result_list)
 

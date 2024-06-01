@@ -33,7 +33,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     min_reactions = 2
     personalized = False
     result = ""
-    logger = False
 
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None, options=None):
@@ -48,32 +47,16 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         self.request_form['options'] = json.dumps(opts)
 
         self.last_schedule = Timestamp.now().as_secs()
-        if self.options is not None:
-            if self.options.get("db_name"):
-                self.db_name = self.options.get("db_name")
-            if self.options.get("db_since"):
-                self.db_since = int(self.options.get("db_since"))
-            if self.options.get("logger"):
-                self.logger = bool(self.options.get("logger"))
 
-            if self.logger:
-                init_logger(LogLevel.DEBUG)
-
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite(self.db_name)
-        self.client = ClientBuilder().signer(signer).database(database).opts(opts).build()
-
-        ropts = RelayOptions().ping(False)
-        self.client.add_relay_with_opts("wss://relay.damus.io", ropts)
-        self.client.add_relay_with_opts("wss://nostr.oxtr.dev", ropts)
-        self.client.add_relay_with_opts("wss://nostr21.com", ropts)
-
-        self.client.connect()
+        if self.options.get("db_name"):
+            self.db_name = self.options.get("db_name")
+        if self.options.get("db_since"):
+            self.db_since = int(self.options.get("db_since"))
 
 
+        use_logger = False
+        if use_logger:
+            init_logger(LogLevel.DEBUG)
 
         if self.dvm_config.UPDATE_DATABASE:
             self.sync_db()
@@ -97,7 +80,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
         # default values
         search = ""
-        max_results = 100
+        max_results = 200
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -128,32 +111,45 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
         options = self.set_options(request_form)
 
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        keys = Keys.parse(sk.to_hex())
+        signer = NostrSigner.keys(keys)
+
+        database = NostrDatabase.sqlite(self.db_name)
+        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        cli.connect()
+
+        # Negentropy reconciliation
+        # Query events from database
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
-        events = self.client.database().query([filter1])
+        events = cli.database().query([filter1])
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
-
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = self.client.database().query([filt])
+                reactions = cli.database().query([filt])
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
-
         if len(ns.finallist) == 0:
+            cli.disconnect()
+            cli.shutdown()
             return self.result
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
+            # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
-
+        cli.disconnect()
+        cli.shutdown()
         return json.dumps(result_list)
 
     def post_process(self, result, event):
@@ -175,14 +171,22 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                 if self.dvm_config.UPDATE_DATABASE:
                     self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
-                if not self.personalized:
-                    try:
-                        self.result = self.calculate_result(self.request_form)
-                    except Exception as e:
-                        print("EXCEPTION: " + str(e))
+                self.result = self.calculate_result(self.request_form)
                 return 1
 
     def sync_db(self):
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        keys = Keys.parse(sk.to_hex())
+        signer = NostrSigner.keys(keys)
+        database = NostrDatabase.sqlite(self.db_name)
+        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+
+        ropts = RelayOptions().ping(True)
+        cli.add_relay_with_opts("wss://relay.damus.io", ropts)
+        cli.add_relay_with_opts("wss://nostr.oxtr.dev", ropts)
+        cli.add_relay_with_opts("wss://nostr21.com", ropts)
+        cli.connect()
 
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         lasthour = Timestamp.from_secs(timestamp_hour_ago)
@@ -191,22 +195,21 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                                   definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
+        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        self.client.reconcile(filter1, dbopts)
-        filter_delete = Filter().until(Timestamp.from_secs(Timestamp.now().as_secs() - self.db_since))
-        self.client.database().delete(filter_delete)  # Clear old events so db doesn't get too full.
+        cli.reconcile(filter1, dbopts)
+        database.delete(Filter().until(Timestamp.from_secs(
+            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesnt get too full.
 
         print(
-            "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
-                  update_db=True):
+def build_example(name, identifier, admin_config, options,  cost=0, update_rate=180,  processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -245,15 +248,14 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    # admin_config.UPDATE_PROFILE = False
-    # admin_config.REBROADCAST_NIP89 = False
+    #admin_config.UPDATE_PROFILE = False
+    #admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                           admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None,
-                               update_db=True):
+def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -303,9 +305,9 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
-    # admin_config.UPDATE_PROFILE = False
-    # admin_config.REBROADCAST_NIP89 = False
-    # admin_config.REBROADCAST_NIP88 = False
+    #admin_config.UPDATE_PROFILE = False
+    #admin_config.REBROADCAST_NIP89 = False
+    #admin_config.REBROADCAST_NIP88 = False
 
     # admin_config.FETCH_NIP88 = True
     # admin_config.EVENTID = ""
