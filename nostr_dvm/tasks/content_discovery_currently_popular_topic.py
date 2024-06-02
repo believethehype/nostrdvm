@@ -196,24 +196,16 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 return 1
 
     def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
         database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        cli.add_relay("wss://relay.damus.io")
-        cli.add_relay("wss://nostr.oxtr.dev")
-        cli.add_relay("wss://relay.nostr.net")
-        cli.add_relay("wss://relay.nostr.bg")
-        cli.add_relay("wss://nostr.wine")
-        cli.add_relay("wss://nostr21.com")
+        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            cli.add_relay(relay)
 
-        #RELAY_LIST = [ "wss://nostr.wine",
-        #              , "wss://relay.nostr.bg",
-        #              , "wss://relay.nostr.net"
-        #              ]
         cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
@@ -227,7 +219,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         cli.reconcile(filter1, dbopts)
         database.delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-
+        cli.shutdown()
         print("[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
