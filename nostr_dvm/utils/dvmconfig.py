@@ -21,6 +21,13 @@ class DVMConfig:
                   "wss://relay.nostr.net"
                   ]
 
+    RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr21.com",
+                   "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                  "wss://relay.nostr.net" , "wss://relay.primal.net"] #, "wss://relay.snort.social"]
+
+
+# cli.add_relay("wss://relay.primal.net")
+
     #"wss://relay.damus.io"
 
     RELAY_TIMEOUT = 5

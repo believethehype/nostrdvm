@@ -190,31 +190,37 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 self.last_schedule = Timestamp.now().as_secs()
                 return 1
 
+
     def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
         database = NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        cli.add_relay("wss://relay.damus.io")
+        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            cli.add_relay(relay)
+
         cli.connect()
 
-        timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
-        lasthour = Timestamp.from_secs(timestamp_hour_ago)
+        timestamp_since = Timestamp.now().as_secs() - self.db_since
+        since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                                  definitions.EventDefinitions.KIND_ZAP]).since(lasthour)  # Notes, reactions, zaps
+        filter1 = Filter().kinds(
+            [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
+             definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(self.db_since) + " seconds.. this might take a while..")
+        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+            self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
         database.delete(Filter().until(Timestamp.from_secs(
-            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesnt get too full.
-
-        print("[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
+        cli.shutdown()
+        print("[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(
+            self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
