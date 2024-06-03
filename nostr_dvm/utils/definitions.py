@@ -10,6 +10,7 @@ class EventDefinitions:
     KIND_REPOST = Kind(6)
     KIND_REACTION = Kind(7)
     KIND_ZAP = Kind(9735)
+    KIND_RELAY_ANNOUNCEMENT = Kind(10002)
     KIND_ANNOUNCEMENT = Kind(31990)
     KIND_LONGFORM = Kind(30023)
     KIND_NIP94_METADATA = Kind(1063)

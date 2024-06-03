@@ -5,6 +5,7 @@ from nostr_sdk import Keys, PublicKey, Client
 from nostr_dvm.utils.database_utils import get_from_sql_table, list_db, delete_from_sql_table, update_sql_table, \
     get_or_add_user, clean_db
 from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.nip65_utils import nip65_announce_relays
 from nostr_dvm.utils.nip88_utils import nip88_announce_tier, fetch_nip88_parameters_for_deletion, fetch_nip88_event, \
     check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import nip89_announce_tasks, fetch_nip89_parameters_for_deletion
@@ -15,6 +16,7 @@ class AdminConfig:
     REBROADCAST_NIP89: bool = False
     REBROADCAST_NIP88: bool = False
     UPDATE_PROFILE: bool = False
+    REBROADCAST_NIP65_RELAY_LIST: bool = False
     DELETE_NIP89: bool = False
     DELETE_NIP88: bool = False
     FETCH_NIP88: bool = False
@@ -86,6 +88,10 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
 
     if adminconfig.REBROADCAST_NIP89:
         nip89_announce_tasks(dvmconfig, client=client)
+
+
+    if adminconfig.REBROADCAST_NIP65_RELAY_LIST:
+        nip65_announce_relays(dvmconfig, client=client)
 
     if adminconfig.REBROADCAST_NIP88:
         annotier_id = nip88_announce_tier(dvmconfig, client=client)
