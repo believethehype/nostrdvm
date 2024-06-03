@@ -18,8 +18,8 @@ from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_an
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
-rebroadcast_NIP89 = True   # Announce NIP89 on startup
-rebroadcast_NIP65_Relay_List = False
+rebroadcast_NIP89 = False   # Announce NIP89 on startup
+rebroadcast_NIP65_Relay_List = True
 update_profile = False
 
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
