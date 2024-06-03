@@ -18,8 +18,8 @@ from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_an
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
-rebbroadcast_NIP89 = False   # Announce NIP89 on startup
-rebbroadcast_NIP65_Relay_List = False
+rebroadcast_NIP89 = True   # Announce NIP89 on startup
+rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
@@ -233,13 +233,41 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
 
 
 def playground():
+    # Popular top zapped
+    admin_config_top_zaps = AdminConfig()
+    admin_config_top_zaps.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_top_zaps.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_top_zaps.UPDATE_PROFILE = update_profile
+    # admin_config_top_zaps.DELETE_NIP89 = True
+    # admin_config_top_zaps.PRIVKEY = ""
+    # admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
+    # admin_config_top_zaps.POW = True
+    custom_processing_msg = ["Looking for most zapped notes", "Let's see which notes people currently zap..",
+                             "Let's find valuable notes. #value4value"]
+    update_db = False
 
+    options_top_zapped = {
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 60 * 60 * 6,  # 6h since gmt,
+    }
+    cost = 0
+    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
+    discovery_topzaps = build_example_top_zapped("Top Zapped notes",
+                                                 "discovery_content_top_zaps",
+                                                 admin_config=admin_config_top_zaps,
+                                                 options=options_top_zapped,
+                                                 image=image,
+                                                 cost=cost,
+                                                 update_rate=global_update_rate,
+                                                 processing_msg=custom_processing_msg,
+                                                 update_db=update_db)
 
+    discovery_topzaps.run()
 
     # Popular NOSTR.band
     admin_config_trending_nostr_band = AdminConfig()
-    admin_config_trending_nostr_band.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_trending_nostr_band.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
+    admin_config_trending_nostr_band.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_trending_nostr_band.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_trending_nostr_band.UPDATE_PROFILE = update_profile
     #admin_config_trending_nostr_band.DELETE_NIP89 = True
     #admin_config_trending_nostr_band.PRIVKEY = ""
@@ -259,8 +287,8 @@ def playground():
 
     # Popular Animals (Fluffy frens)
     admin_config_animals = AdminConfig()
-    admin_config_animals.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_animals.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
+    admin_config_animals.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_animals.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_animals.UPDATE_PROFILE = update_profile
     #admin_config_animals.DELETE_NIP89 = True
     #admin_config_animals.PRIVKEY = ""
@@ -317,8 +345,8 @@ def playground():
 
     # Popular Garden&Plants
     admin_config_plants = AdminConfig()
-    admin_config_plants.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_plants.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
+    admin_config_plants.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_plants.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_plants.UPDATE_PROFILE = update_profile
     #admin_config_plants.DELETE_NIP89 = True
     #admin_config_plants.PRIVKEY = ""
@@ -361,41 +389,11 @@ def playground():
                                              update_db=update_db)
     discovery_test_sub.run()
 
-    # Popular top zapped
-    admin_config_top_zaps = AdminConfig()
-    admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_top_zaps.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
-    admin_config_top_zaps.UPDATE_PROFILE = update_profile
-    #admin_config_top_zaps.DELETE_NIP89 = True
-    #admin_config_top_zaps.PRIVKEY = ""
-    #admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
-    #admin_config_top_zaps.POW = True
-    custom_processing_msg = ["Looking for most zapped notes", "Let's see which notes people currently zap..",
-                             "Let's find valuable notes. #value4value"]
-    update_db = False
-
-    options_top_zapped = {
-        "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 6,  # 6h since gmt,
-    }
-    cost = 0
-    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
-    discovery_topzaps = build_example_top_zapped("Top Zapped notes",
-                                                 "discovery_content_top_zaps",
-                                                 admin_config=admin_config_top_zaps,
-                                                 options=options_top_zapped,
-                                                 image=image,
-                                                 cost=cost,
-                                                 update_rate=global_update_rate,
-                                                 processing_msg=custom_processing_msg,
-                                                 update_db=update_db)
-
-    discovery_topzaps.run()
 
     # Popular Followers
     admin_config_followers = AdminConfig()
-    admin_config_followers.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_followers.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
+    admin_config_followers.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_followers.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_followers.UPDATE_PROFILE = update_profile
     #admin_config_followers.DELETE_NIP89 = True
     #admin_config_followers.PRIVKEY = ""
@@ -426,8 +424,8 @@ def playground():
 
     # Popular Global
     admin_config_global_popular = AdminConfig()
-    admin_config_global_popular.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    admin_config_global_popular.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
+    admin_config_global_popular.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_global_popular.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_global_popular.UPDATE_PROFILE = update_profile
     #admin_config_global_popular.DELETE_NIP89 = True
     #admin_config_global_popular.PRIVKEY = ""
