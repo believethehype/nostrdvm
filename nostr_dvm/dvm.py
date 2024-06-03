@@ -17,7 +17,8 @@ from nostr_dvm.utils.database_utils import create_sql_table, get_or_add_user, up
     update_user_subscription
 from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nip88_utils import nip88_has_active_subscription
-from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags
+from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags, \
+    send_event_outbox
 from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
     parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
@@ -40,12 +41,11 @@ class DVM:
         wait_for_send = False
         skip_disconnected_relays = True
         relaylimits = RelayLimits.disable()
-        opts = (Options().wait_for_send(wait_for_send). send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
                 .skip_disconnected_relays(skip_disconnected_relays).relay_limits(relaylimits))
 
         signer = NostrSigner.keys(self.keys)
         self.client = Client.with_opts(signer, opts)
-
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
@@ -121,7 +121,8 @@ class DVM:
                     print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
                     return
 
-                print(bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name  + bcolors.ENDC)
+                print(
+                    bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + bcolors.ENDC)
                 duration = input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
@@ -456,6 +457,16 @@ class DVM:
                 original_event.kind().as_u64()) + ". The task was: " + original_event.content()])
             status_tag = Tag.parse(["status", "success"])
             reply_tags = [request_tag, e_tag, p_tag, alt_tag, status_tag]
+
+            relay_tag = None
+            for tag in original_event.tags():
+                if tag.as_vec()[0] == "relays":
+                    relay_tag = tag
+                    break
+            if relay_tag is not None:
+                reply_tags.append(relay_tag)
+
+
             encrypted = False
             for tag in original_event.tags():
                 if tag.as_vec()[0] == "encrypted":
@@ -477,7 +488,8 @@ class DVM:
             reply_event = EventBuilder(Kind(original_event.kind().as_u64() + 1000), str(content), reply_tags).to_event(
                 self.keys)
 
-            send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
+            # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
+            send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
 
             print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
                 original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
@@ -493,7 +505,17 @@ class DVM:
             p_tag = Tag.parse(["p", original_event.author().to_hex()])
             alt_tag = Tag.parse(["alt", alt_description])
             status_tag = Tag.parse(["status", status])
+
             reply_tags = [e_tag, alt_tag, status_tag]
+
+            relay_tag = None
+            for tag in original_event.tags():
+                if tag.as_vec()[0] == "relays":
+                    relay_tag = tag
+                    break
+            if relay_tag is not None:
+                reply_tags.append(relay_tag)
+
             encryption_tags = []
 
             encrypted = False
@@ -577,7 +599,8 @@ class DVM:
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
-            send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
+            # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
+            send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
 
             print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
                 EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
@@ -625,7 +648,8 @@ class DVM:
                                 post_processed = dvm.post_process(result, job_event)
                                 send_nostr_reply_event(post_processed, job_event.as_json())
                             except Exception as e:
-                                print(bcolors.RED + "[" + self.dvm_config.NIP89.NAME + "] Error: " + str(e) + bcolors.ENDC)
+                                print(bcolors.RED + "[" + self.dvm_config.NIP89.NAME + "] Error: " + str(
+                                    e) + bcolors.ENDC)
                                 send_job_status_reaction(job_event, "error", content=str(e),
                                                          dvm_config=self.dvm_config)
                     except Exception as e:

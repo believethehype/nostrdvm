@@ -176,7 +176,6 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
-        print(len(result_list))
 
         print("[" + self.dvm_config.IDENTIFIER + "] Filtered " + str(
             len(result_list)) + " fitting events.")
