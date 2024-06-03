@@ -178,6 +178,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             result_list.append(e_tag.as_vec())
         print(len(result_list))
 
+        print("[" + self.dvm_config.IDENTIFIER + "] Filtered " + str(
+            len(result_list)) + " fitting events.")
+
         cli.disconnect()
         cli.shutdown()
         return json.dumps(result_list)
@@ -192,7 +195,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                     self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 self.result = self.calculate_result(self.request_form)
-                #print(self.result)
+
+
+
                 return 1
 
     def sync_db(self):
