@@ -19,6 +19,7 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 rebbroadcast_NIP89 = False   # Announce NIP89 on startup
+rebbroadcast_NIP65_Relay_List = True
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
@@ -32,9 +33,8 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config.USE_OWN_VENV = False
     dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
     dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-                  "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                  "wss://relay.nostr.net"
-                  ]
+                  "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
+                             ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
 
@@ -46,7 +46,6 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
         "amount": "Free",
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "relays": dvm_config.RELAY_LIST,
         "nip90Params": {}
     }
     nip89config = NIP89Config()
@@ -67,8 +66,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                             "wss://relay.nostr.net"
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
                              ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -82,7 +80,6 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": False,
-        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -113,8 +110,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     #"wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                             "wss://relay.nostr.net"
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
                              ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -128,7 +124,6 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": False,
-        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -156,8 +151,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                             "wss://relay.nostr.net"
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
                              ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -171,7 +165,6 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": True,
-        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -202,8 +195,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                             "wss://relay.nostr.net"
+                             "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
                              ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -217,7 +209,6 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
         "encryptionSupported": True,
         "cashuAccepted": True,
         "personalized": False,
-        "relays": dvm_config.RELAY_LIST,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -246,10 +237,11 @@ def playground():
     # Popular NOSTR.band
     admin_config_trending_nostr_band = AdminConfig()
     admin_config_trending_nostr_band.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_trending_nostr_band.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
     admin_config_trending_nostr_band.UPDATE_PROFILE = False
     #admin_config_trending_nostr_band.DELETE_NIP89 = True
     #admin_config_trending_nostr_band.PRIVKEY = ""
-    #admin_config_trending_nostr_band.EVENTID = ""
+    #admin_config_trending_nostr_band.EVENTID = "e7a7aaa7113f17af94ccbfe86c06e04c27ffce3d2f654d613ce249b68414bdae"
     #admin_config_trending_nostr_band.POW = True
     custom_processing_msg = "Looking for trending notes on nostr.band.."
     image = "https://nostr.band/android-chrome-192x192.png"
@@ -266,10 +258,11 @@ def playground():
     # Popular Animals (Fluffy frens)
     admin_config_animals = AdminConfig()
     admin_config_animals.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_animals.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
     admin_config_animals.UPDATE_PROFILE = False
     #admin_config_animals.DELETE_NIP89 = True
     #admin_config_animals.PRIVKEY = ""
-    #admin_config_animals.EVENTID = ""
+    #admin_config_animals.EVENTID = "79c613b5f0e71718628bd0c782a5b6b495dac491f36c326ccf416ada80fd8fdc"
     #admin_config_animals.POW = True
 
     options_animal = {
@@ -285,7 +278,8 @@ def playground():
                        "presidency", "dollar", "asset", "microsoft", "amazon", "billionaire", "ceo", "industry",
                        "white house", "hot dog", "spirit animal", "migrant", "invasion", "blocks", "streaming",
                        "summary",
-                       "wealth", "beef", "cunt", "nigger", "business", "tore off", "chart",
+                       "wealth", "beef", "cunt", "nigger", "business", "tore off", "chart", "critical theory",
+                       "law of nature",
                        "retail", "bakery", "synth", "slaughterhouse", "hamas", "dog days", "ww3", "socialmedia",
                        "nintendo", "signature", "deepfake", "congressman", "fried chicken", "cypherpunk",
                        "social media",
@@ -322,10 +316,11 @@ def playground():
     # Popular Garden&Plants
     admin_config_plants = AdminConfig()
     admin_config_plants.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_plants.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
     admin_config_plants.UPDATE_PROFILE = False
     #admin_config_plants.DELETE_NIP89 = True
     #admin_config_plants.PRIVKEY = ""
-    #admin_config_plants.EVENTID = ""
+    #admin_config_plants.EVENTID = "ff28be59708ee597c7010fd43a7e649e1ab51da491266ca82a84177e0007e4d6"
     #admin_config_plants.POW = True
     options_plants = {
         "search_list": ["garden", "gardening", "nature", " plants ", " plant ", " herb ", " herbs " " pine ",
@@ -334,7 +329,7 @@ def playground():
                         "#flowerstr", "#bloomscrolling", "#treestr", "#plantstr", "touchgrass", ],
         "avoid_list": ["porn", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
                        "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
-                       "moderna", "pfizer", "corona", "socialism",
+                       "moderna", "pfizer", "corona", "socialism", "critical theory", "law of nature"
                        "murder", "tax", "engagement", "hodlers", "hodl", "gdp", "global markets", "crypto", "wherostr",
                        "presidency", "dollar", "asset", "microsoft", "amazon", "billionaire", "ceo", "industry",
                        "white house", "blocks", "streaming", "summary", "wealth", "beef", "cunt", "nigger", "business",
@@ -367,10 +362,11 @@ def playground():
     # Popular top zapped
     admin_config_top_zaps = AdminConfig()
     admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
-    #admin_config_top_zaps.UPDATE_PROFILE = False
-    #admin_config_top_zaps.DELETE_NIP89 = False
+    admin_config_top_zaps.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
+    admin_config_top_zaps.UPDATE_PROFILE = False
+    #admin_config_top_zaps.DELETE_NIP89 = True
     #admin_config_top_zaps.PRIVKEY = ""
-    #admin_config_top_zaps.EVENTID = ""
+    #admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
     #admin_config_top_zaps.POW = True
     custom_processing_msg = ["Looking for most zapped notes", "Let's see which notes people currently zap..",
                              "Let's find valuable notes. #value4value"]
@@ -397,10 +393,11 @@ def playground():
     # Popular Followers
     admin_config_followers = AdminConfig()
     admin_config_followers.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_followers.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
     admin_config_followers.UPDATE_PROFILE = False
     #admin_config_followers.DELETE_NIP89 = True
     #admin_config_followers.PRIVKEY = ""
-    #admin_config_followers.EVENTID = ""
+    #admin_config_followers.EVENTID = "590cd7b2902224f740acbd6845023a5ab4a959386184f3360c2859019cfd48fa"
     #admin_config_followers.POW = True
     custom_processing_msg = ["Processing popular notes from npubs you follow..",
                              "Let's see what npubs you follow have been up to..",
@@ -428,10 +425,11 @@ def playground():
     # Popular Global
     admin_config_global_popular = AdminConfig()
     admin_config_global_popular.REBROADCAST_NIP89 = rebbroadcast_NIP89
+    admin_config_global_popular.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
     admin_config_global_popular.UPDATE_PROFILE = False
     #admin_config_global_popular.DELETE_NIP89 = True
     #admin_config_global_popular.PRIVKEY = ""
-    #admin_config_global_popular.EVENTID = ""
+    #admin_config_global_popular.EVENTID = "2fea4ee2ccf0fa11db171113ffd7a676f800f34121478b7c9a4e73c2f1990028"
     #admin_config_global_popular.POW = True
     custom_processing_msg = ["Looking for popular notes on the Nostr..", "Let's see what's trending on Nostr..",
                              "Finding the best notes on the Nostr.."]

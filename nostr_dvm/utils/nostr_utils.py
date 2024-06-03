@@ -104,7 +104,7 @@ def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | N
         return None
 
 
-def send_event(event: Event, client: Client, dvm_config) -> EventId:
+def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventId:
     try:
         relays = []
 
@@ -118,12 +118,16 @@ def send_event(event: Event, client: Client, dvm_config) -> EventId:
             if relay not in dvm_config.RELAY_LIST:
                 client.add_relay(relay)
 
+        if blastr:
+            client.add_relay("wss://nostr.mutinywallet.com")
+
         event_id = client.send_event(event)
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
                 client.remove_relay(relay)
-
+        if blastr:
+            client.remove_relay("wss://nostr.mutinywallet.com")
         return event_id
     except Exception as e:
         print(e)
