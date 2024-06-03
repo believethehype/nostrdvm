@@ -33,7 +33,7 @@ def nip89_announce_tasks(dvm_config, client):
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
     evenid = send_event(event, client=client, dvm_config=dvm_config)
 
-    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME +" (" + evenid.to_hex() +")" + + bcolors.ENDC)
+    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME +" (" + evenid.to_hex() +")" + bcolors.ENDC)
 
 
 
