@@ -164,6 +164,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 result_list.append(e_tag.as_vec())
             cli.connect()
             cli.shutdown()
+            print("[" + self.dvm_config.IDENTIFIER + "] Filtered " + str(
+                len(result_list)) + " fitting events.")
 
         return json.dumps(result_list)
 

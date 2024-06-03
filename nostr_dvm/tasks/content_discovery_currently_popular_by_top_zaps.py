@@ -155,6 +155,8 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                         ns.finallist[event.id().to_hex()] = invoice_amount
 
         result_list = []
+        print("[" + self.dvm_config.IDENTIFIER + "] Filtered " + str(
+            len(result_list)) + " fitting events.")
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))

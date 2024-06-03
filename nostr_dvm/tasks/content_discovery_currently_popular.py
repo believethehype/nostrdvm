@@ -150,6 +150,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             result_list.append(e_tag.as_vec())
         cli.disconnect()
         cli.shutdown()
+        print("[" + self.dvm_config.IDENTIFIER + "] Filtered " + str(
+            len(result_list)) + " fitting events.")
         return json.dumps(result_list)
 
     def post_process(self, result, event):
