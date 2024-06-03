@@ -19,7 +19,9 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 rebbroadcast_NIP89 = False   # Announce NIP89 on startup
-rebbroadcast_NIP65_Relay_List = True
+rebbroadcast_NIP65_Relay_List = False
+update_profile = False
+
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
@@ -238,7 +240,7 @@ def playground():
     admin_config_trending_nostr_band = AdminConfig()
     admin_config_trending_nostr_band.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_trending_nostr_band.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
-    admin_config_trending_nostr_band.UPDATE_PROFILE = False
+    admin_config_trending_nostr_band.UPDATE_PROFILE = update_profile
     #admin_config_trending_nostr_band.DELETE_NIP89 = True
     #admin_config_trending_nostr_band.PRIVKEY = ""
     #admin_config_trending_nostr_band.EVENTID = "e7a7aaa7113f17af94ccbfe86c06e04c27ffce3d2f654d613ce249b68414bdae"
@@ -259,7 +261,7 @@ def playground():
     admin_config_animals = AdminConfig()
     admin_config_animals.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_animals.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
-    admin_config_animals.UPDATE_PROFILE = False
+    admin_config_animals.UPDATE_PROFILE = update_profile
     #admin_config_animals.DELETE_NIP89 = True
     #admin_config_animals.PRIVKEY = ""
     #admin_config_animals.EVENTID = "79c613b5f0e71718628bd0c782a5b6b495dac491f36c326ccf416ada80fd8fdc"
@@ -317,7 +319,7 @@ def playground():
     admin_config_plants = AdminConfig()
     admin_config_plants.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_plants.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
-    admin_config_plants.UPDATE_PROFILE = False
+    admin_config_plants.UPDATE_PROFILE = update_profile
     #admin_config_plants.DELETE_NIP89 = True
     #admin_config_plants.PRIVKEY = ""
     #admin_config_plants.EVENTID = "ff28be59708ee597c7010fd43a7e649e1ab51da491266ca82a84177e0007e4d6"
@@ -363,7 +365,7 @@ def playground():
     admin_config_top_zaps = AdminConfig()
     admin_config_top_zaps.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_top_zaps.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
-    admin_config_top_zaps.UPDATE_PROFILE = False
+    admin_config_top_zaps.UPDATE_PROFILE = update_profile
     #admin_config_top_zaps.DELETE_NIP89 = True
     #admin_config_top_zaps.PRIVKEY = ""
     #admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
@@ -394,7 +396,7 @@ def playground():
     admin_config_followers = AdminConfig()
     admin_config_followers.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_followers.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
-    admin_config_followers.UPDATE_PROFILE = False
+    admin_config_followers.UPDATE_PROFILE = update_profile
     #admin_config_followers.DELETE_NIP89 = True
     #admin_config_followers.PRIVKEY = ""
     #admin_config_followers.EVENTID = "590cd7b2902224f740acbd6845023a5ab4a959386184f3360c2859019cfd48fa"
@@ -426,7 +428,7 @@ def playground():
     admin_config_global_popular = AdminConfig()
     admin_config_global_popular.REBROADCAST_NIP89 = rebbroadcast_NIP89
     admin_config_global_popular.REBROADCAST_NIP65_RELAY_LIST = rebbroadcast_NIP65_Relay_List
-    admin_config_global_popular.UPDATE_PROFILE = False
+    admin_config_global_popular.UPDATE_PROFILE = update_profile
     #admin_config_global_popular.DELETE_NIP89 = True
     #admin_config_global_popular.PRIVKEY = ""
     #admin_config_global_popular.EVENTID = "2fea4ee2ccf0fa11db171113ffd7a676f800f34121478b7c9a4e73c2f1990028"

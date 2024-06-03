@@ -6,7 +6,9 @@ from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
-    Nip19Event, SingleLetterTag
+    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner
+
+from nostr_dvm.utils.definitions import EventDefinitions
 
 
 def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
@@ -104,10 +106,80 @@ def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | N
         return None
 
 
+def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
+    ptags = []
+    for tag in event_to_send.tags():
+        if tag.as_vec()[0] == 'p':
+            ptag = PublicKey.parse(tag.as_vec()[1])
+            ptags.append(ptag)
+
+    filter = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
+    events = client.get_events_of([filter], timedelta(dvm_config.RELAY_TIMEOUT))
+    if len(events) == 0:
+        return []
+    else:
+        nip65event = events[0]
+        relays = []
+        for tag in nip65event.tags():
+            if tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2:
+                rtag = tag.as_vec()[1]
+                relays.append(rtag)
+            elif tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3:
+                if tag.as_vec()[2] == "read":
+                    rtag = tag.as_vec()[1]
+                    relays.append(rtag)
+        return relays
+
+
+def send_event_outbox(event: Event, client, dvm_config) -> EventId:
+
+    # 1. OK, Let's overcomplicate things.
+    # 2. If our event has a relays tag, we just send the event to these relay in the classical way.
+    relays = []
+    for tag in event.tags():
+        if tag.as_vec()[0] == 'relays':
+            for index, param in enumerate(tag.as_vec()):
+                if index != 0:
+                    relays.append(tag.as_vec()[index])
+            break
+
+
+    # 3. If we couldn't find relays, we look in the receivers inbox
+    if len(relays) == 0:
+        relays = get_inbox_relays(event, client, dvm_config)
+
+    # 4. If we don't find inbox relays (e.g. because the user didn't announce them, we just send to our default relays
+    if len(relays) == 0:
+        print("[" + dvm_config.NIP89.NAME + "] No Inbox found, replying to generic relays")
+        eventid = send_event(event, client, dvm_config)
+        return eventid
+
+    # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
+    relaylimits = RelayLimits.disable()
+    opts = (
+        Options().wait_for_send(False).send_timeout(timedelta(seconds=dvm_config.RELAY_TIMEOUT)).relay_limits(
+            relaylimits))
+    sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
+    keys = Keys.parse(sk.to_hex())
+    signer = NostrSigner.keys(keys)
+    outboxclient = Client.with_opts(signer, opts)
+
+    print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
+
+    for relay in relays:
+        opts = RelayOptions().ping(False)
+        outboxclient.add_relay_with_opts(relay, opts)
+
+    outboxclient.connect()
+    event_id = outboxclient.send_event(event)
+    outboxclient.shutdown()
+
+    return event_id
+
+
 def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventId:
     try:
         relays = []
-
         for tag in event.tags():
             if tag.as_vec()[0] == 'relays':
                 for index, param in enumerate(tag.as_vec()):
@@ -118,16 +190,16 @@ def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventI
             if relay not in dvm_config.RELAY_LIST:
                 client.add_relay(relay)
 
-        if blastr:
-            client.add_relay("wss://nostr.mutinywallet.com")
+        #if blastr:
+        #    client.add_relay("wss://nostr.mutinywallet.com")
 
         event_id = client.send_event(event)
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
                 client.remove_relay(relay)
-        if blastr:
-            client.remove_relay("wss://nostr.mutinywallet.com")
+        #if blastr:
+        #    client.remove_relay("wss://nostr.mutinywallet.com")
         return event_id
     except Exception as e:
         print(e)
