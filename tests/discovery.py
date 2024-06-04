@@ -28,6 +28,19 @@ update_profile = False
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
+AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine"
+                                                                                   "wss://nostr21.com",
+                                "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
+                                "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
+                                "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://minds.com",
+                                "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all",
+                                "wss://eden.nostr.land",
+                                "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",
+                                "wss://za.purplerelay.com",
+                                "wss://relay.nostrich.land", "wss://relay.nostrplebs.com" "wss://relay.nostrich.land",
+
+                                ]
+
 #git_hash = NostrLibrary().git_hash_version()
 #print("GitHash " + git_hash)
 
@@ -81,6 +94,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config: DVMConfig = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #              "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -114,6 +128,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -158,6 +173,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
     #"wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -199,6 +215,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -243,6 +260,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
