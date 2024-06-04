@@ -138,7 +138,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
         if len(ns.finallist) == 0:
-            cli.disconnect()
             cli.shutdown()
             return self.result
 
@@ -148,9 +147,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
-        cli.disconnect()
         cli.shutdown()
-        print("[" + self.dvm_config.IDENTIFIER + "] Filtered " + str(
+        print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
             len(result_list)) + " fitting events.")
         return json.dumps(result_list)
 
@@ -196,15 +194,15 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                                   definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
-        database.delete(Filter().until(Timestamp.from_secs(
+        cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
         cli.shutdown()
         print(
-            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+            "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

@@ -162,7 +162,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
 
-        print("[" + self.dvm_config.IDENTIFIER + "] Filtered " + str(
+        print("[" + self.dvm_config.NIP89.NAME+ "] Filtered " + str(
             len(result_list)) + " fitting events.")
 
         cli.disconnect()
@@ -216,15 +216,15 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                                   definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
+        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         cli.reconcile(filter1, dbopts)
-        database.delete(Filter().until(Timestamp.from_secs(
+        cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
         cli.shutdown()
         print(
-            "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+            "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

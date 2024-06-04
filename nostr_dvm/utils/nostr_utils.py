@@ -123,11 +123,13 @@ def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
         for tag in nip65event.tags():
             if tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2:
                 rtag = tag.as_vec()[1]
-                relays.append(rtag)
+                if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                    relays.append(rtag)
             elif tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3:
                 if tag.as_vec()[2] == "read":
                     rtag = tag.as_vec()[1]
-                    relays.append(rtag)
+                    if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                        relays.append(rtag)
         return relays
 
 
@@ -140,7 +142,8 @@ def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         if tag.as_vec()[0] == 'relays':
             for index, param in enumerate(tag.as_vec()):
                 if index != 0:
-                    relays.append(tag.as_vec()[index])
+                    if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                        relays.append(tag.as_vec()[index])
             break
 
 
