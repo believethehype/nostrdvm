@@ -25,10 +25,16 @@ class DVMConfig:
                    "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
                   "wss://relay.nostr.net" , "wss://relay.primal.net"] #, "wss://relay.snort.social"]
 
+    AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine",
+                                    "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
+                                    "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
+                                    "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://minds.com",
+                                    "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all", "wss://eden.nostr.land",
+                                    "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",  "wss://za.purplerelay.com",
 
-# cli.add_relay("wss://relay.primal.net")
+                                    ]
+    #If a DVM has a paid subscription, overwrite list without the paid one.
 
-    #"wss://relay.damus.io"
 
     RELAY_TIMEOUT = 5
     RELAY_LONG_TIMEOUT = 30
