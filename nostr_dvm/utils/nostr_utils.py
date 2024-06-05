@@ -143,7 +143,7 @@ def send_event_outbox(event: Event, client, dvm_config) -> EventId:
                         try:
                             relays.append(tag.as_vec()[index])
                         except:
-                            print(tag.as_vec()[index] + "couldn't be added")
+                            print("[" + dvm_config.NIP89.NAME + "] " + tag.as_vec()[index] + " couldn't be added to outbox relays")
             break
 
 
@@ -174,8 +174,7 @@ def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         try:
             outboxclient.add_relay_with_opts(relay, opts)
         except:
-            print(relay + "couldn't be added")
-
+            print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
 
     outboxclient.connect()
     try:
