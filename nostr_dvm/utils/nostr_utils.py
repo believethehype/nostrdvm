@@ -121,7 +121,7 @@ def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
         nip65event = events[0]
         relays = []
         for tag in nip65event.tags():
-            if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2) 
+            if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
                     or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
                 rtag = tag.as_vec()[1]
                 if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
@@ -140,7 +140,10 @@ def send_event_outbox(event: Event, client, dvm_config) -> EventId:
             for index, param in enumerate(tag.as_vec()):
                 if index != 0:
                     if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
-                        relays.append(tag.as_vec()[index])
+                        try:
+                            relays.append(tag.as_vec()[index])
+                        except:
+                            print(tag.as_vec()[index] + "couldn't be added")
             break
 
 
@@ -168,10 +171,18 @@ def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
     for relay in relays:
         opts = RelayOptions().ping(False)
-        outboxclient.add_relay_with_opts(relay, opts)
+        try:
+            outboxclient.add_relay_with_opts(relay, opts)
+        except:
+            print(relay + "couldn't be added")
+
 
     outboxclient.connect()
-    event_id = outboxclient.send_event(event)
+    try:
+        event_id = outboxclient.send_event(event)
+    except:
+        event_id = send_event(event, client, dvm_config)
+
     outboxclient.shutdown()
 
     return event_id
