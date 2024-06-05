@@ -121,14 +121,11 @@ def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
         nip65event = events[0]
         relays = []
         for tag in nip65event.tags():
-            if tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2:
+            if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2) 
+                    or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
                 rtag = tag.as_vec()[1]
                 if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
-                    relays.append(rtag)
-            elif tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3:
-                if tag.as_vec()[2] == "read":
-                    rtag = tag.as_vec()[1]
-                    if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                    if rtag.startswith("ws") and " " not in rtag:
                         relays.append(rtag)
         return relays
 
