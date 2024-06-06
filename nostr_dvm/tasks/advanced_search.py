@@ -25,11 +25,9 @@ class AdvancedSearch(DVMTaskInterface):
     FIX_COST: float = 0
     dvm_config: DVMConfig
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -54,7 +52,7 @@ class AdvancedSearch(DVMTaskInterface):
         search = ""
         max_results = 100
         relay = "wss://relay.nostr.band"
-        
+
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
@@ -63,7 +61,7 @@ class AdvancedSearch(DVMTaskInterface):
             elif tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "user":  # check for param type
-                    #user = tag.as_vec()[2]
+                    # user = tag.as_vec()[2]
                     users.append(Tag.parse(["p", tag.as_vec()[2]]))
                 elif param == "users":  # check for param type
                     users = json.loads(tag.as_vec()[2])
@@ -85,7 +83,7 @@ class AdvancedSearch(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
@@ -96,24 +94,24 @@ class AdvancedSearch(DVMTaskInterface):
         cli = Client.with_opts(signer, opts)
 
         ropts = RelayOptions().ping(False)
-        cli.add_relay_with_opts(options["relay"], ropts)
+        await cli.add_relay_with_opts(options["relay"], ropts)
 
-        cli.connect()
+        await cli.connect()
 
-        #earch_since_seconds = int(options["since"]) * 24 * 60 * 60
-        #dif = Timestamp.now().as_secs() - search_since_seconds
-        #search_since = Timestamp.from_secs(dif)
+        # earch_since_seconds = int(options["since"]) * 24 * 60 * 60
+        # dif = Timestamp.now().as_secs() - search_since_seconds
+        # search_since = Timestamp.from_secs(dif)
         search_since = Timestamp.from_secs(int(options["since"]))
 
-        #search_until_seconds = int(options["until"]) * 24 * 60 * 60
-        #dif = Timestamp.now().as_secs() - search_until_seconds
-        #search_until = Timestamp.from_secs(dif)
+        # search_until_seconds = int(options["until"]) * 24 * 60 * 60
+        # dif = Timestamp.now().as_secs() - search_until_seconds
+        # search_until = Timestamp.from_secs(dif)
         search_until = Timestamp.from_secs(int(options["until"]))
         userkeys = []
         for user in options["users"]:
             tag = Tag.parse(user)
             user = tag.as_vec()[1]
-            #user = user[1]
+            # user = user[1]
             user = str(user).lstrip("@")
             if str(user).startswith('npub'):
                 userkey = PublicKey.from_bech32(user)
@@ -125,25 +123,25 @@ class AdvancedSearch(DVMTaskInterface):
             userkeys.append(userkey)
 
         if not options["users"]:
-            notes_filter = Filter().kind(Kind(1)).search(options["search"]).since(search_since).until(search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(Kind(1)).search(options["search"]).since(search_since).until(
+                search_until).limit(options["max_results"])
         elif options["search"] == "":
-                notes_filter = Filter().kind(Kind(1)).authors(userkeys).since(search_since).until(
-                    search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(Kind(1)).authors(userkeys).since(search_since).until(
+                search_until).limit(options["max_results"])
         else:
-                notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
-                    search_since).until(search_until).limit(options["max_results"])
+            notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
+                search_since).until(search_until).limit(options["max_results"])
 
-
-        events = cli.get_events_of([notes_filter], timedelta(seconds=5))
+        events = await cli.get_events_of([notes_filter], timedelta(seconds=5))
 
         result_list = []
         if len(events) > 0:
 
             for event in events:
                 e_tag = Tag.parse(["e", event.id().to_hex()])
-                #print(e_tag.as_vec())
                 result_list.append(e_tag.as_vec())
 
+        await cli.shutdown()
         return json.dumps(result_list)
 
     def post_process(self, result, event):

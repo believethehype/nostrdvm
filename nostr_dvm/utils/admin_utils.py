@@ -36,7 +36,7 @@ class AdminConfig:
     PRIVKEY: str = ""
 
 
-def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None, client: Client = None):
+async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None, client: Client = None):
     # This is called on start of Server, Admin function to manually whitelist/blacklist/add balance/delete users
     if adminconfig is None or dvmconfig is None:
         return
@@ -64,7 +64,7 @@ def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMC
             publickey = npub
 
         if adminconfig.WHITELISTUSER:
-            user = get_or_add_user(db, publickey, client=client, config=dvmconfig)
+            user = await get_or_add_user(db, publickey, client=client, config=dvmconfig)
             update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive, user.subscribed)
             user = get_from_sql_table(db, publickey)
             print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))

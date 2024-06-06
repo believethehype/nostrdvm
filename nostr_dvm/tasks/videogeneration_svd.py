@@ -26,10 +26,9 @@ class VideoGenerationSVD(DVMTaskInterface):
     TASK: str = "image-to-video"
     FIX_COST: float = 120
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
+        dvm_config.SCRIPT = os.path.abspath(__file__)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -80,7 +79,7 @@ class VideoGenerationSVD(DVMTaskInterface):
 
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         try:
             # Call the process route of n-server with our request form.
             response = send_request_to_server(request_form, self.options['server'])

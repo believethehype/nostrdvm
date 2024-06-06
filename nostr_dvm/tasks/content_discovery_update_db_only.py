@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from datetime import timedelta
@@ -26,6 +27,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     TASK: str = "update-db-on-schedule"
     FIX_COST: float = 0
     dvm_config: DVMConfig
+    request_form = None
     last_schedule: int
     min_reactions = 2
     db_since = 10 * 3600
@@ -36,11 +38,8 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     personalized = False
     result = ""
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
-
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
 
         # Generate Generic request form for dvms that provide generic results (e.g only a calculation per update,
         # not per call)
@@ -72,7 +71,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             init_logger(LogLevel.DEBUG)
 
         if self.dvm_config.UPDATE_DATABASE:
-            self.sync_db()
+            await self.sync_db()
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -106,7 +105,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
         self.request_form = request_form
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         return "I don't return results, I just update the DB."
 
     def post_process(self, result, event):
@@ -120,28 +119,28 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
-    def schedule(self, dvm_config):
+    async def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
                 if self.dvm_config.UPDATE_DATABASE:
-                    self.sync_db()
+                    await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 return 1
 
-    def sync_db(self):
+    async def sync_db(self):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite(self.db_name)
+        database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-            cli.add_relay(relay)
+            await cli.add_relay(relay)
 
-        cli.connect()
+        await cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -153,10 +152,10 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
         print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        cli.reconcile(filter1, dbopts)
-        cli.database().delete(Filter().until(Timestamp.from_secs(
+        await cli.reconcile(filter1, dbopts)
+        await cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-        cli.shutdown()
+        await cli.shutdown()
         print(
             "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
