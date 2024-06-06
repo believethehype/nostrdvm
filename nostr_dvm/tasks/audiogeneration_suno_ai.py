@@ -30,11 +30,9 @@ class AudioGenerationSonoAI(DVMTaskInterface):
     TASK: str = "prompt-to-music"
     FIX_COST: float = 120
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
         self.base_url = 'http://localhost:3000'
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
@@ -100,7 +98,7 @@ class AudioGenerationSonoAI(DVMTaskInterface):
         response = requests.post(url, json=payload)
         return response.json()
 
-    def process(self, request_form):
+    async def process(self, request_form):
         try:
             options = self.set_options(request_form)
             has_quota = False

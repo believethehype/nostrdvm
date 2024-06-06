@@ -30,11 +30,9 @@ class DiscoverNonFollowers(DVMTaskInterface):
     client: Client
     dvm_config: DVMConfig
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         # no input required
@@ -59,7 +57,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
@@ -71,12 +69,12 @@ class DiscoverNonFollowers(DVMTaskInterface):
         cli = Client.with_opts(signer, opts)
         # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
-            cli.add_relay(relay)
+            await cli.add_relay(relay)
         #add nostr band, too.
         ropts = RelayOptions().ping(False)
-        cli.add_relay_with_opts("wss://nostr.band", ropts)
+        await cli.add_relay_with_opts("wss://nostr.band", ropts)
 
-        cli.connect()
+        await cli.connect()
 
         options = self.set_options(request_form)
         step = 20
@@ -103,7 +101,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     ns.dic[following] = "True"
             print("Followings: " + str(len(followings)))
 
-            def scanList(users, instance, i, st):
+            async def scanList(users, instance, i, st):
                 from nostr_sdk import Filter
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
@@ -112,14 +110,14 @@ class DiscoverNonFollowers(DVMTaskInterface):
                 signer = NostrSigner.keys(keys)
                 cli = Client.with_opts(signer, opts)
                 for relay in self.dvm_config.RELAY_LIST:
-                    cli.add_relay(relay)
+                    await cli.add_relay(relay)
                 cli.connect()
 
                 for i in range(i, i + st):
                     filters = []
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(Kind(3))
                     filters.append(filter1)
-                    followers = cli.get_events_of(filters, timedelta(seconds=3))
+                    followers = await cli.get_events_of(filters, timedelta(seconds=3))
 
                     if len(followers) > 0:
                         result_list = []

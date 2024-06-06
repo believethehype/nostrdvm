@@ -107,7 +107,7 @@ def parse_cashu(cashu_token: str):
         return None, None, None, "Cashu Parser: " + str(e)
 
 
-def redeem_cashu(cashu, config, client, required_amount=0, update_self=False) -> (bool, str, int, int):
+async def redeem_cashu(cashu, config, client, required_amount=0, update_self=False) -> (bool, str, int, int):
     proofs, mint, total_amount, message = parse_cashu(cashu)
     if message is not None:
         return False, message, 0, 0
@@ -121,7 +121,7 @@ def redeem_cashu(cashu, config, client, required_amount=0, update_self=False) ->
         invoice, paymenthash = create_bolt11_ln_bits(estimated_redeem_invoice_amount, config)
     else:
 
-        user = get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
+        user = await get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
                                client=client, config=config, update=update_self)
         invoice = create_bolt11_lud16(user.lud16, estimated_redeem_invoice_amount)
     print(invoice)
@@ -148,7 +148,7 @@ def redeem_cashu(cashu, config, client, required_amount=0, update_self=False) ->
         invoice, paymenthash = create_bolt11_ln_bits(redeem_invoice_amount, config)
     else:
 
-        user = get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
+        user = await get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
                                client=client, config=config, update=update_self)
         invoice = create_bolt11_lud16(user.lud16, redeem_invoice_amount)
     print(invoice)

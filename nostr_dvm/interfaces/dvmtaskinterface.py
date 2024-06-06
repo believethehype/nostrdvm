@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import subprocess
@@ -34,11 +35,14 @@ class DVMTaskInterface:
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None,
                  options=None, task=None):
+        if options is None:
+            self.options = {}
+        else:
+            self.options = options
         self.init(name, dvm_config, admin_config, nip88config, nip89config, task)
-        self.options = options
         self.install_dependencies(dvm_config)
 
-    def init(self, name, dvm_config, admin_config=None, nip88config=None, nip89config=None, task=None):
+    def init(self, name, dvm_config, admin_config=None, nip88config=None, nip89config=None, task=None, options=None):
         self.NAME = name
         self.PRIVATE_KEY = dvm_config.PRIVATE_KEY
         if dvm_config.PUBLIC_KEY == "" or dvm_config.PUBLIC_KEY is None:
@@ -65,6 +69,14 @@ class DVMTaskInterface:
 
         self.dvm_config = dvm_config
         self.admin_config = admin_config
+
+        asyncio.run(self.init_dvm(name, dvm_config, nip89config, nip88config,
+                                  admin_config, options))
+
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
+
+        pass
 
     def install_dependencies(self, dvm_config):
         if dvm_config.SCRIPT != "":
@@ -94,7 +106,7 @@ class DVMTaskInterface:
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
         nostr_dvm_thread.start()
 
-    def schedule(self, dvm_config):
+    async def schedule(self, dvm_config):
         """schedule something, e.g. define some time to update or to post, does nothing by default"""
         pass
 
@@ -115,7 +127,7 @@ class DVMTaskInterface:
         """Parse input into a request form that will be given to the process method"""
         pass
 
-    def process(self, request_form):
+    async def process(self, request_form):
         "Process the data and return the result"
         pass
 

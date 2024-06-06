@@ -25,11 +25,9 @@ class TrendingNotesNostrBand(DVMTaskInterface):
     dvm_config: DVMConfig
     logger = False
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
 
         if self.options is not None:
             if self.options.get("logger"):
@@ -67,7 +65,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         options = self.set_options(request_form)
 
         import requests

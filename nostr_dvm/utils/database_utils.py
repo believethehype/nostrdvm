@@ -110,7 +110,6 @@ def get_from_sql_table(db, npub):
                 add_sql_table_column(db)
                 # Migrate 
 
-
             user = User
             user.npub = row[0]
             user.balance = row[1]
@@ -217,8 +216,7 @@ def update_user_subscription(npub, subscribed_until, client, dvm_config):
         print("Updated user subscription for: " + str(user.name))
 
 
-
-def get_or_add_user(db, npub, client, config, update=False, skip_meta = False):
+async def get_or_add_user(db, npub, client, config, update=False, skip_meta=False):
     user = get_from_sql_table(db, npub)
     if user is None:
         try:
@@ -227,7 +225,7 @@ def get_or_add_user(db, npub, client, config, update=False, skip_meta = False):
                 nip05 = ""
                 lud16 = ""
             else:
-                name, nip05, lud16 = fetch_user_metadata(npub, client)
+                name, nip05, lud16 = await fetch_user_metadata(npub, client)
             print("Adding User: " + npub + " (" + npub + ")")
             add_to_sql_table(db, npub, config.NEW_USER_BALANCE, False, False, nip05,
                              lud16, name, Timestamp.now().as_secs(), 0)
@@ -237,7 +235,7 @@ def get_or_add_user(db, npub, client, config, update=False, skip_meta = False):
             print("Error Adding User to DB: " + str(e))
     elif update:
         try:
-            name, nip05, lud16 = fetch_user_metadata(npub, client)
+            name, nip05, lud16 = await fetch_user_metadata(npub, client)
             print("Updating User: " + npub + " (" + npub + ")")
             update_sql_table(db, user.npub, user.balance, user.iswhitelisted, user.isblacklisted, nip05,
                              lud16, name, Timestamp.now().as_secs(), user.subscribed)
@@ -249,14 +247,14 @@ def get_or_add_user(db, npub, client, config, update=False, skip_meta = False):
     return user
 
 
-def fetch_user_metadata(npub, client):
+async def fetch_user_metadata(npub, client):
     name = ""
     nip05 = ""
     lud16 = ""
     pk = PublicKey.parse(npub)
     print(f"\nGetting profile metadata for {pk.to_bech32()}...")
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    events = client.get_events_of([profile_filter], timedelta(seconds=1))
+    events = await client.get_events_of([profile_filter], timedelta(seconds=1))
     if len(events) > 0:
         latest_entry = events[0]
         latest_time = 0

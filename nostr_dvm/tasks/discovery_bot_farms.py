@@ -27,17 +27,10 @@ class DiscoveryBotFarms(DVMTaskInterface):
     dvm_config: DVMConfig
     last_schedule: int = 0
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
-
-        use_logger = False
-        if use_logger:
-            init_logger(LogLevel.DEBUG)
-
-        self.sync_db()
+        await self.sync_db()
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -55,7 +48,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        search = "airdrop;just your average nostr enjoyer" #;@nostrich.house;
+        search = "airdrop;just your average nostr enjoyer"  # ;@nostrich.house;
         max_results = 500
 
         for tag in event.tags():
@@ -75,7 +68,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
@@ -84,19 +77,19 @@ class DiscoveryBotFarms(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        database = NostrDatabase.sqlite("db/nostr_profiles.db")
+        database = await NostrDatabase.sqlite("db/nostr_profiles.db")
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        cli.add_relay("wss://relay.damus.io")
+        await cli.add_relay("wss://relay.damus.io")
         # cli.add_relay("wss://atl.purplerelay.com")
-        cli.connect()
+        await cli.connect()
 
         # Negentropy reconciliation
 
         # Query events from database
 
         filter1 = Filter().kind(Kind(0))
-        events = cli.database().query([filter1])
+        events = await cli.database().query([filter1])
         # for event in events:
         #    print(event.as_json())
 
@@ -121,7 +114,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
                         print(str(exp) + " " + event.author().to_hex())
                 else:
                     break
-
+        await cli.shutdown()
         return json.dumps(result_list)
 
     def post_process(self, result, event):
@@ -135,33 +128,33 @@ class DiscoveryBotFarms(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
-    def schedule(self, dvm_config):
+    async def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
-                self.sync_db()
+                await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 return 1
 
-    def sync_db(self):
+    async def sync_db(self):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite("db/nostr_profiles.db")
+        database = await NostrDatabase.sqlite("db/nostr_profiles.db")
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        cli.add_relay("wss://relay.damus.io")
-        cli.add_relay("wss://nostr21.com")
-        cli.connect()
+        await cli.add_relay("wss://relay.damus.io")
+        await cli.add_relay("wss://nostr21.com")
+        await cli.connect()
 
         filter1 = Filter().kind(Kind(0))
 
         # filter = Filter().author(keys.public_key())
         print("Syncing Profile Database.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        cli.reconcile(filter1, dbopts)
+        await cli.reconcile(filter1, dbopts)
         print("Done Syncing Profile Database.")
 
 
@@ -197,7 +190,7 @@ def build_example(name, identifier, admin_config):
     options = {"relay": "wss://relay.damus.io"}
 
     return DiscoveryBotFarms(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                      admin_config=admin_config, options=options)
+                             admin_config=admin_config, options=options)
 
 
 if __name__ == '__main__':

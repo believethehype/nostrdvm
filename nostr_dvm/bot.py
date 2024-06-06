@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import signal
@@ -23,15 +24,7 @@ class Bot:
     job_list: list
 
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
-    def __init__(self, dvm_config, admin_config=None):
-        self.NAME = "Bot"
-        dvm_config.DB = "db/" + self.NAME + ".db"
-        self.dvm_config = dvm_config
-        nip89config = NIP89Config()
-        nip89config.NAME = self.NAME
-        self.dvm_config.NIP89 = nip89config
-        self.admin_config = admin_config
-        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+    async def init_bot(self, dvm_config, admin_config=None):
         wait_for_send = True
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
@@ -48,8 +41,8 @@ class Bot:
               ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
-            self.client.add_relay(relay)
-        self.client.connect()
+            await self.client.add_relay(relay)
+        await self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
@@ -64,40 +57,54 @@ class Bot:
         self.client.subscribe([zap_filter, dm_filter, nip59_filter, dvm_filter], None)
 
         create_sql_table(self.dvm_config.DB)
-        admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
+        await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
+
+    def __init__(self, dvm_config, admin_config=None):
+        self.NAME = "Bot"
+        dvm_config.DB = "db/" + self.NAME + ".db"
+        self.dvm_config = dvm_config
+        nip89config = NIP89Config()
+        nip89config.NAME = self.NAME
+        self.dvm_config.NIP89 = nip89config
+        self.admin_config = admin_config
+        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+
+        asyncio.run(self.init_bot(dvm_config, admin_config))
+        asyncio.run(self.run_bot(dvm_config))
+
 
         # add_sql_table_column(dvm_config.DB)
-
+    async def run_bot(self, dvm_config):
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config
             keys = self.keys
 
-            def handle(self, relay_url, subscription_id, nostr_event):
+            async def handle(self, relay_url, subscription_id, nostr_event):
                 if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() + 1000 <= nostr_event.kind().as_u64()
                         <= EventDefinitions.KIND_NIP90_GENERIC.as_u64() + 1000):
-                    handle_nip90_response_event(nostr_event)
+                    await handle_nip90_response_event(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_FEEDBACK:
-                    handle_nip90_feedback(nostr_event)
+                    await handle_nip90_feedback(nostr_event)
 
                 elif nostr_event.kind() == EventDefinitions.KIND_ZAP:
-                    handle_zap(nostr_event)
+                    await handle_zap(nostr_event)
 
                 elif nostr_event.kind() == EventDefinitions.KIND_DM:
                     try:
-                        handle_dm(nostr_event, False)
+                        await handle_dm(nostr_event, False)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
                 elif nostr_event.kind().match_enum(KindEnum.GIFT_WRAP()):
                     try:
-                      handle_dm(nostr_event, True)
+                      await handle_dm(nostr_event, True)
                     except Exception as e:
                         print(f"Error during content NIP59 decryption: {e}")
 
-            def handle_msg(self, relay_url, msg):
+            async def handle_msg(self, relay_url, msg):
                 return
 
-        def handle_dm(nostr_event, giftwrap):
+        async def handle_dm(nostr_event, giftwrap):
             sender = nostr_event.author().to_hex()
             if sender == self.keys.public_key().to_hex():
                 return
@@ -131,7 +138,7 @@ class Bot:
                         print(f"Error during content NIP04 decryption: {e}")
 
                 if decrypted_text != "":
-                    user = get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
+                    user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
                                            config=self.dvm_config)
 
                     print("[" + self.NAME + "]" + sealed + "Message from " + user.name + ": " + decrypted_text)
@@ -217,10 +224,10 @@ class Bot:
                         else:
                             evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
                                                                     message,None).to_event(self.keys)
-                            send_event(evt, client=self.client, dvm_config=dvm_config)
+                            await send_event(evt, client=self.client, dvm_config=dvm_config)
                     elif decrypted_text.startswith("cashuA"):
                         print("Received Cashu token:" + decrypted_text)
-                        cashu_redeemed, cashu_message, total_amount, fees = redeem_cashu(decrypted_text,
+                        cashu_redeemed, cashu_message, total_amount, fees = await redeem_cashu(decrypted_text,
                                                                                          self.dvm_config,
                                                                                          self.client)
                         print(cashu_message)
@@ -255,7 +262,7 @@ class Bot:
             except Exception as e:
                 print("Error in bot " + str(e))
 
-        def handle_nip90_feedback(nostr_event):
+        async def handle_nip90_feedback(nostr_event):
             # print(nostr_event.as_json())
             try:
                 is_encrypted = False
@@ -303,7 +310,7 @@ class Bot:
                 if status == "success" or status == "error" or status == "processing" or status == "partial" and content != "":
                     entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                     if entry is not None and entry['dvm_key'] == nostr_event.author().to_hex():
-                        user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
+                        user = await get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                                client=self.client, config=self.dvm_config)
                         time.sleep(2.0)
                         if entry["giftwrap"]:
@@ -328,7 +335,7 @@ class Bot:
                             if entry is not None and entry['is_paid'] is False and entry[
                                 'dvm_key'] == nostr_event.author().to_hex():
                                 # if we get a bolt11, we pay and move on
-                                user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
+                                user = await get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                                        client=self.client, config=self.dvm_config)
                                 if user.balance >= amount:
                                     balance = max(user.balance - amount, 0)
@@ -345,7 +352,7 @@ class Bot:
                                                                                 PublicKey.parse(entry["npub"]),
                                                                                 message,
                                                                                 None).to_event(self.keys)
-                                        send_event(evt, client=self.client, dvm_config=dvm_config)
+                                        await send_event(evt, client=self.client, dvm_config=dvm_config)
                                     print(
                                         "[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
 
@@ -360,14 +367,14 @@ class Bot:
                                                                             str(int(amount - user.balance))
                                                                             + " Sats, then try again.",
                                                                             None).to_event(self.keys)
-                                    send_event(evt, client=self.client, dvm_config=dvm_config)
+                                    await send_event(evt, client=self.client, dvm_config=dvm_config)
                                     return
 
                                 if len(tag.as_vec()) > 2:
                                     bolt11 = tag.as_vec()[2]
                                 # else we create a zap
                                 else:
-                                    user = get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.author().to_hex(),
+                                    user = await get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.author().to_hex(),
                                                            client=self.client, config=self.dvm_config)
                                     print("Paying: " + user.name)
                                     bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys,
@@ -389,7 +396,7 @@ class Bot:
             except Exception as e:
                 print(e)
 
-        def handle_nip90_response_event(nostr_event: Event):
+        async def handle_nip90_response_event(nostr_event: Event):
             try:
                 ptag = ""
                 etag = ""
@@ -406,7 +413,7 @@ class Bot:
                 if entry is not None and entry[
                     'dvm_key'] == nostr_event.author().to_hex():
                     print(entry)
-                    user = get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
+                    user = await get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                            client=self.client, config=self.dvm_config)
 
                     self.job_list.remove(entry)
@@ -436,12 +443,12 @@ class Bot:
                                                                         PublicKey.parse(user.npub),
                                                                         content,
                                                                         None).to_event(self.keys)
-                        send_event(reply_event, client=self.client, dvm_config=dvm_config)
+                        await send_event(reply_event, client=self.client, dvm_config=dvm_config)
 
             except Exception as e:
                 print(e)
 
-        def handle_zap(zap_event):
+        async def handle_zap(zap_event):
             print("[" + self.NAME + "] Zap received")
             try:
                 invoice_amount, zapped_event, sender, message, anon = parse_zap_event_tags(zap_event,
@@ -455,7 +462,7 @@ class Bot:
                     if tag.as_vec()[0] == "e":
                         etag = tag.as_vec()[1]
 
-                user = get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
+                user = await get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
 
                 entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                 print(entry)
@@ -465,7 +472,7 @@ class Bot:
                 print(sender)
                 if entry is not None and entry['is_paid'] is True and entry['dvm_key'] == sender:
                     # if we get a bolt11, we pay and move on
-                    user = get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
+                    user = await get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                            client=self.client, config=self.dvm_config)
 
                     sender = user.npub
@@ -692,7 +699,7 @@ class Bot:
 
             return None
 
-        self.client.handle_notifications(NotificationHandler())
+        await self.client.handle_notifications(NotificationHandler())
 
         try:
             while True:
