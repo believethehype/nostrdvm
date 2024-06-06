@@ -178,11 +178,10 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     keys = Keys.parse(sk.to_hex())
     signer = NostrSigner.keys(keys)
     outboxclient = Client.with_opts(signer, opts)
-
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays:
-        opts = RelayOptions().ping(False)
+        opts = RelayOptions().ping(True)
         try:
             await outboxclient.add_relay_with_opts(relay, opts)
         except:

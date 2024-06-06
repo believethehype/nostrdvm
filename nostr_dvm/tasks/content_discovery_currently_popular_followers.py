@@ -160,7 +160,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
                 e_tag = Tag.parse(["e", entry[0]])
                 result_list.append(e_tag.as_vec())
-            await cli.connect()
+            #await cli.connect()
             await cli.shutdown()
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")

@@ -35,7 +35,13 @@ class DVM:
     job_list: list
     jobs_on_hold_list: list
 
-    async def init_dvm(self, dvm_config, admin_config=None):
+    def __init__(self, dvm_config, admin_config=None):
+        asyncio.run(self.run_dvm(dvm_config, admin_config))
+
+    async def run_dvm(self, dvm_config, admin_config):
+        self.dvm_config = dvm_config
+        self.admin_config = admin_config
+        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         wait_for_send = False
         skip_disconnected_relays = True
         relaylimits = RelayLimits.disable()
@@ -67,15 +73,7 @@ class DVM:
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
         await self.client.subscribe([dvm_filter, zap_filter], None)
 
-    def __init__(self, dvm_config, admin_config=None):
-        self.dvm_config = dvm_config
-        self.admin_config = admin_config
-        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
 
-        asyncio.run(self.init_dvm(dvm_config, admin_config))
-        asyncio.run(self.run_dvm(dvm_config))
-
-    async def run_dvm(self, dvm_config):
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config
