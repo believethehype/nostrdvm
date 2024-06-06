@@ -24,7 +24,22 @@ class Bot:
     job_list: list
 
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
-    async def init_bot(self, dvm_config, admin_config=None):
+
+    def __init__(self, dvm_config, admin_config=None):
+        asyncio.run(self.run_bot(dvm_config, admin_config))
+
+
+        # add_sql_table_column(dvm_config.DB)
+    async def run_bot(self, dvm_config, admin_config):
+        self.NAME = "Bot"
+        dvm_config.DB = "db/" + self.NAME + ".db"
+        self.dvm_config = dvm_config
+        nip89config = NIP89Config()
+        nip89config.NAME = self.NAME
+        self.dvm_config.NIP89 = nip89config
+        self.admin_config = admin_config
+        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+
         wait_for_send = True
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
@@ -59,22 +74,7 @@ class Bot:
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
 
-    def __init__(self, dvm_config, admin_config=None):
-        self.NAME = "Bot"
-        dvm_config.DB = "db/" + self.NAME + ".db"
-        self.dvm_config = dvm_config
-        nip89config = NIP89Config()
-        nip89config.NAME = self.NAME
-        self.dvm_config.NIP89 = nip89config
-        self.admin_config = admin_config
-        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
 
-        asyncio.run(self.init_bot(dvm_config, admin_config))
-        asyncio.run(self.run_bot(dvm_config))
-
-
-        # add_sql_table_column(dvm_config.DB)
-    async def run_bot(self, dvm_config):
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config

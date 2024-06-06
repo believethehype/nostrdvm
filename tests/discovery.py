@@ -29,23 +29,25 @@ global_update_rate = 120     # set this high on first sync so db can fully sync 
 use_logger = True
 
 AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine"
-                                                                                   "wss://nostr21.com",
-                                "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
-                                "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
-                                "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://minds.com",
-                                "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all",
-                                "wss://eden.nostr.land",
-                                "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",
-                                "wss://za.purplerelay.com",
-                                "wss://relay.nostrich.land", "wss://relay.nostrplebs.com" "wss://relay.nostrich.land",
+                                    "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
+                                    "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
+                                    "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://minds.com",
+                                    "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all", "wss://eden.nostr.land",
+                                    "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",  "wss://za.purplerelay.com",
+                                    "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land",
+                                    "wss://rss.nos.social", "wss://atlas.nostr.land", "wss://puravida.nostr.land", "wss://nostr.inosta.cc",
+                                    "wss://relay.orangepill.dev", "wss://no.str.cr", "wss://nostr.milou.lol", "wss://relay.nostr.com.au",
+                                    "wss://puravida.nostr.land", "wss://atlas.nostr.land", "wss://nostr-pub.wellorder.net", "wss://eelay.current.fyi",
+                                    "wss://nostr.thesamecat.io", "wss://nostr.plebchain.org", "wss://relay.noswhere.com"
 
-                                ]
+
+                                    ]
 
 #git_hash = NostrLibrary().git_hash_version()
 #print("GitHash " + git_hash)
 
 if use_logger:
-    init_logger(LogLevel.INFO)
+    init_logger(LogLevel.DEBUG)
 
 
 def build_db_scheduler(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,

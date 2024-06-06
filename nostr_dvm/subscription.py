@@ -25,7 +25,21 @@ from nostr_dvm.utils.zap_utils import create_bolt11_lud16, zaprequest
 class Subscription:
     job_list: list
 
-    async def init_subscription(self, dvm_config, admin_config=None):
+    # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
+    def __init__(self, dvm_config, admin_config=None):
+        asyncio.run(self.run_subscription(dvm_config, admin_config))
+
+    async def run_subscription(self, dvm_config, admin_config):
+
+        self.NAME = "Subscription Handler"
+        dvm_config.DB = "db/" + "subscriptions" + ".db"
+        self.dvm_config = dvm_config
+        nip89config = NIP89Config()
+        nip89config.NAME = self.NAME
+        self.dvm_config.NIP89 = nip89config
+        self.admin_config = admin_config
+        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+
         wait_for_send = False
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
@@ -64,23 +78,6 @@ class Subscription:
         await self.client.subscribe([zap_filter, dvm_filter, cancel_subscription_filter], None)
 
         create_subscription_sql_table(dvm_config.DB)
-
-    # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
-    def __init__(self, dvm_config, admin_config=None):
-        self.NAME = "Subscription Handler"
-        dvm_config.DB = "db/" + "subscriptions" + ".db"
-        self.dvm_config = dvm_config
-        nip89config = NIP89Config()
-        nip89config.NAME = self.NAME
-        self.dvm_config.NIP89 = nip89config
-        self.admin_config = admin_config
-        self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-
-        asyncio.run(self.init_subscription(dvm_config, admin_config))
-        asyncio.run(self.run_subscription(dvm_config))
-
-    async def run_subscription(self, dvm_config):
-
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config

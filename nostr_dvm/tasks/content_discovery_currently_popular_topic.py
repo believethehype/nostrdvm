@@ -131,15 +131,15 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
+        #opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        #sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        #keys = Keys.parse(sk.to_hex())
+        #signer = NostrSigner.keys(keys)
 
         database = await NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        #cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        await cli.connect()
+        #await cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -148,7 +148,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
-        events = await cli.database().query([filter1])
+        events = await database.query([filter1])
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
 
@@ -161,7 +161,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                             [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                              definitions.EventDefinitions.KIND_REPOST,
                              definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                        reactions = await cli.database().query([filt])
+                        reactions = await database.query([filt])
                         if len(reactions) >= self.min_reactions:
                             ns.finallist[event.id().to_hex()] = len(reactions)
 
@@ -174,7 +174,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
             len(result_list)) + " fitting events.")
-        await cli.shutdown()
+        #await cli.shutdown()
         return json.dumps(result_list)
 
     async def schedule(self, dvm_config):

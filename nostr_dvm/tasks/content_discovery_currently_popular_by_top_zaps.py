@@ -110,15 +110,15 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
+        #opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        #sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        #keys = Keys.parse(sk.to_hex())
+        #signer = NostrSigner.keys(keys)
 
         database = await NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        #cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        await cli.connect()
+        #await cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -126,14 +126,14 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
-        events = await cli.database().query([filter1])
+        events = await database.query([filter1])
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
 
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
-                reactions = await cli.database().query([filt])
+                reactions = await database.query([filt])
                 invoice_amount = 0
                 haspreimage = False
                 if len(reactions) >= self.min_reactions:
@@ -162,8 +162,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
             len(result_list)) + " fitting events.")
 
-        await cli.disconnect()
-        await cli.shutdown()
+        #await cli.shutdown()
 
         return json.dumps(result_list)
 
