@@ -47,10 +47,6 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
 
 
                                     ]
-
-#git_hash = NostrLibrary().git_hash_version()
-#print("GitHash " + git_hash)
-
 if use_logger:
     init_logger(LogLevel.INFO)
 
