@@ -1,3 +1,4 @@
+import asyncio
 import time
 import requests
 
@@ -78,7 +79,7 @@ if __name__ == '__main__':
                 print(f"{data[1]['id']} ==> {data[1]['video_url']}")
                 break
             # sleep 5s
-            time.sleep(5)
+            asyncio.sleep(1.0)
 
         response1 = get_clip(data[0]['id'])
         print(response1['video_url'])

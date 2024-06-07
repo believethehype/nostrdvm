@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from datetime import timedelta
@@ -31,22 +32,30 @@ def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
             event_id = EventId.from_hex(event_id)
 
         id_filter = Filter().id(event_id).limit(1)
-        events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+        #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+        events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+
     if len(events) > 0:
 
         return events[0]
     else:
         return None
 
+async def get_events_async(client, filter, timeout):
+    events = client.get_events_of([filter], timedelta(seconds=timeout))
+    return events
+
 
 def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
     search_ids = []
+    events = []
     for event_id in event_ids:
         split = event_id.split(":")
         if len(split) == 3:
             pk = PublicKey.from_hex(split[1])
             id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-            events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+            events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+            #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
         else:
             if str(event_id).startswith('note'):
                 event_id = EventId.from_bech32(event_id)
@@ -59,12 +68,13 @@ def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
 
             else:
                 event_id = EventId.from_hex(event_id)
-        search_ids.append(event_id)
+            search_ids.append(event_id)
 
-    id_filter = Filter().ids(search_ids)
-    events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+            id_filter = Filter().ids(search_ids)
+            events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+
+    #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
-
         return events
     else:
         return None
@@ -72,7 +82,8 @@ def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
 
 def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
     id_filter = Filter().ids(event_ids)
-    events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+    events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+    #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
         return events
     else:
@@ -98,7 +109,8 @@ def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | N
     else:
         job_id_filter = Filter().event(event_id).limit(1)
 
-    events = client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
+    events = asyncio.run(get_events_async(client, job_id_filter, dvm_config.RELAY_TIMEOUT))
+    #events = client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
 
     if len(events) > 0:
         return events[0]
@@ -106,7 +118,7 @@ def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | N
         return None
 
 
-def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
+async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
     for tag in event_to_send.tags():
         if tag.as_vec()[0] == 'p':
@@ -114,7 +126,7 @@ def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
             ptags.append(ptag)
 
     filter = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
-    events = client.get_events_of([filter], timedelta(dvm_config.RELAY_TIMEOUT))
+    events = await client.get_events_of([filter], timedelta(dvm_config.RELAY_TIMEOUT))
     if len(events) == 0:
         return []
     else:
@@ -130,7 +142,7 @@ def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
         return relays
 
 
-def send_event_outbox(event: Event, client, dvm_config) -> EventId:
+async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
     # 1. OK, Let's overcomplicate things.
     # 2. If our event has a relays tag, we just send the event to these relay in the classical way.
@@ -149,12 +161,12 @@ def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
     # 3. If we couldn't find relays, we look in the receivers inbox
     if len(relays) == 0:
-        relays = get_inbox_relays(event, client, dvm_config)
+        relays = await get_inbox_relays(event, client, dvm_config)
 
     # 4. If we don't find inbox relays (e.g. because the user didn't announce them, we just send to our default relays
     if len(relays) == 0:
         print("[" + dvm_config.NIP89.NAME + "] No Inbox found, replying to generic relays")
-        eventid = send_event(event, client, dvm_config)
+        eventid = await send_event(event, client, dvm_config)
         return eventid
 
     # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
@@ -166,28 +178,27 @@ def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     keys = Keys.parse(sk.to_hex())
     signer = NostrSigner.keys(keys)
     outboxclient = Client.with_opts(signer, opts)
-
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays:
-        opts = RelayOptions().ping(False)
+        opts = RelayOptions().ping(True)
         try:
-            outboxclient.add_relay_with_opts(relay, opts)
+            await outboxclient.add_relay_with_opts(relay, opts)
         except:
             print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
 
-    outboxclient.connect()
+    await outboxclient.connect()
     try:
-        event_id = outboxclient.send_event(event)
+        event_id = await outboxclient.send_event(event)
     except:
-        event_id = send_event(event, client, dvm_config)
+        event_id = await send_event(event, client, dvm_config)
 
-    outboxclient.shutdown()
+    await outboxclient.shutdown()
 
     return event_id
 
 
-def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventId:
+async def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventId:
     try:
         relays = []
         for tag in event.tags():
@@ -198,16 +209,16 @@ def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventI
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
-                client.add_relay(relay)
+                await client.add_relay(relay)
 
         #if blastr:
         #    client.add_relay("wss://nostr.mutinywallet.com")
 
-        event_id = client.send_event(event)
+        event_id = await client.send_event(event)
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
-                client.remove_relay(relay)
+                await client.remove_relay(relay)
         #if blastr:
         #    client.remove_relay("wss://nostr.mutinywallet.com")
         return event_id

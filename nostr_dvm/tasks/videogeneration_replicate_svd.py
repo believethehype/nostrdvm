@@ -31,11 +31,9 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("replicate", "replicate")]
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -79,7 +77,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
 
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         try:
             options = self.set_options(request_form)
             print(options["url"])

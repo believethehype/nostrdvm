@@ -30,11 +30,10 @@ class DiscoverReports(DVMTaskInterface):
     client: Client
     dvm_config: DVMConfig
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
+
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         return True
@@ -68,7 +67,7 @@ class DiscoverReports(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
@@ -85,9 +84,9 @@ class DiscoverReports(DVMTaskInterface):
             cli.add_relay(relay)
         # add nostr band, too.
         ropts = RelayOptions().ping(False)
-        cli.add_relay_with_opts("wss://nostr.band", ropts)
+        await cli.add_relay_with_opts("wss://nostr.band", ropts)
 
-        cli.connect()
+        await cli.connect()
 
         options = self.set_options(request_form)
         step = 20
@@ -99,7 +98,7 @@ class DiscoverReports(DVMTaskInterface):
         # if we don't add users, e.g. by a wot, we check all our followers.
         if len(pubkeys) == 0:
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
-            followers = cli.get_events_of([followers_filter], timedelta(seconds=5))
+            followers = await cli.get_events_of([followers_filter], timedelta(seconds=5))
 
             if len(followers) > 0:
                 result_list = []
@@ -119,7 +118,7 @@ class DiscoverReports(DVMTaskInterface):
         ago = Timestamp.now().as_secs() - 60*60*24*int(options["since_days"]) #TODO make this an option, 180 days for now
         since = Timestamp.from_secs(ago)
         kind1984_filter = Filter().authors(pubkeys).kind(Kind(1984)).since(since)
-        reports = cli.get_events_of([kind1984_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        reports = await cli.get_events_of([kind1984_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         bad_actors = []
         ns.dic = {}
@@ -149,6 +148,7 @@ class DiscoverReports(DVMTaskInterface):
             bad_actors.append(p_tag.as_vec())
 
         print(json.dumps(bad_actors))
+        await cli.shutdown()
         return json.dumps(bad_actors)
 
     def post_process(self, result, event):

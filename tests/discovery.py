@@ -29,21 +29,24 @@ global_update_rate = 120     # set this high on first sync so db can fully sync 
 use_logger = True
 
 AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine"
-                                                                                   "wss://nostr21.com",
-                                "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
-                                "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
-                                "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://minds.com",
-                                "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all",
-                                "wss://eden.nostr.land",
-                                "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",
-                                "wss://za.purplerelay.com",
-                                "wss://relay.nostrich.land", "wss://relay.nostrplebs.com" "wss://relay.nostrich.land",
+                                    "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
+                                    "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
+                                    "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://relay.mostr.pub", "wss://minds.com",
+                                    "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all", "wss://eden.nostr.land",
+                                    "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",  "wss://za.purplerelay.com",
+                                    "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land",
+                                    "wss://rss.nos.social", "wss://atlas.nostr.land", "wss://puravida.nostr.land", "wss://nostr.inosta.cc",
+                                    "wss://relay.orangepill.dev", "wss://no.str.cr", "wss://nostr.milou.lol", "wss://relay.nostr.com.au",
+                                    "wss://puravida.nostr.land", "wss://atlas.nostr.land", "wss://nostr-pub.wellorder.net", "wss://eelay.current.fyi",
+                                    "wss://nostr.thesamecat.io", "wss://nostr.plebchain.org", "wss://relay.noswhere.com", "wss://nostr.uselessshit.co",
+                                    "wss://bitcoiner.social", "wss://relay.stoner.com", "wss://nostr.l00p.org", "wss://relay.nostr.ro", "wss://nostr.kollider.xyz",
+                                    "wss://relay.valera.co", "wss://relay.austrich.net", "wss://relay.nostrich.de", "wss://nostr.azte.co", "wss://nostr-relay.schnitzel.world",
+                                    "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com"
+                                    "wss://poster.place/relay", "wss://relayable.org"
 
-                                ]
 
-#git_hash = NostrLibrary().git_hash_version()
-#print("GitHash " + git_hash)
 
+                                    ]
 if use_logger:
     init_logger(LogLevel.INFO)
 
@@ -537,6 +540,26 @@ def playground():
                                              processing_msg=custom_processing_msg,
                                              update_db=update_db)
     discovery_global.run()
+
+    # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
+    # discovery_test_sub.run()
+
+    # Subscription Manager DVM
+    # subscription_config = DVMConfig()
+    # subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
+    # npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
+    # invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
+    # subscription_config.LNBITS_INVOICE_KEY = invoice_key
+    # subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
+    # subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    # sub_admin_config = AdminConfig()
+    # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
+
+    # currently there is none, but add this once subscriptions are live.
+    # x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
+    # x.start()
+
+    # keep_alive()
 
 
 

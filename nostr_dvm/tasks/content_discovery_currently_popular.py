@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from datetime import timedelta
@@ -27,6 +28,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     TASK: str = "discover-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
+    request_form = None
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_notes.db"
@@ -34,12 +36,10 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     personalized = False
     result = ""
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
-        dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
 
+        dvm_config.SCRIPT = os.path.abspath(__file__)
         self.request_form = {"jobID": "generic"}
         opts = {
             "max_results": 200,
@@ -53,16 +53,14 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         if self.options.get("db_since"):
             self.db_since = int(self.options.get("db_since"))
 
-
         use_logger = False
         if use_logger:
             init_logger(LogLevel.DEBUG)
 
         if self.dvm_config.UPDATE_DATABASE:
-            self.sync_db()
-
+            await self.sync_db()
         if not self.personalized:
-            self.result = self.calculate_result(self.request_form)
+            self.result = await self.calculate_result(self.request_form)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -96,7 +94,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         # if the dvm supports individual results, recalculate it every time for the request
         if self.personalized:
             return self.calculate_result(request_form)
@@ -104,21 +102,21 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         else:
             return self.result
 
-    def calculate_result(self, request_form):
+    async def calculate_result(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
+        #opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        #sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        #keys = Keys.parse(sk.to_hex())
+        #signer = NostrSigner.keys(keys)
 
-        database = NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
-        cli.connect()
+        database = await NostrDatabase.sqlite(self.db_name)
+        #cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        #await cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -126,7 +124,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
-        events = cli.database().query([filter1])
+        events = await database.query([filter1])
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
         for event in events:
@@ -134,11 +132,11 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = cli.database().query([filt])
+                reactions = await database.query([filt])
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
         if len(ns.finallist) == 0:
-            cli.shutdown()
+            #await cli.shutdown()
             return self.result
 
         result_list = []
@@ -147,7 +145,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
-        cli.shutdown()
+        #await cli.shutdown()
         print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
             len(result_list)) + " fitting events.")
         return json.dumps(result_list)
@@ -163,29 +161,29 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
-    def schedule(self, dvm_config):
+    async def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
                 if self.dvm_config.UPDATE_DATABASE:
-                    self.sync_db()
+                    await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
-                self.result = self.calculate_result(self.request_form)
+                self.result = await self.calculate_result(self.request_form)
                 return 1
 
-    def sync_db(self):
+    async def sync_db(self):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite(self.db_name)
+        database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-            cli.add_relay(relay)
+            await cli.add_relay(relay)
 
-        cli.connect()
+        await cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -197,10 +195,10 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        cli.reconcile(filter1, dbopts)
-        cli.database().delete(Filter().until(Timestamp.from_secs(
+        await cli.reconcile(filter1, dbopts)
+        await cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-        cli.shutdown()
+        await cli.shutdown()
         print(
             "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
@@ -208,7 +206,8 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options,  cost=0, update_rate=180,  processing_msg=None, update_db=True):
+def build_example(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
+                  update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -247,14 +246,15 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    #admin_config.UPDATE_PROFILE = False
-    #admin_config.REBROADCAST_NIP89 = False
+    # admin_config.UPDATE_PROFILE = False
+    # admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                           admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None, update_db=True):
+def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None,
+                               update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -304,9 +304,9 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
-    #admin_config.UPDATE_PROFILE = False
-    #admin_config.REBROADCAST_NIP89 = False
-    #admin_config.REBROADCAST_NIP88 = False
+    # admin_config.UPDATE_PROFILE = False
+    # admin_config.REBROADCAST_NIP89 = False
+    # admin_config.REBROADCAST_NIP88 = False
 
     # admin_config.FETCH_NIP88 = True
     # admin_config.EVENTID = ""

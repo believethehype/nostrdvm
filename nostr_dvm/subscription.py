@@ -1,3 +1,4 @@
+import asyncio
 import json
 import math
 import os
@@ -26,6 +27,10 @@ class Subscription:
 
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
     def __init__(self, dvm_config, admin_config=None):
+        asyncio.run(self.run_subscription(dvm_config, admin_config))
+
+    async def run_subscription(self, dvm_config, admin_config):
+
         self.NAME = "Subscription Handler"
         dvm_config.DB = "db/" + "subscriptions" + ".db"
         self.dvm_config = dvm_config
@@ -34,6 +39,7 @@ class Subscription:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+
         wait_for_send = False
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
@@ -49,18 +55,19 @@ class Subscription:
             pk.to_hex()) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
-            self.client.add_relay(relay)
-        self.client.connect()
+            await self.client.add_relay(relay)
+        await self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         cancel_subscription_filter = Filter().kinds([EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT]).since(
             Timestamp.now())
         authors = []
         if admin_config is not None and len(admin_config.USERNPUBS) > 0:
-            #we might want to limit which services can connect to the subscription handler
+            # we might want to limit which services can connect to the subscription handler
             for key in admin_config.USERNPUBS:
                 authors.append(PublicKey.parse(key))
-            dvm_filter = Filter().authors(authors).pubkey(pk).kinds([EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
+            dvm_filter = Filter().authors(authors).pubkey(pk).kinds(
+                [EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
                 Timestamp.now())
         else:
             # or we don't
@@ -68,25 +75,24 @@ class Subscription:
                 [EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
                 Timestamp.now())
 
-        self.client.subscribe([zap_filter, dvm_filter, cancel_subscription_filter], None)
+        await self.client.subscribe([zap_filter, dvm_filter, cancel_subscription_filter], None)
 
         create_subscription_sql_table(dvm_config.DB)
-
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config
             keys = self.keys
 
-            def handle(self, relay_url, subscription_id, nostr_event: Event):
+            async def handle(self, relay_url, subscription_id, nostr_event: Event):
                 if nostr_event.kind() == EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION:
-                    handle_nwc_request(nostr_event)
+                    await handle_nwc_request(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT:
-                    handle_cancel(nostr_event)
+                    await handle_cancel(nostr_event)
 
-            def handle_msg(self, relay_url, msg):
+            async def handle_msg(self, relay_url, msg):
                 return
 
-        def handle_cancel(nostr_event):
+        async def handle_cancel(nostr_event):
             print(nostr_event.as_json())
             sender = nostr_event.author().to_hex()
             kind7001eventid = ""
@@ -127,7 +133,7 @@ class Subscription:
                 end = start + 60 * 60 * 24 * 356
             return end
 
-        def send_status_success(original_event, domain):
+        async def send_status_success(original_event, domain):
 
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
             p_tag = Tag.parse(["p", original_event.author().to_hex()])
@@ -151,11 +157,11 @@ class Subscription:
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
-            send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
+            await send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.NAME + "]" + ": Sent Kind " + str(
                 EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + "success" + " " + reaction_event.as_json())
 
-        def pay_zap_split(nwc, overall_amount, zaps, tier, unit="msats"):
+        async def pay_zap_split(nwc, overall_amount, zaps, tier, unit="msats"):
             overallsplit = 0
 
             for zap in zaps:
@@ -166,10 +172,10 @@ class Subscription:
             zapped_amount = 0
             for zap in zaps:
                 if zap[1] == "":
-                    #If the client did decide to not add itself to the zap split, or if a slot is left we add the subscription service in the empty space
+                    # If the client did decide to not add itself to the zap split, or if a slot is left we add the subscription service in the empty space
                     zap[1] = Keys.parse(self.dvm_config.PRIVATE_KEY).public_key().to_hex()
 
-                name, nip05, lud16 = fetch_user_metadata(zap[1], self.client)
+                name, nip05, lud16 = await fetch_user_metadata(zap[1], self.client)
                 splitted_amount = math.floor(
                     (int(zap[3]) / overallsplit) * int(overall_amount) / 1000)
                 # invoice = create_bolt11_lud16(lud16, splitted_amount)
@@ -187,7 +193,7 @@ class Subscription:
                         print(str(zapped_amount) + "/" + str(overall_amount))
 
             if zapped_amount < overall_amount * 0.8:  # TODO how do we handle failed zaps for some addresses? we are ok with 80% for now
-            #if zapped_amount < int(zaps[0][3]):
+                # if zapped_amount < int(zaps[0][3]):
 
                 success = False
             else:
@@ -196,7 +202,7 @@ class Subscription:
 
             return success
 
-        def make_subscription_zap_recipe(event7001, recipient, subscriber, start, end, tier_dtag):
+        async def make_subscription_zap_recipe(event7001, recipient, subscriber, start, end, tier_dtag):
             message = "payed by subscription service"
             pTag = Tag.parse(["p", recipient])
             PTag = Tag.parse(["P", subscriber])
@@ -214,13 +220,14 @@ class Subscription:
             signer = NostrSigner.keys(self.keys)
             client = Client(signer)
             for relay in dvmconfig.RELAY_LIST:
-                client.add_relay(relay)
-            client.connect()
-            recipeid = client.send_event(event)
+                await client.add_relay(relay)
+            await client.connect()
+            recipeid = await client.send_event(event)
+            await client.disconnect()
             recipe = recipeid.to_hex()
             return recipe
 
-        def handle_nwc_request(nostr_event):
+        async def handle_nwc_request(nostr_event):
             print(nostr_event.as_json())
             sender = nostr_event.author().to_hex()
             if sender == self.keys.public_key().to_hex():
@@ -228,6 +235,8 @@ class Subscription:
 
             try:
                 decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
+                subscriber = ""
+                nwc = ""
                 try:
                     jsonevent = json.loads(decrypted_text)
                     for entry in jsonevent:
@@ -238,7 +247,7 @@ class Subscription:
 
                     subscriptionfilter = Filter().kind(EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT).author(
                         PublicKey.parse(subscriber)).limit(1)
-                    evts = self.client.get_events_of([subscriptionfilter], timedelta(seconds=3))
+                    evts = await self.client.get_events_of([subscriptionfilter], timedelta(seconds=3))
                     print(evts)
                     if len(evts) > 0:
                         event7001id = evts[0].id().to_hex()
@@ -250,6 +259,7 @@ class Subscription:
                         zaps = []
                         tier = "DVM"
                         overall_amount = 0
+                        subscription_event_id = ""
                         for tag in evts[0].tags():
                             if tag.as_vec()[0] == "amount":
                                 overall_amount = int(tag.as_vec()[1])
@@ -315,7 +325,7 @@ class Subscription:
                                     print("updated subscription entry before payment")
 
                                 # we attempt to pay the subscription
-                                success = pay_zap_split(nwc, overall_amount, zaps, tier, unit)
+                                success = await pay_zap_split(nwc, overall_amount, zaps, tier, unit)
 
                             else:
                                 start = Timestamp.now().as_secs()
@@ -326,8 +336,8 @@ class Subscription:
 
                         if success:
                             # we create a payment recipe
-                            recipe = make_subscription_zap_recipe(event7001id, recipient, subscriber, start, end,
-                                                                  tier_dtag)
+                            recipe = await make_subscription_zap_recipe(event7001id, recipient, subscriber, start, end,
+                                                                        tier_dtag)
                             print("RECIPE " + recipe)
                             isactivesubscription = True
 
@@ -338,14 +348,15 @@ class Subscription:
                                                           Timestamp.now().as_secs(), tier)
                             print("updated subscription entry after payment")
 
-                            send_status_success(nostr_event, "noogle.lol")
+                            await send_status_success(nostr_event, "noogle.lol")
 
                             keys = Keys.parse(dvm_config.PRIVATE_KEY)
                             message = ("Subscribed to DVM " + tier + ". Renewing on: " + str(
-                                Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T", " ") + " GMT"))
+                                Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
+                                                                                                       " ") + " GMT"))
                             evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscriber), message,
                                                                     None).to_event(keys)
-                            send_event(evt, client=self.client, dvm_config=dvm_config)
+                            await send_event(evt, client=self.client, dvm_config=dvm_config)
 
 
 
@@ -370,15 +381,15 @@ class Subscription:
                 delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
                 print("Delete expired subscription")
 
-        def handle_subscription_renewal(subscription):
+        async def handle_subscription_renewal(subscription):
             zaps = json.loads(subscription.zaps)
-            success = pay_zap_split(subscription.nwc, subscription.amount, zaps, subscription.tier,
-                                    subscription.unit)
+            success = await pay_zap_split(subscription.nwc, subscription.amount, zaps, subscription.tier,
+                                          subscription.unit)
             if success:
                 end = infer_subscription_end_time(Timestamp.now().as_secs(), subscription.cadence)
-                recipe = make_subscription_zap_recipe(subscription.id, subscription.recipent,
-                                                      subscription.subscriber, subscription.begin,
-                                                      end, subscription.tier_dtag)
+                recipe = await make_subscription_zap_recipe(subscription.id, subscription.recipent,
+                                                            subscription.subscriber, subscription.begin,
+                                                            end, subscription.tier_dtag)
             else:
                 end = Timestamp.now().as_secs()
                 recipe = subscription.recipe
@@ -403,9 +414,9 @@ class Subscription:
             evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber),
                                                     message,
                                                     None).to_event(keys)
-            send_event(evt, client=self.client, dvm_config=dvm_config)
+            await send_event(evt, client=self.client, dvm_config=dvm_config)
 
-        def check_subscriptions():
+        async def check_subscriptions():
             try:
                 subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
 
@@ -430,7 +441,7 @@ class Subscription:
                                                               False,
                                                               Timestamp.now().as_secs(), subscription.tier)
                             else:
-                                handle_subscription_renewal(subscription)
+                                await handle_subscription_renewal(subscription)
 
                     else:
                         handle_expired_subscription(subscription)
@@ -440,12 +451,12 @@ class Subscription:
             except Exception as e:
                 print(e)
 
-        self.client.handle_notifications(NotificationHandler())
+        asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
         try:
             while True:
-                time.sleep(60.0)
-                check_subscriptions()
+                await asyncio.sleep(60.0)
+                await check_subscriptions()
         except KeyboardInterrupt:
             print('Stay weird!')
             os.kill(os.getpid(), signal.SIGTERM)

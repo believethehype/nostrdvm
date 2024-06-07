@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from datetime import timedelta
@@ -28,6 +29,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
     TASK: str = "discover-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
+    request_form = None
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_notes.db"
@@ -36,11 +38,8 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
     result = ""
     logger = False
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
-        dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                           admin_config: AdminConfig = None, options=None):
 
         self.request_form = {"jobID": "generic"}
         opts = {
@@ -60,12 +59,10 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             if self.logger:
                 init_logger(LogLevel.DEBUG)
 
-
         if self.dvm_config.UPDATE_DATABASE:
-            self.sync_db()
-
+            await self.sync_db()
         if not self.personalized:
-            self.result = self.calculate_result(self.request_form)
+            self.result = await self.calculate_result(self.request_form)
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -98,7 +95,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         # if the dvm supports individual results, recalculate it every time for the request
         if self.personalized:
             return self.calculate_result(request_form)
@@ -106,22 +103,22 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         else:
             return self.result
 
-    def calculate_result(self, request_form):
+    async def calculate_result(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
+        #opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        #sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        #keys = Keys.parse(sk.to_hex())
+        #signer = NostrSigner.keys(keys)
 
-        database = NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        database = await NostrDatabase.sqlite(self.db_name)
+        #cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        cli.connect()
+        #await cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -129,14 +126,14 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
-        events = cli.database().query([filter1])
+        events = await database.query([filter1])
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
 
         ns.finallist = {}
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
-                reactions = cli.database().query([filt])
+                reactions = await database.query([filt])
                 invoice_amount = 0
                 haspreimage = False
                 if len(reactions) >= self.min_reactions:
@@ -162,11 +159,10 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
 
-        print("[" + self.dvm_config.NIP89.NAME+ "] Filtered " + str(
+        print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
             len(result_list)) + " fitting events.")
 
-        cli.disconnect()
-        cli.shutdown()
+        #await cli.shutdown()
 
         return json.dumps(result_list)
 
@@ -181,33 +177,33 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
-    def schedule(self, dvm_config):
+    async def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
                 try:
                     if self.dvm_config.UPDATE_DATABASE:
-                        self.sync_db()
+                        await self.sync_db()
                     self.last_schedule = Timestamp.now().as_secs()
                     if not self.personalized:
-                        self.result = self.calculate_result(self.request_form)
+                        self.result = await self.calculate_result(self.request_form)
                 except Exception as e:
                     print(e)
                 return 1
 
-    def sync_db(self):
+    async def sync_db(self):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite(self.db_name)
+        database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-            cli.add_relay(relay)
+            await cli.add_relay(relay)
 
-        cli.connect()
+        await cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -219,10 +215,10 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        cli.reconcile(filter1, dbopts)
-        cli.database().delete(Filter().until(Timestamp.from_secs(
+        await cli.reconcile(filter1, dbopts)
+        await cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-        cli.shutdown()
+        await cli.shutdown()
         print(
             "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 

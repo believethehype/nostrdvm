@@ -1,3 +1,4 @@
+import asyncio
 import io
 import json
 import os
@@ -32,6 +33,7 @@ def send_request_to_server(request_form, address):
 
 
 def send_file_to_server(filepath, address):
+    result = ""
     print("Sending file to Server")
     url = ('http://' + address + '/upload')
     try:
@@ -72,7 +74,8 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
         if log != "":
             print(log)
         # WAITING = 0, RUNNING = 1, FINISHED = 2, ERROR = 3
-        time.sleep(1.0)
+        asyncio.sleep(1.0)
+
 
     if status == 2:
         try:

@@ -31,7 +31,10 @@ class DVMConfig:
                                     "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://minds.com",
                                     "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all", "wss://eden.nostr.land",
                                     "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",  "wss://za.purplerelay.com",
-                                    "wss://relay.nostrich.land", "wss://relay.nostrplebs.com" "wss://relay.nostrich.land",
+                                    "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land",
+                                    "wss://rss.nos.social", "wss://atlas.nostr.land", "wss://puravida.nostr.land", "wss://nostr.inosta.cc",
+                                    "wss://relay.orangepill.dev", "wss://no.str.cr", "wss://nostr.milou.lol", "wss://relay.nostr.com.au",
+                                    "wss://puravida.nostr.land", "wss://atlas.nostr.land", "wss://nostr-pub.wellorder.net", "wss://eelay.current.fyi",
 
 
                                     ]
