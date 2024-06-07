@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from pathlib import Path
@@ -13,7 +14,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 
 
 # TODO HINT: Best use this path with a previously whitelisted privkey, as zapping events is not implemented in the lib/code
-def nostr_client_test_translation(input, kind, lang, sats, satsmax):
+async def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     if kind == "text":
         iTag = Tag.parse(["i", input, "text"])
@@ -35,14 +36,14 @@ def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     client = Client(signer)
 
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
-def nostr_client_test_search_profile(input):
+async def nostr_client_test_search_profile(input):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", input, "text"])
@@ -60,14 +61,14 @@ def nostr_client_test_search_profile(input):
     client = Client(signer)
 
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
-def nostr_client_test_image(prompt):
+async def nostr_client_test_image(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
@@ -88,14 +89,14 @@ def nostr_client_test_image(prompt):
     signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
-def nostr_client_test_censor_filter(users):
+async def nostr_client_test_censor_filter(users):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
@@ -115,14 +116,14 @@ def nostr_client_test_censor_filter(users):
     signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
-def nostr_client_test_inactive_filter(user):
+async def nostr_client_test_inactive_filter(user):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz",
@@ -142,15 +143,15 @@ def nostr_client_test_inactive_filter(user):
     signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
-        client.add_relay(relay)
+        await client.add_relay(relay)
     ropts = RelayOptions().ping(False)
-    client.add_relay_with_opts("wss://nostr.band", ropts)
-    client.connect()
+    await client.add_relay_with_opts("wss://nostr.band", ropts)
+    await client.connect()
     config = DVMConfig
     send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
-def nostr_client_test_tts(prompt):
+async def nostr_client_test_tts(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
@@ -169,14 +170,14 @@ def nostr_client_test_tts(prompt):
     signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
-def nostr_client_test_disovery(user, ptag):
+async def nostr_client_test_disovery(user, ptag):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz",
@@ -196,16 +197,16 @@ def nostr_client_test_disovery(user, ptag):
     signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
-        client.add_relay(relay)
+        await client.add_relay(relay)
     ropts = RelayOptions().ping(False)
-    client.add_relay_with_opts("wss://nostr.band", ropts)
-    client.connect()
+    await client.add_relay_with_opts("wss://nostr.band", ropts)
+    await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
-def nostr_client_test_image_private(prompt, cashutoken):
+async def nostr_client_test_image_private(prompt, cashutoken):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     receiver_keys = Keys.parse(check_and_set_private_key("replicate_sdxl"))
 
@@ -235,14 +236,14 @@ def nostr_client_test_image_private(prompt, cashutoken):
     signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     config = DVMConfig
-    send_event(nip90request, client=client, dvm_config=config)
+    await send_event(nip90request, client=client, dvm_config=config)
     return nip90request.as_json()
 
 
-def nostr_client():
+async def nostr_client():
     keys = Keys.parse(check_and_set_private_key("test_client"))
     sk = keys.secret_key()
     pk = keys.public_key()
@@ -252,8 +253,8 @@ def nostr_client():
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM,
                                                EventDefinitions.KIND_ZAP]).since(
@@ -265,24 +266,24 @@ def nostr_client():
         if kind not in kinds:
             kinds.append(kind)
     dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
-    client.subscribe([dm_zap_filter, dvm_filter], None)
+    await client.subscribe([dm_zap_filter, dvm_filter], None)
 
-    # nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
-    # nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
-    # nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
-    # nostr_client_test_image("a beautiful purple ostrich watching the sunset")
-    # nostr_client_test_search_profile("dontbelieve")
+    # await nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
+    # await nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
+    # await nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
+    # await nostr_client_test_image("a beautiful purple ostrich watching the sunset")
+    # await nostr_client_test_search_profile("dontbelieve")
     wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
-    nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "a21592a70ef9a00695efb3f7e816e17742d251559aff154b16d063a408bcd74d")
-    #nostr_client_test_censor_filter(wot)
-    #nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
+    await nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "a21592a70ef9a00695efb3f7e816e17742d251559aff154b16d063a408bcd74d")
+    # await nostr_client_test_censor_filter(wot)
+    # await nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
 
-    # nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
+    # await nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
 
     # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
-    # nostr_client_test_image_private("a beautiful ostrich watching the sunset")
+    # await nostr_client_test_image_private("a beautiful ostrich watching the sunset")
     class NotificationHandler(HandleNotification):
-        def handle(self, relay_url, subscription_id, event: Event):
+        async def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
             if event.kind().as_u64() == 7000:
                 print("[Nostr Client]: " + event.as_json())
@@ -301,9 +302,9 @@ def nostr_client():
         def handle_msg(self, relay_url, msg):
             return
 
-    client.handle_notifications(NotificationHandler())
+    await client.handle_notifications(NotificationHandler())
     while True:
-        time.sleep(5.0)
+        await asyncio.sleep(5.0)
 
 
 if __name__ == '__main__':
@@ -315,5 +316,4 @@ if __name__ == '__main__':
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    nostr_dvm_thread = Thread(target=nostr_client())
-    nostr_dvm_thread.start()
+    asyncio.run(nostr_client())

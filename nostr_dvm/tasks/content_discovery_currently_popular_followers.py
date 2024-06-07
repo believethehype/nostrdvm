@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from datetime import timedelta
@@ -32,11 +33,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
     db_name = "db/nostr_recent_notes2.db"
     min_reactions = 2
 
-    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                 admin_config: AdminConfig = None, options=None):
-        dvm_config.SCRIPT = os.path.abspath(__file__)
-        super().__init__(name=name, dvm_config=dvm_config, nip89config=nip89config, nip88config=nip88config,
-                         admin_config=admin_config, options=options)
+    async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                       admin_config: AdminConfig = None, options=None):
 
         self.last_schedule = Timestamp.now().as_secs()
 
@@ -50,7 +48,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
             init_logger(LogLevel.DEBUG)
 
         if self.dvm_config.UPDATE_DATABASE:
-            self.sync_db()
+            await self.sync_db()
 
     def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -90,7 +88,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         request_form['options'] = json.dumps(options)
         return request_form
 
-    def process(self, request_form):
+    async def process(self, request_form):
         from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
@@ -102,20 +100,20 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        database = NostrDatabase.sqlite(self.db_name)
+        database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
-        cli.add_relay("wss://relay.damus.io")
-        cli.add_relay("wss://nostr.oxtr.dev")
-        cli.add_relay("wss://nostr.mom")
+        await cli.add_relay("wss://relay.damus.io")
+        await cli.add_relay("wss://nostr.oxtr.dev")
+        await cli.add_relay("wss://nostr.mom")
 
         #ropts = RelayOptions().ping(False)
         #cli.add_relay_with_opts("wss://nostr.band", ropts)
 
-        cli.connect()
+        await cli.connect()
 
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
-        followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        followers = await cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
         #print(followers)
 
         # Negentropy reconciliation
@@ -142,7 +140,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     followings.append(following)
 
             filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
-            events = cli.database().query([filter1])
+            events = await cli.database().query([filter1])
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
 
             ns.finallist = {}
@@ -151,7 +149,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 filt = Filter().kinds(
                     [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_REPOST,
                      definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = cli.database().query([filt])
+                reactions = await cli.database().query([filt])
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
 
@@ -162,8 +160,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
                 e_tag = Tag.parse(["e", entry[0]])
                 result_list.append(e_tag.as_vec())
-            cli.connect()
-            cli.shutdown()
+            #await cli.connect()
+            await cli.shutdown()
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
 
@@ -180,7 +178,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
-    def schedule(self, dvm_config):
+    async def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
             return 0
         # We simply use the db from the other dvm that contains all notes
@@ -188,23 +186,23 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
                 if self.dvm_config.UPDATE_DATABASE:
-                    self.sync_db()
+                    await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 return 1
 
 
-    def sync_db(self):
+    async def sync_db(self):
         opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = NostrDatabase.sqlite(self.db_name)
+        database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-            cli.add_relay(relay)
+            await cli.add_relay(relay)
 
-        cli.connect()
+        await cli.connect()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -217,10 +215,10 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
             self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        cli.reconcile(filter1, dbopts)
-        cli.database().delete(Filter().until(Timestamp.from_secs(
+        await cli.reconcile(filter1, dbopts)
+        await cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-        cli.shutdown()
+        await cli.shutdown()
         print("[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
             self.db_since) + " seconds..")
 
