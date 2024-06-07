@@ -71,7 +71,7 @@ class DVMTaskInterface:
         self.admin_config = admin_config
 
         asyncio.run(self.init_dvm(name, dvm_config, nip89config, nip88config,
-                                  admin_config, options))
+                                          admin_config, options))
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):

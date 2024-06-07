@@ -168,7 +168,7 @@ def list_db(db):
         print(e)
 
 
-def update_user_balance(db, npub, additional_sats, client, config, giftwrap=False):
+async def update_user_balance(db, npub, additional_sats, client, config, giftwrap=False):
     user = get_from_sql_table(db, npub)
     if user is None:
         name, nip05, lud16 = fetch_user_metadata(npub, client)
@@ -192,11 +192,11 @@ def update_user_balance(db, npub, additional_sats, client, config, giftwrap=Fals
                 new_balance) + " Sats.")
 
             if giftwrap:
-                client.send_sealed_msg(PublicKey.parse(npub), message, None)
+                await client.send_private_msg(PublicKey.parse(npub), message, None)
             else:
                 evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(npub), message,
                                                         None).to_event(keys)
-                send_event(evt, client=client, dvm_config=config)
+                await send_event(evt, client=client, dvm_config=config)
 
 
 def update_user_subscription(npub, subscribed_until, client, dvm_config):

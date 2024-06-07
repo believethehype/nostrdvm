@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from datetime import timedelta
@@ -85,7 +86,7 @@ def init():
 
             if len(events) == 0:
                 response = False
-                time.sleep(1.0)
+                asyncio.sleep(1.0)
                 continue
             else:
                 if events[0].content() == "[]":

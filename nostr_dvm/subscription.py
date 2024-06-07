@@ -451,11 +451,11 @@ class Subscription:
             except Exception as e:
                 print(e)
 
-        await self.client.handle_notifications(NotificationHandler())
+        asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
         try:
             while True:
-                time.sleep(60.0)
+                await asyncio.sleep(60.0)
                 await check_subscriptions()
         except KeyboardInterrupt:
             print('Stay weird!')

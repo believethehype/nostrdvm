@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import time
@@ -130,7 +131,7 @@ class AudioGenerationSonoAI(DVMTaskInterface):
                         print(f"{data[1]['id']} ==> {data[1]['video_url']}")
                         break
                     # sleep 5s
-                    time.sleep(5)
+                    asyncio.sleep(5.0)
 
                 response1 = self.get_clip(data[0]['id'])
                 print(response1['video_url'])
