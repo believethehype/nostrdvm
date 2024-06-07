@@ -3,7 +3,8 @@ import json
 import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
+    RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -28,7 +29,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     FIX_COST: float = 0
     dvm_config: DVMConfig
     request_form = None
-    last_schedule: int
+    last_schedule: int = 0
     min_reactions = 2
     db_since = 10 * 3600
     db_name = "db/nostr_default_recent_notes.db"
@@ -51,16 +52,6 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
 
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-        if self.options.get("personalized"):
-            self.personalized = bool(self.options.get("personalized"))
-        self.last_schedule = Timestamp.now().as_secs()
-        if self.options.get("search_list"):
-            self.search_list = self.options.get("search_list")
-            # print(self.search_list)
-        if self.options.get("avoid_list"):
-            self.avoid_list = self.options.get("avoid_list")
-        if self.options.get("must_list"):
-            self.must_list = self.options.get("must_list")
         if self.options.get("db_name"):
             self.db_name = self.options.get("db_name")
         if self.options.get("db_since"):
@@ -130,7 +121,8 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
+        relaylimits = RelayLimits.disable()
+        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT))).relay_limits(relaylimits)
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)

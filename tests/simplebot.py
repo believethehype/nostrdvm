@@ -5,7 +5,7 @@ from nostr_sdk import Client, NostrSigner, Keys, Event, UnsignedEvent, Filter, \
     HandleNotification, Timestamp, nip04_decrypt, UnwrappedGift, init_logger, LogLevel, Kind, KindEnum
 
 
-async def main():
+async def test():
     init_logger(LogLevel.DEBUG)
 
     # sk = SecretKey.from_bech32("nsec1ufnus6pju578ste3v90xd5m2decpuzpql2295m3sknqcjzyys9ls0qlc85")
@@ -62,7 +62,7 @@ async def main():
                     print(f"Error during content NIP59 decryption: {e}")
 
         async def handle_msg(self, relay_url, msg):
-            None
+            var = None
 
     #await client.handle_notifications(NotificationHandler())
 
@@ -70,7 +70,17 @@ async def main():
     asyncio.create_task(client.handle_notifications(NotificationHandler()))
     while True:
         print("lol.")
-        time.sleep(5)
+        await asyncio.sleep(5)
 
-if __name__ == '__main__':
-    asyncio.run(main())
+
+async def async_input():
+    while True:
+        print("lol")
+        await asyncio.sleep(5)
+
+
+#async def main():
+#    await asyncio.gather(asyncio.to_thread(async_input), test())
+
+if __name__ == "__main__":
+    asyncio.run(test())

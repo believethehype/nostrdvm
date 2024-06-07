@@ -1,3 +1,4 @@
+import asyncio
 import json
 import time
 from pathlib import Path
@@ -5,7 +6,7 @@ from threading import Thread
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    NostrSigner
+    NostrSigner, Event
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -39,7 +40,7 @@ def nostr_client_test_tts(prompt):
     send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
-def nostr_client():
+async def nostr_client():
     keys = Keys.parse(check_and_set_private_key("test_client"))
     sk = keys.secret_key()
     pk = keys.public_key()
@@ -49,15 +50,15 @@ def nostr_client():
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM,
                                                EventDefinitions.KIND_ZAP]).since(
         Timestamp.now())  # events to us specific
     dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_RESULT_TEXT_TO_SPEECH,
                                   EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
-    client.subscribe([dm_zap_filter, dvm_filter])
+    await client.subscribe([dm_zap_filter, dvm_filter])
 
 
     nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
@@ -66,11 +67,11 @@ def nostr_client():
 
     #nostr_client_test_image_private("a beautiful ostrich watching the sunset")
     class NotificationHandler(HandleNotification):
-        def handle(self, relay_url, event):
+        def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
             if event.kind() == 7000:
                 print("[Nostr Client]: " + event.as_json())
-            elif 6000 < event.kind() < 6999:
+            elif 6000 < event.kind().as_u64() < 6999:
                 print("[Nostr Client]: " + event.as_json())
                 print("[Nostr Client]: " + event.content())
 
@@ -82,12 +83,12 @@ def nostr_client():
                 print("[Nostr Client]: " + f"Received new zap:")
                 print(event.as_json())
 
-        def handle_msg(self, relay_url, msg):
+        async def handle_msg(self, relay_url, msg):
             return
 
-    client.handle_notifications(NotificationHandler())
+    asyncio.create_task(client.handle_notifications(NotificationHandler()))
     while True:
-        time.sleep(5.0)
+        await asyncio.sleep(5.0)
 
 
 if __name__ == '__main__':
@@ -99,5 +100,4 @@ if __name__ == '__main__':
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    nostr_dvm_thread = Thread(target=nostr_client())
-    nostr_dvm_thread.start()
+    asyncio.run(nostr_client())

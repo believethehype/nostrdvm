@@ -1,4 +1,5 @@
 import asyncio
+import json
 from datetime import timedelta
 
 from nostr_sdk import Options, SecretKey, NostrSigner, Keys, Client, RelayOptions, Alphabet, SingleLetterTag, Filter, \
@@ -21,36 +22,36 @@ async def main():
 
     ropts = RelayOptions().ping(False)
     await cli.add_relay_with_opts(options["relay"], ropts)
-
     await cli.connect()
 
-    userkeys = []
-
-    ltags = ["pub.ditto.trends"]
+    ltags = ["#e", "pub.ditto.trends"]
+    itags = [str(SingleLetterTag.lowercase(Alphabet.E))]
     authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
-    notes_filter = Filter().kinds([Kind(1985)]).authors(authors).custom_tag(SingleLetterTag.uppercase(Alphabet.L),
-                                                                            ltags).custom_tag(
-        SingleLetterTag.uppercase(Alphabet.I), ["e"])
+    notes_filter = Filter().authors(authors).custom_tag(SingleLetterTag.lowercase(Alphabet.L), ltags)
 
-    events = await cli.get_events_of([notes_filter], timedelta(seconds=5))
+    events = await cli.get_events_of([notes_filter], timedelta(seconds=10))
 
     result_list = []
     if len(events) > 0:
         event = events[0]
+        print(event)
         result_list = []
         for tag in event.tags():
+            print(tag.as_vec())
             if tag.as_vec()[0] == "e":
+
                 e_tag = Tag.parse(["e", tag.as_vec()[1], tag.as_vec()[2]])
                 result_list.append(e_tag.as_vec())
-                print(tag.as_vec())
+
     else:
         print("Nothing found")
         # for event in events:
         #    e_tag = Tag.parse(["e", event.id().to_hex()])
-        #    result_list.append(e_tag.as_vec())
+        return ""
 
     await cli.shutdown()
-    # return json.dumps(result_list)
+    print(json.dumps(result_list))
+    return json.dumps(result_list)
 
 
 asyncio.run(main())

@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import subprocess
+import threading
 from datetime import timedelta
 from sys import platform
 
@@ -36,6 +37,8 @@ class DVM:
     jobs_on_hold_list: list
 
     def __init__(self, dvm_config, admin_config=None):
+
+
         asyncio.run(self.run_dvm(dvm_config, admin_config))
 
     async def run_dvm(self, dvm_config, admin_config):
@@ -73,14 +76,13 @@ class DVM:
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
         await self.client.subscribe([dvm_filter, zap_filter], None)
 
-
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config
             keys = self.keys
 
             async def handle(self, relay_url, subscription_id, nostr_event: Event):
-
+                print(nostr_event.as_json())
                 if EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= nostr_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64():
                     await handle_nip90_job_event(nostr_event)
                 elif nostr_event.kind().as_u64() == EventDefinitions.KIND_ZAP.as_u64():
@@ -118,7 +120,7 @@ class DVM:
             if task_supported:
                 # fetch or add user contacting the DVM from/to local database
                 user = await get_or_add_user(self.dvm_config.DB, nip90_event.author().to_hex(), client=self.client,
-                                       config=self.dvm_config, skip_meta=False)
+                                             config=self.dvm_config, skip_meta=False)
                 # if user is blacklisted for some reason, send an error reaction and return
                 if user.isblacklisted:
                     await send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
@@ -135,7 +137,7 @@ class DVM:
                 # If this is a subscription DVM and the Task is directed to us, check for active subscription
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
                     await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                             "Checking Subscription Status, please wait..", self.dvm_config)
+                                                   "Checking Subscription Status, please wait..", self.dvm_config)
                     # if we stored in the database that the user has an active subscription, we don't need to check it
                     print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
                         Timestamp.now().as_secs()))
@@ -144,28 +146,30 @@ class DVM:
                         print("User subscribed until: " + str(Timestamp.from_secs(user.subscribed).to_human_datetime()))
                         user_has_active_subscription = True
                         await send_job_status_reaction(nip90_event, "subscription-required", True, amount,
-                                                 self.client, "User subscripton active until " +
-                                                 Timestamp.from_secs(int(user.subscribed)).to_human_datetime().replace(
-                                                     "Z", " ").replace("T", " ") + " GMT", self.dvm_config)
+                                                       self.client, "User subscripton active until " +
+                                                       Timestamp.from_secs(
+                                                           int(user.subscribed)).to_human_datetime().replace(
+                                                           "Z", " ").replace("T", " ") + " GMT", self.dvm_config)
                     # otherwise we check for an active subscription by checking recipie events
                     else:
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
                         await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                                 "I Don't have information about subscription status, checking on the Nostr. This might take a few seconds",
-                                                 self.dvm_config)
+                                                       "I Don't have information about subscription status, checking on the Nostr. This might take a few seconds",
+                                                       self.dvm_config)
 
                         subscription_status = nip88_has_active_subscription(PublicKey.parse(user.npub),
                                                                             self.dvm_config.NIP88.DTAG, self.client,
                                                                             self.dvm_config.PUBLIC_KEY)
 
                         if subscription_status["isActive"]:
-                            await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                                     "User subscripton active until " + Timestamp.from_secs(int(
-                                                         subscription_status[
-                                                             "validUntil"])).to_human_datetime().replace("Z",
-                                                                                                         " ").replace(
-                                                         "T", " ") + " GMT",
-                                                     self.dvm_config)
+                            await send_job_status_reaction(nip90_event, "subscription-required", True, amount,
+                                                           self.client,
+                                                           "User subscripton active until " + Timestamp.from_secs(int(
+                                                               subscription_status[
+                                                                   "validUntil"])).to_human_datetime().replace("Z",
+                                                                                                               " ").replace(
+                                                               "T", " ") + " GMT",
+                                                           self.dvm_config)
                             print("Checked Recipe: User subscribed until: " + str(
                                 Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime()))
                             user_has_active_subscription = True
@@ -174,9 +178,10 @@ class DVM:
                                                      self.client, self.dvm_config)
                         else:
                             print("No active subscription found")
-                            await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                                     "No active subscription found. Manage your subscription at: " + self.dvm_config.SUBSCRIPTION_MANAGEMENT,
-                                                     self.dvm_config)
+                            await send_job_status_reaction(nip90_event, "subscription-required", True, amount,
+                                                           self.client,
+                                                           "No active subscription found. Manage your subscription at: " + self.dvm_config.SUBSCRIPTION_MANAGEMENT,
+                                                           self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     if dvm.TASK == task and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:
@@ -185,12 +190,12 @@ class DVM:
                 cashu_redeemed = False
                 if cashu != "":
                     print(cashu)
-                    cashu_redeemed, cashu_message, redeem_amount, fees =  await redeem_cashu(cashu, self.dvm_config,
-                                                                                      self.client, int(amount))
+                    cashu_redeemed, cashu_message, redeem_amount, fees = await redeem_cashu(cashu, self.dvm_config,
+                                                                                            self.client, int(amount))
                     print(cashu_message)
                     if cashu_message != "success":
                         await send_job_status_reaction(nip90_event, "error", False, amount, self.client, cashu_message,
-                                                 self.dvm_config)
+                                                       self.dvm_config)
                         return
                 # if user is whitelisted or task is free, just do the job
                 if (user.iswhitelisted or task_is_free or cashu_redeemed) and (
@@ -202,8 +207,8 @@ class DVM:
 
                     if dvm_config.SEND_FEEDBACK_EVENTS:
                         await send_job_status_reaction(nip90_event, "processing", True, 0,
-                                                 content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                 client=self.client, dvm_config=self.dvm_config, user=user)
+                                                       content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
+                                                       client=self.client, dvm_config=self.dvm_config, user=user)
 
                     #  when we reimburse users on error make sure to not send anything if it was free
                     if user.iswhitelisted or task_is_free:
@@ -230,8 +235,8 @@ class DVM:
                               ". Starting processing.. Balance remains at: " + str(user.balance))
 
                     await send_job_status_reaction(nip90_event, "processing", True, 0,
-                                             content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                             client=self.client, dvm_config=self.dvm_config)
+                                                   content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
+                                                   client=self.client, dvm_config=self.dvm_config)
 
                     await do_work(nip90_event, amount)
 
@@ -243,8 +248,8 @@ class DVM:
                             "[" + self.dvm_config.NIP89.NAME + "]  Hinting user for Subscription: " +
                             nip90_event.id().to_hex())
                         await send_job_status_reaction(nip90_event, "subscription-required",
-                                                 False, 0, client=self.client,
-                                                 dvm_config=self.dvm_config)
+                                                       False, 0, client=self.client,
+                                                       dvm_config=self.dvm_config)
                     else:
                         bid = 0
                         for tag in nip90_event.tags():
@@ -258,15 +263,16 @@ class DVM:
                             bid_offer = int(bid / 1000)
                             if bid_offer >= int(amount):
                                 await send_job_status_reaction(nip90_event, "payment-required", False,
-                                                         int(amount),  # bid_offer
-                                                         client=self.client, dvm_config=self.dvm_config)
+                                                               int(amount),  # bid_offer
+                                                               client=self.client, dvm_config=self.dvm_config)
 
                         else:  # If there is no bid, just request server rate from user
                             print(
                                 "[" + self.dvm_config.NIP89.NAME + "]  Requesting payment for Event: " +
                                 nip90_event.id().to_hex())
                             await send_job_status_reaction(nip90_event, "payment-required",
-                                                     False, int(amount), client=self.client, dvm_config=self.dvm_config)
+                                                           False, int(amount), client=self.client,
+                                                           dvm_config=self.dvm_config)
 
 
 
@@ -282,7 +288,8 @@ class DVM:
                                                                                            self.keys,
                                                                                            self.dvm_config.NIP89.NAME,
                                                                                            self.client, self.dvm_config)
-                user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client, config=self.dvm_config)
+                user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
+                                             config=self.dvm_config)
 
                 if zapped_event is not None:
                     if zapped_event.kind() == EventDefinitions.KIND_FEEDBACK:
@@ -310,7 +317,7 @@ class DVM:
                         print(status)
                         if job_event.kind() == EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT:
                             await send_job_status_reaction(job_event, "subscription-success", client=self.client,
-                                                     dvm_config=self.dvm_config, user=user)
+                                                           dvm_config=self.dvm_config, user=user)
 
 
 
@@ -323,8 +330,8 @@ class DVM:
                                 if amount <= invoice_amount:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     await send_job_status_reaction(job_event, "processing", client=self.client,
-                                                             content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                             dvm_config=self.dvm_config, user=user)
+                                                                   content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
+                                                                   dvm_config=self.dvm_config, user=user)
                                     indices = [i for i, x in enumerate(self.job_list) if
                                                x.event == job_event]
                                     index = -1
@@ -345,8 +352,8 @@ class DVM:
 
                                 else:
                                     await send_job_status_reaction(job_event, "payment-rejected",
-                                                             False, invoice_amount, client=self.client,
-                                                             dvm_config=self.dvm_config)
+                                                                   False, invoice_amount, client=self.client,
+                                                                   dvm_config=self.dvm_config)
                                     print("[" + self.dvm_config.NIP89.NAME + "] Invoice was not paid sufficiently")
                     elif zapped_event.kind() == EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT:
                         print("new subscription, doing nothing")
@@ -392,7 +399,7 @@ class DVM:
                                     job_ = RequiredJobToWatch(event=nevent, timestamp=Timestamp.now().as_secs())
                                     self.jobs_on_hold_list.append(job_)
                                     await send_job_status_reaction(nevent, "chain-scheduled", True, 0,
-                                                             client=client, dvm_config=dvmconfig)
+                                                                   client=client, dvm_config=dvmconfig)
 
                                 return False
             else:
@@ -409,12 +416,12 @@ class DVM:
                     if self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and not is_paid:
                         await send_nostr_reply_event(data, original_event.as_json())
                         await send_job_status_reaction(original_event, "success", amount,
-                                                 dvm_config=self.dvm_config,
-                                                 )  # or payment-required, or both?
+                                                       dvm_config=self.dvm_config,
+                                                       )  # or payment-required, or both?
                     elif not self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and not is_paid:
                         await send_job_status_reaction(original_event, "success", amount,
-                                                 dvm_config=self.dvm_config,
-                                                 )  # or payment-required, or both?
+                                                       dvm_config=self.dvm_config,
+                                                       )  # or payment-required, or both?
 
                     if self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and is_paid:
                         self.job_list.remove(x)
@@ -434,12 +441,12 @@ class DVM:
                             # Zapping back by error in post-processing is a risk for the DVM because work has been done,
                             # but maybe something with parsing/uploading failed. Try to avoid errors here as good as possible
                             await send_job_status_reaction(original_event, "error",
-                                                     content="Error in Post-processing: " + str(e),
-                                                     dvm_config=self.dvm_config,
-                                                     )
+                                                           content="Error in Post-processing: " + str(e),
+                                                           dvm_config=self.dvm_config,
+                                                           )
                             if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":
                                 user = await get_or_add_user(self.dvm_config.DB, original_event.author().to_hex(),
-                                                       client=self.client, config=self.dvm_config)
+                                                             client=self.client, config=self.dvm_config)
                                 print(user.lud16 + " " + str(amount))
                                 bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats",
                                                     original_event, "",
@@ -498,8 +505,8 @@ class DVM:
                 original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
 
         async def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None,
-                                     content=None,
-                                     dvm_config=None, user=None):
+                                           content=None,
+                                           dvm_config=None, user=None):
 
             task = get_task(original_event, client=client, dvm_config=dvm_config)
             alt_description, reaction = build_status_reaction(status, task, amount, content, dvm_config)
@@ -654,18 +661,18 @@ class DVM:
                                 print(bcolors.RED + "[" + self.dvm_config.NIP89.NAME + "] Error: " + str(
                                     e) + bcolors.ENDC)
                                 await send_job_status_reaction(job_event, "error", content=str(e),
-                                                         dvm_config=self.dvm_config)
+                                                               dvm_config=self.dvm_config)
                     except Exception as e:
                         print(
                             bcolors.RED + "[" + self.dvm_config.NIP89.NAME + "] Error: " + str(e) + bcolors.ENDC)
 
                         # we could send the exception here to the user, but maybe that's not a good idea after all.
                         await send_job_status_reaction(job_event, "error", content=result,
-                                                 dvm_config=self.dvm_config)
+                                                       dvm_config=self.dvm_config)
                         # Zapping back the user on error
                         if amount > 0 and self.dvm_config.LNBITS_ADMIN_KEY != "":
                             user = await get_or_add_user(self.dvm_config.DB, job_event.author().to_hex(),
-                                                   client=self.client, config=self.dvm_config)
+                                                         client=self.client, config=self.dvm_config)
                             print(user.lud16 + " " + str(amount))
                             bolt11 = zaprequest(user.lud16, amount, "Couldn't finish job, returning sats", job_event,
                                                 PublicKey.parse(user.npub),
@@ -680,15 +687,16 @@ class DVM:
 
                         return
 
-        await self.client.handle_notifications(NotificationHandler())
-        while True:
+        #await self.client.handle_notifications(NotificationHandler)
+        asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
+        while True:
             for dvm in self.dvm_config.SUPPORTED_DVMS:
-                scheduled_result = await dvm.schedule(self.dvm_config)
+                await dvm.schedule(self.dvm_config)
 
             for job in self.job_list:
                 if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
-                    ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)
+                    ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, se.dvm_config)
                     if ispaid and job.is_paid is False:
                         print("is paid")
                         job.is_paid = True
@@ -696,9 +704,9 @@ class DVM:
 
                         job.is_paid = True
                         await send_job_status_reaction(job.event, "processing", True, 0,
-                                                 content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                 client=self.client,
-                                                 dvm_config=self.dvm_config)
+                                                          content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
+                                                          client=self.client,
+                                                          dvm_config=self.dvm_config)
                         print("[" + self.dvm_config.NIP89.NAME + "] doing work from joblist")
                         await do_work(job.event, amount)
                     elif ispaid is None:  # invoice expired
@@ -708,8 +716,8 @@ class DVM:
                     self.job_list.remove(job)
 
             for job in self.jobs_on_hold_list:
-                if await check_event_has_not_unfinished_job_input(job.event, False, client=self.client,
-                                                            dvmconfig=self.dvm_config):
+                if await check_event_has_not_unfinished_job_input(job.event, False, client=se.client,
+                                                                     dvmconfig=self.dvm_config):
                     await handle_nip90_job_event(nip90_event=job.event)
                     try:
                         self.jobs_on_hold_list.remove(job)
@@ -719,4 +727,4 @@ class DVM:
                 if Timestamp.now().as_secs() > job.timestamp + 60 * 20:  # remove jobs to look for after 20 minutes..
                     self.jobs_on_hold_list.remove(job)
 
-            time.sleep(1.0)
+            await asyncio.sleep(1)
