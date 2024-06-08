@@ -36,7 +36,8 @@ class AdminConfig:
     PRIVKEY: str = ""
 
 
-async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None, client: Client = None):
+async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig: DVMConfig = None,
+                                      client: Client = None):
     # This is called on start of Server, Admin function to manually whitelist/blacklist/add balance/delete users
     if adminconfig is None or dvmconfig is None:
         return
@@ -65,17 +66,20 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
 
         if adminconfig.WHITELISTUSER:
             user = await get_or_add_user(db, publickey, client=client, config=dvmconfig)
-            update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name, user.lastactive, user.subscribed)
+            update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name,
+                             user.lastactive, user.subscribed)
             user = get_from_sql_table(db, publickey)
             print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
 
         if adminconfig.UNWHITELISTUSER:
             user = get_from_sql_table(db, publickey)
-            update_sql_table(db, user.npub, user.balance, False, False, user.nip05, user.lud16, user.name, user.lastactive, user.subscribed)
+            update_sql_table(db, user.npub, user.balance, False, False, user.nip05, user.lud16, user.name,
+                             user.lastactive, user.subscribed)
 
         if adminconfig.BLACKLISTUSER:
             user = get_from_sql_table(db, publickey)
-            update_sql_table(db, user.npub, user.balance, False, True, user.nip05, user.lud16, user.name, user.lastactive, user.subscribed)
+            update_sql_table(db, user.npub, user.balance, False, True, user.nip05, user.lud16, user.name,
+                             user.lastactive, user.subscribed)
 
         if adminconfig.DELETEUSER:
             delete_from_sql_table(db, publickey)
@@ -87,11 +91,10 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         list_db(db)
 
     if adminconfig.REBROADCAST_NIP89:
-        nip89_announce_tasks(dvmconfig, client=client)
-
+        await nip89_announce_tasks(dvmconfig, client=client)
 
     if adminconfig.REBROADCAST_NIP65_RELAY_LIST:
-        nip65_announce_relays(dvmconfig, client=client)
+        await nip65_announce_relays(dvmconfig, client=client)
 
     if adminconfig.REBROADCAST_NIP88:
         annotier_id = nip88_announce_tier(dvmconfig, client=client)

@@ -5,7 +5,7 @@ from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.print import bcolors
 
 
-def nip65_announce_relays(dvm_config, client):
+async def nip65_announce_relays(dvm_config, client):
     tags = []
 
     for relay in dvm_config.RELAY_LIST:
@@ -16,6 +16,6 @@ def nip65_announce_relays(dvm_config, client):
     content = ""
 
     event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content, tags).to_event(keys)
-    eventid = send_event(event, client=client, dvm_config=dvm_config, blastr=True)
+    eventid = await send_event(event, client=client, dvm_config=dvm_config, blastr=True)
 
     print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME +" (EventID: " + eventid.to_hex() +")" + bcolors.ENDC)
