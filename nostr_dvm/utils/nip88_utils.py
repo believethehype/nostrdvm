@@ -35,9 +35,9 @@ def nip88_create_d_tag(name, pubkey, image):
     return d_tag
 
 
-def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
+async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
-    nip88events = client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
+    nip88events = await client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""
     if len(nip88events) == 0:
         print("Event not found. Potentially gone.")
@@ -52,15 +52,15 @@ def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
             return
 
         if event.author().to_hex() == keys.public_key().to_hex():
-            nip88_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
+            await nip88_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
             print("NIP88 announcement deleted from known relays!")
         else:
             print("Privatekey does not belong to event")
 
 
-def fetch_nip88_event(keys, eventid, client, dvmconfig):
+async def fetch_nip88_event(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip88events = client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
+    nip88events = await client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""
     if len(nip88events) == 0:
         print("Event not found. Potentially gone.")
@@ -80,15 +80,15 @@ def fetch_nip88_event(keys, eventid, client, dvmconfig):
             print("Privatekey does not belong to event")
 
 
-def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
+async def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_NIP88_TIER_EVENT) + ":" + keys.public_key().to_hex() + ":" + dtag])
     event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
-    send_event(event, client, config)
+    await send_event(event, client, config)
 
 
-def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, receiver_public_key_hex, checkCanceled = True):
+async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, receiver_public_key_hex, checkCanceled = True):
     subscription_status = {
         "isActive": False,
         "validUntil": 0,
@@ -99,7 +99,7 @@ def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
         PublicKey.parse(receiver_public_key_hex)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
                                                              [user.to_hex()]).limit(1)
-    evts = client.get_events_of([subscriptionfilter], timedelta(seconds=3))
+    evts = await client.get_events_of([subscriptionfilter], timedelta(seconds=3))
     if len(evts) > 0:
         print(evts[0].as_json())
         matchesdtag = False

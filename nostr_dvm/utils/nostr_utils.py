@@ -291,7 +291,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
     return event
 
 
-def update_profile(dvm_config, client, lud16=""):
+async def update_profile(dvm_config, client, lud16=""):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
     nip89content = json.loads(dvm_config.NIP89.CONTENT)
     if nip89content.get("name"):
@@ -310,7 +310,7 @@ def update_profile(dvm_config, client, lud16=""):
         # .set_banner("https://example.com/banner.png") \
         print("[" + dvm_config.NIP89.NAME + "] Setting profile metadata for " + keys.public_key().to_bech32() + "...")
         print(metadata.as_json())
-        client.set_metadata(metadata)
+        await client.set_metadata(metadata)
 
 
 def check_and_set_private_key(identifier):

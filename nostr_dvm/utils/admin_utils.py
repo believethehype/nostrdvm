@@ -104,19 +104,19 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         event_id = adminconfig.EVENTID
         keys = Keys.parse(
             adminconfig.PRIVKEY)  # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
-        fetch_nip89_parameters_for_deletion(keys, event_id, client, dvmconfig, adminconfig.POW)
+        await fetch_nip89_parameters_for_deletion(keys, event_id, client, dvmconfig, adminconfig.POW)
 
     if adminconfig.DELETE_NIP88:
         event_id = adminconfig.EVENTID
         keys = Keys.parse(
             adminconfig.PRIVKEY)  # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
-        fetch_nip88_parameters_for_deletion(keys, event_id, client, dvmconfig)
+        await fetch_nip88_parameters_for_deletion(keys, event_id, client, dvmconfig)
 
     if adminconfig.FETCH_NIP88:
         event_id = adminconfig.EVENTID
         keys = Keys.parse(
             adminconfig.PRIVKEY)
-        fetch_nip88_event(keys, event_id, client, dvmconfig)
+        await fetch_nip88_event(keys, event_id, client, dvmconfig)
 
     if adminconfig.UPDATE_PROFILE:
-        update_profile(dvmconfig, client, lud16=dvmconfig.LN_ADDRESS)
+        await update_profile(dvmconfig, client, lud16=dvmconfig.LN_ADDRESS)

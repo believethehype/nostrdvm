@@ -531,9 +531,9 @@ class Bot:
                 send_event(evt, client=self.client, dvm_config=dvm_config)
 
         async def answer_nip89(nostr_event, index, giftwrap, sender):
-            info = print_dvm_info(self.client, index)
+            info = await print_dvm_info(self.client, index)
             if info is None:
-                info =  "No NIP89 Info found for " + self.dvm_config.SUPPORTED_DVMS[index].NAME
+                info = "No NIP89 Info found for " + self.dvm_config.SUPPORTED_DVMS[index].NAME
             time.sleep(2.0)
 
             if giftwrap:
@@ -664,10 +664,10 @@ class Bot:
 
             return tags
 
-        def print_dvm_info(client, index):
+        async def print_dvm_info(client, index):
             pubkey = self.dvm_config.SUPPORTED_DVMS[index].dvm_config.PUBLIC_KEY
             kind = self.dvm_config.SUPPORTED_DVMS[index].KIND
-            nip89content_str = nip89_fetch_events_pubkey(client, pubkey, kind)
+            nip89content_str = await nip89_fetch_events_pubkey(client, pubkey, kind)
             print(nip89content_str)
             if nip89content_str is not None:
                 nip89content = json.loads(nip89content_str)
