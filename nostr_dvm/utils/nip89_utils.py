@@ -25,13 +25,13 @@ def nip89_create_d_tag(name, pubkey, image):
     return d_tag
 
 
-def nip89_announce_tasks(dvm_config, client):
+async def nip89_announce_tasks(dvm_config, client):
     k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND.as_u64())])
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
-    evenid = send_event(event, client=client, dvm_config=dvm_config)
+    evenid = await send_event(event, client=client, dvm_config=dvm_config)
 
     print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME +" (" + evenid.to_hex() +")" + bcolors.ENDC)
 
