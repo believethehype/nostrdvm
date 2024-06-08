@@ -157,7 +157,7 @@ class DVM:
                                                        "I Don't have information about subscription status, checking on the Nostr. This might take a few seconds",
                                                        self.dvm_config)
 
-                        subscription_status = nip88_has_active_subscription(PublicKey.parse(user.npub),
+                        subscription_status = await nip88_has_active_subscription(PublicKey.parse(user.npub),
                                                                             self.dvm_config.NIP88.DTAG, self.client,
                                                                             self.dvm_config.PUBLIC_KEY)
 

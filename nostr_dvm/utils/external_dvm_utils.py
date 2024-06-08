@@ -9,8 +9,8 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, nip89_fetch_events_pubkey
 from nostr_dvm.utils.output_utils import PostProcessFunctionType
 
 
-def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
-                       external_post_process=PostProcessFunctionType.NONE):
+async def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
+                             external_post_process=PostProcessFunctionType.NONE):
     dvm_config = DVMConfig()
     dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
     dvm_config.FIX_COST = fix_cost
@@ -23,12 +23,11 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
     signer = NostrSigner.keys(keys)
     client = Client.with_opts(signer, opts)
 
-
     for relay in config.RELAY_LIST:
-            client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
 
-    nip89content_str = nip89_fetch_events_pubkey(client, pubkey, kind)
+    nip89content_str = await nip89_fetch_events_pubkey(client, pubkey, kind)
     name = "External DVM"
     image = "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg"
     about = "An External DVM with no info"
@@ -52,7 +51,7 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
         if nip89content.get("cashuAccepted"):
             cashu_accepted = nip89content["cashuAccepted"]
     else:
-        print("No NIP89 set for "+ name)
+        print("No NIP89 set for " + name)
     nip89info = {
         "name": name,
         "image": image,

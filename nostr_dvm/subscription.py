@@ -300,7 +300,7 @@ class Subscription:
                         success = True
                         if subscription is None or subscription.end <= Timestamp.now().as_secs():
                             # rather check nostr if our db is right
-                            subscription_status = nip88_has_active_subscription(
+                            subscription_status = await nip88_has_active_subscription(
                                 PublicKey.parse(subscriber),
                                 tier_dtag, self.client, recipient, checkCanceled=False)
 
@@ -424,7 +424,7 @@ class Subscription:
                     if subscription.active:
                         if subscription.end < Timestamp.now().as_secs():
                             # We could directly zap, but let's make another check if our subscription expired
-                            subscription_status = nip88_has_active_subscription(
+                            subscription_status = await nip88_has_active_subscription(
                                 PublicKey.parse(subscription.subscriber),
                                 subscription.tier_dtag, self.client, subscription.recipent)
 
