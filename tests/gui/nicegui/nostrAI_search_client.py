@@ -13,7 +13,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 
 
 @ui.page('/', dark=True)
-def init():
+async def init():
     keys = Keys.parse(check_and_set_private_key("test_client"))
     opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=2))
             .skip_disconnected_relays(True))
@@ -23,11 +23,11 @@ def init():
     relay_list = dvmconfig.DVMConfig.RELAY_LIST
 
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     data = []
 
-    def nostr_client_test_search(prompt, users=None, since="", until=""):
+    async def nostr_client_test_search(prompt, users=None, since="", until=""):
         if users is None:
             users = []
 
@@ -53,7 +53,7 @@ def init():
 
         config = DVMConfig
         config.RELAY_LIST = relay_list
-        send_event(event, client=client, dvm_config=config)
+        await send_event(event, client=client, dvm_config=config)
         return event
 
     def handledvm(now, eventid):
@@ -135,7 +135,7 @@ def init():
             tags.append(pTag.as_vec())
         search = str(search).replace("from:", "").replace("to:", "").replace("@", "").lstrip().rstrip()
         print(search)
-        ev = nostr_client_test_search(search, tags)
+        ev = await nostr_client_test_search(search, tags)
         ui.notify('Request sent to DVM, awaiting results..')
 
         print("Sent: " + ev.as_json())
