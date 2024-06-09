@@ -80,7 +80,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
-        followers = cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        followers = await cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         if len(followers) > 0:
             result_list = []
@@ -111,7 +111,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                 cli = Client.with_opts(signer, opts)
                 for relay in self.dvm_config.RELAY_LIST:
                     await cli.add_relay(relay)
-                cli.connect()
+                await cli.connect()
 
                 for i in range(i, i + st):
                     filters = []
@@ -141,7 +141,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                             print("DIDNT FIND " + best_entry.author().to_nostr_uri())
 
                 print(str(i) + "/" + str(len(users)))
-                cli.disconnect()
+                await cli.shutdown()
 
             threads = []
             begin = 0

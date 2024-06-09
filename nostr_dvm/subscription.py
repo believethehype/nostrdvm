@@ -223,7 +223,7 @@ class Subscription:
                 await client.add_relay(relay)
             await client.connect()
             recipeid = await client.send_event(event)
-            await client.disconnect()
+            await client.shutdown()
             recipe = recipeid.to_hex()
             return recipe
 

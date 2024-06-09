@@ -114,7 +114,7 @@ class SearchUser(DVMTaskInterface):
                 else:
                     break
 
-        await cli.disconnect()
+        await cli.shutdown()
         return json.dumps(result_list)
 
     def post_process(self, result, event):

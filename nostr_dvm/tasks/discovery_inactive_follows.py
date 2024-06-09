@@ -140,11 +140,11 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 for i in range(i, i + st):
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).since(notactivesince).limit(1)
                     filters.append(filter1)
-                event_from_authors = cli.get_events_of(filters, timedelta(seconds=10))
+                event_from_authors = await cli.get_events_of(filters, timedelta(seconds=10))
                 for author in event_from_authors:
                     instance.dic[author.author().to_hex()] = "True"
                 print(str(i) + "/" + str(len(users)))
-                cli.disconnect()
+                await cli.shutdown()
 
             threads = []
             begin = 0
