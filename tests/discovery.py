@@ -6,6 +6,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
 
+from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 
 #os.environ["RUST_BACKTRACE"] = "full"
@@ -48,7 +49,7 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
 
                                     ]
 if use_logger:
-    init_logger(LogLevel.INFO)
+    init_logger(LogLevel.ERROR)
 
 
 def build_db_scheduler(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
@@ -120,6 +121,54 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
 
     return TrendingNotesNostrBand(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                   admin_config=admin_config)
+
+
+def build_longform(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
+                  update_db=True):
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
+    # Activate these to use a subscription based model instead
+    # dvm_config.SUBSCRIPTION_REQUIRED = True
+    # dvm_config.SUBSCRIPTION_DAILY_COST = 1
+    dvm_config.FIX_COST = cost
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+    image = "https://image.nostr.build/d30a75c438a8b0815b5c65b494988da26fce719f4138058929fa52d2a2dc3433.jpg"
+
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": image,
+        "picture": image,
+        "about": "I show the latest longform notes.",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "personalized": False,
+        "amount": create_amount_tag(cost),
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 100)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+
+    # admin_config.UPDATE_PROFILE = False
+
+    # admin_config.REBROADCAST_NIP89 = False
+
+    return DicoverContentLatestLongForm(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                        admin_config=admin_config, options=options)
 
 
 def build_example_topic(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
@@ -320,6 +369,37 @@ def playground():
                                             cost=0,
                                             update_db=True)
     db_scheduler.run()
+
+    # Latest Longform
+    admin_config_longform = AdminConfig()
+    admin_config_longform.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_longform.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_longform.UPDATE_PROFILE = update_profile
+    # admin_config_top_zaps.DELETE_NIP89 = True
+    # admin_config_top_zaps.PRIVKEY = ""
+    # admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
+    # admin_config_top_zaps.POW = True
+    custom_processing_msg = ["Looking for latest Longform Articles", "Let's see what people recently wrote"]
+    update_db = True
+
+    options_longform = {
+        "db_name": "db/nostr_recent_notes_longform.db",
+        "db_since": 60 * 60 * 24 * 21,  # 3 Weeks since gmt,
+    }
+    cost = 0
+    latest_longform = build_longform("Latest Longform Notes",
+                                                 "discovery_content_longform",
+                                                 admin_config=admin_config_longform,
+                                                 options=options_longform,
+                                                 cost=cost,
+                                                 update_rate=global_update_rate,
+                                                 processing_msg=custom_processing_msg,
+                                                 update_db=update_db)
+
+    latest_longform.run()
+
+
+
 
     # Popular top zapped
     admin_config_top_zaps = AdminConfig()
