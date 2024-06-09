@@ -165,7 +165,7 @@ class DicoverContentLatestLongForm(DVMTaskInterface):
                 if self.dvm_config.UPDATE_DATABASE:
                     await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
-                self.result = self.calculate_result(self.request_form)
+                self.result = await self.calculate_result(self.request_form)
                 return 1
 
     async def sync_db(self):
