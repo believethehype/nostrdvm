@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions
+    RelayOptions, RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -169,7 +169,9 @@ class DicoverContentLatestLongForm(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
+        relaylimits = RelayLimits.disable()
+        opts = (Options().wait_for_send(False).send_timeout(
+            timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT))).relay_limits(relaylimits)
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
