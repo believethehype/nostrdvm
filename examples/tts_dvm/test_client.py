@@ -13,7 +13,7 @@ from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
 from nostr_dvm.utils.definitions import EventDefinitions
 
 
-def nostr_client_test_tts(prompt):
+async def nostr_client_test_tts(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
@@ -34,10 +34,10 @@ def nostr_client_test_tts(prompt):
     signer = NostrSigner.keys(keys)
     client = Client(signer)
     for relay in relay_list:
-        client.add_relay(relay)
-    client.connect()
+        await client.add_relay(relay)
+    await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 async def nostr_client():
@@ -61,13 +61,13 @@ async def nostr_client():
     await client.subscribe([dm_zap_filter, dvm_filter])
 
 
-    nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
+    await nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
     print("Sending Job Request")
 
 
     #nostr_client_test_image_private("a beautiful ostrich watching the sunset")
     class NotificationHandler(HandleNotification):
-        def handle(self, relay_url, subscription_id, event: Event):
+        async def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
             if event.kind() == 7000:
                 print("[Nostr Client]: " + event.as_json())

@@ -6,9 +6,9 @@ print(keys.public_key().to_bech32())
 
 
 
-def reconcile_db():
+async def reconcile_db():
     # Create/open SQLite database
-    database = NostrDatabase.sqlite("nostr.db")
+    database = await NostrDatabase.sqlite("nostr.db")
 
     # NOT AVAILABLE ON WINDOWS AT THE MOMENT!
     # Create/open nostrdb database
@@ -16,21 +16,21 @@ def reconcile_db():
 
     client = ClientBuilder().database(database).build()
 
-    client.add_relay("wss://relay.damus.io")
-    client.add_relay("wss://atl.purplerelay.com")
-    client.connect()
+    await client.add_relay("wss://relay.damus.io")
+    await client.add_relay("wss://atl.purplerelay.com")
+    await client.connect()
 
     # Negentropy reconciliation
     f = Filter().author(keys.public_key())
     opts = NegentropyOptions()
-    client.reconcile(f, opts)
+    await client.reconcile(f, opts)
 
-    do_some_work()
+    await do_some_work()
 
-def do_some_work():
-    database = NostrDatabase.sqlite("nostr.db")
+async def do_some_work():
+    database = await NostrDatabase.sqlite("nostr.db")
     f = Filter().author(keys.public_key()).limit(10)
-    events = database.query([f])
+    events = await database.query([f])
 
     for event in events:
         print(event.as_json())
