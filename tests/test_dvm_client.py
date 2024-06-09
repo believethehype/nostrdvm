@@ -148,7 +148,7 @@ async def nostr_client_test_inactive_filter(user):
     await client.add_relay_with_opts("wss://nostr.band", ropts)
     await client.connect()
     config = DVMConfig
-    send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 async def nostr_client_test_tts(prompt):
