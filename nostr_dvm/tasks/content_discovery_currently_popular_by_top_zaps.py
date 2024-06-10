@@ -133,12 +133,17 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
-                reactions = await database.query([filt])
+                zaps = await database.query([filt])
                 invoice_amount = 0
-                haspreimage = False
-                if len(reactions) >= self.min_reactions:
-                    for reaction in reactions:
-                        for tag in reaction.tags():
+
+                if len(zaps) >= self.min_reactions:
+                    has_preimage = False
+                    overall_amount = 0
+                    for zap in zaps:
+                        if event.author().to_hex() == zap.author().to_hex():
+                            continue #Skip self zaps..
+                        invoice_amount = 0
+                        for tag in zap.tags():
                             # print(tag.as_vec())
                             if tag.as_vec()[0] == 'bolt11':
                                 # print(tag.as_vec()[1])
@@ -147,9 +152,10 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                             if tag.as_vec()[0] == 'preimage':
                                 if len(tag.as_vec()) > 1:
                                     if tag.as_vec()[1] != "":
-                                        haspreimage = True  # TODO further check preimage
-                    if haspreimage:
-                        ns.finallist[event.id().to_hex()] = invoice_amount
+                                        overall_amount += invoice_amount
+                                        has_preimage = True  # TODO further check preimage
+                    if has_preimage:
+                        ns.finallist[event.id().to_hex()] = overall_amount
 
         result_list = []
 

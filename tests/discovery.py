@@ -22,7 +22,7 @@ from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_an
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
-rebroadcast_NIP89 = True   # Announce NIP89 on startup
+rebroadcast_NIP89 = False   # Announce NIP89 on startup
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
@@ -416,7 +416,7 @@ def playground():
 
     options_top_zapped = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 6,  # 6h since gmt,
+        "db_since": 60 * 60 * 8,  # 8h since gmt,
     }
     cost = 0
     image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
