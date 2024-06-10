@@ -135,25 +135,50 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
                 zaps = await database.query([filt])
                 invoice_amount = 0
-
+                event_author = event.author().to_hex()
                 if len(zaps) >= self.min_reactions:
                     has_preimage = False
+                    has_amount = False
                     overall_amount = 0
                     for zap in zaps:
-                        if event.author().to_hex() == zap.author().to_hex():
+                        if event_author == zap.author().to_hex():
                             continue #Skip self zaps..
                         invoice_amount = 0
                         for tag in zap.tags():
-                            # print(tag.as_vec())
+
                             if tag.as_vec()[0] == 'bolt11':
                                 # print(tag.as_vec()[1])
                                 invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
+
+                                has_amount = True
+                                if has_preimage:
+                                    break
                                 # print(invoice_amount)
                             if tag.as_vec()[0] == 'preimage':
                                 if len(tag.as_vec()) > 1:
-                                    if tag.as_vec()[1] != "":
-                                        overall_amount += invoice_amount
+                                    if tag.as_vec()[1] == "":
+                                        continue
+                                    elif tag.as_vec()[1] != "":
+
                                         has_preimage = True  # TODO further check preimage
+                                        if has_amount:
+                                            overall_amount += invoice_amount
+                                            break
+                            #elif tag.as_vec()[0] == 'description':
+                            #    try:
+                            #        event = Event.from_json(tag.as_vec()[1])
+                            #        for tag in event.tags():
+                            #            if tag.as_vec()[0] == "amount":
+                            #                invoice_amount = tag.as_vec()[1]
+                            #                overall_amount += invoice_amount
+
+                            #               has_amount = True
+                            #               if has_preimage:
+                            #                   break
+
+                            #    except:
+                            #        pass
+
                     if has_preimage:
                         ns.finallist[event.id().to_hex()] = overall_amount
 
