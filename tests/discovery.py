@@ -32,7 +32,7 @@ use_logger = True
 AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine"
                                     "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
                                     "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
-                                    "wss://nostr-pub.semisol.dev", "wss://mostr.pub", "wss://relay.mostr.pub", "wss://minds.com",
+                                    "wss://nostr-pub.semisol.dev", "wss://mostr.mostr.pub", "wss://relay.mostr.pub", "wss://minds.com",
                                     "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all", "wss://eden.nostr.land",
                                     "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",  "wss://za.purplerelay.com",
                                     "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land",
@@ -416,7 +416,7 @@ def playground():
 
     options_top_zapped = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 8,  # 8h since gmt,
+        "db_since": 60 * 60 * 6,  # 8h since gmt,
     }
     cost = 0
     image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
