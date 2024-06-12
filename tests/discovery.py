@@ -43,7 +43,7 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
                                     "wss://bitcoiner.social", "wss://relay.stoner.com", "wss://nostr.l00p.org", "wss://relay.nostr.ro", "wss://nostr.kollider.xyz",
                                     "wss://relay.valera.co", "wss://relay.austrich.net", "wss://relay.nostrich.de", "wss://nostr.azte.co", "wss://nostr-relay.schnitzel.world",
                                     "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com"
-                                    "wss://poster.place/relay", "wss://relayable.org"
+                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social"
 
 
 
