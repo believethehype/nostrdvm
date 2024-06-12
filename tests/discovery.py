@@ -130,6 +130,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
