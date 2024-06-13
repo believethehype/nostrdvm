@@ -43,12 +43,17 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
                                     "wss://nostr.thesamecat.io", "wss://nostr.plebchain.org", "wss://relay.noswhere.com", "wss://nostr.uselessshit.co",
                                     "wss://bitcoiner.social", "wss://relay.stoner.com", "wss://nostr.l00p.org", "wss://relay.nostr.ro", "wss://nostr.kollider.xyz",
                                     "wss://relay.valera.co", "wss://relay.austrich.net", "wss://relay.nostrich.de", "wss://nostr.azte.co", "wss://nostr-relay.schnitzel.world",
-                                    "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com"
-                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com"
-
-
-
+                                    "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com",
+                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com",
+                                    "wss://relay.nostrati.com", "wss://purplerelay.com", "wss://hist.nostr.land", "wss://creatr.nostr.wine", "ws://localhost:4869",
+                                    "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu"
                                     ]
+
+RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io",
+                           "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                           "wss://relay.nostr.net", "wss://relay.primal.net"]  # , "wss://relay.snort.social"]
+
+
 if use_logger:
     init_logger(LogLevel.ERROR)
 
@@ -61,6 +66,8 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.LOGLEVEL = LogLevel.INFO
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1

@@ -123,11 +123,9 @@ def write_to_csv(friends, file="friends222.csv"):
                 writer.writerow(row)
 
 
-def main(user_key, create_csv, get_profile = False, remove_followings_from_set = False):
-
+def main(user_key, depth, update_db, create_csv, get_profile=False, remove_followings_from_set=False):
     file = "db/friends223.csv"
     # make sure key is in hex format
-
 
     if create_csv:
         # clear previous file
@@ -137,8 +135,8 @@ def main(user_key, create_csv, get_profile = False, remove_followings_from_set =
         except:
             print("Creating new file")
         # sync the database, this might take a while if it's empty or hasn't been updated in a long time
-        asyncio.run(sync_db())
-
+        if update_db:
+            asyncio.run(sync_db())
 
         user_id = PublicKey.parse(user_key).to_hex()
         user_friends_level1 = asyncio.run(analyse_users([user_id]))
@@ -149,24 +147,23 @@ def main(user_key, create_csv, get_profile = False, remove_followings_from_set =
 
         write_to_csv([me], file)
 
-
         # for every npub we follow, we look at the npubs they follow (this might take a while)
-        friendlist2 = []
-        for friend in user_friends_level1:
-            for npub in friend.friends:
-                friendlist2.append(npub)
+        if depth >= 2:
+            friendlist2 = []
+            for friend in user_friends_level1:
+                for npub in friend.friends:
+                    friendlist2.append(npub)
 
-        user_friends_level2 = asyncio.run(analyse_users(friendlist2))
-        write_to_csv(user_friends_level2, file)
-
-        friendlist3 = []
-        for friend in user_friends_level2:
-            for npub in friend.friends:
-                friendlist3.append(npub)
-        print(len(friendlist3))
-        user_friends_level3 = asyncio.run(analyse_users(friendlist3))
-        write_to_csv(user_friends_level3, file)
-
+            user_friends_level2 = asyncio.run(analyse_users(friendlist2))
+            write_to_csv(user_friends_level2, file)
+            if depth >= 3:
+                friendlist3 = []
+                for friend in user_friends_level2:
+                    for npub in friend.friends:
+                        friendlist3.append(npub)
+                print(len(friendlist3))
+                user_friends_level3 = asyncio.run(analyse_users(friendlist3))
+                write_to_csv(user_friends_level3, file)
 
     df = pd.read_csv(file, sep=',')
     df.info()
@@ -183,32 +180,32 @@ def main(user_key, create_csv, get_profile = False, remove_followings_from_set =
         for npub in user_friends_level1[0].friends:
             friendlist.append(npub)
 
-        sorted_nodes = sorted([(node, pagerank) for node, pagerank in pr.items() if node not in friendlist], key=lambda x: pr[x[0]],
+        sorted_nodes = sorted([(node, pagerank) for node, pagerank in pr.items() if node not in friendlist],
+                              key=lambda x: pr[x[0]],
                               reverse=True)[:50]
     else:
         sorted_nodes = sorted([(node, pagerank) for node, pagerank in pr.items()], key=lambda x: pr[x[0]],
                               reverse=True)[:50]
 
-
-
     for node in sorted_nodes:
-            try:
-                pk = PublicKey.parse(node[0]).to_bech32()
-            except:
-                pk = node[0]
+        try:
+            pk = PublicKey.parse(node[0]).to_bech32()
+        except:
+            pk = node[0]
 
-            if get_profile:
-                name, nip05, lud16 = asyncio.run(getmetadata(node[0]))
-                print(name + " (" + pk + ") " + "," + str(node[1]))
-            else:
-                print(pk + "," + str(node[1]))
+        if get_profile:
+            name, nip05, lud16 = asyncio.run(getmetadata(node[0]))
+            print(name + " (" + pk + ") " + "," + str(node[1]))
+        else:
+            print(pk + "," + str(node[1]))
 
 
-
-user_id = "99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"
-#user_id = "npub1gcxzte5zlkncx26j68ez60fzkvtkm9e0vrwdcvsjakxf9mu9qewqlfnj5z"
-
+#user_id = "99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64" #dbth
+#user_id = "npub1gcxzte5zlkncx26j68ez60fzkvtkm9e0vrwdcvsjakxf9mu9qewqlfnj5z" #vitor
+user_id = "npub1l2vyh47mk2p0qlsku7hg0vn29faehy9hy34ygaclpn66ukqp3afqutajft" #pablo
 fetch_profiles = True
-create_csv = False
+create_csv = True
 remove_followings_from_set = True
-main(user_id, create_csv, fetch_profiles, remove_followings_from_set)
+depth = 2
+update_db = False
+main(user_id, depth, update_db, create_csv, fetch_profiles, remove_followings_from_set)
