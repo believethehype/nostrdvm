@@ -46,7 +46,7 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
                                     "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com",
                                     "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com",
                                     "wss://relay.nostrati.com", "wss://purplerelay.com", "wss://hist.nostr.land", "wss://creatr.nostr.wine", "ws://localhost:4869",
-                                    "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu"
+                                    "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu", "wss://inbox.nostr.wine"
                                     ]
 
 RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io",
@@ -366,7 +366,6 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
 
 
 def playground():
-
     #DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler= AdminConfig()
     options_animal = {
