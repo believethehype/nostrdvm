@@ -1,13 +1,12 @@
 import os
 
-from nostr_sdk import Keys
+from nostr_sdk import Keys, LogLevel
 
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.output_utils import PostProcessFunctionType
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
-
 
 class DVMConfig:
     SUPPORTED_DVMS = []
@@ -61,6 +60,7 @@ class DVMConfig:
     SCHEDULE_UPDATES_SECONDS = 0
     UPDATE_DATABASE = True  # DVMs that use a db manage their db by default. If a dvm should use the same db as another DVM, deactive it for those who do.
     CUSTOM_PROCESSING_MESSAGE = None
+    LOGLEVEL = LogLevel.DEBUG
 
 
 def build_default_config(identifier):

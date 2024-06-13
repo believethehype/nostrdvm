@@ -38,7 +38,6 @@ class DVM:
 
     def __init__(self, dvm_config, admin_config=None):
 
-
         asyncio.run(self.run_dvm(dvm_config, admin_config))
 
     async def run_dvm(self, dvm_config, admin_config):
@@ -57,7 +56,7 @@ class DVM:
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
-        print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + "Nostr DVM public key: " + str(
+        print(bcolors.BLUE + "[" + self.dvm_config.NIP89.NAME + "] " + "Nostr DVM public key: " + str(
             pk.to_bech32()) + " Hex: " +
               str(pk.to_hex()) + " Supported DVM tasks: " +
               ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + bcolors.ENDC)
@@ -82,7 +81,8 @@ class DVM:
             keys = self.keys
 
             async def handle(self, relay_url, subscription_id, nostr_event: Event):
-                print(nostr_event.as_json())
+                if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                    print(nostr_event.as_json())
                 if EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= nostr_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64():
                     await handle_nip90_job_event(nostr_event)
                 elif nostr_event.kind().as_u64() == EventDefinitions.KIND_ZAP.as_u64():
@@ -110,7 +110,8 @@ class DVM:
                     p_tag_str = tag.as_vec()[1]
 
             if p_tag_str != "" and p_tag_str != self.dvm_config.PUBLIC_KEY:
-                print("[" + self.dvm_config.NIP89.NAME + "] No public request, also not addressed to me.")
+                if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                    print("[" + self.dvm_config.NIP89.NAME + "] No public request, also not addressed to me.")
                 return
 
             # check if task is supported by the current DVM
@@ -126,9 +127,9 @@ class DVM:
                     await send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
                     print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
                     return
-
-                print(
-                    bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + bcolors.ENDC)
+                if self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
+                    print(
+                        bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + bcolors.ENDC)
                 duration = input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
@@ -158,8 +159,9 @@ class DVM:
                                                        self.dvm_config)
 
                         subscription_status = await nip88_has_active_subscription(PublicKey.parse(user.npub),
-                                                                            self.dvm_config.NIP88.DTAG, self.client,
-                                                                            self.dvm_config.PUBLIC_KEY)
+                                                                                  self.dvm_config.NIP88.DTAG,
+                                                                                  self.client,
+                                                                                  self.dvm_config.PUBLIC_KEY)
 
                         if subscription_status["isActive"]:
                             await send_job_status_reaction(nip90_event, "subscription-required", True, amount,
@@ -201,9 +203,10 @@ class DVM:
                 if (user.iswhitelisted or task_is_free or cashu_redeemed) and (
                         p_tag_str == "" or p_tag_str ==
                         self.dvm_config.PUBLIC_KEY):
-                    print(
-                        "[" + self.dvm_config.NIP89.NAME + "] Free task or Whitelisted for task " + task +
-                        ". Starting processing..")
+                    if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                        print(
+                            "[" + self.dvm_config.NIP89.NAME + "] Free task or Whitelisted for task " + task +
+                            ". Starting processing..")
 
                     if dvm_config.SEND_FEEDBACK_EVENTS:
                         await send_job_status_reaction(nip90_event, "processing", True, 0,
@@ -278,7 +281,8 @@ class DVM:
 
 
                 else:
-                    print("[" + self.dvm_config.NIP89.NAME + "] Job addressed to someone else, skipping..")
+                    if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                        print("[" + self.dvm_config.NIP89.NAME + "] Job addressed to someone else, skipping..")
             # else:
             # print("[" + self.dvm_config.NIP89.NAME + "] Task " + task + " not supported on this DVM, skipping..")
 
@@ -500,9 +504,12 @@ class DVM:
 
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
-
-            print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
-                original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
+                    original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
+            elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
+                print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
+                    original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.id().to_hex() + bcolors.ENDC)
 
         async def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None,
                                            content=None,
@@ -612,8 +619,13 @@ class DVM:
             # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
 
-            print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
-                EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
+                    EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
+            elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
+                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
+                    EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.id().to_hex() + bcolors.ENDC)
+
             return reaction_event.as_json()
 
         async def do_work(job_event, amount):
@@ -687,7 +699,7 @@ class DVM:
 
                         return
 
-        #await self.client.handle_notifications(NotificationHandler)
+        # await self.client.handle_notifications(NotificationHandler)
         asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
         while True:
@@ -696,7 +708,7 @@ class DVM:
 
             for job in self.job_list:
                 if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
-                    ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, se.dvm_config)
+                    ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)
                     if ispaid and job.is_paid is False:
                         print("is paid")
                         job.is_paid = True
@@ -704,9 +716,9 @@ class DVM:
 
                         job.is_paid = True
                         await send_job_status_reaction(job.event, "processing", True, 0,
-                                                          content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                          client=self.client,
-                                                          dvm_config=self.dvm_config)
+                                                       content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
+                                                       client=self.client,
+                                                       dvm_config=self.dvm_config)
                         print("[" + self.dvm_config.NIP89.NAME + "] doing work from joblist")
                         await do_work(job.event, amount)
                     elif ispaid is None:  # invoice expired
@@ -716,8 +728,8 @@ class DVM:
                     self.job_list.remove(job)
 
             for job in self.jobs_on_hold_list:
-                if await check_event_has_not_unfinished_job_input(job.event, False, client=se.client,
-                                                                     dvmconfig=self.dvm_config):
+                if await check_event_has_not_unfinished_job_input(job.event, False, client=self.client,
+                                                                  dvmconfig=self.dvm_config):
                     await handle_nip90_job_event(nip90_event=job.event)
                     try:
                         self.jobs_on_hold_list.remove(job)

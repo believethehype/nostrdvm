@@ -8,13 +8,14 @@ import sys
 from sys import platform
 from threading import Thread
 from venv import create
-from nostr_sdk import Keys, Kind
+from nostr_sdk import Keys, Kind, LogLevel
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_result
+
 
 
 class DVMTaskInterface:
@@ -136,12 +137,13 @@ class DVMTaskInterface:
         return post_process_result(result, event)
 
     def set_options(self, request_form):
-
-        print("[" + self.dvm_config.NIP89.NAME + "] " + "Setting options...")
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] " + "Setting options...")
         opts = []
         if request_form.get("options"):
             opts = json.loads(request_form["options"])
-            print("[" + self.dvm_config.NIP89.NAME + "] " + str(opts))
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print("[" + self.dvm_config.NIP89.NAME + "] " + str(opts))
         return dict(opts)
 
     @staticmethod

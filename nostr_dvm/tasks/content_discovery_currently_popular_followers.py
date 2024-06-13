@@ -15,6 +15,7 @@ from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, 
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
+
 """
 This File contains a Module to discover popular notes
 Accepted Inputs: none
@@ -141,7 +142,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
             filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
             events = await cli.database().query([filter1])
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
 
             ns.finallist = {}
             for event in events:
@@ -162,8 +164,9 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                 result_list.append(e_tag.as_vec())
             #await cli.connect()
             await cli.shutdown()
-            print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
-                len(result_list)) + " fitting events.")
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
+                    len(result_list)) + " fitting events.")
 
         return json.dumps(result_list)
 
@@ -212,15 +215,17 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
              definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
-            self.db_since) + " seconds.. this might take a while..")
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
+                self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         await cli.reconcile(filter1, dbopts)
         await cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
         await cli.shutdown()
-        print("[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
-            self.db_since) + " seconds..")
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

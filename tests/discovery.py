@@ -22,6 +22,7 @@ from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_an
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
+
 rebroadcast_NIP89 = False   # Announce NIP89 on startup
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
@@ -43,7 +44,7 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
                                     "wss://bitcoiner.social", "wss://relay.stoner.com", "wss://nostr.l00p.org", "wss://relay.nostr.ro", "wss://nostr.kollider.xyz",
                                     "wss://relay.valera.co", "wss://relay.austrich.net", "wss://relay.nostrich.de", "wss://nostr.azte.co", "wss://nostr-relay.schnitzel.world",
                                     "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com"
-                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social"
+                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com"
 
 
 
@@ -59,6 +60,7 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.LOGLEVEL = LogLevel.INFO
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
@@ -99,6 +101,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config.USE_OWN_VENV = False
     dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.LOGLEVEL = LogLevel.INFO
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #              "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -131,6 +134,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.LOGLEVEL = LogLevel.INFO
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
@@ -180,6 +184,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
+    dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
@@ -219,6 +224,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
                           update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
+    dvm_config.LOGLEVEL = LogLevel.INFO
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
@@ -264,6 +270,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
+    dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every x seconds
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
@@ -309,6 +316,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
+    dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost

@@ -149,7 +149,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
         events = await database.query([filter1])
-        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
 
         for event in events:
@@ -171,9 +172,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
-
-        print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
-            len(result_list)) + " fitting events.")
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
+                len(result_list)) + " fitting events.")
         #await cli.shutdown()
         return json.dumps(result_list)
 
@@ -209,15 +210,17 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                                   definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
         # filter = Filter().author(keys.public_key())
-        print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
-            self.db_since) + " seconds.. this might take a while..")
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
+                self.db_since) + " seconds.. this might take a while..")
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
         await cli.reconcile(filter1, dbopts)
         await cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
         await cli.shutdown()
-        print(
-            "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print(
+                "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
