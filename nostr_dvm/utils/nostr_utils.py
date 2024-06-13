@@ -42,7 +42,7 @@ def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
         return None
 
 async def get_events_async(client, filter, timeout):
-    events = client.get_events_of([filter], timedelta(seconds=timeout))
+    events = await client.get_events_of([filter], timedelta(seconds=timeout))
     return events
 
 
