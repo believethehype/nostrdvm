@@ -7,7 +7,7 @@ from decord import AudioReader, cpu
 import requests
 from nostr_dvm.utils.nostr_utils import get_event_by_id
 from nostr_dvm.utils.scrapper.media_scrapper import OvercastDownload, XitterDownload, TiktokDownloadAll, \
-    InstagramDownload, YouTubeDownload
+    InstagramDownload, YouTubeDownload, XDownload
 
 
 def input_data_file_duration(event, dvm_config, client, start=0, end=0):
@@ -344,7 +344,8 @@ def download_overcast(source_url, target_location):
 
 
 def download_twitter(videourl, path):
-    result = XitterDownload(videourl, path + "x.mp4")
+    result = XDownload(videourl, path + "x.mp4")
+    #result = XitterDownload(videourl, path + "x.mp4")
     return result
 
 
