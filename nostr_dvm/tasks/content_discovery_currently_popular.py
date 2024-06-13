@@ -98,7 +98,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     async def process(self, request_form):
         # if the dvm supports individual results, recalculate it every time for the request
         if self.personalized:
-            return self.calculate_result(request_form)
+            return await self.calculate_result(request_form)
         # else return the result that gets updated once every scheduled update. In this case on database update.
         else:
             return self.result
