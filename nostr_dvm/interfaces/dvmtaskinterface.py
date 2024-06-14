@@ -163,7 +163,7 @@ class DVMTaskInterface:
         # f.close()
 
 
-async def process_venv(identifier):
+def process_venv(identifier):
     args = DVMTaskInterface.process_args()
     dvm_config = build_default_config(args.identifier)
     dvm = identifier(name="", dvm_config=dvm_config, nip89config=NIP89Config(), admin_config=None)
@@ -172,3 +172,4 @@ async def process_venv(identifier):
         DVMTaskInterface.write_output(result, args.output)
     except Exception as e:
         DVMTaskInterface.write_output("Error: " + str(e), args.output)
+

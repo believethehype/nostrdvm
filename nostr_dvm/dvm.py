@@ -628,6 +628,27 @@ class DVM:
 
             return reaction_event.as_json()
 
+        async def run_subprocess(python_bin, dvm_config, request_form):
+            process = await asyncio.create_subprocess_exec(
+                python_bin, dvm_config.SCRIPT,
+                '--request', json.dumps(request_form),
+                '--identifier', dvm_config.IDENTIFIER,
+                '--output', 'output.txt',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+
+            stdout, stderr = await process.communicate()
+
+            retcode = process.returncode
+
+            if retcode != 0:
+                print(f"Error: {stderr.decode()}")
+            else:
+                print(f"Output: {stdout.decode()}")
+
+            return retcode
+
         async def do_work(job_event, amount):
             if ((
                     EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= job_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64())
@@ -648,10 +669,11 @@ class DVM:
                                     python_location = "/Scripts/python"
                                 python_bin = (r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
                                               + python_location)
-                                retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
-                                                           '--request', json.dumps(request_form),
-                                                           '--identifier', dvm_config.IDENTIFIER,
-                                                           '--output', 'output.txt'])
+                                #retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
+                                #                           '--request', json.dumps(request_form),
+                                #                           '--identifier', dvm_config.IDENTIFIER,
+                                #                           '--output', 'output.txt'])
+                                await run_subprocess(python_bin, dvm_config, request_form)
                                 print("Finished processing, loading data..")
 
                                 with open(os.path.abspath('output.txt')) as f:
