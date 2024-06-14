@@ -120,7 +120,7 @@ class Bot:
 
                         # Check timestamp of rumor
                         if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
-                            if rumor.kind().match_enum(KindEnum.SEALED_DIRECT()):
+                            if rumor.kind() == Kind.from_enum(KindEnum.GIFT_WRAP()):
                                 decrypted_text = rumor.content()
                                 print(f"Received new msg [sealed]: {decrypted_text}")
                                 sealed = " [sealed] "
@@ -451,7 +451,7 @@ class Bot:
         async def handle_zap(zap_event):
             print("[" + self.NAME + "] Zap received")
             try:
-                invoice_amount, zapped_event, sender, message, anon = parse_zap_event_tags(zap_event,
+                invoice_amount, zapped_event, sender, message, anon = await parse_zap_event_tags(zap_event,
                                                                                            self.keys, self.NAME,
                                                                                            self.client, self.dvm_config)
 
