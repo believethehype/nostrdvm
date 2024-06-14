@@ -51,9 +51,9 @@ class Bot:
 
         self.job_list = []
 
-        print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME +
-              " Supported DVM tasks: " +
-              ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
+        print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME) # +
+              #" Supported DVM tasks: " +
+              #', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
             await self.client.add_relay(relay)
@@ -69,7 +69,7 @@ class Bot:
                 kinds.append(Kind(dvm.KIND.as_u64() + 1000))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
-        self.client.subscribe([zap_filter, dm_filter, nip59_filter, dvm_filter], None)
+        await self.client.subscribe([zap_filter, dm_filter, nip59_filter, dvm_filter], None)
 
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)

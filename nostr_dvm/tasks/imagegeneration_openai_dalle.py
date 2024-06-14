@@ -24,12 +24,10 @@ Outputs: An url to an Image
 
 
 class ImageGenerationDALLE(DVMTaskInterface):
-    KIND: EventDefinitions.KIND_NIP90_GENERATE_IMAGE
+    KIND = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
     FIX_COST: float = 120
     dependencies = [("nostr-dvm", "nostr-dvm"),
-                    ("requests", "requests"),
-                    ("pillow", "pillow"),
                     ("openai", "openai==1.3.5")]
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
