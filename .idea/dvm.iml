@@ -6,8 +6,9 @@
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/venv_package_test" />
       <excludeFolder url="file://$MODULE_DIR$/venv_package_test2" />
+      <excludeFolder url="file://$MODULE_DIR$/venv12" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11 (dvm)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 (dvm)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

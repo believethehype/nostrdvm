@@ -22,8 +22,7 @@ setup(
                       "pycryptodome==3.20.0",
                       "python-dotenv==1.0.0",
                       "emoji==2.8.0",
-                      "eva-decord==0.6.1",
-                      "ffmpegio==0.8.5",
+                      "ffmpegio==0.9.1",
                       "lnurl",
                       "pandas==2.1.3",
                       "Pillow==10.1.0",
@@ -34,7 +33,6 @@ setup(
                       "moviepy==2.0.0.dev2",
                       "zipp==3.17.0",
                       "urllib3==2.1.0",
-                      "typing_extensions>=4.9.0"
                       ],
     keywords=['nostr', 'nip90', 'dvm', 'data vending machine'],
     url="https://github.com/believethehype/nostrdvm",
