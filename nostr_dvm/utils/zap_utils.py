@@ -4,6 +4,7 @@ import os
 import urllib.parse
 from pathlib import Path
 
+import bech32
 import requests
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
@@ -12,7 +13,6 @@ from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, gene
     Timestamp
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
-import lnurl
 from hashlib import sha256
 import dotenv
 
@@ -112,7 +112,8 @@ def create_bolt11_ln_bits(sats: int, config) -> (str, str):
 
 def create_bolt11_lud16(lud16, amount):
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
-        url = lnurl.decode(lud16)
+        url = decode_bech32(lud16)
+        print(url)
     elif '@' in lud16:  # LNaddress
         url = 'https://' + str(lud16).split('@')[1] + '/.well-known/lnurlp/' + str(lud16).split('@')[0]
     else:  # No lud16 set or format invalid
@@ -240,13 +241,29 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
         return str(ex)
 
 
+def decode_bech32(encoded_lnurl):
+    # Decode the bech32 encoded string
+    hrp, data = bech32.bech32_decode(encoded_lnurl)
+
+    if hrp != 'lnurl':
+        raise ValueError("Invalid human-readable part (hrp)")
+
+    # Convert the data back from 5-bit words to 8-bit bytes
+    decoded_bytes = bech32.convertbits(data, 5, 8, False)
+
+    # Convert the bytes back to a string
+    decoded_url = bytes(decoded_bytes).decode('utf-8')
+
+    return decoded_url
+
+
 def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys, relay_list, zaptype="public"):
     print(lud16)
     print(str(amount))
     print(content)
     print(zapped_user.to_hex())
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
-        url = lnurl.decode(lud16)
+        url = decode_bech32(lud16)
     elif '@' in lud16:  # LNaddress
         url = 'https://' + str(lud16).split('@')[1] + '/.well-known/lnurlp/' + str(lud16).split('@')[0]
     else:  # No lud16 set or format invalid
@@ -256,7 +273,13 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
         ob = json.loads(response.content)
         callback = ob["callback"]
         print(ob["callback"])
-        encoded_lnurl = lnurl.encode(url)
+
+
+        #encoded_lnurl = lnurl.encode(url)
+
+        url_bytes = url.encode()
+        encoded_lnurl = bech32.bech32_encode('lnurl', bech32.convertbits(url_bytes, 8, 5))
+
         amount_tag = Tag.parse(['amount', str(amount * 1000)])
         relays_tag = Tag.parse(['relays', str(relay_list)])
         lnurl_tag = Tag.parse(['lnurl', encoded_lnurl])

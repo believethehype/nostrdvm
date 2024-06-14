@@ -6,7 +6,13 @@
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/venv_package_test" />
       <excludeFolder url="file://$MODULE_DIR$/venv_package_test2" />
+      <excludeFolder url="file://$MODULE_DIR$/p12venv" />
       <excludeFolder url="file://$MODULE_DIR$/venv12" />
+      <excludeFolder url="file://$MODULE_DIR$/venvp12" />
+      <excludeFolder url="file://$MODULE_DIR$/p12" />
+      <excludeFolder url="file://$MODULE_DIR$/p123" />
+      <excludeFolder url="file://$MODULE_DIR$/p1234" />
+      <excludeFolder url="file://$MODULE_DIR$/p23" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.12 (dvm)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

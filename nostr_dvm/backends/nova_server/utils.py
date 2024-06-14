@@ -74,7 +74,7 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
         if log != "":
             print(log)
         # WAITING = 0, RUNNING = 1, FINISHED = 2, ERROR = 3
-        asyncio.sleep(1.0)
+        time.sleep(1.0)
 
 
     if status == 2:
