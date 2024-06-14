@@ -136,7 +136,6 @@ async def nostr_client_test_inactive_filter(user):
 
     tags = [relaysTag, alttag, paramTag, paramTag2]
 
-
     event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me inactive users"),
                          tags).to_event(keys)
 
@@ -150,6 +149,7 @@ async def nostr_client_test_inactive_filter(user):
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
     return event.as_json()
+
 
 async def nostr_client_test_tts(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
@@ -190,7 +190,6 @@ async def nostr_client_test_disovery(user, ptag):
 
     tags = [relaysTag, alttag, paramTag, pTag]
 
-
     event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content"),
                          tags).to_event(keys)
 
@@ -203,6 +202,33 @@ async def nostr_client_test_disovery(user, ptag):
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+
+
+async def nostr_client_test_disovery_user(user, ptag):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    relay_list = ["wss://relay.damus.io", "wss://dvms.f7z.io",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to find users"])
+    paramTag = Tag.parse(["param", "user", user])
+    pTag = Tag.parse(["p", ptag])
+
+    tags = [relaysTag, alttag, paramTag, pTag]
+
+    event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me people"),
+                         tags).to_event(keys)
+
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    for relay in relay_list:
+        await client.add_relay(relay)
+    await client.connect()
+    config = DVMConfig
+    eventid = await send_event(event, client=client, dvm_config=config)
+    print(eventid.to_hex())
     return event.as_json()
 
 
@@ -274,7 +300,10 @@ async def nostr_client():
     # await nostr_client_test_image("a beautiful purple ostrich watching the sunset")
     # await nostr_client_test_search_profile("dontbelieve")
     wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
-    await nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "a21592a70ef9a00695efb3f7e816e17742d251559aff154b16d063a408bcd74d")
+    # aawait nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "a21592a70ef9a00695efb3f7e816e17742d251559aff154b16d063a408bcd74d")
+    await nostr_client_test_disovery_user("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
+                                          "58c52fdca7593dffea63ba6f758779d8251c6732f54e9dc0e56d7a1afe1bb1b6")
+
     # await nostr_client_test_censor_filter(wot)
     # await nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
 
@@ -299,7 +328,7 @@ async def nostr_client():
                 print("[Nostr Client]: " + f"Received new zap:")
                 print(event.as_json())
 
-        def handle_msg(self, relay_url, msg):
+        async def handle_msg(self, relay_url, msg):
             return
 
     await client.handle_notifications(NotificationHandler())
