@@ -31,7 +31,7 @@ update_profile = False
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
-AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine"
+AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine",
                                     "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
                                     "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
                                     "wss://nostr-pub.semisol.dev", "wss://mostr.mostr.pub", "wss://relay.mostr.pub", "wss://minds.com",
