@@ -95,7 +95,7 @@ class Bot:
                         await handle_dm(nostr_event, False)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
-                elif nostr_event.kind() == Kind.from_enum(KindEnum.GIFT_WRAP():
+                elif nostr_event.kind() == Kind.from_enum(KindEnum.GIFT_WRAP()):
                     try:
                       await handle_dm(nostr_event, True)
                     except Exception as e:

@@ -33,7 +33,7 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
 
         id_filter = Filter().id(event_id).limit(1)
         #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
-        events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+        events = await get_events_async(client, id_filter, config.RELAY_TIMEOUT)
 
     if len(events) > 0:
 
