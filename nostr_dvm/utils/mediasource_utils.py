@@ -3,7 +3,8 @@ import urllib
 from datetime import time
 from urllib.parse import urlparse
 import ffmpegio
-from decord import AudioReader, cpu
+
+
 import requests
 from nostr_dvm.utils.nostr_utils import get_event_by_id
 from nostr_dvm.utils.scrapper.media_scrapper import OvercastDownload, XitterDownload, TiktokDownloadAll, \
@@ -43,8 +44,7 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
         if filename == "" or filename is None:
             return 0
         try:
-            file_reader = AudioReader(filename, ctx=cpu(0), mono=False)
-            duration = float(file_reader.duration())
+            duration = ffmpegio.probe.format_basic(filename)['duration']
         except Exception as e:
             print(e)
             return 0
@@ -76,8 +76,10 @@ def organize_input_media_data(input_value, input_type, start, end, dvm_config, c
         if type != "audio" and type != "video":
             return filename
         try:
-            file_reader = AudioReader(filename, ctx=cpu(0), mono=False)
-            duration = float(file_reader.duration())
+            #file_reader = AudioReader(filename, ctx=cpu(0), mono=False)
+           # duration = float(file_reader.duration())
+            duration = ffmpegio.probe.format_basic(filename)['duration']
+
         except Exception as e:
             print(e)
             try:

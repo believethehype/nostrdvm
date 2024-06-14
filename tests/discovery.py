@@ -18,6 +18,7 @@ from nostr_dvm.tasks.content_discovery_currently_popular_topic import DicoverCon
 from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
+from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
@@ -46,7 +47,8 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
                                     "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com",
                                     "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com",
                                     "wss://relay.nostrati.com", "wss://purplerelay.com", "wss://hist.nostr.land", "wss://creatr.nostr.wine", "ws://localhost:4869",
-                                    "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu", "wss://inbox.nostr.wine"
+                                    "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu", "wss://inbox.nostr.wine", "wss://relay.pleb.to", "wss://welcome.nostr.wine",
+                                    "wss://relay.nostrview.com", "wss://nostr.land", "wss://eu.purplerelay.com", "wss://xmr.usenostr.org",  "wss://relay.pleb.to", "wss://nostr-relay.app"
                                     ]
 
 RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io",
@@ -366,6 +368,8 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
 
 
 def playground():
+
+
     #DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler= AdminConfig()
     options_animal = {
