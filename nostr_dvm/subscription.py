@@ -285,7 +285,7 @@ class Subscription:
 
                         if tier_dtag == "" or len(zaps) == 0:
                             tierfilter = Filter().id(EventId.parse(subscription_event_id))
-                            evts = self.client.get_events_of([tierfilter], timedelta(seconds=3))
+                            evts = await self.client.get_events_of([tierfilter], timedelta(seconds=3))
                             if len(evts) > 0:
                                 for tag in evts[0].tags():
                                     if tag.as_vec()[0] == "d":

@@ -56,7 +56,7 @@ async def init():
         await send_event(event, client=client, dvm_config=config)
         return event
 
-    def handledvm(now, eventid):
+    async def handledvm(now, eventid):
         response = False
 
         feedbackfilter = Filter().pubkey(keys.public_key()).kinds(
@@ -65,8 +65,8 @@ async def init():
             [EventDefinitions.KIND_FEEDBACK]).since(now).event(eventid)
         lastfeedback = ""
         while not response:
-            events = client.get_events_of([feedbackfilter], timedelta(seconds=3))
-            fevents = client.get_events_of([feedbackfilter2], timedelta(seconds=3))
+            events = await client.get_events_of([feedbackfilter], timedelta(seconds=3))
+            fevents = await client.get_events_of([feedbackfilter2], timedelta(seconds=3))
             if len(fevents) > 0:
                 if lastfeedback != fevents[0].content():
                     for tag in fevents[0].tags():

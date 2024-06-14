@@ -120,7 +120,7 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
             cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
                 user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
                 EventId.parse(subscription_status["subscriptionId"])).limit(1)
-            cancel_events = client.get_events_of([cancel_filter], timedelta(seconds=3))
+            cancel_events = await client.get_events_of([cancel_filter], timedelta(seconds=3))
             if len(cancel_events) > 0:
                 if cancel_events[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True
