@@ -11,7 +11,7 @@ from nostr_dvm.utils.scrapper.media_scrapper import OvercastDownload, XitterDown
     InstagramDownload, YouTubeDownload, XDownload
 
 
-def input_data_file_duration(event, dvm_config, client, start=0, end=0):
+async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     # print("[" + dvm_config.NIP89.NAME + "] Getting Duration of the Media file..")
     input_value = ""
     input_type = ""
@@ -28,7 +28,7 @@ def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     if input_type == "event":  # NIP94 event
         if count > 1:
             return 1  # we ignore length for multiple event inputs for now
-        evt = get_event_by_id(input_value, client=client, config=dvm_config)
+        evt = await get_event_by_id(input_value, client=client, config=dvm_config)
         if evt is not None:
             input_value, input_type = check_nip94_event_for_media(evt, input_value, input_type)
             if input_type == "text":
