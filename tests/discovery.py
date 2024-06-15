@@ -48,8 +48,13 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
                                     "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com",
                                     "wss://relay.nostrati.com", "wss://purplerelay.com", "wss://hist.nostr.land", "wss://creatr.nostr.wine", "ws://localhost:4869",
                                     "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu", "wss://inbox.nostr.wine", "wss://relay.pleb.to", "wss://welcome.nostr.wine",
-                                    "wss://relay.nostrview.com", "wss://nostr.land", "wss://eu.purplerelay.com", "wss://xmr.usenostr.org", "wss://nostr-relay.app", "ws://umbrel:4848",  "wss://fiatjaf.com"
+                                    "wss://relay.nostrview.com", "wss://nostr.land", "wss://eu.purplerelay.com", "wss://xmr.usenostr.org", "wss://nostr-relay.app", "ws://umbrel:4848", "wss://umbrel:4848",
+                                    "wss://fiatjaf.com", "wss://nostr-relay.wlvs.space", "wss://relayer.fiatjaf.com",
+                                    "wss://nostr-01.bolt.observer", "wss://nostr1.tunnelsats.com", "wss://relay.nostr.ch", "wss://relay.nostr.io"
+
                                     ]
+
+print(AVOID_PAID_OUTBOX_RELAY_LIST)
 
 RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io",
                            "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
@@ -143,6 +148,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
