@@ -24,7 +24,7 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
-rebroadcast_NIP89 = False   # Announce NIP89 on startup
+rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
