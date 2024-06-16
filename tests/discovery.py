@@ -21,6 +21,7 @@ from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
+from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
@@ -31,36 +32,14 @@ update_profile = False
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
-AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine", "wss://relay.current.fyi",
-                                    "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev", "wss://brb.io",
-                                    "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws", "ws://elitedesk:4848",
-                                    "wss://nostr-pub.semisol.dev", "wss://mostr.mostr.pub", "wss://relay.mostr.pub", "wss://minds.com",
-                                    "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all", "wss://eden.nostr.land",
-                                    "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",  "wss://za.purplerelay.com",
-                                    "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land", "ws://elitedesk.local:4848",
-                                    "wss://rss.nos.social", "wss://atlas.nostr.land", "wss://puravida.nostr.land", "wss://nostr.inosta.cc",
-                                    "wss://relay.orangepill.dev", "wss://no.str.cr", "wss://nostr.milou.lol", "wss://relay.nostr.com.au",
-                                    "wss://puravida.nostr.land", "wss://atlas.nostr.land", "wss://nostr-pub.wellorder.net", "wss://eelay.current.fyi",
-                                    "wss://nostr.thesamecat.io", "wss://nostr.plebchain.org", "wss://relay.noswhere.com", "wss://nostr.uselessshit.co",
-                                    "wss://bitcoiner.social", "wss://relay.stoner.com", "wss://nostr.l00p.org", "wss://relay.nostr.ro", "wss://nostr.kollider.xyz",
-                                    "wss://relay.valera.co", "wss://relay.austrich.net", "wss://relay.nostrich.de", "wss://nostr.azte.co", "wss://nostr-relay.schnitzel.world",
-                                    "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com",
-                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com", "wss://at.nostrworks.com",
-                                    "wss://relay.nostrati.com", "wss://purplerelay.com", "wss://hist.nostr.land", "wss://creatr.nostr.wine", "ws://localhost:4869", "wss://pleb.cloud", "wss://nos.lol",
-                                    "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu", "wss://inbox.nostr.wine", "wss://relay.pleb.to", "wss://welcome.nostr.wine",
-                                    "wss://relay.nostrview.com", "wss://nostr.land", "wss://eu.purplerelay.com", "wss://xmr.usenostr.org", "wss://nostr-relay.app", "ws://umbrel:4848", "wss://umbrel:4848",
-                                    "wss://fiatjaf.com", "wss://nostr-relay.wlvs.space", "wss://relayer.fiatjaf.com", "wss://nostr.yuv.al", "wss://relay.nostr.band", "wss://nostr.massmux.com",
-                                    "wss://nostr-01.bolt.observer", "wss://nostr1.tunnelsats.com", "wss://relay.nostr.ch", "wss://relay.nostr.io", "wss://nostr.thank.eu", "wss://nostr.bitcoinplebs.de",
-                                    "wss://adult.18plus.social", "wss://bostr.online", "wss://relay.current.fyi", "wss://nosdrive.app/relay",  "wss://studio314.nostr1.com", "wss://relay.nostrbr.online"
 
-
-                                    ]
-
-print(AVOID_PAID_OUTBOX_RELAY_LIST)
 
 RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io",
                            "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
                            "wss://relay.nostr.net", "wss://relay.primal.net"]  # , "wss://relay.snort.social"]
+
+#avoid additional relays..
+#AVOID_OUTBOX_RELAY_LIST.append("")
 
 
 if use_logger:
@@ -116,7 +95,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config: DVMConfig = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #              "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
@@ -149,7 +128,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     # Activate these to use a subscription based model instead
@@ -203,7 +182,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.FIX_COST = cost
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -249,7 +228,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
     #"wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -292,7 +271,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -338,7 +317,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_PAID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
