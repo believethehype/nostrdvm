@@ -166,8 +166,9 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     # 4. If we don't find inbox relays (e.g. because the user didn't announce them, we just send to our default relays
     if len(relays) == 0:
         print("[" + dvm_config.NIP89.NAME + "] No Inbox found, replying to generic relays")
-        eventid = await send_event(event, client, dvm_config)
-        return eventid
+        relays = dvm_config.RELAY_LIST
+        #eventid = await send_event(event, client, dvm_config)
+        #return eventid
 
     # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
     relaylimits = RelayLimits.disable()
@@ -188,14 +189,13 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
             print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
 
     await outboxclient.connect()
-    try:
-        event_id = await outboxclient.send_event(event)
-    except:
-        event_id = await send_event(event, client, dvm_config)
 
+    event_id = await outboxclient.send_event(event)
     await outboxclient.shutdown()
 
     return event_id
+
+
 
 
 async def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventId:
