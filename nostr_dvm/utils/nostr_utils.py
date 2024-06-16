@@ -181,7 +181,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays:
-        opts = RelayOptions().ping(True)
+        opts = RelayOptions().ping(False)
         try:
             await outboxclient.add_relay_with_opts(relay, opts)
         except:
@@ -205,7 +205,13 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False) -> 
             if tag.as_vec()[0] == 'relays':
                 for index, param in enumerate(tag.as_vec()):
                     if index != 0:
-                        relays.append(tag.as_vec()[index])
+                        if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                            try:
+                                relays.append(tag.as_vec()[index])
+                            except:
+                                print("[" + dvm_config.NIP89.NAME + "] " + tag.as_vec()[
+                                    index] + " couldn't be added to outbox relays")
+                break
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
