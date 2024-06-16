@@ -130,19 +130,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
-
-        #opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        #sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        #keys = Keys.parse(sk.to_hex())
-        #signer = NostrSigner.keys(keys)
-
         database = await NostrDatabase.sqlite(self.db_name)
-        #cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        #await cli.connect()
-
-        # Negentropy reconciliation
-        # Query events from database
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
@@ -157,7 +146,6 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             if all(ele in event.content().lower() for ele in self.must_list):
                 if any(ele in event.content().lower() for ele in self.search_list):
                     if not any(ele in event.content().lower() for ele in self.avoid_list):
-
                         filt = Filter().kinds(
                             [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                              definitions.EventDefinitions.KIND_REPOST,

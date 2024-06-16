@@ -31,13 +31,13 @@ update_profile = False
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
-AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine",
-                                    "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
-                                    "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
+AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine", "wss://relay.current.fyi",
+                                    "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev", "wss://brb.io",
+                                    "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws", "ws://elitedesk:4848",
                                     "wss://nostr-pub.semisol.dev", "wss://mostr.mostr.pub", "wss://relay.mostr.pub", "wss://minds.com",
                                     "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all", "wss://eden.nostr.land",
                                     "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",  "wss://za.purplerelay.com",
-                                    "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land",
+                                    "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land", "ws://elitedesk.local:4848",
                                     "wss://rss.nos.social", "wss://atlas.nostr.land", "wss://puravida.nostr.land", "wss://nostr.inosta.cc",
                                     "wss://relay.orangepill.dev", "wss://no.str.cr", "wss://nostr.milou.lol", "wss://relay.nostr.com.au",
                                     "wss://puravida.nostr.land", "wss://atlas.nostr.land", "wss://nostr-pub.wellorder.net", "wss://eelay.current.fyi",
@@ -45,12 +45,14 @@ AVOID_PAID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine
                                     "wss://bitcoiner.social", "wss://relay.stoner.com", "wss://nostr.l00p.org", "wss://relay.nostr.ro", "wss://nostr.kollider.xyz",
                                     "wss://relay.valera.co", "wss://relay.austrich.net", "wss://relay.nostrich.de", "wss://nostr.azte.co", "wss://nostr-relay.schnitzel.world",
                                     "wss://relay.nostriches.org", "wss://happytavern.co", "wss://onlynotes.lol", "wss://offchain.pub", "wss://purplepag.es", "wss://relay.plebstr.com",
-                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com",
-                                    "wss://relay.nostrati.com", "wss://purplerelay.com", "wss://hist.nostr.land", "wss://creatr.nostr.wine", "ws://localhost:4869",
+                                    "wss://poster.place/relay", "wss://relayable.org", "wss://bbb.santos.lol", "wss://relay.bitheaven.social", "wss://theforest.nostr1.com", "wss://at.nostrworks.com",
+                                    "wss://relay.nostrati.com", "wss://purplerelay.com", "wss://hist.nostr.land", "wss://creatr.nostr.wine", "ws://localhost:4869", "wss://pleb.cloud", "wss://nos.lol",
                                     "wss://pyramid.fiatjaf.com", "wss://relay.nos.social", "wss://nostr.thank.eu", "wss://inbox.nostr.wine", "wss://relay.pleb.to", "wss://welcome.nostr.wine",
                                     "wss://relay.nostrview.com", "wss://nostr.land", "wss://eu.purplerelay.com", "wss://xmr.usenostr.org", "wss://nostr-relay.app", "ws://umbrel:4848", "wss://umbrel:4848",
-                                    "wss://fiatjaf.com", "wss://nostr-relay.wlvs.space", "wss://relayer.fiatjaf.com",
-                                    "wss://nostr-01.bolt.observer", "wss://nostr1.tunnelsats.com", "wss://relay.nostr.ch", "wss://relay.nostr.io"
+                                    "wss://fiatjaf.com", "wss://nostr-relay.wlvs.space", "wss://relayer.fiatjaf.com", "wss://nostr.yuv.al", "wss://relay.nostr.band", "wss://nostr.massmux.com",
+                                    "wss://nostr-01.bolt.observer", "wss://nostr1.tunnelsats.com", "wss://relay.nostr.ch", "wss://relay.nostr.io", "wss://nostr.thank.eu", "wss://nostr.bitcoinplebs.de",
+                                    "wss://adult.18plus.social", "wss://bostr.online", "wss://relay.current.fyi", "wss://nosdrive.app/relay",  "wss://studio314.nostr1.com", "wss://relay.nostrbr.online"
+
 
                                     ]
 
