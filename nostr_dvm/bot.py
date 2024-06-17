@@ -206,7 +206,11 @@ class Bot:
 
 
                     elif decrypted_text.lower().startswith("invoice"):
+                        requests_rq = False
                         amount_str = decrypted_text.lower().split(" ")[1]
+                        if amount_str == "qr":
+                            amount_str = decrypted_text.lower().split(" ")[2]
+                            requests_rq = True
                         try:
                             amount = int(amount_str)
                         except:
@@ -214,9 +218,14 @@ class Bot:
 
                         invoice, hash = create_bolt11_ln_bits(amount, self.dvm_config)
                         expires = nostr_event.created_at().as_secs() + (60 * 60 * 24)
+                        qr_code = "https://qrcode.tec-it.com/API/QRCode?data="+ invoice +"&backcolor=%23ffffff&size=small&quietzone=1&errorcorrection=H"
 
                         self.invoice_list.append(InvoiceToWatch(sender=sender, bolt11=invoice, payment_hash=hash, is_paid=False, expires=expires, amount=amount))
-                        message = invoice
+
+                        if requests_rq:
+                            message = invoice + "\n" + qr_code
+                        else:
+                            message = invoice
                         if giftwrap:
                             await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         else:
