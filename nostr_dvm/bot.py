@@ -11,25 +11,27 @@ from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNot
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, InvoiceToWatch
 from nostr_dvm.utils.nip89_utils import nip89_fetch_events_pubkey, NIP89Config
 from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.output_utils import PostProcessFunctionType, post_process_list_to_users, \
     post_process_list_to_events
-from nostr_dvm.utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zaprequest
+from nostr_dvm.utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zaprequest, create_bolt11_ln_bits, \
+    check_bolt11_ln_bits_is_paid, parse_amount_from_bolt11_invoice
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 
 
 class Bot:
     job_list: list
+    invoice_list: list
 
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
 
     def __init__(self, dvm_config, admin_config=None):
         asyncio.run(self.run_bot(dvm_config, admin_config))
 
-
         # add_sql_table_column(dvm_config.DB)
+
     async def run_bot(self, dvm_config, admin_config):
         self.NAME = "Bot"
         dvm_config.DB = "db/" + self.NAME + ".db"
@@ -46,14 +48,15 @@ class Bot:
                 .skip_disconnected_relays(skip_disconnected_relays))
         signer = NostrSigner.keys(self.keys)
         self.client = Client.with_opts(signer, opts)
+        self.invoice_list = []
 
         pk = self.keys.public_key()
 
         self.job_list = []
 
-        print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME) # +
-              #" Supported DVM tasks: " +
-              #', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
+        print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME)  # +
+        # " Supported DVM tasks: " +
+        # ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
             await self.client.add_relay(relay)
@@ -73,7 +76,6 @@ class Bot:
 
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
-
 
         class NotificationHandler(HandleNotification):
             client = self.client
@@ -97,7 +99,7 @@ class Bot:
                         print(f"Error during content NIP04 decryption: {e}")
                 elif nostr_event.kind() == Kind.from_enum(KindEnum.GIFT_WRAP()):
                     try:
-                      await handle_dm(nostr_event, True)
+                        await handle_dm(nostr_event, True)
                     except Exception as e:
                         print(f"Error during content NIP59 decryption: {e}")
 
@@ -139,7 +141,7 @@ class Bot:
 
                 if decrypted_text != "":
                     user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
-                                           config=self.dvm_config)
+                                                 config=self.dvm_config)
 
                     print("[" + self.NAME + "]" + sealed + "Message from " + user.name + ": " + decrypted_text)
 
@@ -194,7 +196,8 @@ class Bot:
                                 # remember in the job_list that we have made an event, if anybody asks for payment,
                                 # we know we actually sent the request
                                 entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
-                                         "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False, "giftwrap": giftwrap}
+                                         "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False,
+                                         "giftwrap": giftwrap}
                                 self.job_list.append(entry)
 
                                 # send the event to the DVM
@@ -202,38 +205,53 @@ class Bot:
                                 # print(nip90request.as_json())
 
 
+                    elif decrypted_text.lower().startswith("invoice"):
+                        amount_str = decrypted_text.lower().split(" ")[1]
+                        try:
+                            amount = int(amount_str)
+                        except:
+                            amount = 100
 
-                    elif decrypted_text.lower().startswith("balance"):
-                        time.sleep(3.0)
-                        message = "Your current balance is " + str(user.balance) + ("Sats. Zap me to add to your "
-                                                                                    "balance. I will use your "
-                                                                                    "balance interact with the DVMs "
-                                                                                    "for you.\n I support both "
-                                                                                    "public and private Zaps, "
-                                                                                    "as well as "
-                                                                                    "Zapplepay.\nAlternativly you "
-                                                                                    "can add a #cashu token with "
-                                                                                    "\"-cashu cashuASomeToken\" to "
-                                                                                    "your command.\n Make sure the "
-                                                                                    "token is worth the requested "
-                                                                                    "amount mint fees (at least 3 "
-                                                                                    "sat).\n Not all DVMs might "
-                                                                                    "accept Cashu tokens.")
+                        invoice, hash = create_bolt11_ln_bits(amount, self.dvm_config)
+                        expires = nostr_event.created_at().as_secs() + (60 * 60 * 24)
+
+                        self.invoice_list.append(InvoiceToWatch(sender=sender, bolt11=invoice, payment_hash=hash, is_paid=False, expires=expires, amount=amount))
+                        message = invoice
                         if giftwrap:
                             await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         else:
                             evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
-                                                                    message,None).to_event(self.keys)
+                                                                    message, None).to_event(self.keys)
+                            await send_event(evt, client=self.client, dvm_config=dvm_config)
+
+
+                    elif decrypted_text.lower().startswith("balance"):
+                        time.sleep(2.0)
+                        message = "Your current balance is " + str(user.balance) + ("Sats. Zap me to add to your "
+                                                                                    "balance. I will use your "
+                                                                                    "balance interact with the DVMs "
+                                                                                    "for you.\nI support both "
+                                                                                    "public and private Zaps, "
+                                                                                    "as well as "
+                                                                                    "Zapplepay.\nOr write \"invoice "
+                                                                                    "100\" to receive an invoice of "
+                                                                                    "100 sats (or any other amount) "
+                                                                                    "to top up your balance")
+                        if giftwrap:
+                            await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                        else:
+                            evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
+                                                                    message, None).to_event(self.keys)
                             await send_event(evt, client=self.client, dvm_config=dvm_config)
                     elif decrypted_text.startswith("cashuA"):
                         print("Received Cashu token:" + decrypted_text)
                         cashu_redeemed, cashu_message, total_amount, fees = await redeem_cashu(decrypted_text,
-                                                                                         self.dvm_config,
-                                                                                         self.client)
+                                                                                               self.dvm_config,
+                                                                                               self.client)
                         print(cashu_message)
                         if cashu_message == "success":
                             await update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
-                                                config=self.dvm_config)
+                                                      config=self.dvm_config)
                         else:
                             time.sleep(2.0)
                             message = "Error: " + cashu_message + ". Token has not been redeemed."
@@ -251,8 +269,8 @@ class Bot:
                             await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         else:
                             evt = await EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
-                                                                    message,
-                                                                    nostr_event.id()).to_event(self.keys)
+                                                                          message,
+                                                                          nostr_event.id()).to_event(self.keys)
                             await send_event(evt, client=self.client, dvm_config=self.dvm_config)
 
                     else:
@@ -311,7 +329,7 @@ class Bot:
                     entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                     if entry is not None and entry['dvm_key'] == nostr_event.author().to_hex():
                         user = await get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
-                                               client=self.client, config=self.dvm_config)
+                                                     client=self.client, config=self.dvm_config)
                         time.sleep(2.0)
                         if entry["giftwrap"]:
                             await self.client.send_private_msg(PublicKey.parse(entry["npub"]), content, None)
@@ -336,7 +354,7 @@ class Bot:
                                 'dvm_key'] == nostr_event.author().to_hex():
                                 # if we get a bolt11, we pay and move on
                                 user = await get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
-                                                       client=self.client, config=self.dvm_config)
+                                                             client=self.client, config=self.dvm_config)
                                 if user.balance >= amount:
                                     balance = max(user.balance - amount, 0)
                                     update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
@@ -344,9 +362,12 @@ class Bot:
                                                      nip05=user.nip05, lud16=user.lud16, name=user.name,
                                                      lastactive=Timestamp.now().as_secs(), subscribed=user.subscribed)
 
-                                    message = "Paid " + str(amount) + " Sats from balance to DVM. New balance is " + str(balance) + " Sats.\n"
+                                    message = "Paid " + str(
+                                        amount) + " Sats from balance to DVM. New balance is " + str(
+                                        balance) + " Sats.\n"
                                     if entry["giftwrap"]:
-                                        await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message, None)
+                                        await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message,
+                                                                           None)
                                     else:
                                         evt = EventBuilder.encrypted_direct_msg(self.keys,
                                                                                 PublicKey.parse(entry["npub"]),
@@ -374,8 +395,9 @@ class Bot:
                                     bolt11 = tag.as_vec()[2]
                                 # else we create a zap
                                 else:
-                                    user = await get_or_add_user(db=self.dvm_config.DB, npub=nostr_event.author().to_hex(),
-                                                           client=self.client, config=self.dvm_config)
+                                    user = await get_or_add_user(db=self.dvm_config.DB,
+                                                                 npub=nostr_event.author().to_hex(),
+                                                                 client=self.client, config=self.dvm_config)
                                     print("Paying: " + user.name)
                                     bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys,
                                                         self.dvm_config,
@@ -414,7 +436,7 @@ class Bot:
                     'dvm_key'] == nostr_event.author().to_hex():
                     print(entry)
                     user = await get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
-                                           client=self.client, config=self.dvm_config)
+                                                 client=self.client, config=self.dvm_config)
 
                     self.job_list.remove(entry)
                     content = nostr_event.content()
@@ -452,8 +474,9 @@ class Bot:
             print("[" + self.NAME + "] Zap received")
             try:
                 invoice_amount, zapped_event, sender, message, anon = await parse_zap_event_tags(zap_event,
-                                                                                           self.keys, self.NAME,
-                                                                                           self.client, self.dvm_config)
+                                                                                                 self.keys, self.NAME,
+                                                                                                 self.client,
+                                                                                                 self.dvm_config)
 
                 etag = ""
                 print(zap_event.tags())
@@ -473,7 +496,7 @@ class Bot:
                 if entry is not None and entry['is_paid'] is True and entry['dvm_key'] == sender:
                     # if we get a bolt11, we pay and move on
                     user = await get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
-                                           client=self.client, config=self.dvm_config)
+                                                 client=self.client, config=self.dvm_config)
 
                     sender = user.npub
 
@@ -483,7 +506,7 @@ class Bot:
                             invoice_amount) + " Sats from " + str(
                             user.name))
                         await update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                                            config=self.dvm_config)
+                                                  config=self.dvm_config)
 
                         # a regular note
                 elif not anon:
@@ -491,7 +514,7 @@ class Bot:
                         invoice_amount) + " Sats from " + str(
                         user.name))
                     await update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                                        config=self.dvm_config)
+                                              config=self.dvm_config)
 
             except Exception as e:
                 print("[" + self.NAME + "] Error during content decryption:" + str(e))
@@ -510,7 +533,7 @@ class Bot:
 
             time.sleep(3.0)
 
-            text =  message + "\nSelect an Index and provide an input (e.g. \"2 A purple ostrich\")\nType \"index info\" to learn more about each DVM. (e.g. \"2 info\")\n\n Type \"balance\" to see your current balance"
+            text = message + "\nSelect an Index and provide an input (e.g. \"2 A purple ostrich\")\nType \"index info\" to learn more about each DVM. (e.g. \"2 info\")\n\n Type \"balance\" to see your current balance"
             if giftwrap:
                 await self.client.send_private_msg(PublicKey.parse(sender), text, None)
             else:
@@ -525,7 +548,7 @@ class Bot:
             if giftwrap:
                 self.client.send_sealed_msg(PublicKey.parse(sender), message, None)
             else:
-                 # For some reason an admin might blacklist npubs, e.g. for abusing the service
+                # For some reason an admin might blacklist npubs, e.g. for abusing the service
                 evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
                                                         message, None).to_event(self.keys)
                 send_event(evt, client=self.client, dvm_config=dvm_config)
@@ -539,9 +562,9 @@ class Bot:
             if giftwrap:
                 await self.client.send_private_msg(PublicKey.parse(sender), info, None)
             else:
-                    evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                            info, None).to_event(self.keys)
-                    await send_event(evt, client=self.client, dvm_config=dvm_config)
+                evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
+                                                        info, None).to_event(self.keys)
+                await send_event(evt, client=self.client, dvm_config=dvm_config)
 
         def build_params(decrypted_text, author, index):
             tags = []
@@ -703,6 +726,25 @@ class Bot:
 
         try:
             while True:
+                for invoice in self.invoice_list:
+                    if invoice.bolt11 != "" and invoice.payment_hash != "" and not invoice.payment_hash is None and not invoice.is_paid:
+                        ispaid = check_bolt11_ln_bits_is_paid(invoice.payment_hash, self.dvm_config)
+                        if ispaid and invoice.is_paid is False:
+                            print("is paid")
+                            invoice.is_paid = True
+
+                            await update_user_balance(self.dvm_config.DB, invoice.sender, invoice.amount, client=self.client,
+                                                      config=self.dvm_config)
+
+                            print("[" + self.dvm_config.NIP89.NAME + "] updating balance from invoice list")
+
+                        elif ispaid is None:  # invoice expired
+                            self.invoice_list.remove(invoice)
+
+                    if Timestamp.now().as_secs() > invoice.expires:
+                        self.job_list.remove(invoice)
+
+
                 await asyncio.sleep(1.0)
         except KeyboardInterrupt:
             print('Stay weird!')

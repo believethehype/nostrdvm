@@ -84,3 +84,13 @@ class JobToWatch:
 class RequiredJobToWatch:
     event: Event
     timestamp: int
+
+@dataclass
+class InvoiceToWatch:
+    sender: str
+    bolt11: str
+    amount: int
+    payment_hash: str
+    is_paid: bool
+    expires: int
+
