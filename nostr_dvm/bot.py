@@ -741,8 +741,8 @@ class Bot:
                         elif ispaid is None:  # invoice expired
                             self.invoice_list.remove(invoice)
 
-                    if Timestamp.now().as_secs() > invoice.expires:
-                        self.job_list.remove(invoice)
+                    elif Timestamp.now().as_secs() > invoice.expires:
+                        self.invoice_list.remove(invoice)
 
 
                 await asyncio.sleep(1.0)
