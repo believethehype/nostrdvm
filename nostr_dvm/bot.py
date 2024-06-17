@@ -220,6 +220,7 @@ class Bot:
                         if giftwrap:
                             await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         else:
+                            time.sleep(2.0)
                             evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
                                                                     message, None).to_event(self.keys)
                             await send_event(evt, client=self.client, dvm_config=dvm_config)
