@@ -10,7 +10,7 @@ from nostr_dvm.utils.mediasource_utils import check_source_type, media_source
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id
 
 
-def get_task(event, client, dvm_config):
+async def get_task(event, client, dvm_config):
     try:
         if event.kind() == EventDefinitions.KIND_NIP90_GENERIC:  # use this for events that have no id yet, inclufr j tag
             for tag in event.tags():
@@ -41,7 +41,7 @@ def get_task(event, client, dvm_config):
                         else:
                             return "unknown job"
                     elif tag.as_vec()[2] == "event":
-                        evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                        evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
                         if evt is not None:
                             if evt.kind() == 1063:
                                 for tg in evt.tags():
@@ -68,7 +68,7 @@ def get_task(event, client, dvm_config):
                             has_image_tag = True
                             print("found image tag")
                     elif tag.as_vec()[2] == "job":
-                        evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], kinds=
+                        evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], kinds=
                         [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                          EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
                          EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT],
@@ -126,7 +126,7 @@ def is_input_supported_generic(tags, client, dvm_config) -> bool:
         print("Generic input check: " + str(e))
 
 
-def check_task_is_supported(event: Event, client, config=None):
+async def check_task_is_supported(event: Event, client, config=None):
     try:
         dvm_config = config
         # Check for generic issues, event maformed, referenced event not found etc..
@@ -134,13 +134,13 @@ def check_task_is_supported(event: Event, client, config=None):
             return False, ""
 
         # See if current dvm supports the task
-        task = get_task(event, client=client, dvm_config=dvm_config)
+        task = await get_task(event, client=client, dvm_config=dvm_config)
         if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS):
             return False, task
         # See if current dvm can handle input for given task
         for dvm in dvm_config.SUPPORTED_DVMS:
             if dvm.TASK == task:
-                if not dvm.is_input_supported(event.tags(), client, config):
+                if not await dvm.is_input_supported(event.tags(), client, config):
                     return False, task
         return True, task
 

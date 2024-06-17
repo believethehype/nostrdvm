@@ -51,7 +51,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         if self.dvm_config.UPDATE_DATABASE:
             await self.sync_db()
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
@@ -60,7 +60,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     return False
         return True
 
-    def create_request_from_nostr_event(self, event: Event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event: Event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
 
         request_form = {"jobID": event.id().to_hex()}
@@ -170,7 +170,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         return json.dumps(result_list)
 
-    def post_process(self, result, event):
+    async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
         for tag in event.tags():
             if tag.as_vec()[0] == 'output':

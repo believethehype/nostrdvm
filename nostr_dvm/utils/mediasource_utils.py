@@ -57,10 +57,10 @@ async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     return 1
 
 
-def organize_input_media_data(input_value, input_type, start, end, dvm_config, client, process=True,
+async def organize_input_media_data(input_value, input_type, start, end, dvm_config, client, process=True,
                               media_format="audio/mp3") -> str:
     if input_type == "event":  # NIP94 event
-        evt = get_event_by_id(input_value, client=client, config=dvm_config)
+        evt = await get_event_by_id(input_value, client=client, config=dvm_config)
         if evt is not None:
             input_value, input_type = check_nip94_event_for_media(evt, input_value, input_type)
 

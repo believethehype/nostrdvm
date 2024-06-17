@@ -86,7 +86,7 @@ async def init():
 
             if len(events) == 0:
                 response = False
-                asyncio.sleep(1.0)
+                await asyncio.sleep(1.0)
                 continue
             else:
                 if events[0].content() == "[]":
@@ -99,7 +99,7 @@ async def init():
                     event_ids.append(eventidob)
 
                 config = DVMConfig()
-                events = get_events_by_id(event_ids, client, config)
+                events = await get_events_by_id(event_ids, client, config)
                 if events is None:
                     return []
 

@@ -29,7 +29,7 @@ class SummarizationUnleashedChat(DVMTaskInterface):
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 print(tag.as_vec())
@@ -40,7 +40,7 @@ class SummarizationUnleashedChat(DVMTaskInterface):
 
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
         prompt = ""
         collect_events = []
@@ -56,7 +56,7 @@ class SummarizationUnleashedChat(DVMTaskInterface):
                     # evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
                     # prompt += evt.content() + "\n"
                 elif input_type == "job":
-                    evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
+                    evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
                                                      kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
@@ -71,13 +71,13 @@ class SummarizationUnleashedChat(DVMTaskInterface):
                         prompt = ""
                         for tag in result_list:
                             e_tag = Tag.parse(tag)
-                            evt = get_event_by_id(e_tag.as_vec()[1], client=client, config=dvm_config)
+                            evt = await get_event_by_id(e_tag.as_vec()[1], client=client, config=dvm_config)
                             prompt += evt.content() + "\n"
 
                     else:
                         prompt = evt.content()
 
-        evts = get_events_by_ids(collect_events, client=client, config=dvm_config)
+        evts = await get_events_by_ids(collect_events, client=client, config=dvm_config)
         if evts is not None:
             for evt in evts:
                 prompt += evt.content() + "\n"

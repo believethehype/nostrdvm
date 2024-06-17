@@ -32,7 +32,7 @@ class TextExtractionPDF(DVMTaskInterface):
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
@@ -41,7 +41,7 @@ class TextExtractionPDF(DVMTaskInterface):
                     return False
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
@@ -58,7 +58,7 @@ class TextExtractionPDF(DVMTaskInterface):
             url = input_content
         # if event contains url to pdf, we checked for a pdf link before
         elif input_type == "event":
-            evt = get_event_by_id(input_content, client=client, config=dvm_config)
+            evt = await get_event_by_id(input_content, client=client, config=dvm_config)
             url = re.search("(?P<url>https?://[^\s]+)", evt.content()).group("url")
 
         options = {

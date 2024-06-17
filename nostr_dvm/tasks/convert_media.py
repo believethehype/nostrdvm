@@ -31,7 +31,7 @@ class MediaConverter(DVMTaskInterface):
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
@@ -40,7 +40,7 @@ class MediaConverter(DVMTaskInterface):
                     return False
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex()}
         url = ""
         media_format = "video/mp4"
@@ -61,7 +61,7 @@ class MediaConverter(DVMTaskInterface):
                 if param == "format":  # check for param type
                     media_format = tag.as_vec()[2]
 
-        filepath = organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True,
+        filepath = await organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True,
                                              media_format)
         options = {
             "filepath": filepath

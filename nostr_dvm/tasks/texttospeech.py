@@ -37,7 +37,7 @@ class TextToSpeech(DVMTaskInterface):
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
@@ -47,7 +47,7 @@ class TextToSpeech(DVMTaskInterface):
                 if input_type == "text" and len(input_value) > 250:
                     return False
                 if input_type == "event":
-                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
                     if len(evt.content()) > 250:
                         return False
             elif tag.as_vec()[0] == 'param':
@@ -58,7 +58,7 @@ class TextToSpeech(DVMTaskInterface):
 
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
         prompt = "test"
         if self.options.get("input_file") and self.options.get("input_file") != "":
@@ -74,12 +74,12 @@ class TextToSpeech(DVMTaskInterface):
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "event":
-                    evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
                     prompt = evt.content()
                 elif input_type == "text":
                     prompt = tag.as_vec()[1]
                 elif input_type == "job":
-                    evt = get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
+                    evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
                                                      kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],

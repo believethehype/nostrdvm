@@ -33,7 +33,8 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
 
         id_filter = Filter().id(event_id).limit(1)
         #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
-        events = await get_events_async(client, id_filter, config.RELAY_TIMEOUT)
+        events = await client.get_events_of([id_filter], timedelta(seconds=5))
+
 
     if len(events) > 0:
 
@@ -46,7 +47,7 @@ async def get_events_async(client, filter, timeout):
     return events
 
 
-def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
+async def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
     search_ids = []
     events = []
     for event_id in event_ids:
@@ -54,7 +55,7 @@ def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
         if len(split) == 3:
             pk = PublicKey.from_hex(split[1])
             id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-            events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+            events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
             #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
         else:
             if str(event_id).startswith('note'):
@@ -71,7 +72,7 @@ def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
             search_ids.append(event_id)
 
             id_filter = Filter().ids(search_ids)
-            events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+            events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
 
     #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
@@ -80,17 +81,17 @@ def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
         return None
 
 
-def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
+async def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
     id_filter = Filter().ids(event_ids)
-    events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
-    #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+    #events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
+    events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
         return events
     else:
         return None
 
 
-def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | None:
+async def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | None:
     if kinds is None:
         kinds = []
     if str(event_id).startswith('note'):
@@ -108,8 +109,8 @@ def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | N
         job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
     else:
         job_id_filter = Filter().event(event_id).limit(1)
-
-    events = asyncio.run(get_events_async(client, job_id_filter, dvm_config.RELAY_TIMEOUT))
+    events = await client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
+    #events = await get_events_async(client, job_id_filter, dvm_config.RELAY_TIMEOUT)
     #events = client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
 
     if len(events) > 0:
