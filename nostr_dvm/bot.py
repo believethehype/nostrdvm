@@ -120,7 +120,7 @@ class Bot:
 
                         # Check timestamp of rumor
                         if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
-                            if rumor.kind() == Kind.from_enum(KindEnum.SEALED_DIRECT()):
+                            if rumor.kind() == Kind.from_enum(KindEnum.PRIVATE_DIRECT_MESSAGE()):
                                 decrypted_text = rumor.content()
                                 print(f"Received new msg [sealed]: {decrypted_text}")
                                 sealed = " [sealed] "
