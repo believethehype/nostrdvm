@@ -227,7 +227,7 @@ class Bot:
 
                     elif decrypted_text.lower().startswith("balance"):
                         time.sleep(2.0)
-                        message = "Your current balance is " + str(user.balance) + ("Sats. Zap me to add to your "
+                        message = "Your current balance is " + str(user.balance) + (" Sats. Zap me to add to your "
                                                                                     "balance. I will use your "
                                                                                     "balance interact with the DVMs "
                                                                                     "for you.\nI support both "
