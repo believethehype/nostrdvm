@@ -33,7 +33,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
@@ -49,7 +49,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
 
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", ""),
                         "trainerFilePath": r'modules\whisperx\whisperx_transcript.trainer'}
 
@@ -104,7 +104,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                                 except:
                                     end_time = float(tag.as_vec()[3])
 
-        filepath = organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True,
+        filepath = await  organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True,
                                              media_format)
         path_on_server = send_file_to_server(os.path.realpath(filepath), self.options['server'])
 

@@ -34,11 +34,10 @@ class DiscoverReports(DVMTaskInterface):
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
 
-
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
 
         request_form = {"jobID": event.id().to_hex()}
@@ -115,7 +114,8 @@ class DiscoverReports(DVMTaskInterface):
                         following = PublicKey.parse(tag.as_vec()[1])
                         pubkeys.append(following)
 
-        ago = Timestamp.now().as_secs() - 60*60*24*int(options["since_days"]) #TODO make this an option, 180 days for now
+        ago = Timestamp.now().as_secs() - 60 * 60 * 24 * int(
+            options["since_days"])  # TODO make this an option, 180 days for now
         since = Timestamp.from_secs(ago)
         kind1984_filter = Filter().authors(pubkeys).kind(Kind(1984)).since(since)
         reports = await cli.get_events_of([kind1984_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
@@ -130,13 +130,13 @@ class DiscoverReports(DVMTaskInterface):
                     ns.dic[tag.as_vec()[1]] = 0
 
         for report in reports:
-            #print(report.as_json())
+            # print(report.as_json())
             for tag in report.tags():
                 if tag.as_vec()[0] == "p":
                     if len(tag.as_vec()) > 2 and tag.as_vec()[2] in reasons or len(tag.as_vec()) <= 2:
                         ns.dic[tag.as_vec()[1]] += 1
 
-        #print(ns.dic.items())
+        # print(ns.dic.items())
         # result = {k for (k, v) in ns.dic.items() if v > 0}
         # result = sorted(ns.dic.items(), key=lambda x: x[1], reverse=True)
         finallist_sorted = sorted(ns.dic.items(), key=lambda x: x[1], reverse=True)
@@ -151,7 +151,7 @@ class DiscoverReports(DVMTaskInterface):
         await cli.shutdown()
         return json.dumps(bad_actors)
 
-    def post_process(self, result, event):
+    async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
         for tag in event.tags():
             if tag.as_vec()[0] == 'output':
@@ -189,7 +189,6 @@ def build_example(name, identifier, admin_config):
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-
 
     return DiscoverReports(name=name, dvm_config=dvm_config, nip89config=nip89config,
                            admin_config=admin_config)

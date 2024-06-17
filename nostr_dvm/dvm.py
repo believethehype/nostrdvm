@@ -1,15 +1,11 @@
 import asyncio
 import json
 import os
-import subprocess
-import threading
 from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
     init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind, RelayLimits
-
-import time
 
 from nostr_dvm.utils.definitions import EventDefinitions, RequiredJobToWatch, JobToWatch
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -115,7 +111,7 @@ class DVM:
                 return
 
             # check if task is supported by the current DVM
-            task_supported, task = check_task_is_supported(nip90_event, client=self.client,
+            task_supported, task = await check_task_is_supported(nip90_event, client=self.client,
                                                            config=self.dvm_config)
             # if task is supported, continue, else do nothing.
             if task_supported:
@@ -306,7 +302,7 @@ class DVM:
                             if tag.as_vec()[0] == 'amount':
                                 amount = int(float(tag.as_vec()[1]) / 1000)
                             elif tag.as_vec()[0] == 'e':
-                                job_event = get_event_by_id(tag.as_vec()[1], client=self.client, config=self.dvm_config)
+                                job_event = await get_event_by_id(tag.as_vec()[1], client=self.client, config=self.dvm_config)
                                 if job_event is not None:
                                     job_event = check_and_decrypt_tags(job_event, self.dvm_config)
                                     if job_event is None:
@@ -326,7 +322,7 @@ class DVM:
 
 
                         else:
-                            task_supported, task = check_task_is_supported(job_event, client=self.client,
+                            task_supported, task = await check_task_is_supported(job_event, client=self.client,
                                                                            config=self.dvm_config)
                             if job_event is not None and task_supported:
                                 print("Zap received for NIP90 task: " + str(invoice_amount) + " Sats from " + str(
@@ -382,7 +378,7 @@ class DVM:
                 print("[" + self.dvm_config.NIP89.NAME + "] Error during content decryption: " + str(e))
 
         async def check_event_has_not_unfinished_job_input(nevent, append, client, dvmconfig):
-            task_supported, task = check_task_is_supported(nevent, client, config=dvmconfig)
+            task_supported, task = await check_task_is_supported(nevent, client, config=dvmconfig)
             if not task_supported:
                 return False
 
@@ -395,7 +391,7 @@ class DVM:
                         input = tag.as_vec()[1]
                         input_type = tag.as_vec()[2]
                         if input_type == "job":
-                            evt = get_referenced_event_by_id(event_id=input, client=client,
+                            evt = await get_referenced_event_by_id(event_id=input, client=client,
                                                              kinds=EventDefinitions.ANY_RESULT,
                                                              dvm_config=dvmconfig)
                             if evt is None:
@@ -434,11 +430,11 @@ class DVM:
                         await send_nostr_reply_event(data, original_event.as_json())
                     break
 
-                task = get_task(original_event, self.client, self.dvm_config)
+                task = await get_task(original_event, self.client, self.dvm_config)
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     if task == dvm.TASK:
                         try:
-                            post_processed = dvm.post_process(data, original_event)
+                            post_processed = await dvm.post_process(data, original_event)
                             await send_nostr_reply_event(post_processed, original_event.as_json())
                         except Exception as e:
                             print(e)
@@ -515,7 +511,7 @@ class DVM:
                                            content=None,
                                            dvm_config=None, user=None):
 
-            task = get_task(original_event, client=client, dvm_config=dvm_config)
+            task = await get_task(original_event, client=client, dvm_config=dvm_config)
             alt_description, reaction = build_status_reaction(status, task, amount, content, dvm_config)
 
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
@@ -654,14 +650,14 @@ class DVM:
                     EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= job_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64())
                     or job_event.kind().as_u64() == EventDefinitions.KIND_DM.as_u64()):
 
-                task = get_task(job_event, client=self.client, dvm_config=self.dvm_config)
+                task = await get_task(job_event, client=self.client, dvm_config=self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     result = ""
                     try:
                         if task == dvm.TASK:
 
-                            request_form = dvm.create_request_from_nostr_event(job_event, self.client, self.dvm_config)
+                            request_form = await dvm.create_request_from_nostr_event(job_event, self.client, self.dvm_config)
 
                             if dvm_config.USE_OWN_VENV:
                                 python_location = "/bin/python"
@@ -689,7 +685,7 @@ class DVM:
                                 # We install locally in these cases for now
                                 result = await dvm.process(request_form)
                             try:
-                                post_processed = dvm.post_process(result, job_event)
+                                post_processed = await dvm.post_process(result, job_event)
                                 await send_nostr_reply_event(post_processed, job_event.as_json())
                             except Exception as e:
                                 print(bcolors.RED + "[" + self.dvm_config.NIP89.NAME + "] Error: " + str(

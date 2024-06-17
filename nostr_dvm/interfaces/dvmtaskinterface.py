@@ -120,11 +120,11 @@ class DVMTaskInterface:
         nip89.CONTENT = nip89config.CONTENT
         return nip89
 
-    def is_input_supported(self, tags, client=None, dvm_config=None) -> bool:
+    async def is_input_supported(self, tags, client=None, dvm_config=None) -> bool:
         """Check if input is supported for current Task."""
         pass
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None) -> dict:
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None) -> dict:
         """Parse input into a request form that will be given to the process method"""
         pass
 
@@ -132,7 +132,7 @@ class DVMTaskInterface:
         "Process the data and return the result"
         pass
 
-    def post_process(self, result, event):
+    async def post_process(self, result, event):
         """Post-process the data and return the result Use default function, if not overwritten"""
         return post_process_result(result, event)
 

@@ -36,7 +36,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
             if self.logger:
                 init_logger(LogLevel.DEBUG)
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
@@ -45,7 +45,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
                     return False
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
 
         request_form = {"jobID": event.id().to_hex()}
@@ -92,7 +92,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
             print(e)
             return json.dumps([])
 
-    def post_process(self, result, event):
+    async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
         for tag in event.tags():
             if tag.as_vec()[0] == 'output':

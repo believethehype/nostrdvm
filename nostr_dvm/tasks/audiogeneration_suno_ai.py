@@ -36,7 +36,7 @@ class AudioGenerationSonoAI(DVMTaskInterface):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         self.base_url = 'http://localhost:3000'
 
-    def is_input_supported(self, tags, client=None, dvm_config=None):
+    async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
             if tag.as_vec()[0] == 'i':
                 input_value = tag.as_vec()[1]
@@ -45,7 +45,7 @@ class AudioGenerationSonoAI(DVMTaskInterface):
                     return False
         return True
 
-    def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
+    async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
 
         prompt = "A popular heavy metal song about a purple Ostrich, Nostr, sung by a deep-voiced male singer, slowly and melodiously. The lyrics depict hope for a better future."
@@ -131,7 +131,7 @@ class AudioGenerationSonoAI(DVMTaskInterface):
                         print(f"{data[1]['id']} ==> {data[1]['video_url']}")
                         break
                     # sleep 5s
-                    asyncio.sleep(5.0)
+                    await asyncio.sleep(5.0)
 
                 response1 = self.get_clip(data[0]['id'])
                 print(response1['video_url'])
