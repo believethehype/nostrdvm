@@ -109,7 +109,7 @@ def playground():
     # admin_config_global_popular.PRIVKEY = ""
     # admin_config_global_popular.EVENTID = "2fea4ee2ccf0fa11db171113ffd7a676f800f34121478b7c9a4e73c2f1990028"
     # admin_config_global_popular.POW = True
-    custom_processing_msg = ["Looking for people, that your WOT follows"]
+    custom_processing_msg = ["Looking for people, that npubs in your Web of Trust follow, but you don't"]
     update_db = True
 
     options_wot = {

@@ -119,7 +119,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
-        file = "db/friends223.csv"
+        file = "db/" + options["user"] + ".csv"
         try:
             print("Deleting existing file, creating new one")
             os.remove(file)
@@ -285,10 +285,7 @@ class Friend(object):
 def write_to_csv(friends, file="friends222.csv"):
     with open(file, 'a') as f:
         writer = csv.writer(f)
-        friendcounter = 0
         for friend in friends:
-            print(friendcounter)
-            friendcounter += 1
             for fren in friend.friends:
                 row = [friend.user_id, fren]
                 writer.writerow(row)

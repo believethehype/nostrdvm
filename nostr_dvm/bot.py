@@ -37,7 +37,7 @@ class Bot:
         dvm_config.DB = "db/" + self.NAME + ".db"
         self.dvm_config = dvm_config
         nip89config = NIP89Config()
-        nip89config.NAME = self.NAME
+        nip89config.PK = self.dvm_config.PRIVATE_KEY
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
@@ -64,8 +64,8 @@ class Bot:
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
-        nip59_filter = Filter().pubkey(pk).kind(Kind.from_enum(KindEnum.GIFT_WRAP())).since(
-            Timestamp.from_secs(Timestamp.now().as_secs() - 60 * 60 * 24 * 7))
+        nip59_filter = Filter().pubkey(pk).kinds([Kind.from_enum(KindEnum.GIFT_WRAP())]).since(
+            Timestamp.from_secs(Timestamp.now().as_secs() - 60 * 60 * 24 * 10)).limit(0)
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
@@ -97,7 +97,7 @@ class Bot:
                         await handle_dm(nostr_event, False)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
-                elif nostr_event.kind() == Kind.from_enum(KindEnum.GIFT_WRAP()):
+                elif nostr_event.kind().as_enum() == KindEnum.GIFT_WRAP():
                     try:
                         await handle_dm(nostr_event, True)
                     except Exception as e:
@@ -120,15 +120,16 @@ class Bot:
                         sender = unwrapped_gift.sender().to_hex()
                         rumor: UnsignedEvent = unwrapped_gift.rumor()
 
-                        # Check timestamp of rumor
+                        # client.send_sealed_msg(sender, f"Echo: {msg}", None)
                         if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
-                            if rumor.kind() == Kind.from_enum(KindEnum.PRIVATE_DIRECT_MESSAGE()):
-                                decrypted_text = rumor.content()
+                            if rumor.kind().as_enum() == KindEnum.PRIVATE_DIRECT_MESSAGE():
                                 print(f"Received new msg [sealed]: {decrypted_text}")
+                                decrypted_text = rumor.content()
                                 sealed = " [sealed] "
-                                # client.send_sealed_msg(sender, f"Echo: {msg}", None)
                             else:
                                 print(f"{rumor.as_json()}")
+
+
                     except Exception as e:
                         print(f"Error during content NIP59 decryption: {e}")
 
@@ -218,9 +219,11 @@ class Bot:
 
                         invoice, hash = create_bolt11_ln_bits(amount, self.dvm_config)
                         expires = nostr_event.created_at().as_secs() + (60 * 60 * 24)
-                        qr_code = "https://qrcode.tec-it.com/API/QRCode?data="+ invoice +"&backcolor=%23ffffff&size=small&quietzone=1&errorcorrection=H"
+                        qr_code = "https://qrcode.tec-it.com/API/QRCode?data=" + invoice + "&backcolor=%23ffffff&size=small&quietzone=1&errorcorrection=H"
 
-                        self.invoice_list.append(InvoiceToWatch(sender=sender, bolt11=invoice, payment_hash=hash, is_paid=False, expires=expires, amount=amount))
+                        self.invoice_list.append(
+                            InvoiceToWatch(sender=sender, bolt11=invoice, payment_hash=hash, is_paid=False,
+                                           expires=expires, amount=amount))
 
                         if requests_rq:
                             message = invoice + "\n" + qr_code
@@ -229,14 +232,14 @@ class Bot:
                         if giftwrap:
                             await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         else:
-                            time.sleep(2.0)
+                            await asyncio.sleep(2.0)
                             evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
                                                                     message, None).to_event(self.keys)
                             await send_event(evt, client=self.client, dvm_config=dvm_config)
 
 
                     elif decrypted_text.lower().startswith("balance"):
-                        time.sleep(2.0)
+                        await asyncio.sleep(2.0)
                         message = "Your current balance is " + str(user.balance) + (" Sats. Zap me to add to your "
                                                                                     "balance. I will use your "
                                                                                     "balance interact with the DVMs "
@@ -263,7 +266,7 @@ class Bot:
                             await update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
                                                       config=self.dvm_config)
                         else:
-                            time.sleep(2.0)
+                            await asyncio.sleep(2.0)
                             message = "Error: " + cashu_message + ". Token has not been redeemed."
 
                             if giftwrap:
@@ -273,7 +276,7 @@ class Bot:
                                                                         None).to_event(self.keys)
                                 await send_event(evt, client=self.client, dvm_config=self.dvm_config)
                     elif decrypted_text.lower().startswith("what's the second best"):
-                        time.sleep(3.0)
+                        await asyncio.sleep(2.0)
                         message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
                         if giftwrap:
                             await self.client.send_private_msg(PublicKey.parse(sender), message, None)
@@ -340,7 +343,7 @@ class Bot:
                     if entry is not None and entry['dvm_key'] == nostr_event.author().to_hex():
                         user = await get_or_add_user(db=self.dvm_config.DB, npub=entry['npub'],
                                                      client=self.client, config=self.dvm_config)
-                        time.sleep(2.0)
+                        await asyncio.sleep(2.0)
                         if entry["giftwrap"]:
                             await self.client.send_private_msg(PublicKey.parse(entry["npub"]), content, None)
                         else:
@@ -389,7 +392,7 @@ class Bot:
 
                                 else:
                                     print("Bot payment-required")
-                                    time.sleep(2.0)
+                                    await asyncio.sleep(2.0)
                                     evt = EventBuilder.encrypted_direct_msg(self.keys,
                                                                             PublicKey.parse(entry["npub"]),
                                                                             "Current balance: " + str(
@@ -467,7 +470,7 @@ class Bot:
                                 content = post_process_list_to_users(content)
 
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
-                    time.sleep(1.0)
+                    await asyncio.sleep(2.0)
                     if entry["giftwrap"]:
                         await self.client.send_private_msg(PublicKey.parse(user.npub), content, None)
                     else:
@@ -541,7 +544,7 @@ class Bot:
                                 " Sats\n\n")
                 index += 1
 
-            time.sleep(3.0)
+            await asyncio.sleep(2.0)
 
             text = message + "\nSelect an Index and provide an input (e.g. \"2 A purple ostrich\")\nType \"index info\" to learn more about each DVM. (e.g. \"2 info\")\n\n Type \"balance\" to see your current balance"
             if giftwrap:
@@ -567,7 +570,7 @@ class Bot:
             info = await print_dvm_info(self.client, index)
             if info is None:
                 info = "No NIP89 Info found for " + self.dvm_config.SUPPORTED_DVMS[index].NAME
-            time.sleep(2.0)
+            await asyncio.sleep(2.0)
 
             if giftwrap:
                 await self.client.send_private_msg(PublicKey.parse(sender), info, None)
@@ -743,7 +746,8 @@ class Bot:
                             print("is paid")
                             invoice.is_paid = True
 
-                            await update_user_balance(self.dvm_config.DB, invoice.sender, invoice.amount, client=self.client,
+                            await update_user_balance(self.dvm_config.DB, invoice.sender, invoice.amount,
+                                                      client=self.client,
                                                       config=self.dvm_config)
 
                             print("[" + self.dvm_config.NIP89.NAME + "] updating balance from invoice list")
@@ -753,7 +757,6 @@ class Bot:
 
                     elif Timestamp.now().as_secs() > invoice.expires:
                         self.invoice_list.remove(invoice)
-
 
                 await asyncio.sleep(1.0)
         except KeyboardInterrupt:

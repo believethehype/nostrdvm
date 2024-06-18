@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import timedelta
 
@@ -9,14 +10,7 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, nip89_fetch_events_pubkey
 from nostr_dvm.utils.output_utils import PostProcessFunctionType
 
 
-async def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
-                             external_post_process=PostProcessFunctionType.NONE):
-    dvm_config = DVMConfig()
-    dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
-    dvm_config.FIX_COST = fix_cost
-    dvm_config.PER_UNIT_COST = per_unit_cost
-    dvm_config.EXTERNAL_POST_PROCESS_TYPE = external_post_process
-
+async def build_client(config):
     opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=config.RELAY_TIMEOUT))
             .skip_disconnected_relays(True))
     keys = Keys.parse(config.PRIVATE_KEY)
@@ -26,8 +20,20 @@ async def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config
     for relay in config.RELAY_LIST:
         await client.add_relay(relay)
     await client.connect()
+    return client
 
-    nip89content_str = await nip89_fetch_events_pubkey(client, pubkey, kind)
+
+def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
+                             external_post_process=PostProcessFunctionType.NONE):
+    dvm_config = DVMConfig()
+    dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
+    dvm_config.FIX_COST = fix_cost
+    dvm_config.PER_UNIT_COST = per_unit_cost
+    dvm_config.EXTERNAL_POST_PROCESS_TYPE = external_post_process
+
+    client = asyncio.run(build_client(config))
+
+    nip89content_str = asyncio.run(nip89_fetch_events_pubkey(client, pubkey, kind))
     name = "External DVM"
     image = "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg"
     about = "An External DVM with no info"
