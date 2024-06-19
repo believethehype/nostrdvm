@@ -36,7 +36,6 @@ class DiscoverPeopleWOT(DVMTaskInterface):
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_followlists.db"
-    min_reactions = 2
     personalized = True
     result = ""
 
@@ -46,7 +45,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         self.request_form = {"jobID": "generic"}
         opts = {
-            "max_results": 200,
+            "max_results": 50,
         }
         self.request_form['options'] = json.dumps(opts)
 
@@ -81,10 +80,10 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        max_results = 20
+        max_results = 50
         user = event.author().to_hex()
         print(user)
-        depth = 2
+        hops = 2
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -100,7 +99,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         options = {
             "user": user,
             "max_results": max_results,
-            "depth": depth,
+            "hops": hops,
         }
         request_form['options'] = json.dumps(options)
         return request_form
@@ -113,8 +112,19 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         else:
             return self.result
 
+    async def calculate_hop(self, options, list_users, hop):
+        print("Fetching hop: " + str(hop))
+        file = "db/" + options["user"] + ".csv"
+        friendlist = []
+        for friend in list_users:
+            for npub in friend.friends:
+                friendlist.append(npub)
+        print(len(friendlist))
+        user_friends_next_level = await analyse_users(friendlist)
+        write_to_csv(user_friends_next_level, file)
+        return user_friends_next_level
+
     async def calculate_result(self, request_form):
-        from nostr_sdk import Filter
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
@@ -127,32 +137,20 @@ class DiscoverPeopleWOT(DVMTaskInterface):
             print("Creating new file")
         # sync the database, this might take a while if it's empty or hasn't been updated in a long time
 
+
+        #hop1
         user_id = PublicKey.parse(options["user"]).to_hex()
+
+
         user_friends_level1 = await analyse_users([user_id])
         friendlist = []
         for npub in user_friends_level1[0].friends:
             friendlist.append(npub)
-        me = Friend(user_id, friendlist)
+        levelusers = [Friend(user_id, friendlist)]
+        write_to_csv(levelusers, file)
 
-        write_to_csv([me], file)
-
-        # for every npub we follow, we look at the npubs they follow (this might take a while)
-        if int(options["depth"]) >= 2:
-            friendlist2 = []
-            for friend in user_friends_level1:
-                for npub in friend.friends:
-                    friendlist2.append(npub)
-
-            user_friends_level2 = await analyse_users(friendlist2)
-            write_to_csv(user_friends_level2, file)
-            if int(options["depth"]) >= 3:
-                friendlist3 = []
-                for friend in user_friends_level2:
-                    for npub in friend.friends:
-                        friendlist3.append(npub)
-                print(len(friendlist3))
-                user_friends_level3 = await analyse_users(friendlist3)
-                write_to_csv(user_friends_level3, file)
+        for i in range(1, int(options["hops"])):
+            levelusers = await self.calculate_hop(options, levelusers, i)
 
         df = pd.read_csv(file, sep=',')
         df.info()

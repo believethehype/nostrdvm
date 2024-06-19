@@ -190,10 +190,13 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
             print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
 
     await outboxclient.connect()
+    try:
+        event_id = await outboxclient.send_event(event)
+    except Exception as e:
+        event_id = None
+        print(e)
 
-    event_id = await outboxclient.send_event(event)
     await outboxclient.shutdown()
-
     return event_id
 
 
