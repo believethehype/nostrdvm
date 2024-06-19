@@ -617,8 +617,9 @@ class Bot:
                         relay_list = ["relays"]
                         for relay in self.dvm_config.RELAY_LIST:
                             relay_list.append(relay)
-                            relays = Tag.parse(relay_list)
-                            tags.append(relays)
+
+                        relays = Tag.parse(relay_list)
+                        tags.append(relays)
 
                 return tags
 
