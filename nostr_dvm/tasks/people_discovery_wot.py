@@ -95,6 +95,9 @@ class DiscoverPeopleWOT(DVMTaskInterface):
                 elif param == "user":  # check for param type
                     user = tag.as_vec()[2]
                     print(user)
+                elif param == "hops":  # check for param type
+                    hops = int(tag.as_vec()[2])
+                    print(hops)
 
         options = {
             "user": user,
