@@ -202,7 +202,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
 
 
-async def send_event(event: Event, client: Client, dvm_config, blastr=False) -> SendEventOutput | None:
+async def send_event(event: Event, client: Client, dvm_config, blastr=False):
     try:
         relays = []
         for tag in event.tags():
