@@ -84,6 +84,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         user = event.author().to_hex()
         print(user)
         hops = 2
+        dunbar = 1000
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -98,11 +99,15 @@ class DiscoverPeopleWOT(DVMTaskInterface):
                 elif param == "hops":  # check for param type
                     hops = int(tag.as_vec()[2])
                     print(hops)
+                elif param == "dunbar":  # check for param type
+                    dunbar = int(tag.as_vec()[2])
+                    print(dunbar)
 
         options = {
             "user": user,
             "max_results": max_results,
             "hops": hops,
+            "dunbar": dunbar,
         }
         request_form['options'] = json.dumps(options)
         return request_form
@@ -115,7 +120,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         else:
             return self.result
 
-    async def calculate_hop(self, options, list_users, hop):
+    async def calculate_hop(self, options, list_users, hop, dunbar):
         print("Fetching hop: " + str(hop))
         file = "db/" + options["user"] + ".csv"
         friendlist = []
@@ -123,7 +128,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
             for npub in friend.friends:
                 friendlist.append(npub)
         print(len(friendlist))
-        user_friends_next_level = await analyse_users(friendlist)
+        user_friends_next_level = await analyse_users(friendlist, dunbar)
         write_to_csv(user_friends_next_level, file)
         return user_friends_next_level
 
@@ -145,7 +150,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         user_id = PublicKey.parse(options["user"]).to_hex()
 
 
-        user_friends_level1 = await analyse_users([user_id])
+        user_friends_level1 = await analyse_users([user_id]) # for the first user, ignore dunbar, thats the user after all.
         friendlist = []
         for npub in user_friends_level1[0].friends:
             friendlist.append(npub)
@@ -153,7 +158,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         write_to_csv(levelusers, file)
 
         for i in range(1, int(options["hops"])):
-            levelusers = await self.calculate_hop(options, levelusers, i)
+            levelusers = await self.calculate_hop(options, levelusers, i, int(options["dunbar"]))
 
         df = pd.read_csv(file, sep=',')
         df.info()
@@ -163,12 +168,6 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         print(G_fb)
         pr = nx.pagerank(G_fb)
         # Use this to find people your followers follow
-
-        user_id = PublicKey.parse(options["user"]).to_hex()
-        user_friends_level1 = await analyse_users([user_id])
-        friendlist = []
-        for npub in user_friends_level1[0].friends:
-            friendlist.append(npub)
 
         sorted_nodes = sorted([(node, pagerank) for node, pagerank in pr.items() if node not in friendlist],
                               key=lambda x: pr[x[0]],
@@ -244,7 +243,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
                     self.db_since) + " seconds..")
 
 
-async def analyse_users(user_ids=None):
+async def analyse_users(user_ids=None, dunbar=100000000):
     if user_ids is None:
         user_ids = []
     try:
@@ -263,10 +262,13 @@ async def analyse_users(user_ids=None):
         if len(followers) > 0:
             for follower in followers:
                 frens = []
-                for tag in follower.tags():
-                    if tag.as_vec()[0] == "p":
-                        frens.append(tag.as_vec()[1])
-                allfriends.append(Friend(follower.author().to_hex(), frens))
+                if len(follower.tags()) < dunbar:
+                    for tag in follower.tags():
+                        if tag.as_vec()[0] == "p":
+                            frens.append(tag.as_vec()[1])
+                    allfriends.append(Friend(follower.author().to_hex(), frens))
+                else:
+                    print("Skipping friend: " + follower.author().to_hex() + "Following: " + str(len(follower.tags())) + " npubs")
 
             return allfriends
         else:
