@@ -15,6 +15,7 @@ const store = createStore({
       nooglekey: import.meta.env.VITE_NOOGLE_PK,
       subscription_verifier_pubkey: import.meta.env.VITE_SUBSCRIPTIPON_VERIFIER_PUBKEY,
       requestidSearch: String,
+      requestidSearch2: String,
       requestidSearchProfile: String,
       requestidImage: [],
       requestidRecommendation: [],
@@ -79,6 +80,11 @@ const store = createStore({
     set_current_request_id_search(state, requestid){
       state.requestidSearch = String(requestid)
     },
+
+    set_current_request_id_search2(state, requestid2){
+      state.requestidSearch2 = String(requestid2)
+    },
+
 
     set_current_request_id_summarization(state, requestid){
       state.requestidSummarization.length = 0
