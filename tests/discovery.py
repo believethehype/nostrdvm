@@ -482,7 +482,7 @@ def playground():
                        "sexualize", "murder", "tax", "engagement", "hodlers", "hodl", "gdp", "global markets", "crypto",
                        "presidency", "dollar", "asset", "microsoft", "amazon", "billionaire", "ceo", "industry",
                        "white house", "hot dog", "spirit animal", "migrant", "invasion", "blocks", "streaming",
-                       "summary", "duckfat", "carnivore", "protein", "fats", "ass", 
+                       "summary", "duckfat", "carnivore", "protein", "fats", "ass",
                        "wealth", "beef", "cunt", "nigger", "business", "tore off", "chart", "critical theory",
                        "law of nature",
                        "retail", "bakery", "synth", "slaughterhouse", "hamas", "dog days", "ww3", "socialmedia",
