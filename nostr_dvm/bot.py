@@ -64,15 +64,14 @@ class Bot:
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
-        nip59_filter = Filter().pubkey(pk).kinds([Kind.from_enum(KindEnum.GIFT_WRAP())]).since(
-            Timestamp.from_secs(Timestamp.now().as_secs() - 60 * 60 * 24 * 10)).limit(0)
+        nip17_filter = Filter().pubkey(pk).kinds([Kind.from_enum(KindEnum.GIFT_WRAP())]).limit(0)
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
                 kinds.append(Kind(dvm.KIND.as_u64() + 1000))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
-        await self.client.subscribe([zap_filter, dm_filter, nip59_filter, dvm_filter], None)
+        await self.client.subscribe([zap_filter, dm_filter, nip17_filter, dvm_filter], None)
 
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
