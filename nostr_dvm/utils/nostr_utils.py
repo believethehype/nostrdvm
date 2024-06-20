@@ -7,7 +7,7 @@ from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
-    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner
+    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner, SendEventOutput
 
 from nostr_dvm.utils.definitions import EventDefinitions
 
@@ -202,7 +202,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
 
 
-async def send_event(event: Event, client: Client, dvm_config, blastr=False) -> EventId:
+async def send_event(event: Event, client: Client, dvm_config, blastr=False) -> SendEventOutput | None:
     try:
         relays = []
         for tag in event.tags():
@@ -223,8 +223,11 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False) -> 
 
         #if blastr:
         #    client.add_relay("wss://nostr.mutinywallet.com")
-
-        event_id = await client.send_event(event)
+        try:
+            event_id = await client.send_event(event)
+        except Exception as e:
+            print(e)
+            event_id = None
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
