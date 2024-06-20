@@ -1,4 +1,3 @@
-import asyncio
 import json
 import os
 from datetime import timedelta
@@ -7,7 +6,7 @@ from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
-    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner, SendEventOutput
+    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner
 
 from nostr_dvm.utils.definitions import EventDefinitions
 
