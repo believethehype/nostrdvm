@@ -7,7 +7,7 @@ import ffmpegio
 
 import requests
 from nostr_dvm.utils.nostr_utils import get_event_by_id
-from nostr_dvm.utils.scrapper.media_scrapper import YTDownload
+from nostr_dvm.utils.scrapper.media_scrapper import YTDownload, get_media_duration
 
 
 async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
@@ -39,17 +39,19 @@ async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
                 return len(input_value)
 
     if input_type == "url":
-        source_type = check_source_type(input_value)
-        filename, start, end, type = get_file_start_end_type(input_value, source_type, start, end, True)
-        if type != "audio" and type != "video":
-            return 1
-        if filename == "" or filename is None:
-            return 0
-        try:
-            duration = ffmpegio.probe.format_basic(filename)['duration']
-        except Exception as e:
-            print(e)
-            return 0
+        duration = get_media_duration(input_value)
+        if duration is None:
+            source_type = check_source_type(input_value)
+            filename, start, end, type = get_file_start_end_type(input_value, source_type, start, end, True)
+            if type != "audio" and type != "video":
+                return 1
+            if filename == "" or filename is None:
+                return 0
+            try:
+                duration = ffmpegio.probe.format_basic(filename)['duration']
+            except Exception as e:
+                print(e)
+                return 0
         print("Original Duration of the Media file: " + str(duration))
         start_time, end_time, new_duration = (
             convert_media_length(start, end, duration))
@@ -71,7 +73,10 @@ async def organize_input_media_data(input_value, input_type, start, end, dvm_con
         audio_only = True
         if media_format.split('/')[0] == "video":
             audio_only = False
+
         filename, start, end, type = get_file_start_end_type(input_value, source_type, start, end, audio_only)
+
+
 
         if filename == "" or filename is None:
             return ""
