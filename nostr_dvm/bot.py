@@ -414,7 +414,7 @@ class Bot:
                                     bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys,
                                                         self.dvm_config,
                                                         "private")
-                                    if bolt11 == None:
+                                    if bolt11 is None:
                                         print("Receiver has no Lightning address")
                                         return
                                 try:
@@ -428,7 +428,7 @@ class Bot:
 
 
             except Exception as e:
-                print(e)
+                print(str(e))
 
         async def handle_nip90_response_event(nostr_event: Event):
             try:

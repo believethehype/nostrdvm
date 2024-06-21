@@ -18,4 +18,4 @@ async def nip65_announce_relays(dvm_config, client):
     event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content, tags).to_event(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config, blastr=True)
 
-    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME +" (EventID: " + eventid.to_hex() +")" + bcolors.ENDC)
+    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME +" (EventID: " + str(eventid.to_hex()) +")" + bcolors.ENDC)

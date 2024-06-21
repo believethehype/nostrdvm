@@ -8,7 +8,7 @@ import dotenv
 from nostr_sdk import Keys
 
 from nostr_dvm.bot import Bot
-from nostr_dvm.tasks import textextraction_pdf
+from nostr_dvm.tasks import textextraction_pdf, convert_media
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -26,6 +26,7 @@ def playground():
     bot_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     npub = Keys.parse(bot_config.PRIVATE_KEY).public_key().to_bech32()
     invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    bot_config.LN_ADDRESS = lnaddress
     bot_config.LNBITS_INVOICE_KEY = invoice_key
     bot_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     bot_config.LNBITS_URL = os.getenv("LNBITS_HOST")
@@ -46,8 +47,17 @@ def playground():
 
     bot_config.SUPPORTED_DVMS.append(ymhm_external)
 
+    admin_config_media = AdminConfig()
+    admin_config_media.UPDATE_PROFILE = True
+    admin_config_media.REBROADCAST_NIP65_RELAY_LIST = True
+    media_bringer = convert_media.build_example("Nostr AI DVM Media Converter",
+                                          "media_converter", admin_config_media)
+    bot_config.SUPPORTED_DVMS.append(media_bringer)
+    media_bringer.run()
+
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP65_RELAY_LIST = True
+    admin_config.UPDATE_PROFILE = True
     x = threading.Thread(target=Bot, args=([bot_config, admin_config]))
     x.start()
 
