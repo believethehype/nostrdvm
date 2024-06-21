@@ -21,7 +21,6 @@ setup(
                       "python-dotenv==1.0.0",
                       "emoji==2.12.1",
                       "ffmpegio==0.9.1",
-                      "pandas==2.1.3",
                       "Pillow==10.1.0",
                       "PyUpload==0.1.4",
                       "pandas==2.2.2",
