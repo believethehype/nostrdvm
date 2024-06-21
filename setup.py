@@ -24,6 +24,7 @@ setup(
                       "pandas==2.1.3",
                       "Pillow==10.1.0",
                       "PyUpload==0.1.4",
+                      "pandas==2.2.2",
                       "requests==2.32.3",
                       "moviepy==2.0.0.dev2",
                       "zipp==3.17.0",
