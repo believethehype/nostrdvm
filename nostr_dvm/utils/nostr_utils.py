@@ -305,8 +305,8 @@ def check_and_decrypt_own_tags(event, dvm_config):
 
 async def update_profile(dvm_config, client, lud16=""):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
-    nip89content = json.loads(dvm_config.NIP89.CONTENT)
-    if nip89content.get("name"):
+    try:
+        nip89content = json.loads(dvm_config.NIP89.CONTENT)
         name = nip89content.get("name")
         about = nip89content.get("about")
         image = nip89content.get("image")
@@ -320,9 +320,16 @@ async def update_profile(dvm_config, client, lud16=""):
             .set_lud16(lud16) \
             .set_nip05(lud16)
         # .set_banner("https://example.com/banner.png") \
-        print("[" + dvm_config.NIP89.NAME + "] Setting profile metadata for " + keys.public_key().to_bech32() + "...")
-        print(metadata.as_json())
-        await client.set_metadata(metadata)
+
+
+    except:
+        metadata = Metadata() \
+            .set_lud16(lud16) \
+            .set_nip05(lud16)
+
+    print("[" + dvm_config.NIP89.NAME + "] Setting profile metadata for " + keys.public_key().to_bech32() + "...")
+    print(metadata.as_json())
+    await client.set_metadata(metadata)
 
 
 def check_and_set_private_key(identifier):

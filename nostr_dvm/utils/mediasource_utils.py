@@ -7,12 +7,15 @@ import ffmpegio
 
 import requests
 from nostr_dvm.utils.nostr_utils import get_event_by_id
-from nostr_dvm.utils.scrapper.media_scrapper import OvercastDownload, XitterDownload, TiktokDownloadAll, \
-    InstagramDownload, YouTubeDownload, XDownload
+from nostr_dvm.utils.scrapper.media_scrapper import YTDownload
 
 
 async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     # print("[" + dvm_config.NIP89.NAME + "] Getting Duration of the Media file..")
+    if end != 0:
+        return end-start
+
+
     input_value = ""
     input_type = ""
     count = 0
@@ -37,7 +40,6 @@ async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
 
     if input_type == "url":
         source_type = check_source_type(input_value)
-
         filename, start, end, type = get_file_start_end_type(input_value, source_type, start, end, True)
         if type != "audio" and type != "video":
             return 1
@@ -217,7 +219,7 @@ def get_overcast(input_value, start, end):
     print("Found overcast.fm Link.. downloading")
     start_time = start
     end_time = end
-    download_overcast(input_value, filename)
+    download(input_value, filename)
     finaltag = str(input_value).replace("https://overcast.fm/", "").split('/')
     if start == 0.0:
         if len(finaltag) > 1:
@@ -235,7 +237,7 @@ def get_overcast(input_value, start, end):
 def get_TikTok(input_value, start, end):
     filepath = os.path.abspath(os.curdir + r'/outputs/')
     try:
-        filename = download_tik_tok(input_value, filepath)
+        filename = download(input_value, filepath)
         print(filename)
     except Exception as e:
         print(e)
@@ -246,7 +248,7 @@ def get_TikTok(input_value, start, end):
 def get_Instagram(input_value, start, end):
     filepath = os.path.abspath(os.curdir + r'/outputs/')
     try:
-        filename = download_instagram(input_value, filepath)
+        filename = download(input_value, filepath)
         print(filename)
     except Exception as e:
         print(e)
@@ -258,7 +260,7 @@ def get_Twitter(input_value, start, end):
     filepath = os.path.abspath(os.curdir) + r'/outputs/'
     cleanlink = str(input_value).replace("twitter.com", "x.com")
     try:
-        filename = download_twitter(cleanlink, filepath)
+        filename = download(cleanlink, filepath)
     except Exception as e:
         print(e)
         return "", start, end
@@ -270,7 +272,7 @@ def get_youtube(input_value, start, end, audioonly=True):
     print(filepath)
     filename = ""
     try:
-        filename = download_youtube(input_value, filepath, audioonly)
+        filename = download(input_value, filepath, audioonly)
 
     except Exception as e:
         print("Youtube " + str(e))
@@ -340,26 +342,5 @@ def get_media_link(url) -> (str, str):
         return None, None
 
 
-def download_overcast(source_url, target_location):
-    result = OvercastDownload(source_url, target_location)
-    return result
-
-
-def download_twitter(videourl, path):
-    result = XDownload(videourl, path + "x.mp4")
-    #result = XitterDownload(videourl, path + "x.mp4")
-    return result
-
-
-def download_tik_tok(videourl, path):
-    result = TiktokDownloadAll([videourl], path)
-    return result
-
-
-def download_instagram(videourl, path):
-    result = InstagramDownload(videourl, "insta", path)
-    return result
-
-
-def download_youtube(link, path, audioonly=True):
-    return YouTubeDownload(link, path, audio_only=audioonly)
+def download(videourl, path, audioonly=False):
+    return YTDownload(videourl, path, audio_only=False)
