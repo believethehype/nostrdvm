@@ -26,7 +26,6 @@ setup(
                       "PyUpload==0.1.4",
                       "requests==2.32.3",
                       "moviepy==2.0.0.dev2",
-                      "instaloader==4.11",
                       "zipp==3.17.0",
                       "urllib3==2.2.1",
                       "networkx==3.3",

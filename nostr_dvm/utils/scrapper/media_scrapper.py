@@ -3,7 +3,6 @@ from typing import Any
 from urllib.request import urlopen, Request
 
 import requests
-import instaloader
 import json
 import yt_dlp
 import sys
@@ -118,34 +117,6 @@ def TiktokDownloadAll(linkList, path) -> str:
             print(err)
             exit(1)
 
-
-def InstagramDownload(url, name, path) -> str:
-    obj = instaloader.Instaloader()
-    post = instaloader.Post.from_shortcode(obj.context, url.split("/")[-2])
-    photo_url = post.url
-    video_url = post.video_url
-    print(video_url)
-    if video_url:
-        response = requests.get(video_url)
-        with open(path + "\\" + name + ".mp4", "wb") as f:
-            f.write(response.content)
-            return path + "\\" + name + ".mp4"
-    elif photo_url:
-        response = requests.get(photo_url)
-        with open(path + "\\" + name + ".jpg", "wb") as f:
-            f.write(response.content)
-            return path + "\\" + name + ".jpg"
-
-def InstagramDownloadAll(linklist, path) -> str:
-    for i in linklist:
-        try:
-            print(str(linklist.index(i)))
-            print(str(linklist[i]))
-            result = InstagramDownload(i, str(linklist.index(i)), path)
-            return result
-        except Exception as err:
-            print(err)
-            exit(1)
 
 def YTDownload(link, path, audio_only=True):
 
