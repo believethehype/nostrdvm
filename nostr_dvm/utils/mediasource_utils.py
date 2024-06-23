@@ -4,7 +4,6 @@ from datetime import time
 from urllib.parse import urlparse
 import ffmpegio
 
-
 import requests
 from nostr_dvm.utils.nostr_utils import get_event_by_id
 from nostr_dvm.utils.scrapper.media_scrapper import YTDownload, get_media_duration
@@ -13,8 +12,7 @@ from nostr_dvm.utils.scrapper.media_scrapper import YTDownload, get_media_durati
 async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     # print("[" + dvm_config.NIP89.NAME + "] Getting Duration of the Media file..")
     if end != 0:
-        return end-start
-
+        return end - start
 
     input_value = ""
     input_type = ""
@@ -62,7 +60,7 @@ async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
 
 
 async def organize_input_media_data(input_value, input_type, start, end, dvm_config, client, process=True,
-                              media_format="audio/mp3") -> str:
+                                    media_format="audio/mp3") -> str:
     if input_type == "event":  # NIP94 event
         evt = await get_event_by_id(input_value, client=client, config=dvm_config)
         if evt is not None:
@@ -76,15 +74,13 @@ async def organize_input_media_data(input_value, input_type, start, end, dvm_con
 
         filename, start, end, type = get_file_start_end_type(input_value, source_type, start, end, audio_only)
 
-
-
         if filename == "" or filename is None:
             return ""
         if type != "audio" and type != "video":
             return filename
         try:
-            #file_reader = AudioReader(filename, ctx=cpu(0), mono=False)
-           # duration = float(file_reader.duration())
+            # file_reader = AudioReader(filename, ctx=cpu(0), mono=False)
+            # duration = float(file_reader.duration())
             duration = ffmpegio.probe.format_basic(filename)['duration']
 
         except Exception as e:
@@ -347,5 +343,5 @@ def get_media_link(url) -> (str, str):
         return None, None
 
 
-def download(videourl, path, audioonly=False):
-    return YTDownload(videourl, path, audio_only=False)
+def download(videourl, path, audio_only=False):
+    return YTDownload(videourl, path, audio_only=audio_only)

@@ -261,7 +261,6 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
     print(lud16)
     print(str(amount))
     print(content)
-    print(zapped_user.to_hex())
     if lud16.startswith("LNURL") or lud16.startswith("lnurl"):
         url = decode_bech32(lud16)
     elif '@' in lud16:  # LNaddress
