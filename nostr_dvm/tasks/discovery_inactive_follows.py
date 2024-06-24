@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from datetime import timedelta
@@ -26,7 +27,7 @@ Params:  None
 class DiscoverInactiveFollows(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
     TASK: str = "inactive-followings"
-    FIX_COST: float = 100
+    FIX_COST: float = 0
     client: Client
     dvm_config: DVMConfig
 
@@ -71,12 +72,13 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        #relaylimits = RelayLimits().event_max_num_tags(max_num_tags=10000)
-        #relaylimits.event_max_size(None)
+        # relaylimits = RelayLimits().event_max_num_tags(max_num_tags=10000)
+        # relaylimits.event_max_size(None)
         relaylimits = RelayLimits.disable()
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))).relay_limits(relaylimits)
-
+        opts = (
+            Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))).relay_limits(
+            relaylimits)
 
         cli = Client.with_opts(signer, opts)
         for relay in self.dvm_config.RELAY_LIST:
@@ -92,7 +94,6 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
         followers = await cli.get_events_of([followers_filter], timedelta(seconds=5))
 
-
         if len(followers) > 0:
             result_list = []
             newest = 0
@@ -103,7 +104,6 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
-
 
             print(best_entry.as_json())
             print(len(best_entry.tags()))
@@ -150,15 +150,14 @@ class DiscoverInactiveFollows(DVMTaskInterface):
             begin = 0
             # Spawn some threads to speed things up
             while begin < len(followings) - step:
-                args = [followings, ns, begin, step, not_active_since]
-                t = Thread(target=scanList, args=args)
+                t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, step, not_active_since),))
                 threads.append(t)
-                begin = begin + step -1
+                begin = begin + step - 1
 
             # last to step size
             missing_scans = (len(followings) - begin)
-            args = [followings, ns, begin, missing_scans, not_active_since]
-            t = Thread(target=scanList, args=args)
+            t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, missing_scans, not_active_since),))
+
             threads.append(t)
 
             # Start all threads
@@ -202,7 +201,7 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I discover users you follow, but that have been inactive on Nostr",
-        "action": "unfollow", #follow, mute, unmute
+        "action": "unfollow",  # follow, mute, unmute
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {

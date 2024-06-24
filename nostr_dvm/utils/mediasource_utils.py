@@ -37,9 +37,9 @@ async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
                 return len(input_value)
 
     if input_type == "url":
+        source_type = check_source_type(input_value)
         duration = get_media_duration(input_value)
         if duration is None:
-            source_type = check_source_type(input_value)
             filename, start, end, type = get_file_start_end_type(input_value, source_type, start, end, True)
             if type != "audio" and type != "video":
                 return 1
@@ -79,9 +79,12 @@ async def organize_input_media_data(input_value, input_type, start, end, dvm_con
         if type != "audio" and type != "video":
             return filename
         try:
-            # file_reader = AudioReader(filename, ctx=cpu(0), mono=False)
-            # duration = float(file_reader.duration())
-            duration = ffmpegio.probe.format_basic(filename)['duration']
+            source_type = check_source_type(input_value)
+            duration = get_media_duration(input_value)
+            if duration is None:
+                # file_reader = AudioReader(filename, ctx=cpu(0), mono=False)
+                # duration = float(file_reader.duration())
+                duration = ffmpegio.probe.format_basic(filename)['duration']
 
         except Exception as e:
             print(e)

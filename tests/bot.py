@@ -8,7 +8,7 @@ import dotenv
 from nostr_sdk import Keys
 
 from nostr_dvm.bot import Bot
-from nostr_dvm.tasks import textextraction_pdf, convert_media
+from nostr_dvm.tasks import textextraction_pdf, convert_media, discovery_inactive_follows
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -54,6 +54,15 @@ def playground():
                                           "media_converter", admin_config_media)
     bot_config.SUPPORTED_DVMS.append(media_bringer)
     media_bringer.run()
+
+
+    admin_config_followers = AdminConfig()
+    admin_config_followers.UPDATE_PROFILE = True
+    admin_config_followers.REBROADCAST_NIP65_RELAY_LIST = True
+    discover_inactive = discovery_inactive_follows.build_example("Those who left",
+                                                      "discovery_inactive_follows", admin_config_followers)
+    bot_config.SUPPORTED_DVMS.append(discover_inactive)
+    discover_inactive.run()
 
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP65_RELAY_LIST = True

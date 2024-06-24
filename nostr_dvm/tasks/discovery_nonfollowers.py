@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from datetime import timedelta
@@ -148,14 +149,14 @@ class DiscoverNonFollowers(DVMTaskInterface):
             # Spawn some threads to speed things up
             while begin < len(followings) - step:
                 args = [followings, ns, begin, step]
-                t = Thread(target=scanList, args=args)
+                t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, step),))
                 threads.append(t)
                 begin = begin + step - 1
 
             # last to step size
             missing_scans = (len(followings) - begin)
             args = [followings, ns, begin, missing_scans]
-            t = Thread(target=scanList, args=args)
+            t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, missing_scans),))
             threads.append(t)
 
             # Start all threads
