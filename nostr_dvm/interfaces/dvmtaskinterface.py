@@ -158,7 +158,7 @@ class DVMTaskInterface:
 
     @staticmethod
     def write_output(result, output):
-        with open(os.path.abspath(output), 'w') as f:
+        with open(os.path.abspath(output), 'w',  encoding="utf8") as f:
             f.write(result)
         # f.close()
 
