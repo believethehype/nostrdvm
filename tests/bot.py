@@ -8,7 +8,7 @@ import dotenv
 from nostr_sdk import Keys
 
 from nostr_dvm.bot import Bot
-from nostr_dvm.tasks import textextraction_pdf, convert_media, discovery_inactive_follows
+from nostr_dvm.tasks import textextraction_pdf, convert_media, discovery_inactive_follows, translation_google
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -63,6 +63,14 @@ def playground():
                                                       "discovery_inactive_follows", admin_config_followers)
     bot_config.SUPPORTED_DVMS.append(discover_inactive)
     discover_inactive.run()
+
+    admin_config_google = AdminConfig()
+    admin_config_google.UPDATE_PROFILE = True
+    admin_config_google.REBROADCAST_NIP65_RELAY_LIST = True
+
+    translator = translation_google.build_example("NostrAI DVM Translator", "google_translator", admin_config_google)
+    bot_config.SUPPORTED_DVMS.append(translator)  # We add translator to the bot
+    translator.run()
 
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP65_RELAY_LIST = True
