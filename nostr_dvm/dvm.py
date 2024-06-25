@@ -672,7 +672,7 @@ class DVM:
                                 await run_subprocess(python_bin, dvm_config, request_form)
                                 print("Finished processing, loading data..")
 
-                                with open(os.path.abspath('output.txt')) as f:
+                                with open(os.path.abspath('output.txt'), encoding="utf-8") as f:
                                     resultall = f.readlines()
                                     for line in resultall:
                                         if line != '\n':
