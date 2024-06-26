@@ -128,6 +128,8 @@ async def organize_input_media_data(input_value, input_type, start, end, dvm_con
 
 def check_nip94_event_for_media(evt, input_value, input_type):
     # Parse NIP94 event for url, if found, use it.
+    input_type = "text"
+    input_value = evt.content()
     if evt.kind() == 1063:
         for tag in evt.tags():
             if tag.as_vec()[0] == 'url':
