@@ -44,12 +44,12 @@ class TextToSpeech(DVMTaskInterface):
                 input_type = tag.as_vec()[2]
                 if input_type != "event" and input_type != "job" and input_type != "text":
                     return False
-                if input_type == "text" and len(input_value) > 250:
-                    return False
+                #if input_type == "text" and len(input_value) > 250:
+                #    return False
                 if input_type == "event":
                     evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
-                    if len(evt.content()) > 250:
-                        return False
+                    #if len(evt.content()) > 250:
+                    #    return False
             elif tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "language":  # check for param type
