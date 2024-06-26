@@ -106,9 +106,11 @@ class TextToSpeech(DVMTaskInterface):
         from TTS.api import TTS
         options = self.set_options(request_form)
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        # else "mps" if torch.backends.mps.is_available() \
+            #else "mps" if torch.backends.mps.is_available()
+        print(device)
 
-        print(TTS().list_models())
+        print(TTS().list_models().list_tts_models())
+
         try:
             # model = "tts_models/deu/fairseq/vits"
             # model = "tts_models/multilingual/multi-dataset/your_tts"
