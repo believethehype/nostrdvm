@@ -17,6 +17,7 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id
 
+
 """
 This File contains a Module to generate Audio based on an input and a voice
 
@@ -104,6 +105,8 @@ class TextToSpeech(DVMTaskInterface):
     async def process(self, request_form):
         import torch
         from TTS.api import TTS
+        import re
+
         options = self.set_options(request_form)
         device = "cuda" if torch.cuda.is_available() else "cpu"
             #else "mps" if torch.backends.mps.is_available()
@@ -117,8 +120,13 @@ class TextToSpeech(DVMTaskInterface):
             model = "tts_models/multilingual/multi-dataset/xtts_v2"
             tts = TTS(model).to(device)
 
+            text = options["prompt"]
+            text_clean = re.sub(
+                r'''(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))''',
+                " ", text)
+
             tts.tts_to_file(
-                text=options["prompt"],
+                text=text_clean,
                 speaker_wav=options["input_wav"], language=options["language"], file_path="outputs/output.wav")
             result = upload_media_to_hoster("outputs/output.wav")
             print(result)
