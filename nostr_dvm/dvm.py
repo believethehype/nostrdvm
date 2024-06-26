@@ -624,7 +624,24 @@ class DVM:
 
             return reaction_event.as_json()
 
-        async def run_subprocess(python_bin, dvm_config, request_form):
+        async def _read_stream(stream, cb):
+            while True:
+                line = await stream.readline()
+                if line:
+                    cb(line)
+                else:
+                    break
+
+        async def _stream_subprocess(cmd, stdout_cb, stderr_cb):
+            process = await asyncio.create_subprocess_exec(*cmd,
+                                                           stdout=asyncio.subprocess.PIPE,
+                                                           stderr=asyncio.subprocess.PIPE)
+
+
+
+
+        async def run_subprocess(python_bin, dvm_config, request_form, stdout_cb, stderr_cb):
+            print("Running subprocess, please wait..")
             process = await asyncio.create_subprocess_exec(
                 python_bin, dvm_config.SCRIPT,
                 '--request', json.dumps(request_form),
@@ -634,16 +651,23 @@ class DVM:
                 stderr=asyncio.subprocess.PIPE
             )
 
-            stdout, stderr = await process.communicate()
+            await asyncio.gather(
+                _read_stream(process.stdout, stdout_cb),
+                _read_stream(process.stderr, stderr_cb)
+            )
+            return await process.wait()
 
-            retcode = process.returncode
 
-            if retcode != 0:
-                print(f"Error: {stderr.decode()}")
-            else:
-                print(f"Output: {stdout.decode()}")
+            #stdout, stderr = await process.communicate()
 
-            return retcode
+            #retcode = process.returncode
+
+            #if retcode != 0:
+            #    print(f"Error: {stderr.decode()}")
+            #else:
+            #    print(f"Output: {stdout.decode()}")
+
+            #return retcode
 
         async def do_work(job_event, amount):
             if ((
@@ -669,7 +693,9 @@ class DVM:
                                 #                           '--request', json.dumps(request_form),
                                 #                           '--identifier', dvm_config.IDENTIFIER,
                                 #                           '--output', 'output.txt'])
-                                await run_subprocess(python_bin, dvm_config, request_form)
+                                await run_subprocess(python_bin, dvm_config, request_form,
+                                                     lambda x: print("%s" % x.decode("utf-8").replace("\n", "")),
+                                                     lambda x: print("STDERR: %s" % x.decode("utf-8")))
                                 print("Finished processing, loading data..")
 
                                 with open(os.path.abspath('output.txt'), encoding="utf-8") as f:
