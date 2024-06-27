@@ -65,10 +65,8 @@ class TextToSpeech(DVMTaskInterface):
         if self.options.get("input_file") and self.options.get("input_file") != "":
             input_file = self.options['input_file']
         else:
-            if not Path.exists(Path('cache/input.wav')):
-                input_file_url = "https://media.nostr.build/av/de104e3260be636533a56fd4468b905c1eb22b226143a997aa936b011122af8a.wav"
-                urllib.request.urlretrieve(input_file_url, "cache/input.wav")
             input_file = "cache/input.wav"
+
         language = "en"
 
         for tag in event.tags():
@@ -92,6 +90,13 @@ class TextToSpeech(DVMTaskInterface):
                 param = tag.as_vec()[1]
                 if param == "language":  # check for param type
                     language = tag.as_vec()[2]
+                elif param == "voice":  # check for param type
+                    input_file = "cache/" + tag.as_vec()[2] + ".wav"
+
+        if not Path.exists(Path(input_file)):
+            input_file_url = "https://media.nostr.build/av/de104e3260be636533a56fd4468b905c1eb22b226143a997aa936b011122af8a.wav"
+            urllib.request.urlretrieve(input_file_url, "cache/input.wav")
+        input_file = "cache/input.wav"
 
         options = {
             "prompt": prompt,
