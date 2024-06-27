@@ -96,7 +96,7 @@ class TextToSpeech(DVMTaskInterface):
         if not Path.exists(Path(input_file)):
             input_file_url = "https://media.nostr.build/av/de104e3260be636533a56fd4468b905c1eb22b226143a997aa936b011122af8a.wav"
             urllib.request.urlretrieve(input_file_url, "cache/input.wav")
-        input_file = "cache/input.wav"
+            input_file = "cache/input.wav"
 
         options = {
             "prompt": prompt,
