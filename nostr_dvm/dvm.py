@@ -267,7 +267,7 @@ class DVM:
 
                         else:  # If there is no bid, just request server rate from user
                             print(
-                                "[" + self.dvm_config.NIP89.NAME + "]  Requesting payment for Event: " +
+                                "[" + self.dvm_config.NIP89.NAME + "] Requesting payment for Event: " +
                                 nip90_event.id().to_hex())
                             await send_job_status_reaction(nip90_event, "payment-required",
                                                            False, int(amount), client=self.client,
