@@ -99,7 +99,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
             print(output)
 
             urllib.request.urlretrieve(output, "./outputs/svd.mp4")
-            result = upload_media_to_hoster("./outputs/svd.mp4")
+            result = await upload_media_to_hoster("./outputs/svd.mp4")
             return result
 
         except Exception as e:

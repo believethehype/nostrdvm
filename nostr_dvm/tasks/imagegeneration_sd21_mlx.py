@@ -136,7 +136,7 @@ class ImageGenerationMLX(DVMTaskInterface):
             # Save them to disc
             image = Image.fromarray(x.__array__())
             image.save("./outputs/image.jpg")
-            result = upload_media_to_hoster("./outputs/image.jpg")
+            result = await upload_media_to_hoster("./outputs/image.jpg")
             return result
 
         except Exception as e:

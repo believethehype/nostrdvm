@@ -112,7 +112,7 @@ class ImageGenerationDALLE(DVMTaskInterface):
             response = requests.get(image_url)
             image = Image.open(BytesIO(response.content)).convert("RGB")
             image.save("./outputs/image.jpg")
-            result = upload_media_to_hoster("./outputs/image.jpg")
+            result = await upload_media_to_hoster("./outputs/image.jpg")
             return result
 
         except Exception as e:

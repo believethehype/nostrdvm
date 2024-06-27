@@ -107,7 +107,7 @@ class ImageGenerationReplicateSDXL(DVMTaskInterface):
             response = requests.get(output[0])
             image = Image.open(BytesIO(response.content)).convert("RGB")
             image.save("./outputs/image.jpg")
-            result = upload_media_to_hoster("./outputs/image.jpg")
+            result = await upload_media_to_hoster("./outputs/image.jpg")
             return result
 
         except Exception as e:
