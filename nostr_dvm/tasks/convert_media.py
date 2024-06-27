@@ -72,7 +72,7 @@ class MediaConverter(DVMTaskInterface):
 
     async def process(self, request_form):
         options = self.set_options(request_form)
-        url = upload_media_to_hoster(options["filepath"])
+        url = await upload_media_to_hoster(options["filepath"])
 
         return url
 

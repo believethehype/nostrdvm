@@ -88,7 +88,7 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
             if content_type == "image/jpeg":
                 image = Image.open(io.BytesIO(response.content))
                 image.save("./outputs/image.jpg")
-                result = upload_media_to_hoster("./outputs/image.jpg")
+                result = asyncio.run(upload_media_to_hoster("./outputs/image.jpg"))
                 os.remove("./outputs/image.jpg")
                 return result
             elif content_type == 'video/mp4':
@@ -97,7 +97,7 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
                 f.close()
                 clip = VideoFileClip("./outputs/video.mp4")
                 clip.write_videofile("./outputs/video2.mp4")
-                result = upload_media_to_hoster("./outputs/video2.mp4")
+                result = asyncio.run(upload_media_to_hoster("./outputs/video2.mp4"))
                 clip.close()
                 os.remove("./outputs/video.mp4")
                 os.remove("./outputs/video2.mp4")

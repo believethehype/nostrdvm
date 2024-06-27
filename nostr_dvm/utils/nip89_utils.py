@@ -31,9 +31,9 @@ async def nip89_announce_tasks(dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
-    evenid = await send_event(event, client=client, dvm_config=dvm_config)
+    eventid = await send_event(event, client=client, dvm_config=dvm_config)
 
-    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME +" (" + evenid.to_hex() +")" + bcolors.ENDC)
+    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME +" (" + eventid.to_hex() +")" + bcolors.ENDC)
 
 
 

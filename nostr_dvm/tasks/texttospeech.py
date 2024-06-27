@@ -1,8 +1,10 @@
 import json
 import os
 
+import ffmpegio
 from nostr_sdk import Kind
 
+from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip88_utils import NIP88Config
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
@@ -37,6 +39,7 @@ class TextToSpeech(DVMTaskInterface):
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
+        self.dvm_config = dvm_config
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -132,8 +135,14 @@ class TextToSpeech(DVMTaskInterface):
 
             tts.tts_to_file(
                 text=text_clean,
-                speaker_wav=options["input_wav"], language=options["language"], file_path="outputs/output.mp3")
-            result = upload_media_to_hoster("outputs/output.mp3")
+                speaker_wav=options["input_wav"], language=options["language"], file_path="outputs/output.wav")
+
+            print("Converting Audio")
+            final_filename = "outputs/output.mp3"
+            fs, x = ffmpegio.audio.read("outputs/output.wav", sample_fmt='dbl', ac=1)
+            ffmpegio.audio.write(final_filename, fs, x, overwrite=True)
+
+            result = await upload_media_to_hoster(final_filename, dvm_config=self.dvm_config)
             print(result)
             return result
         except Exception as e:

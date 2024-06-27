@@ -6,10 +6,13 @@ from types import NoneType
 
 import emoji
 import requests
-from nostr_sdk import Tag, PublicKey, EventId
+from nostr_sdk import Tag, PublicKey, EventId, Keys
 from pyupload.uploader import CatboxUploader
 
 import pandas
+
+from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.nip98_utils import generate_nip98_header
 
 '''
 Post process results to either given output format or a Nostr readable plain text.
@@ -146,26 +149,35 @@ Will probably need to switch to another system in the future.
 '''
 
 
-def upload_media_to_hoster(filepath: str):
+async def upload_media_to_hoster(filepath: str, dvm_config=None, usealternativeforlargefiles=True):
+
+    if dvm_config is None:
+        dvm_config = DVMConfig()
+        dvm_config.NIP89.PK = Keys.parse(os.getenv("NOSTR_BUILD_ACCOUNT_PK")).secret_key().to_hex()
+
     print("Uploading image: " + filepath)
     try:
         files = {'file': open(filepath, 'rb')}
         file_stats = os.stat(filepath)
         sizeinmb = file_stats.st_size / (1024 * 1024)
         print("Filesize of Uploaded media: " + str(sizeinmb) + " Mb.")
-        if sizeinmb > 25:
+        if sizeinmb > 25 and usealternativeforlargefiles:
             print("Filesize over Nostr.build limited, using catbox")
             uploader = CatboxUploader(filepath)
             result = uploader.execute()
             return result
         else:
             url = 'https://nostr.build/api/v2/upload/files'
-            response = requests.post(url, files=files)
+            auth = await generate_nip98_header(filepath, dvm_config)
+            headers = {'authorization': auth}
+
+            response = requests.post(url, files=files, headers=headers)
             print(response.text)
             json_object = json.loads(response.text)
             result = json_object["data"][0]["url"]
             return result
     except Exception as e:
+        print(e)
         try:
             uploader = CatboxUploader(filepath)
             result = uploader.execute()
