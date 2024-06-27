@@ -186,3 +186,4 @@ identifier.sqlite
 todo.txt
 .env_bkp
 output.txt
+tests/output.wav
