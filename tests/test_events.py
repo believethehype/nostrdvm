@@ -7,6 +7,9 @@ from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotificatio
     nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event
 
 from nostr_dvm.utils import definitions, dvmconfig
+from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.gallery_utils import gallery_announce_list
+from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 
 
@@ -25,7 +28,7 @@ async def test():
 
     for relay in relay_list:
         await client.add_relay(relay)
-    client.connect()
+    await client.connect()
 
     await test_referred_events(client,"c70fbd4dbaad22c427d4359981d3bdddd3971ed1a38227ca2f8e5e760f58103c",
                          definitions.EventDefinitions.ANY_RESULT)
@@ -69,6 +72,31 @@ async def test_referred_events(client, event_id, kinds=None):
         return None
 
 
+
+async def test_gallery():
+    relay_list = dvmconfig.DVMConfig.RELAY_LIST
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+    wait_for_send = False
+    skip_disconnected_relays = True
+    opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=5))
+            .skip_disconnected_relays(skip_disconnected_relays))
+
+    signer = NostrSigner.keys(keys)
+    client = Client.with_opts(signer, opts)
+
+    for relay in relay_list:
+        await client.add_relay(relay)
+    await client.connect()
+    dvm_config = DVMConfig()
+    dvm_config.NIP89 = NIP89Config()
+    dvm_config.NIP89.PK = Keys.parse("nsec...").secret_key().to_hex()
+
+    tags = [Tag.parse(["d", "gallery"]),
+            Tag.parse(["image", "https://i.nostr.build/7G2G2.jpg"]),
+            Tag.parse(["image", "https://i.nostr.build/XVLkd.jpg"])]
+
+    await gallery_announce_list(tags, dvm_config, client)
+
 async def test_search_by_user_since_days(client, pubkey, days, prompt):
     since_seconds = int(days) * 24 * 60 * 60
     dif = Timestamp.now().as_secs() - since_seconds
@@ -95,7 +123,7 @@ if __name__ == '__main__':
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    asyncio.run(test())
+    asyncio.run(test_gallery())
 
     # works
 

@@ -154,33 +154,25 @@ def upload_media_to_hoster(filepath: str):
         sizeinmb = file_stats.st_size / (1024 * 1024)
         print("Filesize of Uploaded media: " + str(sizeinmb) + " Mb.")
         if sizeinmb > 25:
+            print("Filesize over Nostr.build limited, using catbox")
             uploader = CatboxUploader(filepath)
             result = uploader.execute()
             return result
         else:
             url = 'https://nostr.build/api/v2/upload/files'
             response = requests.post(url, files=files)
+            print(response.text)
             json_object = json.loads(response.text)
             result = json_object["data"][0]["url"]
             return result
-    except:
+    except Exception as e:
         try:
-            file = {'file': open(filepath, 'rb')}
-            url = 'https://nostrfiles.dev/upload_image'
-            response = requests.post(url, files=file)
-            json_object = json.loads(response.text)
-            print(json_object["url"])
-            return json_object["url"]
-            # fallback filehoster
+            uploader = CatboxUploader(filepath)
+            result = uploader.execute()
+            print(result)
+            return result
         except:
-
-            try:
-                uploader = CatboxUploader(filepath)
-                result = uploader.execute()
-                print(result)
-                return result
-            except:
-                raise Exception("Upload not possible, all hosters didn't work or couldn't generate output")
+            raise Exception("Upload not possible, all hosters didn't work or couldn't generate output")
 
 
 def build_status_reaction(status, task, amount, content, dvm_config):
