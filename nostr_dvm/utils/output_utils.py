@@ -149,42 +149,81 @@ Will probably need to switch to another system in the future.
 '''
 
 
-async def upload_media_to_hoster(filepath: str, dvm_config=None, usealternativeforlargefiles=True):
+async def upload_media_to_hoster(filepath: str, key_hex=None, fallback=True):
+    if key_hex is None:
+        # If we don't pass a key we use the key from .env
+        if os.getenv("NOSTR_BUILD_ACCOUNT_PK"):
+            key_hex = Keys.parse(os.getenv("NOSTR_BUILD_ACCOUNT_PK")).secret_key().to_hex()
+        else:
+            print("No Hex key set, using catbox")
+            uploader = CatboxUploader(filepath)
+            result = uploader.execute()
+            return result
 
-    if dvm_config is None:
-        dvm_config = DVMConfig()
-        dvm_config.NIP89.PK = Keys.parse(os.getenv("NOSTR_BUILD_ACCOUNT_PK")).secret_key().to_hex()
-
-    print("Uploading image: " + filepath)
+    print("Uploading Media: " + filepath)
     try:
         files = {'file': open(filepath, 'rb')}
         file_stats = os.stat(filepath)
         sizeinmb = file_stats.st_size / (1024 * 1024)
         print("Filesize of Uploaded media: " + str(sizeinmb) + " Mb.")
-        if sizeinmb > 25 and usealternativeforlargefiles:
-            print("Filesize over Nostr.build limited, using catbox")
-            uploader = CatboxUploader(filepath)
-            result = uploader.execute()
-            return result
-        else:
-            url = 'https://nostr.build/api/v2/upload/files'
-            auth = await generate_nip98_header(filepath, dvm_config)
-            headers = {'authorization': auth}
 
-            response = requests.post(url, files=files, headers=headers)
-            print(response.text)
-            json_object = json.loads(response.text)
-            result = json_object["data"][0]["url"]
-            return result
+        limitinmb = await request_nostr_build_limit(key_hex)
+
+        if sizeinmb > limitinmb:
+            if fallback:
+                print("Filesize over Nostr.build limit, using paid account")
+                key_hex = Keys.parse(os.getenv("NOSTR_BUILD_ACCOUNT_PK")).secret_key().to_hex()
+                limitinmb = await request_nostr_build_limit(key_hex)
+                if sizeinmb > limitinmb:
+                    return await upload_nostr_build(key_hex, files, filepath)
+                else:
+                    print("Filesize over paid Nostr.build limit, using catbox")
+                    uploader = CatboxUploader(filepath)
+                    result = uploader.execute()
+                    return result
+
+            else:
+                print("Filesize over Nostr.build limit, using catbox")
+                uploader = CatboxUploader(filepath)
+                result = uploader.execute()
+                return result
+        else:
+            return await upload_nostr_build(key_hex, files, filepath)
+
     except Exception as e:
         print(e)
         try:
+            # on error we fallback to catbox nevertheless
             uploader = CatboxUploader(filepath)
             result = uploader.execute()
             print(result)
             return result
         except:
             raise Exception("Upload not possible, all hosters didn't work or couldn't generate output")
+
+
+async def upload_nostr_build(pkey, files, filepath):
+    url = 'https://nostr.build/api/v2/upload/files'
+    auth = await generate_nip98_header(pkey, url, "POST", filepath)
+    headers = {'authorization': auth}
+
+    response = requests.post(url, files=files, headers=headers)
+    print(response.text)
+    json_object = json.loads(response.text)
+    result = json_object["data"][0]["url"]
+    return result
+
+
+async def request_nostr_build_limit(pkey):
+    url = 'https://nostr.build/api/v2/upload/limit'
+    auth = await generate_nip98_header(pkey, url, "GET")
+    headers = {'authorization': auth}
+    response = requests.get(url, headers=headers)
+    json_object = json.loads(response.text)
+    limit = float(json_object["data"]["limit"])
+    limitinmb = limit / (1024 * 1024)
+    print("Limit: " + str(limitinmb) + " MB")
+    return limitinmb
 
 
 def build_status_reaction(status, task, amount, content, dvm_config):
