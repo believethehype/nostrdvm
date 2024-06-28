@@ -142,7 +142,7 @@ class TextToSpeech(DVMTaskInterface):
             fs, x = ffmpegio.audio.read("outputs/output.wav", sample_fmt='dbl', ac=1)
             ffmpegio.audio.write(final_filename, fs, x, overwrite=True)
 
-            result = await upload_media_to_hoster(final_filename, dvm_config=self.dvm_config)
+            result = await upload_media_to_hoster(final_filename, key_hex=self.dvm_config.PRIVATE_KEY)
             print(result)
             return result
         except Exception as e:

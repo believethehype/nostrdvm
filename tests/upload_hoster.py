@@ -17,5 +17,5 @@ if __name__ == '__main__':
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
 
-    asyncio.run(upload_media_to_hoster("tests/output.wav"))
+    asyncio.run(upload_media_to_hoster("tests/output.wav", "key", True))
     # asyncio.run(upload_media_to_hoster("tests/test.jpeg", dvm_config))
