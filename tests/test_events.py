@@ -89,8 +89,9 @@ async def test_gallery():
     await client.connect()
     dvm_config = DVMConfig()
     dvm_config.NIP89 = NIP89Config()
-    dvm_config.NIP89.PK = Keys.parse("NSEC...").secret_key().to_hex()
-    tagname = "entry"
+    keys = Keys.parse(check_and_set_private_key("RTEST_ACCOUNT_PK"))
+    dvm_config.NIP89.PK = keys.secret_key().to_hex()
+    tagname = "gallery"
     tags = [
 
             Tag.parse([tagname, "3b0ec270394dc496f9f9c7db5c68a5b7f7311ff9080a51f1e8cb5f5cffc2c0b2", "https://i.nostr.build/xEZqV.jpg"]),
