@@ -128,7 +128,11 @@ class TextToSpeech(DVMTaskInterface):
             model = "tts_models/multilingual/multi-dataset/xtts_v2"
             tts = TTS(model).to(device)
 
-            text = options["prompt"].replace("~", "around ").replace("#", "hashtag").replace(" LFG", " Let's fucking go")
+            text = (options["prompt"].replace("~", "around ").replace("#", "hashtag")
+                    .replace(" LFG", " Let's fucking go").replace("_", " ").replace("*", " ")
+                    .replace("![]", " ").replace("( )", "").replace("**", " ").replace("\xa0", "")
+                    )
+
             text_clean = re.sub(
                 r'''(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))''',
                 " ", text)
