@@ -153,8 +153,8 @@ async def nostr_client_test_inactive_filter(user):
 
 async def nostr_client_test_tts(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
-
-    iTag = Tag.parse(["i", prompt, "text"])
+    iTag = Tag.parse(["i", "9d867cd3e868111a31c8acfa41ab7523b9940fc46c804d7db89d7f373c007fa6", "event"])
+    #iTag = Tag.parse(["i", prompt, "text"])
     paramTag1 = Tag.parse(["param", "language", "en"])
 
     bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
@@ -164,7 +164,7 @@ async def nostr_client_test_tts(prompt):
     event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File."),
                          [iTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org" "wss://dvms.f7z.io",
                   ]
 
     signer = NostrSigner.keys(keys)
@@ -301,13 +301,13 @@ async def nostr_client():
     # await nostr_client_test_search_profile("dontbelieve")
     wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
     # aawait nostr_client_test_disovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "a21592a70ef9a00695efb3f7e816e17742d251559aff154b16d063a408bcd74d")
-    await nostr_client_test_disovery_user("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
-                                          "58c52fdca7593dffea63ba6f758779d8251c6732f54e9dc0e56d7a1afe1bb1b6")
+    #await nostr_client_test_disovery_user("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
+    #                                      "58c52fdca7593dffea63ba6f758779d8251c6732f54e9dc0e56d7a1afe1bb1b6")
 
     # await nostr_client_test_censor_filter(wot)
     # await nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
 
-    # await nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
+    await nostr_client_test_tts("Hello, this is a test. Mic check one, two.")
 
     # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
     # await nostr_client_test_image_private("a beautiful ostrich watching the sunset")
