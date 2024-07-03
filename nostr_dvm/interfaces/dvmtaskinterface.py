@@ -103,10 +103,11 @@ class DVMTaskInterface:
                             print("Installing global Module: " + module)
                             subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
-    def run(self):
+    def run(self, join=False):
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config])
         nostr_dvm_thread.start()
-        nostr_dvm_thread.join()
+        if join:
+            nostr_dvm_thread.join()
 
     async def schedule(self, dvm_config):
         """schedule something, e.g. define some time to update or to post, does nothing by default"""
