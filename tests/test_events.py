@@ -91,21 +91,21 @@ async def test_gallery():
     dvm_config.NIP89 = NIP89Config()
     keys = Keys.parse(check_and_set_private_key("RTEST_ACCOUNT_PK"))
     dvm_config.NIP89.PK = keys.secret_key().to_hex()
-    tagname = "gallery"
+    tagname = "url"
     tags = [
 
-            Tag.parse([tagname, "3b0ec270394dc496f9f9c7db5c68a5b7f7311ff9080a51f1e8cb5f5cffc2c0b2", "https://i.nostr.build/xEZqV.jpg"]),
-            Tag.parse([tagname, "dd6e5c2891fbe9f53bcaa351b48faeeedccd16e9541b508adcb2c16d11bceaaf", "https://i.nostr.build/2RnXd.jpg"]),
-            Tag.parse([tagname, "b2868e1ef93523ecf15b26e1cfdb6f252fe5074867d9c042fd6fcfbf07959193", "https://i.nostr.build/WG2Ra.jpg"]),
-            Tag.parse([tagname, "489402bf3ec070e7ebf2ba459508d2e1a408c0adad02954470602f232026a37d", "https://i.nostr.build/M5keE.jpg"]),
-            Tag.parse([tagname, "0e37cb0373189e01be3c744c0434e0c8559953910e44b05ed270313c47abe142", "https://v.nostr.build/M5kZ5.mp4"]),
-            Tag.parse([tagname, "102d1f411a9a2b4de37ef62cdd4943673b4941080a51a8fa8829cd9f1de46d13", "https://i.nostr.build/vGLg7.jpg"]),
-            Tag.parse([tagname, "4022d4e893c224186bbef4414340e35cbf251c681bc84ab05446fec1d2ec67df", "https://i.nostr.build/O4WxA.jpg"]),
-            Tag.parse([tagname, "6f04dc6a2a05f710b9c6c6d09a02c5fe0174da9c95399d3d01963a784d195803", "https://i.nostr.build/M5a96.jpg"]),
-            Tag.parse([tagname, "737a169c245ce7957a8b6acf190c57d70256cc52630862f5ba0fd7315ef83425", "https://i.nostr.build/WG02Y.jpg"]),
-            Tag.parse([tagname, "c3a3a8759502cb3c06d592e5715cad0826982a2ff60a0ae525e3f253ab9e462a", "https://i.nostr.build/Dj2Q4.jpg"]),
-            Tag.parse([tagname, "015e71ded102e96d2b30f63dec0c04546d52a51f709709391af68d73f7502feb", "https://i.nostr.build/7G2G2.jpg"]),
-            Tag.parse([tagname, "43da37c84113d4c0bdc60ae1c82cef9761ff7a2a1ef29b1cc26abfd4932786c5", "https://i.nostr.build/XVLkd.jpg"]),
+            Tag.parse([tagname, "https://i.nostr.build/xEZqV.jpg", "3b0ec270394dc496f9f9c7db5c68a5b7f7311ff9080a51f1e8cb5f5cffc2c0b2", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/2RnXd.jpg", "dd6e5c2891fbe9f53bcaa351b48faeeedccd16e9541b508adcb2c16d11bceaaf", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/WG2Ra.jpg", "b2868e1ef93523ecf15b26e1cfdb6f252fe5074867d9c042fd6fcfbf07959193", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/M5keE.jpg", "489402bf3ec070e7ebf2ba459508d2e1a408c0adad02954470602f232026a37d", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://v.nostr.build/M5kZ5.mp4", "0e37cb0373189e01be3c744c0434e0c8559953910e44b05ed270313c47abe142", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/vGLg7.jpg", "102d1f411a9a2b4de37ef62cdd4943673b4941080a51a8fa8829cd9f1de46d13", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/O4WxA.jpg", "4022d4e893c224186bbef4414340e35cbf251c681bc84ab05446fec1d2ec67df", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/M5a96.jpg", "6f04dc6a2a05f710b9c6c6d09a02c5fe0174da9c95399d3d01963a784d195803", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/WG02Y.jpg", "737a169c245ce7957a8b6acf190c57d70256cc52630862f5ba0fd7315ef83425", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/Dj2Q4.jpg", "c3a3a8759502cb3c06d592e5715cad0826982a2ff60a0ae525e3f253ab9e462a", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/7G2G2.jpg", "015e71ded102e96d2b30f63dec0c04546d52a51f709709391af68d73f7502feb", "wss://nostr.mom"]),
+            Tag.parse([tagname, "https://i.nostr.build/XVLkd.jpg", "43da37c84113d4c0bdc60ae1c82cef9761ff7a2a1ef29b1cc26abfd4932786c5", "wss://nostr.mom"]),
             Tag.parse(["alt", "Profile Gallery List"])
           ]
 
