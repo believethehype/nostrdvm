@@ -145,7 +145,8 @@ class SearchUser(DVMTaskInterface):
         database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        await cli.add_relay("wss://relay.damus.io")
+        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            await cli.add_relay(relay)
         await cli.connect()
 
         filter1 = Filter().kind(Kind(0))
