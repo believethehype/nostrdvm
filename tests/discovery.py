@@ -34,9 +34,11 @@ use_logger = True
 
 
 
-RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io",
-                           "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-                           "wss://relay.nostr.net", "wss://relay.primal.net"]  # , "wss://relay.snort.social"]
+RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
+
+#["wss://relay.damus.io",
+#                           "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+#                           "wss://relay.nostr.net", "wss://relay.primal.net"]  # , "wss://relay.snort.social"]
 
 #avoid additional relays..
 #AVOID_OUTBOX_RELAY_LIST.append("")
