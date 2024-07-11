@@ -11,19 +11,19 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import zaprequest
 
 
-def nwc_zap(connectionstr, bolt11, keys, externalrelay=None):
+async def nwc_zap(connectionstr, bolt11, keys, externalrelay=None):
     uri = NostrWalletConnectUri.parse(connectionstr)
 
     # Initialize NWC client
     nwc = Nwc(uri)
 
-    info = nwc.get_info()
+    info = await nwc.get_info()
     print(info)
 
-    balance = nwc.get_balance()
-    print(f"Balance: {balance} SAT")
+    balance = await nwc.get_balance()
+    print(f"Balance: {balance} MilliSats")
 
-    event_id = nwc.pay_invoice(bolt11)
+    event_id = await nwc.pay_invoice(bolt11)
     print("NWC event: " + event_id)
 
 
@@ -110,7 +110,7 @@ def make_nwc_account(identifier, nwcdomain):
         return ""
 
 
-def nwc_test(nwc_server):
+async def nwc_test(nwc_server):
     connectionstring = make_nwc_account("test", nwc_server + "/api/new")
     print(connectionstring)
     #  TODO Store the connection string in a db, use here if you already have one
@@ -124,4 +124,4 @@ def nwc_test(nwc_server):
         bolt11 = zaprequest("hype@bitcoinfixesthis.org", 21, "Cool Stuff", None,
                             pubkey, keys, DVMConfig.RELAY_LIST)
 
-        nwc_zap(connectionstring, bolt11, keys)
+        await nwc_zap(connectionstring, bolt11, keys)
