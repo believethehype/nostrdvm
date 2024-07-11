@@ -246,9 +246,9 @@ class DVM:
                         print(
                             "[" + self.dvm_config.NIP89.NAME + "]  Hinting user for Subscription: " +
                             nip90_event.id().to_hex())
-                        await send_job_status_reaction(nip90_event, "subscription-required",
-                                                       False, 0, client=self.client,
-                                                       dvm_config=self.dvm_config)
+                        #await send_job_status_reaction(nip90_event, "subscription-required",
+                        #                               False, 0, client=self.client,
+                        #                               dvm_config=self.dvm_config)
                     else:
                         bid = 0
                         for tag in nip90_event.tags():
