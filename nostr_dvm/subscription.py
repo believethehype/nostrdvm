@@ -248,7 +248,6 @@ class Subscription:
                     subscriptionfilter = Filter().kind(EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT).author(
                         PublicKey.parse(subscriber)).limit(1)
                     evts = await self.client.get_events_of([subscriptionfilter], timedelta(seconds=3))
-                    print(evts)
                     if len(evts) > 0:
                         event7001id = evts[0].id().to_hex()
                         print(evts[0].as_json())
