@@ -142,12 +142,15 @@ class DVM:
                     if int(user.subscribed) > int(Timestamp.now().as_secs()):
                         print("User subscribed until: " + str(Timestamp.from_secs(user.subscribed).to_human_datetime()))
                         user_has_active_subscription = True
-                        await send_job_status_reaction(nip90_event, "subscription-required", True, amount,
+                        await send_job_status_reaction(nip90_event, "subscription-active", True, amount,
                                                        self.client, "User subscripton active until " +
                                                        Timestamp.from_secs(
                                                            int(user.subscribed)).to_human_datetime().replace(
                                                            "Z", " ").replace("T", " ") + " GMT", self.dvm_config)
-                    # otherwise we check for an active subscription by checking recipie events
+                        # otherwise we check for an active subscription by checking recipie events
+                        # sleep a little to not get rate limited
+                        await asyncio.sleep(0.5)
+
                     else:
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
                         #await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
@@ -168,12 +171,18 @@ class DVM:
                                                                                                                " ").replace(
                                                                "T", " ") + " GMT",
                                                            self.dvm_config)
+
+
                             print("Checked Recipe: User subscribed until: " + str(
                                 Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime()))
                             user_has_active_subscription = True
                             update_user_subscription(user.npub,
                                                      int(subscription_status["validUntil"]),
                                                      self.client, self.dvm_config)
+
+                            #sleep a little before sending next status update
+
+
                         else:
                             print("No active subscription found")
                             await send_job_status_reaction(nip90_event, "subscription-required", True, amount,
