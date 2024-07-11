@@ -133,8 +133,8 @@ class DVM:
 
                 # If this is a subscription DVM and the Task is directed to us, check for active subscription
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
-                    await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                                   "Checking Subscription Status, please wait..", self.dvm_config)
+                    #await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                    #                               "Checking Subscription Status, please wait..", self.dvm_config)
                     # if we stored in the database that the user has an active subscription, we don't need to check it
                     print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
                         Timestamp.now().as_secs()))
