@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 
@@ -9,13 +10,13 @@ from nostr_dvm.utils.nwc_tools import nwc_zap
 from nostr_dvm.utils.zap_utils import create_bolt11_lud16, zaprequest
 
 
-def playground():
+async def playground():
 
     connectionstr = os.getenv("TEST_NWC")
     keys = Keys.parse(os.getenv("TEST_USER"))
     bolt11 = zaprequest("bot@nostrdvm.com", 5, "test", None, PublicKey.parse("npub1cc79kn3phxc7c6mn45zynf4gtz0khkz59j4anew7dtj8fv50aqrqlth2hf"), keys, dvmconfig.DVMConfig.RELAY_LIST, zaptype="private")
     print(bolt11)
-    result = nwc_zap(connectionstr, bolt11, keys, externalrelay=None)
+    result = await nwc_zap(connectionstr, bolt11, keys, externalrelay=None)
     print(result)
 
 
@@ -30,4 +31,4 @@ if __name__ == '__main__':
         dotenv.load_dotenv(env_path, verbose=True, override=True)
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
-    playground()
+    asyncio.run(playground())

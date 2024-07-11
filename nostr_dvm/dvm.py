@@ -284,7 +284,7 @@ class DVM:
 
         async def handle_zap(zap_event):
             try:
-                invoice_amount, zapped_event, sender, message, anon = parse_zap_event_tags(zap_event,
+                invoice_amount, zapped_event, sender, message, anon = await parse_zap_event_tags(zap_event,
                                                                                            self.keys,
                                                                                            self.dvm_config.NIP89.NAME,
                                                                                            self.client, self.dvm_config)

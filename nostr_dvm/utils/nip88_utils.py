@@ -128,7 +128,7 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
     return subscription_status
 
 
-def nip88_announce_tier(dvm_config, client):
+async def nip88_announce_tier(dvm_config, client):
     title_tag = Tag.parse(["title", str(dvm_config.NIP88.TITLE)])
     image_tag = Tag.parse(["image", str(dvm_config.NIP88.IMAGE)])
     d_tag = Tag.parse(["d", dvm_config.NIP88.DTAG])
@@ -175,9 +175,13 @@ def nip88_announce_tier(dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP88.CONTENT
     event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content, tags).to_event(keys)
-    annotier_id = send_event(event, client=client, dvm_config=dvm_config)
+    annotier_id = await send_event(event, client=client, dvm_config=dvm_config)
 
-    print("[" + dvm_config.NAME + "] Announced NIP 88 Tier for " + dvm_config.NIP89.NAME)
+    if dvm_config.NIP89 is not None:
+        print("[" + dvm_config.NIP89.NAME + "] Announced NIP 88 Tier")
+    else:
+        print("[" + dvm_config.identifier + "] Announced NIP 88 Tier")
+
 
     return annotier_id
 

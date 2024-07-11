@@ -7,6 +7,7 @@ import dotenv
 from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
 
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
+from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 
 #os.environ["RUST_BACKTRACE"] = "full"
@@ -19,6 +20,7 @@ from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNost
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
+from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
@@ -306,6 +308,71 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                    options=options,
                                                    admin_config=admin_config)
+
+def build_example_popular_non_followers(name, identifier, admin_config, options, image, cost=0, update_rate=300,
+                                    processing_msg=None, update_db=True):
+
+
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.SHOWLOG = True
+    dvm_config.LOGLEVEL = LogLevel.DEBUG
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
+    # Activate these to use a subscription based model instead
+    dvm_config.FIX_COST = cost
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+    admin_config.REBROADCAST_NIP88 = False
+    #admin_config.REBROADCAST_NIP89 = True
+    admin_config.UPDATE_PROFILE = True
+
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": image,
+        "picture": image,
+        "about": "I show notes that are currently popular from people you do not follow",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "subscription": True,
+        "personalized": False,
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 100)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+
+    nip88config = NIP88Config()
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
+    nip89config.NAME = name
+    nip88config.IMAGE = nip89info["image"]
+    nip88config.TITLE = name
+    nip88config.AMOUNT_DAILY = 100
+    nip88config.AMOUNT_MONTHLY = 2000
+    nip88config.CONTENT = "Subscribe to the DVM for unlimited use during your subscription"
+    nip88config.PERK1DESC = "Unlimited requests"
+    nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
+    nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
+
+    #admin_config.FETCH_NIP88 = True
+    #admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
+    admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
+
+    return DicoverContentCurrentlyPopularNonFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                                      nip88config=nip88config,
+                                                      admin_config=admin_config,
+                                                      options=options)
 
 
 def build_example_top_zapped(name, identifier, admin_config, options, image, cost=0, update_rate=180,
@@ -599,6 +666,38 @@ def playground():
         update_db=update_db)
     discovery_followers.run()
 
+    # Popular Followers
+    admin_config_nonfollowers = AdminConfig()
+    admin_config_nonfollowers.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_nonfollowers.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_nonfollowers.UPDATE_PROFILE = update_profile
+    # admin_config_followers.DELETE_NIP89 = True
+    # admin_config_followers.PRIVKEY = ""
+    # admin_config_followers.EVENTID = "590cd7b2902224f740acbd6845023a5ab4a959386184f3360c2859019cfd48fa"
+    # admin_config_followers.POW = True
+    custom_processing_msg = ["Processing popular notes from npubs you don't follow..",
+                             "Let's see what npubs outside of your circle have been up to..",
+                             "Processing a personalized feed, just for you.."]
+    update_db = False
+    options_nonfollowers_popular = {
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 2 * 60 * 60,  # 2h since gmt,
+    }
+    cost = 0
+    image = "https://i.nostr.build/l11EczDmpZBaxlRm.jpg"
+
+    discovery_non_followers = build_example_popular_non_followers(
+        "Popular from npubs you don't follow",
+        "discovery_content_nonfollowers",
+        admin_config=admin_config_nonfollowers,
+        options=options_nonfollowers_popular,
+        cost=cost,
+        image=image,
+        update_rate=global_update_rate,
+        processing_msg=custom_processing_msg,
+        update_db=update_db)
+    discovery_non_followers.run()
+
     # Popular Global
     admin_config_global_popular = AdminConfig()
     admin_config_global_popular.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -633,21 +732,20 @@ def playground():
     # discovery_test_sub.run()
 
     # Subscription Manager DVM
-    # subscription_config = DVMConfig()
-    # subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
-    # npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
-    # invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
-    # subscription_config.LNBITS_INVOICE_KEY = invoice_key
-    # subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
-    # subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    # sub_admin_config = AdminConfig()
-    # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
+    subscription_config = DVMConfig()
+    subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
+    npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
+    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
+    subscription_config.LNBITS_INVOICE_KEY = invoice_key
+    subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
+    subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    sub_admin_config = AdminConfig()
+    #sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
 
-    # currently there is none, but add this once subscriptions are live.
-    # x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
-    # x.start()
+    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
+    x.start()
 
-    # keep_alive()
+     # keep_alive()
 
 
 

@@ -185,7 +185,7 @@ class Subscription:
                                      PublicKey.parse(zap[1]), self.keys, DVMConfig.RELAY_LIST)
                 print(invoice)
                 if invoice is not None:
-                    nwc_event_id = nwc_zap(nwc, invoice, self.keys, zap[2])
+                    nwc_event_id = await nwc_zap(nwc, invoice, self.keys, zap[2])
                     if nwc_event_id is None:
                         print("error zapping " + lud16)
                     else:

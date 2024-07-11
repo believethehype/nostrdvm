@@ -97,7 +97,7 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         await nip65_announce_relays(dvmconfig, client=client)
 
     if adminconfig.REBROADCAST_NIP88:
-        annotier_id = nip88_announce_tier(dvmconfig, client=client)
+        annotier_id = await nip88_announce_tier(dvmconfig, client=client)
         check_and_set_tiereventid_nip88(dvmconfig.IDENTIFIER, adminconfig.INDEX, annotier_id.to_hex())
 
     if adminconfig.DELETE_NIP89:
