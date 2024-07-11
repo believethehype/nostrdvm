@@ -150,9 +150,9 @@ class DVM:
                     # otherwise we check for an active subscription by checking recipie events
                     else:
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
-                        await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
-                                                       "I Don't have information about subscription status, checking on the Nostr. This might take a few seconds",
-                                                       self.dvm_config)
+                        #await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                        #                               "I Don't have information about subscription status, checking on the Nostr. This might take a few seconds",
+                        #                               self.dvm_config)
 
                         subscription_status = await nip88_has_active_subscription(PublicKey.parse(user.npub),
                                                                                   self.dvm_config.NIP88.DTAG,
