@@ -27,7 +27,7 @@ from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
-rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know what you're doing.
+rebroadcast_NIP89 = True   # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
@@ -37,13 +37,6 @@ use_logger = True
 
 
 RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
-
-#["wss://relay.damus.io",
-#                           "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-#                           "wss://relay.nostr.net", "wss://relay.primal.net"]  # , "wss://relay.snort.social"]
-
-#avoid additional relays..
-#AVOID_OUTBOX_RELAY_LIST.append("")
 
 
 if use_logger:
@@ -323,10 +316,11 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SUBSCRIPTION_REQUIRED = True
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP88 = False
     #admin_config.REBROADCAST_NIP89 = True
-    admin_config.UPDATE_PROFILE = True
+    admin_config.UPDATE_PROFILE = False
 
     # Add NIP89
     nip89info = {
@@ -681,7 +675,7 @@ def playground():
     update_db = False
     options_nonfollowers_popular = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 2 * 60 * 60,  # 2h since gmt,
+        "db_since": 12 * 60 * 60,  # 2h since gmt,
     }
     cost = 0
     image = "https://i.nostr.build/l11EczDmpZBaxlRm.jpg"
