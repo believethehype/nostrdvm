@@ -305,7 +305,7 @@ async function  listen() {
                     for (const tag in event.tags) {
                       if (event.tags[tag].asVec()[0] === "status") {
 
-                           if (event.content !== "" && (event.tags[tag].asVec()[1] === "processing" || event.tags[tag].asVec()[1] === "subscription-required" ) ) {
+                           if (event.content !== "" && (event.tags[tag].asVec()[1] === "processing" || event.tags[tag].asVec()[1] === "subscription-required" || event.tags[tag].asVec()[1] === "subscription-active" ) ) {
                               if(event.tags[tag].asVec().length > 2) {
                                dvms.find(i => i.id === event.author.toHex()).status  = event.tags[tag].asVec()[2]
                               }
@@ -1026,7 +1026,7 @@ const submitHandler = async () => {
               <div className="tooltip mt-auto" style="border-width: 0" >
 
 
-                 <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'subscription-required' && dvm.status !== 'subscription-success' && dvm.status !== 'error' && dvm.status !== 'announced'" className="btn">{{dvm.status}}</button>
+                 <button v-if="dvm.status !== 'finished' && dvm.status !== 'paid' && dvm.status !== 'payment-required' && dvm.status !== 'subscription-required' && dvm.status !== 'subscription-active' && dvm.status !== 'subscription-success' && dvm.status !== 'error' && dvm.status !== 'announced'" className="btn">{{dvm.status}}</button>
                   <button v-if="(dvm.status === 'finished'  && !dvm.nip88) || (dvm.status === 'finished' && dvm.nip88 && !dvm.nip88.hasActiveSubscription)" @click="generate_feed(dvm.id)" class="relative inline-flex items-center justify-center p-0.5 mb-2 me-2 overflow-hidden text-sm font-medium text-gray-900 rounded-lg group bg-gradient-to-br from-purple-600 to-blue-500 group-hover:from-purple-600 group-hover:to-blue-500 hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800">
                   <span class="relative px-5 py-2.5 transition-all ease-in duration-75 bg-white dark:bg-gray-900 rounded-md group-hover:bg-opacity-0">
                   Done, again?
@@ -1279,7 +1279,7 @@ const submitHandler = async () => {
              </div>
 
 
-             <p v-if="dvm.subscription ==='' && !isNaN(parseInt(dvm.amount)) && dvm.status !=='subscription-required' && dvm.status !=='subscription-success'" class="badge bg-amber" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
+             <p v-if="dvm.subscription ==='' && !isNaN(parseInt(dvm.amount)) && dvm.status !=='subscription-required' && dvm.status !=='subscription-active' && dvm.status !=='subscription-success'" class="badge bg-amber" ><div class="flex"><svg style="margin-top:3px" xmlns="http://www.w3.org/2000/svg" width="14" height="16" fill="currentColor" class="bi bi-lightning" viewBox="0 0 16 20">
             <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
             </div>
 

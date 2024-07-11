@@ -675,7 +675,7 @@ def playground():
     update_db = False
     options_nonfollowers_popular = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 12 * 60 * 60,  # 2h since gmt,
+        "db_since": 3 * 60 * 60,  # 2h since gmt,
     }
     cost = 0
     image = "https://i.nostr.build/l11EczDmpZBaxlRm.jpg"
