@@ -115,19 +115,7 @@ async def test_gallery():
         Tag.parse(["alt", "Profile Gallery List"])
     ]
 
-    keyhex = "27da5b78f4b1d1c33817f76cf4c40b733e99cd192585ea1b711142682c3594b9"
-    keys = Keys.parse(keyhex)
-    draft = {
 
-        "content": "Hello",
-        "kind": 1,
-        "pubkey": keys.public_key().to_hex(),  # 48h since gmt,
-        "tags": [],
-        "createdAt": 16123123}
-
-    event = EventBuilder.text_note("Hello", []).custom_created_at(Timestamp.from_secs(1720464386)).to_event(keys)
-
-    print(event.as_json())
     # await gallery_announce_list(tags, dvm_config, client)
 
     #evt = EventBuilder.delete([EventId.parse("40e7a72f10d9a6511dab897b3b4a94f7eff04f509886de95de3897d06ca9a92c")],
