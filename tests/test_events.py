@@ -118,9 +118,9 @@ async def test_gallery():
 
     # await gallery_announce_list(tags, dvm_config, client)
 
-    #evt = EventBuilder.delete([EventId.parse("40e7a72f10d9a6511dab897b3b4a94f7eff04f509886de95de3897d06ca9a92c")],
-    #                          "deleted").to_event(keys)
-    #await client.send_event(evt)
+    evt =  EventBuilder.delete([EventId.parse("721ac7c7d9309b6d3e6728a7274f5a1f10096b4ab17068233bcfa05cb233e84a")],
+                              reason="deleted").to_event(keys)
+    await client.send_event(evt)
 
 
 async def test_search_by_user_since_days(client, pubkey, days, prompt):
