@@ -159,9 +159,8 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         for relay in relays:
             await cli.add_relay(relay)
 
-        await cli.add_relay("wss://relay.damus.io")
-        await cli.add_relay("wss://relay.primal.net")
-        await cli.add_relay("wss://nostr.mom")
+        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            await cli.add_relay(relay)
 
         await cli.connect()
 

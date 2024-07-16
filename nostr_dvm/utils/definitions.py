@@ -5,7 +5,9 @@ from nostr_sdk import Event, Kind
 
 
 class EventDefinitions:
+    KIND_PROFILE = Kind(0)
     KIND_NOTE = Kind(1)
+    KIND_FOLLOW_LIST = Kind(3)
     KIND_DM = Kind(4)
     KIND_REPOST = Kind(6)
     KIND_REACTION = Kind(7)

@@ -19,8 +19,6 @@ update_profile = True
 global_update_rate = 1200  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
-RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.mom"]  # , "wss://relay.snort.social"]
-
 if use_logger:
     init_logger(LogLevel.INFO)
 
@@ -33,7 +31,6 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",

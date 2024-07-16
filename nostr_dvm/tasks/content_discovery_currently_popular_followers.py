@@ -103,9 +103,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
-        await cli.add_relay("wss://relay.damus.io")
-        await cli.add_relay("wss://nostr.oxtr.dev")
-        await cli.add_relay("wss://nostr.mom")
+        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            await cli.add_relay(relay)
 
         #ropts = RelayOptions().ping(False)
         #cli.add_relay_with_opts("wss://nostr.band", ropts)
