@@ -222,9 +222,10 @@ class Subscription:
             for relay in dvmconfig.RELAY_LIST:
                 await client.add_relay(relay)
             await client.connect()
-            recipeid = await client.send_event(event)
+            recipe = await client.send_event(event)
+            recipe_id = recipe.id
             await client.shutdown()
-            recipe = recipeid.to_hex()
+            recipe = recipe_id.to_hex()
             return recipe
 
         async def handle_nwc_request(nostr_event):
