@@ -13,14 +13,14 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 
-rebroadcast_NIP89 = False  # Announce NIP89 on startup
-rebroadcast_NIP65_Relay_List = True
-update_profile = True
+rebroadcast_NIP89 = True  # Announce NIP89 on startup
+rebroadcast_NIP65_Relay_List = False
+update_profile = False
 
-global_update_rate = 1200  # set this high on first sync so db can fully sync before another process trys to.
+global_update_rate = 60  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 # these do not support nengentropy
-RECONCILE_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/", "wss://relay.noswhere.com", "wss://relay.nostr.band"]  # , "wss://relay.snort.social"]
+#RECONCILE_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]  # , "wss://relay.snort.social"]
 
 if use_logger:
     init_logger(LogLevel.DEBUG)
@@ -34,7 +34,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
@@ -50,7 +50,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
         "name": name,
         "image": image,
         "picture": image,
-        "about": "I show popular gallery entries",
+        "about": "I show popular notes from Mostr.pub and Momostr.pink",
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -80,7 +80,7 @@ def playground():
     admin_config_global_wot.UPDATE_PROFILE = update_profile
     #admin_config_global_wot.DELETE_NIP89 = True
     #admin_config_global_wot.PRIVKEY = ""
-    #admin_config_global_wot.EVENTID = "23306aa72cff48ec98bab7533883ffb7a378ec6b1c09b79ef45907d06550e2a8"
+    #admin_config_global_wot.EVENTID = "c9dc34d2a2eca8a0d4972210aed1b63a36995cced07e1401d264c3bb48b4b715"
     #admin_config_global_wot.POW = True
     custom_processing_msg = ["Looking for popular Content on Mostr"]
     update_db = True
@@ -89,11 +89,11 @@ def playground():
 
     options_mostr = {
         "db_name": "db/nostr_mostr.db",
-        "db_since": 60 * 60 * 24 * 365,  # 1h since gmt,
+        "db_since": 60 * 60 * 2,  # 1h since gmt,
     }
     cost = 0
-    image = "https://i.nostr.build/4Rw6lrsH5O0P5zjT.jpg"
-    discovery_wot = build_example_mostr("Trending on Mostr",
+    image = "https://i.nostr.build/mtkNd3J8m0mqj9nq.jpg"
+    discovery_mostr = build_example_mostr("Trending on Mostr",
                                       "discovery_mostr",
                                       admin_config=admin_config_global_wot,
                                       options=options_mostr,
@@ -102,7 +102,7 @@ def playground():
                                       update_rate=global_update_rate,
                                       processing_msg=custom_processing_msg,
                                       update_db=update_db)
-    discovery_wot.run()
+    discovery_mostr.run()
 
     # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
     # discovery_test_sub.run()

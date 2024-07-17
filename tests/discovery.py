@@ -7,6 +7,7 @@ import dotenv
 from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
 
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
+from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
 from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 
@@ -33,6 +34,7 @@ update_profile = False
 
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
+log_level = LogLevel.ERROR
 
 
 
@@ -40,7 +42,7 @@ RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "ws
 
 
 if use_logger:
-    init_logger(LogLevel.ERROR)
+    init_logger(log_level)
 
 
 def build_db_scheduler(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
@@ -417,6 +419,55 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
                                               admin_config=admin_config, options=options)
 
 
+def build_example_mostr(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
+                      update_db=True):
+
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.LOGLEVEL = LogLevel.INFO
+    # dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+
+    dvm_config.LOGLEVEL = LogLevel.DEBUG
+    dvm_config.FIX_COST = cost
+    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+    # "wss://relay.nostr.net"]
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
+    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
+    #                         ]
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": image,
+        "picture": image,
+        "about": "I show notes from Mostr.pub and Momostr.pink that are currently popular on Nostr",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "personalized": False,
+        "amount": create_amount_tag(cost),
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 200)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+    return DicoverContentCurrentlyPopularMostr(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                                 admin_config=admin_config, options=options)
+
+
+
 def playground():
 
 
@@ -521,6 +572,33 @@ def playground():
                                           admin_config=admin_config_trending_nostr_band,
                                           custom_processing_msg=custom_processing_msg)
     trending_nb.run()
+
+    admin_config_mostr = AdminConfig()
+    admin_config_mostr.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_mostr.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_mostr.UPDATE_PROFILE = update_profile
+    #admin_config_mostr.DELETE_NIP89 = True
+    #admin_config_mostr.PRIVKEY = ""
+    #admin_config_mostr.EVENTID = "59d0ebe2966426ac359dcb8da214efe34fb735c69099361eae87a426bacf4de2"
+    #admin_config_mostr.POW = True
+    custom_processing_msg = ["Looking for popular Content on Mostr"]
+
+    options_mostr = {
+        "db_name": "db/nostr_mostr.db",
+        "db_since": 60 * 60 * 2,  # 1h since gmt,
+    }
+    cost = 0
+    image = "https://i.nostr.build/mtkNd3J8m0mqj9nq.jpg"
+    discovery_mostr = build_example_mostr("Trending on Mostr",
+                                          "discovery_mostr",
+                                          admin_config=admin_config_mostr,
+                                          options=options_mostr,
+                                          image=image,
+                                          cost=cost,
+                                          update_rate=180,
+                                          processing_msg=custom_processing_msg,
+                                          update_db=True)
+    discovery_mostr.run()
 
 
     # Popular Animals (Fluffy frens)
