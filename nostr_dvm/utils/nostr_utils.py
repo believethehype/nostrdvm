@@ -223,8 +223,8 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False):
         #if blastr:
         #    client.add_relay("wss://nostr.mutinywallet.com")
         try:
-            output = await client.send_event(event)
-            event_id = output.id
+            event_id = await client.send_event(event)
+            #event_id = output.id
         except Exception as e:
             print(e)
             event_id = None
