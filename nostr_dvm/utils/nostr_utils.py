@@ -39,6 +39,7 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
 
         return events[0]
     else:
+        print("Event not found")
         return None
 
 async def get_events_async(client, filter, timeout):
