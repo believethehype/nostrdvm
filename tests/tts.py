@@ -22,7 +22,12 @@ if __name__ == '__main__':
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = True
     dvm_config.FIX_COST = 0
-    dvm_config.PER_UNIT_COST = 0.1
+    dvm_config.PER_UNIT_COST = 0
+    relays = dvm_config.RELAY_LIST
+    relays.append("wss://relay.damus.io")
+    relays.append("wss://relay.primal.net")
+    dvm_config.RELAY_LIST = relays
+
     admin_config_tts.LUD16 = dvm_config.LN_ADDRESS
     # use an alternative local wav file you want to use for cloning
     options = {'input_file': ""}

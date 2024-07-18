@@ -76,11 +76,19 @@ class TextToSpeech(DVMTaskInterface):
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "event":
+
                     evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
-                    prompt = evt.content()
+
+                    if evt is not None:
+                        prompt = evt.content()
+                    else:
+                        raise FileNotFoundError("Couldn't find event")
+
+
                 elif input_type == "text":
                     prompt = tag.as_vec()[1]
                 elif input_type == "job":
+
                     evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
                                                      kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                                                             EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
