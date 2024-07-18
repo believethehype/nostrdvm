@@ -149,10 +149,13 @@ class TextToSpeech(DVMTaskInterface):
                 text=text_clean,
                 speaker_wav=options["input_wav"], language=options["language"], file_path="outputs/output.wav")
 
-            print("Converting Audio")
-            final_filename = "outputs/output.mp3"
-            fs, x = ffmpegio.audio.read("outputs/output.wav", sample_fmt='dbl', ac=1)
-            ffmpegio.audio.write(final_filename, fs, x, overwrite=True)
+            try:
+                print("Converting Audio")
+                final_filename = "outputs/output.mp3"
+                fs, x = ffmpegio.audio.read("outputs/output.wav", sample_fmt='dbl', ac=1)
+                ffmpegio.audio.write(final_filename, fs, x, overwrite=True)
+            except:
+                final_filename = "outputs/output.wav"
 
             result = await upload_media_to_hoster(final_filename, key_hex=self.dvm_config.PRIVATE_KEY)
             print(result)
