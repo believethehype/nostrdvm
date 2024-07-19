@@ -7,6 +7,7 @@ import dotenv
 from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
 
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
+from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverContentLatestWiki
 from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
 from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
@@ -168,6 +169,57 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     # admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentLatestLongForm(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                        admin_config=admin_config, options=options)
+
+
+def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
+                  update_db=True):
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.LOGLEVEL = LogLevel.INFO
+    # Activate these to use a subscription based model instead
+    # dvm_config.SUBSCRIPTION_REQUIRED = True
+    # dvm_config.SUBSCRIPTION_DAILY_COST = 1
+    dvm_config.FIX_COST = cost
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+    image = "https://i.nostr.build/ctfc5o47ICm56TOv.jpg"
+
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": image,
+        "picture": image,
+        "about": "I show the latest wikifreedia entries.",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "personalized": False,
+        "amount": create_amount_tag(cost),
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 100)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+
+    # admin_config.UPDATE_PROFILE = False
+
+    # admin_config.REBROADCAST_NIP89 = False
+
+    return DicoverContentLatestWiki(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                         admin_config=admin_config, options=options)
 
 
@@ -518,6 +570,35 @@ def playground():
 
     latest_longform.run()
 
+
+
+    # Latest Wiki
+    admin_config_wiki = AdminConfig()
+    admin_config_wiki.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_wiki.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_wiki.UPDATE_PROFILE = update_profile
+    # admin_config_top_zaps.DELETE_NIP89 = True
+    # admin_config_top_zaps.PRIVKEY = ""
+    # admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
+    # admin_config_top_zaps.POW = True
+    custom_processing_msg = ["Looking for latest Wiki entries", "Let's check Wiki entries.."]
+    update_db = True
+
+    options_longform = {
+        "db_name": "db/nostr_recent_notes_longform.db",
+        "db_since": 60 * 60 * 24 * 21,  # 3 Weeks since gmt,
+    }
+    cost = 0
+    latest_wiki= build_wiki("Latest Wikifreedia Notes",
+                                                 "discovery_content_wiki",
+                                                 admin_config=admin_config_wiki,
+                                                 options=options_longform,
+                                                 cost=cost,
+                                                 update_rate=global_update_rate,
+                                                 processing_msg=custom_processing_msg,
+                                                 update_db=update_db)
+
+    latest_wiki.run()
 
 
 
