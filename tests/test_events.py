@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event
+    nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event, SecretKey, Kind
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -89,6 +89,7 @@ async def test_gallery():
     dvm_config = DVMConfig()
     dvm_config.NIP89 = NIP89Config()
     keys = Keys.parse(check_and_set_private_key("RTEST_ACCOUNT_PK"))
+    print(keys.public_key().to_hex())
     dvm_config.NIP89.PK = keys.secret_key().to_hex()
     tagname = "url"
     tags = [
@@ -116,11 +117,22 @@ async def test_gallery():
     ]
 
 
+
     # await gallery_announce_list(tags, dvm_config, client)
 
-    evt =  EventBuilder.delete([EventId.parse("721ac7c7d9309b6d3e6728a7274f5a1f10096b4ab17068233bcfa05cb233e84a")],
-                              reason="deleted").to_event(keys)
-    await client.send_event(evt)
+    #evt =  EventBuilder.delete([EventId.parse("721ac7c7d9309b6d3e6728a7274f5a1f10096b4ab17068233bcfa05cb233e84a")],
+    #                          reason="deleted").to_event(keys)
+    #await client.send_event(evt)
+
+    #key1 = Keys.parse("3e99f38a8e8c59ff3683cdc0942e26471c1aae9b225eb34dd410cb9d6dde93a6")
+    #key2 = Keys.parse("c35006d2c1e5618bfc107030047b85da4f11638b2901b24193fa45160890d851")
+
+    #encrypted_text = nip04_encrypt(key1.secret_key(), key2.public_key(), "Hello")
+    #print(encrypted_text)
+    #encrypted_text = "T+f58RV7ENaSLWZPgUEiWA==?iv=Ize4cInMI3xuWnL5I0nYFw=="
+
+    #rsult = nip04_decrypt(key2.secret_key(), key1.public_key(), encrypted_text)
+    #print(rsult)
 
 
 async def test_search_by_user_since_days(client, pubkey, days, prompt):
@@ -128,7 +140,7 @@ async def test_search_by_user_since_days(client, pubkey, days, prompt):
     dif = Timestamp.now().as_secs() - since_seconds
     since = Timestamp.from_secs(dif)
 
-    filterts = Filter().search(prompt).author(pubkey).kinds([1]).since(since)
+    filterts = Filter().search(prompt).author(pubkey).kinds([Kind(1)]).since(since)
     events = await client.get_events_of([filterts], timedelta(seconds=5))
 
     if len(events) > 0:
