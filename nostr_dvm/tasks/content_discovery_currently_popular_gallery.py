@@ -164,7 +164,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         await cli.connect()
 
         filtreactions = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
-                                   definitions.EventDefinitions.KIND_REACTION,
+                                   definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_DELETION,
                                    definitions.EventDefinitions.KIND_NOTE]).events(ids).since(since)
 
         dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
@@ -179,6 +179,14 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
         for event in events:
             if event.created_at().as_secs() > timestamp_since:
+                filt1 = Filter().kinds([definitions.EventDefinitions.KIND_DELETION]).event(event.id()).limit(1)
+                deletions = await databasegallery.query([filt1])
+                if len(deletions) > 0:
+                    print("Deleted event, skipping")
+                    continue
+
+
+
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
