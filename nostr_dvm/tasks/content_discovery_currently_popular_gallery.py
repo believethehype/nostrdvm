@@ -138,15 +138,14 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                 if tag.as_vec()[0] == "e":
                     id = EventId.from_hex(tag.as_vec()[1])
                     ids.append(id)
-                    if len(tag.as_vec()) > 2:
-                        if (tag.as_vec()[2]) not in relays:
-                            relays.append(tag.as_vec()[2])
+                    #if len(tag.as_vec()) > 2:
+                        #if (tag.as_vec()[2]) not in relays:
+                        #    relays.append(tag.as_vec()[2])
 
             if id is None:
                 print("No event id found")
                 continue
-            else:
-                print(id.to_hex())
+
 
         relaylimits = RelayLimits.disable()
         opts = (Options().wait_for_send(True).send_timeout(

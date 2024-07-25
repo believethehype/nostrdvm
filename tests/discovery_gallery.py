@@ -81,28 +81,25 @@ def playground():
     custom_processing_msg = ["Looking for popular Gallery entries"]
     update_db = True
 
-    options_wot = {
+    options_gallery = {
         "db_name": "db/nostr_gallery.db",
         "generic_db_name": "db/nostr_recent_notes.db",
         "db_since": 60 * 60 * 24 * 30,  # 1h since gmt,
     }
 
-    options_wot = {
-        "db_name": "db/nostr_followlists.db",
-        "db_since": 60 * 60 * 24 * 365,  # 1h since gmt,
-    }
+
     cost = 0
     image = "https://i.nostr.build/4Rw6lrsH5O0P5zjT.jpg"
-    discovery_wot = build_example_gallery("Gallery entries",
+    discover_gallery = build_example_gallery("Gallery entries",
                                       "discovery_gallery_entries",
                                       admin_config=admin_config_global_wot,
-                                      options=options_wot,
+                                      options=options_gallery,
                                       image=image,
                                       cost=cost,
                                       update_rate=global_update_rate,
                                       processing_msg=custom_processing_msg,
                                       update_db=update_db)
-    discovery_wot.run()
+    discover_gallery.run()
 
     # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
     # discovery_test_sub.run()
