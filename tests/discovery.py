@@ -8,6 +8,7 @@ from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
 
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
 from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverContentLatestWiki
+from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
 from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
 from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
@@ -89,6 +90,48 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
 
     return DicoverContentDBUpdateScheduler(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                            admin_config=admin_config, options=options)
+
+
+def build_example_gallery(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
+                      update_db=True):
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.LOGLEVEL = LogLevel.INFO
+    # dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.LOGLEVEL = LogLevel.DEBUG
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.FIX_COST = cost
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": image,
+        "picture": image,
+        "about": "I show popular gallery entries",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "personalized": True,
+        "amount": create_amount_tag(cost),
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 200)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+    return DicoverContentCurrentlyPopularGallery(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                                 admin_config=admin_config, options=options)
+
 
 
 def build_example_nostrband(name, identifier, admin_config, image, about, custom_processing_msg):
@@ -541,6 +584,40 @@ def playground():
                                             cost=0,
                                             update_db=True)
     db_scheduler.run()
+
+
+
+    admin_config_gallery = AdminConfig()
+    admin_config_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_gallery.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_gallery.UPDATE_PROFILE = update_profile
+    # admin_config_global_popular.DELETE_NIP89 = True
+    # admin_config_global_popular.PRIVKEY = ""
+    # admin_config_global_popular.EVENTID = "2fea4ee2ccf0fa11db171113ffd7a676f800f34121478b7c9a4e73c2f1990028"
+    # admin_config_global_popular.POW = True
+    custom_processing_msg = ["Looking for popular Gallery entries"]
+    update_db = True
+
+    options_gallery = {
+        "db_name": "db/nostr_gallery.db",
+        "generic_db_name": "db/nostr_recent_notes.db",
+        "db_since": 60 * 60 * 24 * 30,  # 1h since gmt,
+    }
+
+    cost = 0
+    image = "https://i.nostr.build/4Rw6lrsH5O0P5zjT.jpg"
+    discover_gallery = build_example_gallery("Gallery entries",
+                                      "discovery_gallery_entries",
+                                      admin_config=admin_config_gallery,
+                                      options=options_gallery,
+                                      image=image,
+                                      cost=cost,
+                                      update_rate=global_update_rate,
+                                      processing_msg=custom_processing_msg,
+                                      update_db=update_db)
+    discover_gallery.run()
+
+
 
     # Latest Longform
     admin_config_longform = AdminConfig()
