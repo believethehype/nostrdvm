@@ -1,5 +1,6 @@
 import asyncio
 import os
+from itertools import islice
 
 import nostr_sdk
 
@@ -15,7 +16,7 @@ import random
 from scipy.sparse import lil_matrix, csr_matrix, isspmatrix_csr
 
 
-from nostr_sdk import Options, Keys, NostrSigner, NostrDatabase, ClientBuilder, SecretKey, Kind, PublicKey
+from nostr_sdk import Options, Keys, NostrSigner, NostrDatabase, ClientBuilder, SecretKey, Kind, PublicKey, Filter
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -579,7 +580,47 @@ def _perform_walks(S_nodes, S, walks_to_do, alpha):
                 visited_count[current_node] += 1
 
     return visited_count
+async def get_metadata(npub):
+    name = ""
+    nip05 = ""
+    lud16 = ""
+    try:
+        pk = PublicKey.parse(npub)
+    except:
+        return "", "", ""
+    opts = (Options().wait_for_send(False).send_timeout(datetime.timedelta(seconds=5)))
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+    signer = NostrSigner.keys(keys)
+    client = ClientBuilder().signer(signer).opts(opts).build()
+    await client.add_relay("wss://relay.damus.io")
+    await client.add_relay("wss://relay.primal.net")
+    await client.add_relay("wss://purplepag.es")
+    await client.connect()
 
+    profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
+    events = await client.get_events_of([profile_filter], datetime.timedelta(seconds=4))
+    if len(events) > 0:
+        try:
+            profile = json.loads(events[0].content())
+            if profile.get("name"):
+                name = profile['name']
+            if profile.get("nip05"):
+                nip05 = profile['nip05']
+            if profile.get("lud16"):
+                lud16 = profile['lud16']
+        except Exception as e:
+            print(e)
+    await client.shutdown()
+    return name, nip05, lud16
+
+
+async def print_results(graph, index_map, show_results_num, getmetadata=True):
+    for item in islice(graph, show_results_num):
+        key = next((PublicKey.parse(pubkey).to_bech32() for pubkey, id in index_map.items() if id == item), None)
+        name= ""
+        if getmetadata:
+            name, nip05, lud16 = await get_metadata(key)
+        print(name + "(" + key + ") " + str(graph[item]))
 
 
 def test():
