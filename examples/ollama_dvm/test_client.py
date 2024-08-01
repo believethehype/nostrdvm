@@ -61,7 +61,7 @@ async def nostr_client():
 
     #nostr_client_test_image_private("a beautiful ostrich watching the sunset")
     class NotificationHandler(HandleNotification):
-        def handle(self, relay_url, subscription_id, event: Event):
+        async def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
             if event.kind() == 7000:
                 print("[Nostr Client]: " + event.as_json())

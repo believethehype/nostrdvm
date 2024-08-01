@@ -66,7 +66,7 @@ async def nostr_client():
 
 
     class NotificationHandler(HandleNotification):
-        def handle(self, relay_url, subscription_id, event: Event):
+        async def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
             if event.kind() == 7000:
                 print("[Nostr Client]: " + event.as_json())
@@ -83,7 +83,7 @@ async def nostr_client():
                 print("[Nostr Client]: " + f"Received new zap:")
                 print(event.as_json())
 
-        def handle_msg(self, relay_url, msg):
+        async def handle_msg(self, relay_url, msg):
             return
 
     asyncio.create_task(client.handle_notifications(NotificationHandler()))
