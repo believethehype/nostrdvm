@@ -622,6 +622,14 @@ async def print_results(graph, index_map, show_results_num, getmetadata=True):
             name, nip05, lud16 = await get_metadata(key)
         print(name + "(" + key + ") " + str(graph[item]))
 
+async def convert_index_to_hex(graph, index_map, show_results_num):
+    result = {}
+    for item in islice(graph, show_results_num):
+        key = next((pubkey for pubkey, id in index_map.items() if id == item), None)
+        result[key] = graph[item]
+
+    return result
+
 
 def test():
     # WARNING, DEPENDING ON DEPTH THIS TAKES LONG
