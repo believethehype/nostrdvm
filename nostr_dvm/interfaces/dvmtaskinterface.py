@@ -84,12 +84,12 @@ class DVMTaskInterface:
             if self.dvm_config.USE_OWN_VENV:
                 dir = r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
                 pip_location = 'bin/pip'
-                if platform == "win32":
+                if platform == "win32" or platform == "nt":
                     pip_location = dir + '/Scripts/pip'
 
                 if not os.path.isdir(dir):
                     print("Creating Venv: " + dir)
-                    create(dir, with_pip=True, upgrade_deps=True)
+                    create(dir, with_pip=True, upgrade_deps=False)
                     self.dependencies.append(("nostr-dvm", "nostr-dvm"))
                     for (module, package) in self.dependencies:
                         print("Installing Venv Module: " + module)
