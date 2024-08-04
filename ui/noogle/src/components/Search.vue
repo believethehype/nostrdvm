@@ -51,6 +51,10 @@ onMounted(async () => {
   let urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('q')) {
     message.value = urlParams.get('q')
+    if(urlParams.get('npub') != null){
+       fromuser.value = urlParams.get('npub')
+    }
+
     await sleep(1000)
     await send_search_request(message.value)
   }
@@ -61,6 +65,7 @@ onMounted(async () => {
 
 
 async function send_search_request(msg) {
+
 
    if (!store.state.hasEventListener){
           store.commit('set_hasEventListener', true)
@@ -106,14 +111,34 @@ async function send_search_request(msg) {
           users.push(pTag.asVec());
         }
 
+       //const urlParams = new URLSearchParams(window.location.search);
+        const url = new URL(window.location.href);
+        url.searchParams.set('q', msg);
+         msg = search.replace(/from:|to:|@/g, '').trim();
+        console.log(search);
+
+
         if (fromuser.value !== ""){
            const userPubkey = PublicKey.fromBech32(fromuser.value.replace("@", "")).toHex()
+           const userPubkeyBech32 = PublicKey.fromBech32(fromuser.value.replace("@", "")).toBech32()
            const pTag = Tag.parse(["p", userPubkey]);
             users.push(pTag.asVec());
+              url.searchParams.set('npub', userPubkeyBech32);
         }
 
-        msg = search.replace(/from:|to:|@/g, '').trim();
-        console.log(search);
+
+
+
+
+      window.history.pushState(null, '', url.toString());
+
+
+
+
+
+
+
+        //window.location.search = urlParams;
 
         //let content = "NIP 90 Search request"
         let kind = 5302
