@@ -125,6 +125,9 @@ async function send_search_request(msg) {
             users.push(pTag.asVec());
               url.searchParams.set('npub', userPubkeyBech32);
         }
+        else{
+            url.searchParams.delete('npub');
+        }
 
 
 
