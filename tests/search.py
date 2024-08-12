@@ -27,10 +27,16 @@ if use_logger:
     init_logger(log_level)
 
 
+RELAY_LIST = ["wss://relay.primal.net",
+              "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+              "wss://relay.nostr.net"
+              ]
+
 def build_advanced_search(name, identifier):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
+    dvm_config.RELAY_LIST = RELAY_LIST
     invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     dvm_config.LNBITS_INVOICE_KEY = invoice_key
     dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
@@ -84,6 +90,7 @@ def build_advanced_search_wine(name, identifier):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
+    dvm_config.RELAY_LIST = RELAY_LIST
     invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     dvm_config.LNBITS_INVOICE_KEY = invoice_key
     dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
@@ -140,6 +147,7 @@ def build_user_search(name, identifier):
     dvm_config = build_default_config(identifier)
     dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io"]
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
+    dvm_config.RELAY_LIST = RELAY_LIST
     invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
