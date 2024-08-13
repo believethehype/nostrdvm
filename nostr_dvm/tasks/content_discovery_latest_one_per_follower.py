@@ -5,7 +5,7 @@ from datetime import timedelta
 from threading import Thread
 
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits
+    RelayLimits, Event
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -13,7 +13,7 @@ from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.output_utils import post_process_list_to_users
+from nostr_dvm.utils.output_utils import post_process_list_to_users, post_process_list_to_events
 
 """
 This File contains a Module to find inactive follows for a user on nostr
@@ -74,8 +74,6 @@ class Discoverlatestperfollower(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        # relaylimits = RelayLimits().event_max_num_tags(max_num_tags=10000)
-        # relaylimits.event_max_size(None)
         relaylimits = RelayLimits.disable()
 
         opts = (
@@ -85,8 +83,8 @@ class Discoverlatestperfollower(DVMTaskInterface):
         cli = Client.with_opts(signer, opts)
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
-        ropts = RelayOptions().ping(False)
-        await cli.add_relay_with_opts("wss://nostr.band", ropts)
+        #ropts = RelayOptions().ping(False)
+        #await cli.add_relay_with_opts("wss://nostr.band", ropts)
 
         await cli.connect()
 
@@ -107,10 +105,6 @@ class Discoverlatestperfollower(DVMTaskInterface):
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
-            print(best_entry.as_json())
-            print(len(best_entry.tags()))
-            print(best_entry.created_at().as_secs())
-            print(Timestamp.now().as_secs())
             followings = []
             ns.dic = {}
             tagcount = 0
@@ -122,16 +116,19 @@ class Discoverlatestperfollower(DVMTaskInterface):
                     ns.dic[following] = None
             print("Followings: " + str(len(followings)) + " Tags: " + str(tagcount))
 
-            not_active_since_seconds = int(options["since_days"]) * 24 * 60 * 60
-            dif = Timestamp.now().as_secs() - not_active_since_seconds
-            not_active_since = Timestamp.from_secs(dif)
+            print(ns.dic)
+            print(len(ns.dic))
+
+            search_since = int(options["since_days"]) * 24 * 60 * 60
+            dif = Timestamp.now().as_secs() - search_since
+            search_since_ts = Timestamp.from_secs(dif)
 
             async def scanList(users, instance, i, st, notactivesince):
                 from nostr_sdk import Filter
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
                 opts = Options().wait_for_send(True).send_timeout(
-                    timedelta(seconds=5)).skip_disconnected_relays(True)
+                    timedelta(seconds=10)).skip_disconnected_relays(True)
                 signer = NostrSigner.keys(keys)
                 cli = Client.with_opts(signer, opts)
                 for relay in self.dvm_config.RELAY_LIST:
@@ -140,12 +137,13 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
                 filters = []
                 for i in range(i, i + st):
-                    filter1 = (Filter().author(PublicKey.from_hex(users[i])).since(notactivesince).kind(Kind(1))
+                    filter1 = (Filter().author(PublicKey.from_hex(users[i])).kind(Kind(1))
                                .limit(1))
                     filters.append(filter1)
                 event_from_authors = await cli.get_events_of(filters, timedelta(seconds=10))
                 for author in event_from_authors:
-                    instance.dic[author.author().to_hex()] = author
+                    if instance.dic[author.author().to_hex()] is None:
+                        instance.dic[author.author().to_hex()] = author
                 print(str(i) + "/" + str(len(users)))
                 await cli.shutdown()
 
@@ -153,13 +151,13 @@ class Discoverlatestperfollower(DVMTaskInterface):
             begin = 0
             # Spawn some threads to speed things up
             while begin < len(followings) - step:
-                t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, step, not_active_since),))
+                t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, step, search_since_ts),))
                 threads.append(t)
                 begin = begin + step - 1
 
             # last to step size
             missing_scans = (len(followings) - begin)
-            t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, missing_scans, not_active_since),))
+            t = Thread(target=asyncio.run, args=(scanList(followings, ns, begin, missing_scans, search_since_ts),))
 
             threads.append(t)
 
@@ -172,13 +170,16 @@ class Discoverlatestperfollower(DVMTaskInterface):
                 x.join()
 
             result = {v for (k, v) in ns.dic.items() if v is not None}
+
             #print(result)
-            result = sorted(result, key=lambda x: x.created_at().as_secs(), reverse=True)[:int(options["max_results"])]
+            #result = sorted(result, key=lambda x: x.created_at().as_secs(), reverse=True)
+            new_list = sorted(result, key=lambda evt: evt.created_at().as_secs(), reverse=True)
+            new_res = new_list[:int(options["max_results"])]
             #result = {v.id().to_hex() for (k, v) in finallist_sorted if v is not None}
 
             #[: int(options["max_results"])]
-            print("Inactive accounts found: " + str(len(result)))
-            for v in result:
+            print("events found: " + str(len(new_res)))
+            for v in new_res:
                 e_tag = Tag.parse(["e", v.id().to_hex()])
                 result_list.append(e_tag.as_vec())
 
@@ -190,7 +191,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
-                    result = post_process_list_to_users(result)
+                    result = post_process_list_to_events(result)
 
         # if not text/plain, don't post-process
         return result
