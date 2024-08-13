@@ -17,7 +17,6 @@ setup(
     install_requires=["nostr-sdk==0.33.0",
                       "bech32==1.2.0",
                       "pycryptodome==3.20.0",
-                      "cashu==0.16.0",
                       "yt-dlp==2024.5.27",
                       "python-dotenv==1.0.0",
                       "emoji==2.12.1",

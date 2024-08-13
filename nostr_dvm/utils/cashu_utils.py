@@ -3,104 +3,12 @@ import json
 
 
 import requests
-from cashu.core.models import GetInfoResponse, MintMeltMethodSetting
-from cashu.mint.ledger import Ledger
-from cashu.nostr.key import PublicKey, PrivateKey
-from cashu.wallet.wallet import Wallet
 
 from nostr_dvm.utils.database_utils import get_or_add_user
 from nostr_dvm.utils.zap_utils import create_bolt11_ln_bits, create_bolt11_lud16
 
 BASE_URL = "https://mint.minibits.cash/Bitcoin"
 
-
-async def test_create_p2pk_pubkey(wallet1: Wallet):
-    invoice = await wallet1.request_mint(64)
-    # await pay_if_regtest(invoice.bolt11)
-    await wallet1.mint(64, id=invoice.id)
-    pubkey = await wallet1.create_p2pk_pubkey()
-    PublicKey(bytes.fromhex(pubkey), raw=True)
-
-
-async def cashu_wallet():
-    wallet1 = await Wallet.with_db(
-        url=BASE_URL,
-        db="db/Cashu",
-        name="wallet_mint_api",
-    )
-    await wallet1.load_mint()
-    return wallet1
-
-
-
-async def get_cashu_balance(url):
-    from cashu.wallet.wallet import Wallet
-    from cashu.core.settings import settings
-
-    settings.tor = False
-    wallet = await Wallet.with_db(
-        url=url,
-        db="db/Cashu",
-    )
-    await wallet.load_mint()
-    await wallet.load_proofs()
-    print("Cashu Wallet balance " + str(wallet.available_balance) + " sats")
-    mint_balances = await wallet.balance_per_minturl()
-    print(mint_balances)
-
-
-async def mint_cashu_test(url, amount):
-    from cashu.wallet.wallet import Wallet
-    from cashu.core.settings import settings
-
-    settings.tor = False
-    wallet = await Wallet.with_db(
-        url=url,
-        db="db/Cashu",
-    )
-    await wallet.load_mint()
-    await wallet.load_proofs()
-    print("Wallet balance " + str(wallet.available_balance) + " sats")
-    mint_balances = await wallet.balance_per_minturl()
-    print(mint_balances)
-    # mint tokens into wallet, skip if wallet already has funds
-
-    # if wallet.available_balance <= 10:
-    #    invoice = await wallet.request_mint(amount)
-    #    input(f"Pay this invoice and press any button: {invoice.bolt11}\n")
-    #    await wallet.mint(amount, id=invoice.id)
-
-    # create 10 sat token
-    proofs_to_send, _ = await wallet.split_to_send(wallet.proofs, amount, set_reserved=True)
-    token_str = await wallet.serialize_proofs(proofs_to_send)
-    print(token_str)
-    return token_str
-
-
-async def receive_cashu_test(token_str):
-    from cashu.wallet.wallet import Wallet
-    from cashu.core.settings import settings
-    from cashu.core.base import TokenV3
-
-    token = TokenV3.deserialize(token_str)
-    print(token.token[0])
-
-    settings.tor = False
-    wallet = await Wallet.with_db(
-        url=token.token[0].mint,
-        db="db/Cashu",
-    )
-
-    await wallet.load_mint()
-    await wallet.load_proofs()
-
-    print(f"Wallet balance: {wallet.available_balance} sats")
-
-    try:
-        await wallet.redeem(token.token[0].proofs)
-        print(f"Wallet balance: {wallet.available_balance} sats")
-    except Exception as e:
-        print(e)
 
 
 def parse_cashu(cashu_token: str):
