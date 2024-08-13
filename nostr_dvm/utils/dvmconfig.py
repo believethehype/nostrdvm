@@ -15,7 +15,7 @@ class DVMConfig:
     FIX_COST: float = None
     PER_UNIT_COST: float = None
 
-    RELAY_LIST = ["wss://dvms.f7z.io", "wss://relay.primal.net",
+    RELAY_LIST = ["wss://relay.primal.net",
                   "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
                   "wss://relay.nostr.net"
                   ]

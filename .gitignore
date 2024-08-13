@@ -187,3 +187,7 @@ todo.txt
 .env_bkp
 output.txt
 tests/output.wav
+tests/db/Cashu/wallet.sqlite3
+tests/pagerank/index_map_99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64.json
+tests/pagerank/network_graph_99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64.json
+tests/test_data/wallet_mint_api/wallet.sqlite3
