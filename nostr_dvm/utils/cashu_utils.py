@@ -1,7 +1,7 @@
 import base64
 import json
 
-import httpx
+
 import requests
 from cashu.core.models import GetInfoResponse, MintMeltMethodSetting
 from cashu.mint.ledger import Ledger
@@ -31,18 +31,6 @@ async def cashu_wallet():
     await wallet1.load_mint()
     return wallet1
 
-
-async def test_info(ledger: Ledger):
-    response = httpx.get(f"{BASE_URL}/v1/info")
-    assert response.status_code == 200, f"{response.url} {response.status_code}"
-    assert ledger.pubkey
-    assert response.json()["pubkey"] == ledger.pubkey.serialize().hex()
-    info = GetInfoResponse(**response.json())
-    assert info.nuts
-    assert info.nuts[4]["disabled"] is False
-    setting = MintMeltMethodSetting.parse_obj(info.nuts[4]["methods"][0])
-    assert setting.method == "bolt11"
-    assert setting.unit == "sat"
 
 
 async def get_cashu_balance(url):
