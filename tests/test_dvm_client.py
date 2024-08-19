@@ -353,8 +353,11 @@ async def nostr_client():
         nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
 
 
+
     class NotificationHandler(HandleNotification):
+        last_event_time = 0
         async def handle(self, relay_url, subscription_id, event: Event):
+
             print(
                 bcolors.BLUE + f"Received new event from {relay_url}: {event.as_json()}" + bcolors.ENDC)
             if event.kind().as_u64() == 7000:
@@ -367,8 +370,8 @@ async def nostr_client():
                     if tag.as_vec()[0] == "status":
                        status = tag.as_vec()[1]
                 # THIS IS FOR TESTING
-                if event.author().to_hex() == "89669b03bb25232f33192fdda77b8e36e3d3886e9b55b3c74b95091e916c8f98" and status == "payment-required":
-
+                if event.author().to_hex() == "89669b03bb25232f33192fdda77b8e36e3d3886e9b55b3c74b95091e916c8f98" and status == "payment-required" and event.created_at().as_secs() > self.last_event_time:
+                    self.last_event_time = event.created_at().as_secs()
                     nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
                     if nut_wallet is None:
                         await nutzap_wallet.create_new_nut_wallet(dvmconfig.NUZAP_MINTS, dvmconfig.NUTZAP_RELAYS, client, keys, "Test", "My Nutsack")
