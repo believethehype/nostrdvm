@@ -36,7 +36,7 @@ update_profile = False
 
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
-log_level = LogLevel.ERROR
+log_level = LogLevel.INFO
 
 
 

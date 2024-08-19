@@ -19,12 +19,12 @@ rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
-use_logger = True
+#use_logger = True
 log_level = LogLevel.ERROR
 
 
-if use_logger:
-    init_logger(log_level)
+#if use_logger:
+#    init_logger(log_level)
 
 
 RELAY_LIST = ["wss://relay.primal.net",
@@ -37,16 +37,17 @@ def build_advanced_search(name, identifier):
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
     dvm_config.RELAY_LIST = RELAY_LIST
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
-    dvm_config.LNBITS_INVOICE_KEY = invoice_key
-    dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
+    dvm_config = build_default_config(identifier)
     #    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    dvm_config.ENABLE_NUTZAP = True
+    dvm_config.FIX_COST = 5
+
 
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config.UPDATE_PROFILE = update_profile
-    admin_config.LUD16 = lnaddress
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
 
     nip89info = {

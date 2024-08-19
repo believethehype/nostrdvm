@@ -16,12 +16,12 @@ class DVMConfig:
     PER_UNIT_COST: float = None
 
     RELAY_LIST = ["wss://relay.primal.net",
-                  "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                  "wss://nostr.mom", "wss://nostr.oxtr.dev",
                   "wss://relay.nostr.net"
                   ]
 
     RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr21.com",
-                   "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+                   "wss://nostr.oxtr.dev",
                   "wss://relay.nostr.net" , "wss://relay.primal.net"] #, "wss://relay.snort.social"]
 
     AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
@@ -58,8 +58,8 @@ class DVMConfig:
     ENABLE_NUTZAP = False
     NUTZAP_RELAYS = ["wss://relay.primal.net"]
     NUZAP_MINTS = ["https://mint.minibits.cash/Bitcoin", "https://mint.gwoq.com"]
-    ENABLE_AUTO_MELT = True
-    AUTO_MELT_AMOUNT = 100
+    ENABLE_AUTO_MELT = False
+    AUTO_MELT_AMOUNT = 1000
 
 
 def build_default_config(identifier):
