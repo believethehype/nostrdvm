@@ -328,8 +328,8 @@ async def nostr_client():
     #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "ab6cdf12ca3ae5109416295b8cd8a53fdec3a9d54beb7a9aee0ebfb67cb4edf7")
     #await nostr_client_test_discovery_gallery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "4add3944eb596a27a650f9b954f5ed8dfefeec6ca50473605b0fbb058dd11306")
 
-    await nostr_client_test_discovery_user("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
-                                          "58c52fdca7593dffea63ba6f758779d8251c6732f54e9dc0e56d7a1afe1bb1b6")
+    await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
+                                          "2cf10ff849d2769b2b021bd93a0270d03eecfd14126d07f94c6ca2269cb3f3b1")
 
     # await nostr_client_test_censor_filter(wot)
     # await nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
