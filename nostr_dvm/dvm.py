@@ -33,11 +33,11 @@ class DVM:
     job_list: list
     jobs_on_hold_list: list
 
-    def __init__(self, dvm_config, admin_config=None):
-
-        asyncio.run(self.run_dvm(dvm_config, admin_config))
+    #def __init__(self, dvm_config, admin_config=None):
+    #    asyncio.run(self.run_dvm(dvm_config, admin_config))
 
     async def run_dvm(self, dvm_config, admin_config):
+
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
@@ -62,7 +62,7 @@ class DVM:
             await self.client.add_relay(relay)
         await self.client.connect()
 
-        zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
+        zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP, EventDefinitions.KIND_NIP61_NUT_ZAP]).since(Timestamp.now())
         kinds = [EventDefinitions.KIND_NIP90_GENERIC]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
@@ -80,10 +80,8 @@ class DVM:
                 await nutzap_wallet.create_new_nut_wallet(self.dvm_config.NUZAP_MINTS, self.dvm_config.NUTZAP_RELAYS,
                                                           self.client, self.keys, "DVM", "DVM Nutsack")
                 nut_wallet = await nutzap_wallet.get_nut_wallet(self.client, self.keys)
-                if nut_wallet is not None:
-                    await nutzap_wallet.announce_nutzap_info_event(nut_wallet, self.client, self.keys)
-                else:
-                    print("Couldn't fetch wallet, please restart and see if it is there")
+
+                await nutzap_wallet.announce_nutzap_info_event(nut_wallet, self.client, self.keys)
 
         class NotificationHandler(HandleNotification):
             client = self.client
@@ -314,24 +312,80 @@ class DVM:
                                                                                           self.client, self.keys)
                     user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
                                                  config=self.dvm_config)
+                    zapped_event = None
+                    for tag in nut_zap_event.tags():
+                        if tag.as_vec()[0] == 'e':
+                            zapped_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
+                                                                 config=self.dvm_config)
 
+                    if zapped_event is not None:
+                        if zapped_event.kind() == EventDefinitions.KIND_FEEDBACK:
+                            amount = 0
+                            job_event = None
+                            p_tag_str = ""
+                            status = ""
+                            for tag in zapped_event.tags():
+                                if tag.as_vec()[0] == 'amount':
+                                    amount = int(float(tag.as_vec()[1]) / 1000)
+                                elif tag.as_vec()[0] == 'e':
+                                    job_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
+                                                                      config=self.dvm_config)
+                                    if job_event is not None:
+                                        job_event = check_and_decrypt_tags(job_event, self.dvm_config)
+                                        if job_event is None:
+                                            return
+                                    else:
+                                        return
+                                elif tag.as_vec()[0] == 'status':
+                                    status = tag.as_vec()[1]
+                                    print(status)
 
+                                # if a reaction by us got zapped
+                            print(status)
 
+                            task_supported, task = await check_task_is_supported(job_event, client=self.client,
+                                                                                 config=self.dvm_config)
+                            if job_event is not None and task_supported:
+                                print("NutZap received for NIP90 task: " + str(received_amount) + " Sats from " + str(
+                                    user.name))
+                                if amount <= received_amount:
+                                    print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
+                                    await send_job_status_reaction(job_event, "processing", client=self.client,
+                                                                   content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
+                                                                   dvm_config=self.dvm_config, user=user)
+                                    indices = [i for i, x in enumerate(self.job_list) if
+                                               x.event == job_event]
+                                    index = -1
+                                    if len(indices) > 0:
+                                        index = indices[0]
+                                    if index > -1:
+                                        if self.job_list[index].is_processed:
+                                            self.job_list[index].is_paid = True
+                                            await check_and_return_event(self.job_list[index].result, job_event)
+                                        elif not (self.job_list[index]).is_processed:
+                                            # If payment-required appears before processing
+                                            self.job_list.pop(index)
+                                            print("Starting work...")
+                                            await do_work(job_event, received_amount)
+                                    else:
+                                        print("Job not in List, but starting work...")
+                                        await do_work(job_event, received_amount)
 
+                                else:
+                                    await send_job_status_reaction(job_event, "payment-rejected",
+                                                                   False, received_amount, client=self.client,
+                                                                   dvm_config=self.dvm_config)
+                                    print("[" + self.dvm_config.NIP89.NAME + "] Invoice was not paid sufficiently")
 
                     if self.dvm_config.ENABLE_AUTO_MELT:
                         balance = nut_wallet.balance + received_amount
                         if balance > self.dvm_config.AUTO_MELT_AMOUNT:
-                            lud16 = None
-                            npub = None
+                            lud16 = self.admin_config.LUD16
+                            npub = self.dvm_config.PUBLIC_KEY
                             mint_index = 0
                             await nutzap_wallet.melt_cashu(nut_wallet, self.dvm_config.NUZAP_MINTS[mint_index],
                                                            self.dvm_config.AUTO_MELT_AMOUNT, self.client, self.keys,
                                                            lud16, npub)
-                            nut_wallet = await nutzap_wallet.get_nut_wallet(self.client, self.keys)
-
-
-
 
             else:
                 print("NutZaps not enabled for this DVM. ")

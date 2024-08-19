@@ -4,6 +4,9 @@ import time
 from pathlib import Path
 from threading import Thread
 
+from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
+from nostr_dvm.utils.print import bcolors
+
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
     nip04_encrypt, NostrSigner, PublicKey, Event, Kind, RelayOptions
@@ -47,12 +50,9 @@ async def nostr_client_test_search_profile(input):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", input, "text"])
-
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
-                           "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_USER_SEARCH, str("Search for user"),
-                         [iTag, relaysTag, alttag]).to_event(keys)
+                         [iTag, alttag]).to_event(keys)
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
@@ -83,12 +83,9 @@ async def nostr_client_test_image(prompt):
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, str("Generate an Image."),
                          [iTag, outTag, tTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
-                  "wss://nostr-pub.wellorder.net"]
-
     signer = NostrSigner.keys(keys)
     client = Client(signer)
-    for relay in relay_list:
+    for relay in DVMConfig().RELAY_LIST:
         await client.add_relay(relay)
     await client.connect()
     config = DVMConfig
@@ -154,7 +151,7 @@ async def nostr_client_test_inactive_filter(user):
 async def nostr_client_test_tts(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     iTag = Tag.parse(["i", "9d867cd3e868111a31c8acfa41ab7523b9940fc46c804d7db89d7f373c007fa6", "event"])
-    #iTag = Tag.parse(["i", prompt, "text"])
+    # iTag = Tag.parse(["i", prompt, "text"])
     paramTag1 = Tag.parse(["param", "language", "en"])
 
     bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
@@ -229,6 +226,7 @@ async def nostr_client_test_discovery_user(user, ptag):
     config = DVMConfig
     eventid = await send_event(event, client=client, dvm_config=config)
     return event.as_json()
+
 
 async def nostr_client_test_discovery_gallery(user, ptag):
     keys = Keys.parse(check_and_set_private_key("test_client"))
@@ -311,25 +309,26 @@ async def nostr_client():
                                                EventDefinitions.KIND_ZAP]).since(
         Timestamp.now())  # events to us specific
     kinds = [EventDefinitions.KIND_NIP90_GENERIC]
-    SUPPORTED_KINDS = [Kind(6301)]
+    SUPPORTED_KINDS = [Kind(6100), Kind(7000)]
 
     for kind in SUPPORTED_KINDS:
         if kind not in kinds:
             kinds.append(kind)
-    dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
+    dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()).pubkey(pk))
     await client.subscribe([dm_zap_filter, dvm_filter], None)
 
     # await nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
     # await nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     # await nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
-    # await nostr_client_test_image("a beautiful purple ostrich watching the sunset")
-    # await nostr_client_test_search_profile("dontbelieve")
-    wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
-    #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "ab6cdf12ca3ae5109416295b8cd8a53fdec3a9d54beb7a9aee0ebfb67cb4edf7")
-    #await nostr_client_test_discovery_gallery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "4add3944eb596a27a650f9b954f5ed8dfefeec6ca50473605b0fbb058dd11306")
 
-    await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
-                                          "2cf10ff849d2769b2b021bd93a0270d03eecfd14126d07f94c6ca2269cb3f3b1")
+    await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
+    # await nostr_client_test_search_profile("dontbelieve")
+    #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
+    # await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "ab6cdf12ca3ae5109416295b8cd8a53fdec3a9d54beb7a9aee0ebfb67cb4edf7")
+    # await nostr_client_test_discovery_gallery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "4add3944eb596a27a650f9b954f5ed8dfefeec6ca50473605b0fbb058dd11306")
+
+    # await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
+    #                                      "2cf10ff849d2769b2b021bd93a0270d03eecfd14126d07f94c6ca2269cb3f3b1")
 
     # await nostr_client_test_censor_filter(wot)
     # await nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
@@ -338,11 +337,35 @@ async def nostr_client():
 
     # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
     # await nostr_client_test_image_private("a beautiful ostrich watching the sunset")
+
+    nutzap_wallet = NutZapWallet()
+    nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+
     class NotificationHandler(HandleNotification):
         async def handle(self, relay_url, subscription_id, event: Event):
-            print(f"Received new event from {relay_url}: {event.as_json()}")
+            print(
+                bcolors.BLUE + f"Received new event from {relay_url}: {event.as_json()}" + bcolors.ENDC)
             if event.kind().as_u64() == 7000:
                 print("[Nostr Client]: " + event.as_json())
+                amount_sats = 0
+                for tag in event.tags():
+                    if tag.as_vec()[0] == "amount":
+                        amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
+                # THIS IS FO TESTING
+                if event.author().to_hex() == "89669b03bb25232f33192fdda77b8e36e3d3886e9b55b3c74b95091e916c8f98":
+                    nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+                    if nut_wallet is None:
+                        await nutzap_wallet.create_new_nut_wallet(dvmconfig.NUZAP_MINTS, dvmconfig.NUTZAP_RELAYS, client, keys, "Test", "My Nutsack")
+                        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+                        if nut_wallet is not None:
+                            await nutzap_wallet.announce_nutzap_info_event(nut_wallet, client, keys)
+                        else:
+                            print("Couldn't fetch wallet, please restart and see if it is there")
+
+                    await nutzap_wallet.send_nut_zap(amount_sats, "From my nutsack lol", nut_wallet, event.id().to_hex(),
+                                                     event.author().to_hex(), client,
+                                                     keys)
+
             elif 6000 < event.kind().as_u64() < 6999:
                 print("[Nostr Client]: " + event.as_json())
                 print("[Nostr Client]: " + event.content())
@@ -358,9 +381,10 @@ async def nostr_client():
         async def handle_msg(self, relay_url, msg):
             return
 
-    await client.handle_notifications(NotificationHandler())
+    asyncio.create_task(client.handle_notifications(NotificationHandler()))
+    # await client.handle_notifications(NotificationHandler())
     while True:
-        await asyncio.sleep(5.0)
+        await asyncio.sleep(2)
 
 
 if __name__ == '__main__':
