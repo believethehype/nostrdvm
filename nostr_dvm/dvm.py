@@ -33,8 +33,8 @@ class DVM:
     job_list: list
     jobs_on_hold_list: list
 
-    #def __init__(self, dvm_config, admin_config=None):
-    #    asyncio.run(self.run_dvm(dvm_config, admin_config))
+    def __init__(self, dvm_config, admin_config=None):
+        asyncio.run(self.run_dvm(dvm_config, admin_config))
 
     async def run_dvm(self, dvm_config, admin_config):
 

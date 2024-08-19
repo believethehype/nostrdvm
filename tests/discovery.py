@@ -42,7 +42,7 @@ log_level = LogLevel.INFO
 
 RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
 RELAY_LIST = ["wss://relay.primal.net",
-              "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
+              "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
               ]
 

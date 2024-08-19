@@ -518,7 +518,7 @@ class NutZapWallet:
 
     async def handle_low_balance_on_mint(self, nut_wallet, mint_url, mint, amount, client, keys):
         mint_amount = amount - mint.available_balance()
-        reserved_fees = 3
+        reserved_fees = 0
         await self.mint_cashu(nut_wallet, mint_url, client, keys, mint_amount+reserved_fees)
 
 
@@ -594,9 +594,12 @@ class NutZapWallet:
 
         try:
             proofs, fees = await cashu_wallet.select_to_send(mint.proofs, amount)
-            _, send_proofs = await cashu_wallet.swap_to_send(
+            print(fees)
+            keep_proofs, send_proofs = await cashu_wallet.swap_to_send(
                 proofs, amount, secret_lock=secret_lock, set_reserved=True
             )
+
+            print(keep_proofs)
 
             for proof in send_proofs:
                 nut_proof = {
