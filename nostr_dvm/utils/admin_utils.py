@@ -10,6 +10,7 @@ from nostr_dvm.utils.nip88_utils import nip88_announce_tier, fetch_nip88_paramet
     check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import nip89_announce_tasks, fetch_nip89_parameters_for_deletion
 from nostr_dvm.utils.nostr_utils import update_profile
+from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 
 
 class AdminConfig:
@@ -26,6 +27,7 @@ class AdminConfig:
     DELETEUSER: bool = False
     LISTDATABASE: bool = False
     ClEANDB: bool = False
+    MELT_ON_STARTUP: bool = False
     POW: bool = False
     INDEX: str = "1"
     LUD16: str = ""
@@ -84,11 +86,22 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         if adminconfig.DELETEUSER:
             delete_from_sql_table(db, publickey)
 
+
+
     if adminconfig.ClEANDB:
         clean_db(db)
 
     if adminconfig.LISTDATABASE:
         list_db(db)
+
+    if adminconfig.MELT_ON_STARTUP:
+        nutzap_wallet = NutZapWallet()
+        keys = Keys.parse(adminconfig.PRIVKEY)
+        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+        lud16 = adminconfig.LUD16
+        npub = keys.public_key().to_hex()
+        await nutzap_wallet.melt_cashu(nut_wallet, DVMConfig.NUZAP_MINTS[0], nut_wallet.balance, client, keys, lud16, npub)
+        await nutzap_wallet.get_nut_wallet(client, keys)
 
     if adminconfig.REBROADCAST_NIP89:
         await nip89_announce_tasks(dvmconfig, client=client)
