@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from threading import Thread
 
+from nostr_dvm.utils.nip65_utils import nip65_announce_relays
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 from nostr_dvm.utils.print import bcolors
 
@@ -74,14 +75,12 @@ async def nostr_client_test_image(prompt):
     iTag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
     paramTag1 = Tag.parse(["param", "size", "1024x1024"])
-    tTag = Tag.parse(["t", "bitcoin"])
 
     bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
-                           "wss://nostr-pub.wellorder.net"])
+    relaysTag = Tag.parse(['relays', "wss://relay.primal.net", "wss://nostr.oxtr.dev"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate an Image from a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, str("Generate an Image."),
-                         [iTag, outTag, tTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
+                         [iTag, outTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
 
     signer = NostrSigner.keys(keys)
     client = Client(signer)
@@ -89,6 +88,8 @@ async def nostr_client_test_image(prompt):
         await client.add_relay(relay)
     await client.connect()
     config = DVMConfig
+    #config.NIP89.PK = keys.secret_key().to_hex()
+    #await nip65_announce_relays(config, client=client)
     await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
@@ -340,6 +341,17 @@ async def nostr_client():
 
     nutzap_wallet = NutZapWallet()
     nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+    #dangerous, dont use this, except your wallet is messed up.
+    delete = False
+    if delete:
+        for mint in nut_wallet.nutmints:
+            await nutzap_wallet.update_spend_mint_proof_event(nut_wallet, mint.proofs, mint.mint_url, "", None,
+                                                     None, client, keys)
+
+        nut_wallet.balance = 0
+        await nutzap_wallet.update_nut_wallet(nut_wallet, [], client, keys)
+        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+
 
     class NotificationHandler(HandleNotification):
         async def handle(self, relay_url, subscription_id, event: Event):
@@ -348,11 +360,15 @@ async def nostr_client():
             if event.kind().as_u64() == 7000:
                 print("[Nostr Client]: " + event.as_json())
                 amount_sats = 0
+                status = ""
                 for tag in event.tags():
                     if tag.as_vec()[0] == "amount":
                         amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
-                # THIS IS FO TESTING
-                if event.author().to_hex() == "89669b03bb25232f33192fdda77b8e36e3d3886e9b55b3c74b95091e916c8f98":
+                    if tag.as_vec()[0] == "status":
+                       status = tag.as_vec()[1]
+                # THIS IS FOR TESTING
+                if event.author().to_hex() == "89669b03bb25232f33192fdda77b8e36e3d3886e9b55b3c74b95091e916c8f98" and status == "payment-required":
+
                     nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
                     if nut_wallet is None:
                         await nutzap_wallet.create_new_nut_wallet(dvmconfig.NUZAP_MINTS, dvmconfig.NUTZAP_RELAYS, client, keys, "Test", "My Nutsack")
@@ -365,6 +381,7 @@ async def nostr_client():
                     await nutzap_wallet.send_nut_zap(amount_sats, "From my nutsack lol", nut_wallet, event.id().to_hex(),
                                                      event.author().to_hex(), client,
                                                      keys)
+
 
             elif 6000 < event.kind().as_u64() < 6999:
                 print("[Nostr Client]: " + event.as_json())

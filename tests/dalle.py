@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -16,18 +17,15 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys, get_price_per_sat
 
-rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know what you're doing.
+rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
-#use_logger = True
+use_logger = True
 log_level = LogLevel.ERROR
 
-
-#if use_logger:
-#    init_logger(log_level)
-
-
+if use_logger:
+    init_logger(log_level)
 
 
 def build_dalle(name, identifier):
@@ -56,15 +54,15 @@ def build_dalle(name, identifier):
                                            nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     aconfig = AdminConfig()
-    aconfig.REBROADCAST_NIP89 = False    # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
+    aconfig.REBROADCAST_NIP89 = False  # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     aconfig.LUD16 = dvm_config.LN_ADDRESS
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=aconfig)
+
 
 def playground():
     if os.getenv("OPENAI_API_KEY") is not None and os.getenv("OPENAI_API_KEY") != "":
         dalle = build_dalle("Dall-E 3", "dalle3")
-        dalle.run()
-
+        dalle.run(True)
 
 
 if __name__ == '__main__':

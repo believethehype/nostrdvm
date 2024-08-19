@@ -11,6 +11,7 @@ from venv import create
 from nostr_sdk import Keys, Kind, LogLevel
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -107,9 +108,13 @@ class DVMTaskInterface:
         print("Implement the run dvm function")
         pass
 
-    def run(self):
-        dvm = DVM()
-        asyncio.run(dvm.run_dvm(self.dvm_config, self.admin_config))
+    def run(self, join=False):
+        #dvm = DVM(self.dvm_config, self.admin_config)
+        #asyncio.run(dvm.run_dvm(self.dvm_config, self.admin_config))
+        nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config], daemon=False)
+        nostr_dvm_thread.start()
+        if join:
+            nostr_dvm_thread.join()
 
     async def schedule(self, dvm_config):
         """schedule something, e.g. define some time to update or to post, does nothing by default"""
