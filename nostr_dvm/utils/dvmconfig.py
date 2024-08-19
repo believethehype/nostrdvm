@@ -50,6 +50,17 @@ class DVMConfig:
     CUSTOM_PROCESSING_MESSAGE = None
     LOGLEVEL = LogLevel.DEBUG
 
+    # Make sure you have the cashu library installed and built correctly on your system, before enableing nutzaps for a DVM
+    # this is not installed by default
+    # pip install cashu. You might run into trouble with building secp256k1
+    # More info see here: https://github.com/cashubtc/nutshell
+
+    ENABLE_NUTZAP = False
+    NUTZAP_RELAYS = ["wss://relay.primal.net"]
+    NUZAP_MINTS = ["https://mint.minibits.cash/Bitcoin", "https://mint.gwoq.com"]
+    ENABLE_AUTO_MELT = True
+    AUTO_MELT_AMOUNT = 100
+
 
 def build_default_config(identifier):
     dvm_config = DVMConfig()
