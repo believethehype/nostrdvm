@@ -56,6 +56,8 @@ def build_dalle(name, identifier):
     aconfig = AdminConfig()
     aconfig.REBROADCAST_NIP89 = False  # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     aconfig.LUD16 = dvm_config.LN_ADDRESS
+    aconfig.PRIVKEY = dvm_config.PRIVATE_KEY
+    aconfig.MELT_ON_STARTUP = False # set this to true to melt cashu tokens to our ln address on startup
     return ImageGenerationDALLE(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=aconfig)
 
 
