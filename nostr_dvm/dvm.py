@@ -17,6 +17,7 @@ from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nip88_utils import nip88_has_active_subscription
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags, \
     send_event_outbox
+from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
     parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
@@ -71,6 +72,19 @@ class DVM:
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
         await self.client.subscribe([dvm_filter, zap_filter], None)
 
+        if self.dvm_config.ENABLE_NUTZAP:
+            nutzap_wallet = NutZapWallet()
+            nut_wallet = await nutzap_wallet.get_nut_wallet(self.client, self.keys)
+
+            if nut_wallet is None:
+                await nutzap_wallet.create_new_nut_wallet(self.dvm_config.NUZAP_MINTS, self.dvm_config.NUTZAP_RELAYS,
+                                                          self.client, self.keys, "DVM", "DVM Nutsack")
+                nut_wallet = await nutzap_wallet.get_nut_wallet(self.client, self.keys)
+                if nut_wallet is not None:
+                    await nutzap_wallet.announce_nutzap_info_event(nut_wallet, self.client, self.keys)
+                else:
+                    print("Couldn't fetch wallet, please restart and see if it is there")
+
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config
@@ -83,6 +97,8 @@ class DVM:
                     await handle_nip90_job_event(nostr_event)
                 elif nostr_event.kind().as_u64() == EventDefinitions.KIND_ZAP.as_u64():
                     await handle_zap(nostr_event)
+                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_NIP61_NUT_ZAP.as_u64():
+                    await handle_nutzap(nostr_event)
 
             async def handle_msg(self, relay_url, msg):
                 return
@@ -112,7 +128,7 @@ class DVM:
 
             # check if task is supported by the current DVM
             task_supported, task = await check_task_is_supported(nip90_event, client=self.client,
-                                                           config=self.dvm_config)
+                                                                 config=self.dvm_config)
             # if task is supported, continue, else do nothing.
             if task_supported:
                 # fetch or add user contacting the DVM from/to local database
@@ -133,7 +149,7 @@ class DVM:
 
                 # If this is a subscription DVM and the Task is directed to us, check for active subscription
                 if dvm_config.NIP88 is not None and p_tag_str == self.dvm_config.PUBLIC_KEY:
-                    #await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                    # await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
                     #                               "Checking Subscription Status, please wait..", self.dvm_config)
                     # if we stored in the database that the user has an active subscription, we don't need to check it
                     print("User Subscription: " + str(user.subscribed) + " Current time: " + str(
@@ -153,7 +169,7 @@ class DVM:
 
                     else:
                         print("[" + self.dvm_config.NIP89.NAME + "] Checking Subscription status")
-                        #await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
+                        # await send_job_status_reaction(nip90_event, "subscription-required", True, amount, self.client,
                         #                               "I Don't have information about subscription status, checking on the Nostr. This might take a few seconds",
                         #                               self.dvm_config)
 
@@ -172,7 +188,6 @@ class DVM:
                                                                "T", " ") + " GMT",
                                                            self.dvm_config)
 
-
                             print("Checked Recipe: User subscribed until: " + str(
                                 Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime()))
                             user_has_active_subscription = True
@@ -180,7 +195,7 @@ class DVM:
                                                      int(subscription_status["validUntil"]),
                                                      self.client, self.dvm_config)
 
-                            #sleep a little before sending next status update
+                            # sleep a little before sending next status update
 
 
                         else:
@@ -255,7 +270,7 @@ class DVM:
                         print(
                             "[" + self.dvm_config.NIP89.NAME + "]  Hinting user for Subscription: " +
                             nip90_event.id().to_hex())
-                        #await send_job_status_reaction(nip90_event, "subscription-required",
+                        # await send_job_status_reaction(nip90_event, "subscription-required",
                         #                               False, 0, client=self.client,
                         #                               dvm_config=self.dvm_config)
                     else:
@@ -291,12 +306,43 @@ class DVM:
             # else:
             # print("[" + self.dvm_config.NIP89.NAME + "] Task " + task + " not supported on this DVM, skipping..")
 
+        async def handle_nutzap(nut_zap_event):
+            if self.dvm_config.ENABLE_NUTZAP:
+                nut_wallet = await nutzap_wallet.get_nut_wallet(self.client, self.keys)
+                if nut_wallet is not None:
+                    received_amount, message, sender = await nutzap_wallet.reedeem_nutzap(nut_zap_event, nut_wallet,
+                                                                                          self.client, self.keys)
+                    user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
+                                                 config=self.dvm_config)
+
+
+
+
+
+                    if self.dvm_config.ENABLE_AUTO_MELT:
+                        balance = nut_wallet.balance + received_amount
+                        if balance > self.dvm_config.AUTO_MELT_AMOUNT:
+                            lud16 = None
+                            npub = None
+                            mint_index = 0
+                            await nutzap_wallet.melt_cashu(nut_wallet, self.dvm_config.NUZAP_MINTS[mint_index],
+                                                           self.dvm_config.AUTO_MELT_AMOUNT, self.client, self.keys,
+                                                           lud16, npub)
+                            nut_wallet = await nutzap_wallet.get_nut_wallet(self.client, self.keys)
+
+
+
+
+            else:
+                print("NutZaps not enabled for this DVM. ")
+
         async def handle_zap(zap_event):
             try:
                 invoice_amount, zapped_event, sender, message, anon = await parse_zap_event_tags(zap_event,
-                                                                                           self.keys,
-                                                                                           self.dvm_config.NIP89.NAME,
-                                                                                           self.client, self.dvm_config)
+                                                                                                 self.keys,
+                                                                                                 self.dvm_config.NIP89.NAME,
+                                                                                                 self.client,
+                                                                                                 self.dvm_config)
                 user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
                                              config=self.dvm_config)
 
@@ -311,7 +357,8 @@ class DVM:
                             if tag.as_vec()[0] == 'amount':
                                 amount = int(float(tag.as_vec()[1]) / 1000)
                             elif tag.as_vec()[0] == 'e':
-                                job_event = await get_event_by_id(tag.as_vec()[1], client=self.client, config=self.dvm_config)
+                                job_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
+                                                                  config=self.dvm_config)
                                 if job_event is not None:
                                     job_event = check_and_decrypt_tags(job_event, self.dvm_config)
                                     if job_event is None:
@@ -332,7 +379,7 @@ class DVM:
 
                         else:
                             task_supported, task = await check_task_is_supported(job_event, client=self.client,
-                                                                           config=self.dvm_config)
+                                                                                 config=self.dvm_config)
                             if job_event is not None and task_supported:
                                 print("Zap received for NIP90 task: " + str(invoice_amount) + " Sats from " + str(
                                     user.name))
@@ -401,8 +448,8 @@ class DVM:
                         input_type = tag.as_vec()[2]
                         if input_type == "job":
                             evt = await get_referenced_event_by_id(event_id=input, client=client,
-                                                             kinds=EventDefinitions.ANY_RESULT,
-                                                             dvm_config=dvmconfig)
+                                                                   kinds=EventDefinitions.ANY_RESULT,
+                                                                   dvm_config=dvmconfig)
                             if evt is None:
                                 if append:
                                     job_ = RequiredJobToWatch(event=nevent, timestamp=Timestamp.now().as_secs())
@@ -646,9 +693,6 @@ class DVM:
                                                            stdout=asyncio.subprocess.PIPE,
                                                            stderr=asyncio.subprocess.PIPE)
 
-
-
-
         async def run_subprocess(python_bin, dvm_config, request_form, stdout_cb, stderr_cb):
             print("Running subprocess, please wait..")
             process = await asyncio.create_subprocess_exec(
@@ -666,17 +710,16 @@ class DVM:
             )
             return await process.wait()
 
+            # stdout, stderr = await process.communicate()
 
-            #stdout, stderr = await process.communicate()
+            # retcode = process.returncode
 
-            #retcode = process.returncode
-
-            #if retcode != 0:
+            # if retcode != 0:
             #    print(f"Error: {stderr.decode()}")
-            #else:
+            # else:
             #    print(f"Output: {stdout.decode()}")
 
-            #return retcode
+            # return retcode
 
         async def do_work(job_event, amount):
             if ((
@@ -690,7 +733,8 @@ class DVM:
                     try:
                         if task == dvm.TASK:
 
-                            request_form = await dvm.create_request_from_nostr_event(job_event, self.client, self.dvm_config)
+                            request_form = await dvm.create_request_from_nostr_event(job_event, self.client,
+                                                                                     self.dvm_config)
 
                             if dvm_config.USE_OWN_VENV:
                                 python_location = "/bin/python"
@@ -698,7 +742,7 @@ class DVM:
                                     python_location = "/Scripts/python"
                                 python_bin = (r'cache/venvs/' + os.path.basename(dvm_config.SCRIPT).split(".py")[0]
                                               + python_location)
-                                #retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
+                                # retcode = subprocess.call([python_bin, dvm_config.SCRIPT,
                                 #                           '--request', json.dumps(request_form),
                                 #                           '--identifier', dvm_config.IDENTIFIER,
                                 #                           '--output', 'output.txt'])
