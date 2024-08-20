@@ -11,6 +11,7 @@ from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverConte
 from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
 from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
 from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
+from nostr_dvm.tasks.content_discovery_latest_one_per_follower import Discoverlatestperfollower
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 
 #os.environ["RUST_BACKTRACE"] = "full"
@@ -31,12 +32,12 @@ from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
 rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know what you're doing.
-rebroadcast_NIP65_Relay_List = False
+rebroadcast_NIP65_Relay_List = True
 update_profile = False
 
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
-log_level = LogLevel.INFO
+log_level = LogLevel.ERROR
 
 
 
@@ -576,6 +577,51 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
                                                  admin_config=admin_config, options=options)
 
 
+def build_example_oneperfollow(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
+                      update_db=True):
+    dvm_config = build_default_config(identifier)
+    dvm_config.USE_OWN_VENV = False
+    dvm_config.LOGLEVEL = LogLevel.INFO
+    # dvm_config.SHOWLOG = True
+    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
+    dvm_config.UPDATE_DATABASE = False
+    dvm_config.LOGLEVEL = LogLevel.DEBUG
+    dvm_config.FIX_COST = cost
+    dvm_config.RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.primal.net"]
+    # "wss://relay.nostr.net"]
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
+    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
+    #                         ]
+    admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+    # Add NIP89
+    nip89info = {
+        "name": name,
+        "image": image,
+        "picture": image,
+        "about": "I show the single latest note of people you follow",
+        "lud16": dvm_config.LN_ADDRESS,
+        "encryptionSupported": True,
+        "cashuAccepted": True,
+        "personalized": False,
+        "amount": create_amount_tag(cost),
+        "nip90Params": {
+            "max_results": {
+                "required": False,
+                "values": [],
+                "description": "The number of maximum results to return (default currently 200)"
+            }
+        }
+    }
+
+    nip89config = NIP89Config()
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.CONTENT = json.dumps(nip89info)
+    return Discoverlatestperfollower(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                                 admin_config=admin_config, options=options)
+
+
 
 def playground():
 
@@ -941,6 +987,34 @@ def playground():
         processing_msg=custom_processing_msg,
         update_db=update_db)
     discovery_non_followers.run()
+
+    admin_config_opf = AdminConfig()
+    admin_config_opf.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_opf.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_opf.UPDATE_PROFILE = update_profile
+    # admin_config_opf.DELETE_NIP89 = True
+    # admin_config_opf.PRIVKEY = ""
+    # admin_config_opf.EVENTID = ""
+    # admin_config_opf.POW = True
+    custom_processing_msg = ["Looking for latest content by people you follow.."]
+    update_db = True
+
+    options_opf = {
+        "db_name": "db/nostr_mostr.db",
+        "db_since": 60 * 60 * 2,  # 1h since gmt,
+    }
+    cost = 0
+    image = "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg"
+    discovery_one_per_follow = build_example_oneperfollow("One per follow",
+                                                          "discovery_latest_per_follow",
+                                                          admin_config=admin_config_opf,
+                                                          options=options_opf,
+                                                          image=image,
+                                                          cost=cost,
+                                                          update_rate=global_update_rate,
+                                                          processing_msg=custom_processing_msg,
+                                                          update_db=update_db)
+    discovery_one_per_follow.run()
 
     # Popular Global
     admin_config_global_popular = AdminConfig()
