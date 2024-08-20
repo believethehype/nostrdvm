@@ -27,10 +27,15 @@ class SearchUser(DVMTaskInterface):
     dvm_config: DVMConfig
     last_schedule: int = 0
     db_name = "db/nostr_profiles.db"
+    relay = "wss://profiles.nostr1.com"
+
+
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
+        if self.options.get("relay"):
+            self.relay = self.options['relay']
         await self.sync_db()
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
@@ -81,7 +86,7 @@ class SearchUser(DVMTaskInterface):
         database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        await cli.add_relay("wss://relay.damus.io")
+        await cli.add_relay(self.relay)
         # cli.add_relay("wss://atl.purplerelay.com")
         await cli.connect()
 
@@ -145,8 +150,7 @@ class SearchUser(DVMTaskInterface):
         database = await NostrDatabase.sqlite(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-            await cli.add_relay(relay)
+        await cli.add_relay(self.relay)
         await cli.connect()
 
         filter1 = Filter().kind(Kind(0))
@@ -202,7 +206,7 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": "wss://relay.damus.io"}
+    options = {"relay": "wss://profiles.nostr1.com"}
 
     return SearchUser(name=name, dvm_config=dvm_config, nip89config=nip89config,
                       admin_config=admin_config, options=options)
