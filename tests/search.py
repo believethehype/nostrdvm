@@ -19,12 +19,12 @@ rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
-#use_logger = True
+use_logger = True
 log_level = LogLevel.ERROR
 
 
-#if use_logger:
-#    init_logger(log_level)
+if use_logger:
+    init_logger(log_level)
 
 
 RELAY_LIST = ["wss://relay.primal.net",
@@ -175,7 +175,7 @@ def build_user_search(name, identifier):
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    options = {"relay": "wss://relay.damus.io"}
+    options = {"relay": "wss://profiles.nostr1.com"}
 
 
     return SearchUser(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -188,14 +188,14 @@ def build_user_search(name, identifier):
 def playground():
 
     advanced_search = build_advanced_search("Nostr.band Search",
-                                            "discovery_content_search")
+                                           "discovery_content_search")
     advanced_search.run()
 
     advanced_search_wine = build_advanced_search_wine("Nostr.wine Search", "discovery_content_searchwine")
     advanced_search_wine.run()
 
-    #profile_search = build_user_search("Profile Searcher", "profile_search")
-    #profile_search.run()
+    profile_search = build_user_search("Profile Searcher", "profile_search")
+    profile_search.run()
 
 
     #keep_alive()
