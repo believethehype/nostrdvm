@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions, RelayLimits
+    RelayOptions, RelayLimits, EventSource
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -113,7 +113,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
-        followers = await cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        source = EventSource.relays(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        followers = await cli.get_events_of([followers_filter], source)
         #print(followers)
 
         # Negentropy reconciliation
