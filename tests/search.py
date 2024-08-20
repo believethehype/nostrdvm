@@ -39,7 +39,6 @@ def build_advanced_search(name, identifier):
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config = build_default_config(identifier)
     #    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    dvm_config.ENABLE_NUTZAP = True
     dvm_config.FIX_COST = 5
 
 
