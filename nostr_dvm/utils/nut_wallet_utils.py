@@ -28,6 +28,7 @@ class NutWallet(object):
         self.a: str = ""
         self.legacy_encryption: bool = False  # Use Nip04 instead of Nip44, for reasons, turn to False ASAP.
         self.trust_unknown_mints: bool = False
+        self.missing_balance_strategy: str = "mint" #swap to use existing tokens from other mints (fees!) or mint to mint from lightning
 
 
 class NutMint(object):
@@ -43,6 +44,7 @@ class NutMint(object):
         for proof in self.proofs:
             balance += proof.amount
         return balance
+
 
 
 class NutZapWallet:
@@ -519,10 +521,19 @@ class NutZapWallet:
         return await self.update_nut_wallet(nut_wallet, [mint_url], client, keys)
 
 
-    async def handle_low_balance_on_mint(self, nut_wallet, mint_url, mint, amount, client, keys):
-        mint_amount = amount - mint.available_balance()
-        reserved_fees = 0
-        await self.mint_cashu(nut_wallet, mint_url, client, keys, mint_amount+reserved_fees)
+    async def handle_low_balance_on_mint(self, nut_wallet, outgoing_mint_url, mint, amount, client, keys):
+
+        required_amount = amount - mint.available_balance()
+        if nut_wallet.missing_balance_strategy == "mint":
+            await self.mint_cashu(nut_wallet, outgoing_mint_url, client, keys, required_amount)
+
+        elif nut_wallet.missing_balance_strategy == "swap":
+            for nutmint in nut_wallet.nutmints:
+                estimated_fees = 3
+                if nutmint.available_balance() > required_amount+estimated_fees:
+                    await self.swap(required_amount, nutmint.mint_url, outgoing_mint_url)
+                    break
+
 
 
     async def send_nut_zap(self, amount, comment, nut_wallet: NutWallet, zapped_event, zapped_user, client: Client,
@@ -765,6 +776,58 @@ class NutZapWallet:
         print(bcolors.YELLOW + "[" + nut_wallet.name + "] Redeemed on Lightning ⚡ " + str(
             total_amount - estimated_fees) + " (Fees: " + str(estimated_fees) + ") " + nut_wallet.unit
               + bcolors.ENDC)
+
+    async def swap(self, amountinsats, outgoing_mint_url, incoming_mint_url):
+        from cashu.wallet.cli.cli_helpers import print_mint_balances
+        from cashu.wallet.wallet import Wallet
+        # print("Select the mint to swap from:")
+        # outgoing_wallet = await get_mint_wallet(ctx, force_select=True)
+
+        outgoing_wallet = await Wallet.with_db(
+            url=outgoing_mint_url,
+            db="db/Sender",
+            name="sender",
+        )
+
+        print("Select the mint to swap to:")
+        # incoming_wallet = await get_mint_wallet(ctx, force_select=True)
+
+        incoming_wallet = await Wallet.with_db(
+            url=incoming_mint_url,
+            db="db/Receiver",
+            name="reeciver",
+        )
+
+        await incoming_wallet.load_mint()
+        await outgoing_wallet.load_mint()
+
+        if incoming_wallet.url == outgoing_wallet.url:
+            raise Exception("mints for swap have to be different")
+
+        print("Incoming Mint units: " + incoming_wallet.unit.name)
+
+        assert amountinsats > 0, "amount is not positive"
+
+        # request invoice from incoming mint
+        invoice = await incoming_wallet.request_mint(amountinsats)
+
+        # pay invoice from outgoing mint
+        quote = await outgoing_wallet.melt_quote(invoice.bolt11)
+        total_amount = quote.amount + quote.fee_reserve
+        if outgoing_wallet.available_balance < total_amount:
+            raise Exception("balance too low")
+        send_proofs, fees = await outgoing_wallet.select_to_send(
+            outgoing_wallet.proofs, total_amount, set_reserved=True
+        )
+        await outgoing_wallet.melt(
+            send_proofs, invoice.bolt11, quote.fee_reserve, quote.quote
+        )
+
+        # mint token in incoming mint
+        await incoming_wallet.mint(amountinsats, id=invoice.id)
+
+        await incoming_wallet.load_proofs(reload=True)
+        await print_mint_balances(incoming_wallet, show_mints=True)
 
     async def set_profile(self, name, about, lud16, image, client, keys):
         metadata = Metadata() \
