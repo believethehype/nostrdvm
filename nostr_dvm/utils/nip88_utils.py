@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 from nostr_sdk import Filter, Tag, Keys, EventBuilder, Client, EventId, PublicKey, Event, Timestamp, SingleLetterTag, \
-    Alphabet, Kind, EventSource
+    Alphabet, Kind
 
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -37,8 +37,7 @@ def nip88_create_d_tag(name, pubkey, image):
 
 async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
-    source = EventSource.relays(timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
-    nip88events = await client.get_events_of([idfilter], source)
+    nip88events = await client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""
     if len(nip88events) == 0:
         print("Event not found. Potentially gone.")
@@ -61,8 +60,7 @@ async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
 
 async def fetch_nip88_event(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    source = EventSource.relays(timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
-    nip88events = await client.get_events_of([idfilter], source)
+    nip88events = await client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""
     if len(nip88events) == 0:
         print("Event not found. Potentially gone.")
@@ -101,8 +99,7 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
         PublicKey.parse(receiver_public_key_hex)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
                                                              [user.to_hex()]).limit(1)
-    source = EventSource.relays(timedelta(seconds=5))
-    evts = await client.get_events_of([subscriptionfilter],source)
+    evts = await client.get_events_of([subscriptionfilter], timedelta(seconds=3))
     if len(evts) > 0:
         print(evts[0].as_json())
         matchesdtag = False
@@ -123,8 +120,7 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
             cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
                 user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
                 EventId.parse(subscription_status["subscriptionId"])).limit(1)
-            source = EventSource.relays(timedelta(seconds=5))
-            cancel_events = await client.get_events_of([cancel_filter], source)
+            cancel_events = await client.get_events_of([cancel_filter], timedelta(seconds=3))
             if len(cancel_events) > 0:
                 if cancel_events[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True

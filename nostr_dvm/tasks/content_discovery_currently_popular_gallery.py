@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions, RelayLimits, EventSource
+    RelayOptions, RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -172,8 +172,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
 
         filter2 = Filter().ids(ids)
-        source = EventSource.relays(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-        events = await cli.get_events_of([filter2], source)
+        events = await cli.get_events_of([filter2], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         print(len(events))
 

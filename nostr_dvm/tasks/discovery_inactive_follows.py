@@ -5,7 +5,7 @@ from datetime import timedelta
 from threading import Thread
 
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, EventSource
+    RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -92,8 +92,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        source = EventSource.relays(timedelta(seconds=5))
-        followers = await cli.get_events_of([followers_filter], source)
+        followers = await cli.get_events_of([followers_filter], timedelta(seconds=5))
 
         if len(followers) > 0:
             result_list = []
@@ -141,8 +140,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 for i in range(i, i + st):
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).since(notactivesince).limit(1)
                     filters.append(filter1)
-                source = EventSource.relays(timedelta(seconds=10))
-                event_from_authors = await cli.get_events_of(filters, source)
+                event_from_authors = await cli.get_events_of(filters, timedelta(seconds=10))
                 for author in event_from_authors:
                     instance.dic[author.author().to_hex()] = "True"
                 print(str(i) + "/" + str(len(users)))

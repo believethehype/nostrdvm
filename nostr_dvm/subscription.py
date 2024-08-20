@@ -7,8 +7,7 @@ import time
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, nip44_decrypt, Kind,
-                       EventSource)
+                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, nip44_decrypt, Kind)
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -249,8 +248,7 @@ class Subscription:
 
                     subscriptionfilter = Filter().kind(EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT).author(
                         PublicKey.parse(subscriber)).limit(1)
-                    source = EventSource.relays(timedelta(seconds=5))
-                    evts = await self.client.get_events_of([subscriptionfilter], source)
+                    evts = await self.client.get_events_of([subscriptionfilter], timedelta(seconds=3))
                     if len(evts) > 0:
                         event7001id = evts[0].id().to_hex()
                         print(evts[0].as_json())
@@ -287,8 +285,7 @@ class Subscription:
 
                         if tier_dtag == "" or len(zaps) == 0:
                             tierfilter = Filter().id(EventId.parse(subscription_event_id))
-                            source = EventSource.relays(timedelta(seconds=5))
-                            evts = await self.client.get_events_of([tierfilter], source)
+                            evts = await self.client.get_events_of([tierfilter], timedelta(seconds=3))
                             if len(evts) > 0:
                                 for tag in evts[0].tags():
                                     if tag.as_vec()[0] == "d":

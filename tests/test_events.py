@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event, SecretKey, Kind, EventSource
+    nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event, SecretKey, Kind
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -61,8 +61,7 @@ async def test_referred_events(client, event_id, kinds=None):
     else:
         job_id_filter = Filter().event(EventId.from_hex(event_id))
 
-    source = EventSource.relays(timedelta(seconds=5))
-    events = await client.get_events_of([job_id_filter], source)
+    events = await client.get_events_of([job_id_filter], timedelta(seconds=5))
 
     if len(events) > 0:
         for event in events:
@@ -142,8 +141,7 @@ async def test_search_by_user_since_days(client, pubkey, days, prompt):
     since = Timestamp.from_secs(dif)
 
     filterts = Filter().search(prompt).author(pubkey).kinds([Kind(1)]).since(since)
-    source = EventSource.relays(timedelta(seconds=4))
-    events = await client.get_events_of([filterts], source)
+    events = await client.get_events_of([filterts], timedelta(seconds=5))
 
     if len(events) > 0:
         for event in events:

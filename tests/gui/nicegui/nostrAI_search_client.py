@@ -4,7 +4,7 @@ import time
 from datetime import timedelta
 from nicegui import run, ui
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, \
-    Options, Timestamp, NostrSigner, EventId, Nip19Event, PublicKey, EventSource
+    Options, Timestamp, NostrSigner, EventId, Nip19Event, PublicKey
 
 from nostr_dvm.utils import dvmconfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -65,9 +65,8 @@ async def init():
             [EventDefinitions.KIND_FEEDBACK]).since(now).event(eventid)
         lastfeedback = ""
         while not response:
-            source = EventSource.relays(timedelta(seconds=3))
-            events = await client.get_events_of([feedbackfilter], source)
-            fevents = await client.get_events_of([feedbackfilter2], source)
+            events = await client.get_events_of([feedbackfilter], timedelta(seconds=3))
+            fevents = await client.get_events_of([feedbackfilter2], timedelta(seconds=3))
             if len(fevents) > 0:
                 if lastfeedback != fevents[0].content():
                     for tag in fevents[0].tags():
