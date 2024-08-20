@@ -5,7 +5,7 @@ from datetime import timedelta
 from threading import Thread
 
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, EventSource
+    RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -81,8 +81,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
-        source = EventSource.relays(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-        followers = await cli.get_events_of([followers_filter], source)
+        followers = await cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         if len(followers) > 0:
             result_list = []
@@ -119,8 +118,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     filters = []
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(Kind(3))
                     filters.append(filter1)
-                    source = EventSource.relays(timedelta(seconds=3))
-                    followers = await cli.get_events_of(filters, source)
+                    followers = await cli.get_events_of(filters, timedelta(seconds=3))
 
                     if len(followers) > 0:
                         result_list = []

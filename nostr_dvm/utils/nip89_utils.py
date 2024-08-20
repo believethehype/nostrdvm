@@ -4,8 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind, \
-    EventSource
+from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import send_event
@@ -40,8 +39,7 @@ async def nip89_announce_tasks(dvm_config, client):
 
 async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
-    source = EventSource.relays(timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
-    nip89events = await client.get_events_of([idfilter], source)
+    nip89events = await client.get_events_of([idfilter], timedelta(seconds=dvmconfig.RELAY_TIMEOUT))
     d_tag = ""
     if len(nip89events) == 0:
         print("Event not found. Potentially gone.")
@@ -87,8 +85,7 @@ async def nip89_fetch_all_dvms(client):
         ktags.append(str(i))
 
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags)
-    source = EventSource.relays(timedelta(seconds=5))
-    events = await client.get_events_of([filter], source)
+    events = await client.get_events_of([filter], timedelta(seconds=5))
     for event in events:
         print(event.as_json())
 
@@ -97,8 +94,7 @@ async def nip89_fetch_events_pubkey(client, pubkey, kind):
     ktags = [str(kind.as_u64())]
     nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.parse(pubkey)).
                    custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags))
-    source = EventSource.relays(timedelta(seconds=5))
-    events = await client.get_events_of([nip89filter], source)
+    events = await client.get_events_of([nip89filter], timedelta(seconds=4))
 
     dvms = {}
     for event in events:

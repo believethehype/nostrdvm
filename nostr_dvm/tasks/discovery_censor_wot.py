@@ -4,7 +4,7 @@ from datetime import timedelta
 from threading import Thread
 
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, Event, EventSource
+    RelayLimits, Event
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -97,8 +97,7 @@ class DiscoverReports(DVMTaskInterface):
         # if we don't add users, e.g. by a wot, we check all our followers.
         if len(pubkeys) == 0:
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
-            source = EventSource.relays(timedelta(seconds=5))
-            followers = await cli.get_events_of([followers_filter], source)
+            followers = await cli.get_events_of([followers_filter], timedelta(seconds=5))
 
             if len(followers) > 0:
                 result_list = []
@@ -119,8 +118,7 @@ class DiscoverReports(DVMTaskInterface):
             options["since_days"])  # TODO make this an option, 180 days for now
         since = Timestamp.from_secs(ago)
         kind1984_filter = Filter().authors(pubkeys).kind(Kind(1984)).since(since)
-        source = EventSource.relays(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-        reports = await cli.get_events_of([kind1984_filter], source)
+        reports = await cli.get_events_of([kind1984_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
 
         bad_actors = []
         ns.dic = {}

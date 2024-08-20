@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
 
-from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Kind, EventSource
+from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Kind
 from nostr_dvm.utils.nostr_utils import send_event
 
 
@@ -254,8 +254,7 @@ async def fetch_user_metadata(npub, client):
     pk = PublicKey.parse(npub)
     print(f"\nGetting profile metadata for {pk.to_bech32()}...")
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    source = EventSource.relays(timedelta(seconds=1))
-    events = await client.get_events_of([profile_filter], source)
+    events = await client.get_events_of([profile_filter], timedelta(seconds=1))
     if len(events) > 0:
         latest_entry = events[0]
         latest_time = 0

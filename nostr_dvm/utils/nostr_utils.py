@@ -6,7 +6,7 @@ from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
-    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner, EventSource
+    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner
 
 from nostr_dvm.utils.definitions import EventDefinitions
 
@@ -16,8 +16,7 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
     if len(split) == 3:
         pk = PublicKey.from_hex(split[1])
         id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-        source = EventSource.relays(timedelta(seconds=config.RELAY_TIMEOUT))
-        events = await client.get_events_of([id_filter], source)
+        events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     else:
         if str(event_id).startswith('note'):
             event_id = EventId.from_bech32(event_id)
@@ -33,9 +32,7 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
 
         id_filter = Filter().id(event_id).limit(1)
         #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
-
-        source = EventSource.relays(timedelta(seconds=5))
-        events = await client.get_events_of([id_filter], source)
+        events = await client.get_events_of([id_filter], timedelta(seconds=5))
 
 
     if len(events) > 0:
@@ -46,8 +43,7 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
         return None
 
 async def get_events_async(client, filter, timeout):
-    source = EventSource.relays(timedelta(seconds=timeout))
-    events = await client.get_events_of([filter], source)
+    events = await client.get_events_of([filter], timedelta(seconds=timeout))
     return events
 
 
@@ -59,8 +55,7 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
         if len(split) == 3:
             pk = PublicKey.from_hex(split[1])
             id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-            source = EventSource.relays(timedelta(seconds=config.RELAY_TIMEOUT))
-            events = await client.get_events_of([id_filter], source)
+            events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
             #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
         else:
             if str(event_id).startswith('note'):
@@ -77,8 +72,7 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
             search_ids.append(event_id)
 
             id_filter = Filter().ids(search_ids)
-            source = EventSource.relays(timedelta(seconds=config.RELAY_TIMEOUT))
-            events = await client.get_events_of([id_filter], source)
+            events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
 
     #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
@@ -90,8 +84,7 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
 async def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
     id_filter = Filter().ids(event_ids)
     #events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
-    source = EventSource.relays(timedelta(seconds=config.RELAY_TIMEOUT))
-    events = await client.get_events_of([id_filter], source)
+    events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
         return events
     else:
@@ -116,8 +109,7 @@ async def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Eve
         job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
     else:
         job_id_filter = Filter().event(event_id).limit(1)
-    source = EventSource.relays(timedelta(seconds=dvm_config.RELAY_TIMEOUT))
-    events = await client.get_events_of([job_id_filter], source)
+    events = await client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
     #events = await get_events_async(client, job_id_filter, dvm_config.RELAY_TIMEOUT)
     #events = client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
 
@@ -135,8 +127,7 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
             ptags.append(ptag)
 
     filter = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
-    source = EventSource.relays(timedelta(seconds=dvm_config.RELAY_TIMEOUT))
-    events = await client.get_events_of([filter], source)
+    events = await client.get_events_of([filter], timedelta(dvm_config.RELAY_TIMEOUT))
     if len(events) == 0:
         return []
     else:

@@ -11,7 +11,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import pay_bolt11_ln_bits, zaprequest
 from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
-    EventId, nip04_decrypt, nip04_encrypt, Options, NostrSigner, PublicKey, init_logger, LogLevel, Metadata, EventSource
+    EventId, nip04_decrypt, nip04_encrypt, Options, NostrSigner, PublicKey, init_logger, LogLevel, Metadata
 from nostr_dvm.utils.print import bcolors
 
 class NutWallet(object):
@@ -120,8 +120,7 @@ class NutZapWallet:
         nut_wallet = None
 
         wallet_filter = Filter().kind(EventDefinitions.KIND_NUT_WALLET).author(keys.public_key())
-        source = EventSource.relays(timedelta(seconds=10))
-        wallets = await client.get_events_of([wallet_filter], source)
+        wallets = await client.get_events_of([wallet_filter], timedelta(10))
 
         if len(wallets) > 0:
 
@@ -195,8 +194,7 @@ class NutZapWallet:
 
             # Now all proof events
             proof_filter = Filter().kind(Kind(7375)).author(keys.public_key())
-            source = EventSource.relays(timedelta(seconds=5))
-            proof_events = await client.get_events_of([proof_filter], source)
+            proof_events = await client.get_events_of([proof_filter], timedelta(5))
 
             latest_proof_sec = 0
             latest_proof_event_id = EventId
@@ -449,8 +447,7 @@ class NutZapWallet:
 
     async def fetch_mint_info_event(self, pubkey, client):
         mint_info_filter = Filter().kind(Kind(10019)).author(PublicKey.parse(pubkey))
-        source = EventSource.relays(timedelta(seconds=5))
-        preferences = await client.get_events_of([mint_info_filter], source)
+        preferences = await client.get_events_of([mint_info_filter], timedelta(5))
         mints = []
         relays = []
         pubkey = ""

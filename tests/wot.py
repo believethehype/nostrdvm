@@ -13,7 +13,7 @@ warnings.filterwarnings('ignore')
 
 from nostr_sdk import RelayLimits, PublicKey, Options, Client, SecretKey, Keys, NostrSigner, RelayOptions, Filter, \
     PublicKey, Kind, \
-    NegentropyOptions, NegentropyDirection, ClientBuilder, NostrDatabase, init_logger, LogLevel, EventSource
+    NegentropyOptions, NegentropyDirection, ClientBuilder, NostrDatabase, init_logger, LogLevel
 
 
 # init_logger(LogLevel.INFO)
@@ -35,8 +35,7 @@ async def getmetadata(npub):
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    source = EventSource.relays(timedelta(seconds=4))
-    events = await client.get_events_of([profile_filter], source)
+    events = await client.get_events_of([profile_filter], timedelta(seconds=4))
     if len(events) > 0:
         try:
             profile = json.loads(events[0].content())

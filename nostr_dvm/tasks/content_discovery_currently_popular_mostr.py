@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions, EventSource
+    RelayOptions
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -256,8 +256,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         #await cli.reconcile(filter3, dbopts)
 
         # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
-        source = EventSource.relays(timedelta(seconds=10))
-        events = await cli.get_events_of([filter1, filter2, filter3], source)
+        events = await cli.get_events_of([filter1, filter2, filter3], None)
 
         # Do not delete profiles
         await cli.database().delete(Filter().kinds([EventDefinitions.KIND_NOTE, EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST, EventDefinitions.KIND_REACTION]).until(Timestamp.from_secs(

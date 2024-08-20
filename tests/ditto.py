@@ -3,7 +3,7 @@ import json
 from datetime import timedelta
 
 from nostr_sdk import Options, SecretKey, NostrSigner, Keys, Client, RelayOptions, Alphabet, SingleLetterTag, Filter, \
-    Kind, PublicKey, init_logger, LogLevel, Tag, EventSource
+    Kind, PublicKey, init_logger, LogLevel, Tag
 
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 
@@ -29,8 +29,7 @@ async def main():
     authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
     notes_filter = Filter().authors(authors).custom_tag(SingleLetterTag.lowercase(Alphabet.L), ltags)
 
-    source = EventSource.relays(timedelta(seconds=10))
-    events = await cli.get_events_of([notes_filter], source)
+    events = await cli.get_events_of([notes_filter], timedelta(seconds=10))
 
     result_list = []
     if len(events) > 0:
