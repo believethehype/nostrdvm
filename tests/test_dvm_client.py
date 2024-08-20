@@ -203,6 +203,43 @@ async def nostr_client_test_discovery(user, ptag):
     return event.as_json()
 
 
+
+async def nostr_client_custom_discovery(user, ptag):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    relay_list = ["wss://nostr.oxtr.dev", "wss://relay.primal.net",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to find content"])
+    paramTag = Tag.parse(["param", "user", user])
+
+    search = " art , photograph , photo , photography , painting ,#artstr, drawing "
+    avoid = "sex"
+    must = "http"
+
+    paramTagSearch = Tag.parse(["param", "search_list", search])
+    paramTagAvoid = Tag.parse(["param", "avoid_list", avoid])
+    paramTagMust = Tag.parse(["param", "must_list", must])
+    pTag = Tag.parse(["p", ptag])
+
+    tags = [relaysTag, alttag, paramTag, pTag, paramTagSearch, paramTagMust, paramTagAvoid]
+
+    event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content"),
+                         tags).to_event(keys)
+
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    for relay in relay_list:
+        await client.add_relay(relay)
+    ropts = RelayOptions().ping(False)
+    await client.add_relay_with_opts("wss://nostr.band", ropts)
+    await client.connect()
+    config = DVMConfig
+    await send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+
+
 async def nostr_client_test_discovery_user(user, ptag):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
@@ -310,11 +347,11 @@ async def nostr_client():
                                                EventDefinitions.KIND_ZAP]).since(
         Timestamp.now())  # events to us specific
     kinds = [EventDefinitions.KIND_NIP90_GENERIC]
-    SUPPORTED_KINDS = [Kind(6100), Kind(7000)]
+    #SUPPORTED_KINDS = [Kind(6100), Kind(7000)]
 
-    for kind in SUPPORTED_KINDS:
+    for kind in range(6000, 7001):
         if kind not in kinds:
-            kinds.append(kind)
+            kinds.append(Kind(kind))
     dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()).pubkey(pk))
     await client.subscribe([dm_zap_filter, dvm_filter], None)
 
@@ -322,7 +359,10 @@ async def nostr_client():
     # await nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
     # await nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
-    await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
+    #await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
+    await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "8e998d62eb20ec892acf9d5e8efa58050ccd951cae15a64eabbc5c0a7c74d185")
+
+
     # await nostr_client_test_search_profile("dontbelieve")
     #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
     # await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "ab6cdf12ca3ae5109416295b8cd8a53fdec3a9d54beb7a9aee0ebfb67cb4edf7")

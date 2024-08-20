@@ -1,7 +1,8 @@
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
+    EventSource
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -131,8 +132,8 @@ class AdvancedSearch(DVMTaskInterface):
         else:
             notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
                 search_since).until(search_until).limit(options["max_results"])
-
-        events = await cli.get_events_of([notes_filter], timedelta(seconds=5))
+        source = EventSource.relays(timedelta(seconds=5))
+        events = await cli.get_events_of([notes_filter], timedelta(seconds=source))
 
         result_list = []
         if len(events) > 0:

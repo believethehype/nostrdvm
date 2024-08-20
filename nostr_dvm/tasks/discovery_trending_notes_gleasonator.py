@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 from nostr_sdk import Tag, Kind, init_logger, LogLevel, Filter, Timestamp, RelayOptions, Client, NostrSigner, Keys, \
-    SecretKey, Options, SingleLetterTag, Alphabet, PublicKey
+    SecretKey, Options, SingleLetterTag, Alphabet, PublicKey, EventSource
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -11,7 +11,6 @@ from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
 """
@@ -84,8 +83,9 @@ class TrendingNotesGleasonator(DVMTaskInterface):
         ltags = ["#e", "pub.ditto.trends"]
         authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
         notes_filter = Filter().authors(authors).kind(Kind(1985)).custom_tag(SingleLetterTag.lowercase(Alphabet.L), ltags)
+        source = EventSource.relays(timedelta(seconds=10))
 
-        events = await cli.get_events_of([notes_filter], timedelta(seconds=10))
+        events = await cli.get_events_of([notes_filter], source)
 
         result_list = []
         if len(events) > 0:

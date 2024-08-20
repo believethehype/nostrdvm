@@ -338,7 +338,7 @@ class DVM:
                                         return
                                 elif tag.as_vec()[0] == 'status':
                                     status = tag.as_vec()[1]
-                                    print(status)
+
 
                                 # if a reaction by us got zapped
                             print(status)

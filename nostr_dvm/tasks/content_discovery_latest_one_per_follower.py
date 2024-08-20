@@ -5,7 +5,7 @@ from datetime import timedelta
 from threading import Thread
 
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, Event
+    RelayLimits, Event, EventSource
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -92,7 +92,8 @@ class Discoverlatestperfollower(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.get_events_of([followers_filter], timedelta(seconds=5))
+        source = EventSource.relays(timedelta(seconds=5))
+        followers = await cli.get_events_of([followers_filter], source)
 
         if len(followers) > 0:
             result_list = []
@@ -140,7 +141,8 @@ class Discoverlatestperfollower(DVMTaskInterface):
                     filter1 = (Filter().author(PublicKey.from_hex(users[i])).kind(Kind(1))
                                .limit(1))
                     filters.append(filter1)
-                event_from_authors = await cli.get_events_of(filters, timedelta(seconds=10))
+                source = EventSource.relays(timedelta(seconds=10))
+                event_from_authors = await cli.get_events_of(filters, source)
                 for author in event_from_authors:
                     if instance.dic[author.author().to_hex()] is None:
                         instance.dic[author.author().to_hex()] = author
