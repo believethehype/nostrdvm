@@ -485,6 +485,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
+    #dvm_config.ENABLE_NUTZAP = True
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
@@ -1062,6 +1063,8 @@ def playground():
 
     x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
     x.start()
+    #make sure the last thing joins, either here by calling x.join() or in a call a dvm with .run(True)
+    x.join()
 
      # keep_alive()
 

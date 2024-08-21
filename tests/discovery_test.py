@@ -22,6 +22,7 @@ from nostr_dvm.tasks.content_discovery_currently_popular_followers import Dicove
 from nostr_dvm.tasks.content_discovery_currently_popular_topic import DicoverContentCurrentlyPopularbyTopic
 from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
@@ -31,13 +32,16 @@ from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
-rebroadcast_NIP89 = True   # Announce NIP89 on startup Only do this if you know what you're doing.
+rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
 update_profile = False
 
 global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 log_level = LogLevel.INFO
+if use_logger:
+    init_logger(log_level)
+
 
 
 
@@ -47,8 +51,6 @@ RELAY_LIST = ["wss://relay.primal.net",
               "wss://relay.nostr.net"
               ]
 
-if use_logger:
-    init_logger(log_level)
 
 
 def build_db_scheduler(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
@@ -485,6 +487,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
+    dvm_config.ENABLE_NUTZAP = True
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
@@ -681,6 +684,36 @@ def playground():
                                                  update_db=update_db)
 
     discovery_topzaps.run()
+
+    admin_config_plants = AdminConfig()
+    admin_config_plants.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_plants.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_plants.UPDATE_PROFILE = update_profile
+    # admin_config_plants.DELETE_NIP89 = True
+    # admin_config_plants.PRIVKEY = ""
+    # admin_config_plants.EVENTID = "ff28be59708ee597c7010fd43a7e649e1ab51da491266ca82a84177e0007e4d6"
+    # admin_config_plants.POW = True
+    options_plants = {
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 48 * 60 * 60,  # 12h since gmt
+        "personalized": True,
+        "logger": False}
+
+    image = "https://i.nostr.build/VKcTV1Qo79ZRelrG.jpg"
+    description = "I show recent notes about custom topics you provide me with"
+    custom_processing_msg = ["Finding the best notes for you.. #blooming"]
+    update_db = False
+    cost = 0
+    discovery_custom = build_example_topic("Custom Discovery", "discovery_content_custom",
+                                           admin_config_plants, options_plants,
+                                           image=image,
+                                           description=description,
+                                           update_rate=global_update_rate,
+                                           cost=cost,
+                                           processing_msg=custom_processing_msg,
+                                           update_db=update_db)
+    discovery_custom.run(True)
+
 
 
 
