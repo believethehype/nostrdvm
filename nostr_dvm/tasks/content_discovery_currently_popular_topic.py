@@ -97,6 +97,15 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 param = tag.as_vec()[1]
                 if param == "max_results":  # check for param type
                     max_results = int(tag.as_vec()[2])
+                elif param == "search_list":  # check for param type
+                    self.search_list = str(tag.as_vec()[2]).split(",")
+                    print(self.search_list)
+                elif param == "avoid_list":  # check for param type
+                    self.avoid_list = str(tag.as_vec()[2]).split(",")
+                    print(self.avoid_list)
+                elif param == "must_list":  # check for param type
+                    self.must_list = str(tag.as_vec()[2]).split(",")
+                    print(self.must_list)
 
         options = {
             "max_results": max_results,
