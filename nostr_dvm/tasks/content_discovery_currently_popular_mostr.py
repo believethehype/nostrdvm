@@ -256,8 +256,10 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         #await cli.reconcile(filter3, dbopts)
 
         # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
-        events = await cli.get_events_of([filter1, filter2, filter3], None)
-
+        try:
+            events = await cli.get_events_of([filter1, filter2, filter3], timedelta(20))
+        except Exception as e:
+            print(e)
         # Do not delete profiles
         await cli.database().delete(Filter().kinds([EventDefinitions.KIND_NOTE, EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST, EventDefinitions.KIND_REACTION]).until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
