@@ -219,55 +219,58 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
                 return 0
 
     async def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        database = await NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
-
-        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-            await cli.add_relay(relay)
-
-        await cli.connect()
-
-        timestamp_since = Timestamp.now().as_secs() - self.db_since
-        since = Timestamp.from_secs(timestamp_since)
-
-        filter1 = Filter().kinds(
-            [definitions.EventDefinitions.KIND_NOTE, EventDefinitions.KIND_PROFILE, EventDefinitions.KIND_ZAP,
-             EventDefinitions.KIND_REPOST,
-             EventDefinitions.KIND_REACTION]).since(since)  # Notes, reactions, zaps
-        filter2 = Filter().kinds(
-            [EventDefinitions.KIND_PROFILE]).limit(10000)  # Notes, reactions, zaps
-        filter3 = Filter().kinds(
-            [EventDefinitions.KIND_ZAP,
-             EventDefinitions.KIND_REPOST,
-             EventDefinitions.KIND_REACTION]).since(since)  # Notes, reactions, zaps
-        # Notes, reactions, zaps
-
-        # filter = Filter().author(keys.public_key())
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
-                self.db_since) + " seconds.. this might take a while..")
-        #dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        #await cli.reconcile(filter1, dbopts)
-        #await cli.reconcile(filter2, dbopts)
-        #await cli.reconcile(filter3, dbopts)
-
-        # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
         try:
-            events = await cli.get_events_of([filter1, filter2, filter3], timedelta(20))
+            opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
+            sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+            keys = Keys.parse(sk.to_hex())
+            signer = NostrSigner.keys(keys)
+            database = await NostrDatabase.sqlite(self.db_name)
+            cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+
+            for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+                await cli.add_relay(relay)
+
+            await cli.connect()
+
+            timestamp_since = Timestamp.now().as_secs() - self.db_since
+            since = Timestamp.from_secs(timestamp_since)
+
+            filter1 = Filter().kinds(
+                [definitions.EventDefinitions.KIND_NOTE, EventDefinitions.KIND_PROFILE, EventDefinitions.KIND_ZAP,
+                 EventDefinitions.KIND_REPOST,
+                 EventDefinitions.KIND_REACTION]).since(since)  # Notes, reactions, zaps
+            filter2 = Filter().kinds(
+                [EventDefinitions.KIND_PROFILE]).limit(10000)  # Notes, reactions, zaps
+            filter3 = Filter().kinds(
+                [EventDefinitions.KIND_ZAP,
+                 EventDefinitions.KIND_REPOST,
+                 EventDefinitions.KIND_REACTION]).since(since)  # Notes, reactions, zaps
+            # Notes, reactions, zaps
+
+            # filter = Filter().author(keys.public_key())
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
+                    self.db_since) + " seconds.. this might take a while..")
+            #dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
+            #await cli.reconcile(filter1, dbopts)
+            #await cli.reconcile(filter2, dbopts)
+            #await cli.reconcile(filter3, dbopts)
+
+            # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
+            try:
+                events = await cli.get_events_of([filter1, filter2, filter3], timedelta(20))
+            except Exception as e:
+                print(e)
+            # Do not delete profiles
+            await cli.database().delete(Filter().kinds([EventDefinitions.KIND_NOTE, EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST, EventDefinitions.KIND_REACTION]).until(Timestamp.from_secs(
+                Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
+            await cli.shutdown()
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print(
+                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                        self.db_since) + " seconds..")
         except Exception as e:
             print(e)
-        # Do not delete profiles
-        await cli.database().delete(Filter().kinds([EventDefinitions.KIND_NOTE, EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST, EventDefinitions.KIND_REACTION]).until(Timestamp.from_secs(
-            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-        await cli.shutdown()
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print(
-                "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
-                    self.db_since) + " seconds..")
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,
