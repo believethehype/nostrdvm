@@ -171,38 +171,40 @@ class DicoverContentLatestLongForm(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        relaylimits = RelayLimits.disable()
-        opts = (Options().wait_for_send(False).send_timeout(
-            timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT))).relay_limits(relaylimits)
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        database = await NostrDatabase.sqlite(self.db_name)
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+        try:
+            relaylimits = RelayLimits.disable()
+            opts = (Options().wait_for_send(False).send_timeout(
+                timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT))).relay_limits(relaylimits)
+            sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+            keys = Keys.parse(sk.to_hex())
+            signer = NostrSigner.keys(keys)
+            database = await NostrDatabase.sqlite(self.db_name)
+            cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
-        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-            await cli.add_relay(relay)
+            for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+                await cli.add_relay(relay)
 
-        await cli.connect()
+            await cli.connect()
 
-        timestamp_since = Timestamp.now().as_secs() - self.db_since
-        since = Timestamp.from_secs(timestamp_since)
+            timestamp_since = Timestamp.now().as_secs() - self.db_since
+            since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kinds([definitions.EventDefinitions.KIND_LONGFORM]).since(since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_LONGFORM]).since(since)  # Notes, reactions, zaps
 
-        # filter = Filter().author(keys.public_key())
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
-                self.db_since) + " seconds.. this might take a while..")
-        dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        await cli.reconcile(filter1, dbopts)
-        await cli.database().delete(Filter().until(Timestamp.from_secs(
-            Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-        await cli.shutdown()
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print(
-                "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
-
+            # filter = Filter().author(keys.public_key())
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
+                    self.db_since) + " seconds.. this might take a while..")
+            dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
+            await cli.reconcile(filter1, dbopts)
+            await cli.database().delete(Filter().until(Timestamp.from_secs(
+                Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
+            await cli.shutdown()
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print(
+                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+        except Exception as e:
+            print(e)
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
