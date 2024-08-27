@@ -49,6 +49,7 @@ class DVMConfig:
     UPDATE_DATABASE = True  # DVMs that use a db manage their db by default. If a dvm should use the same db as another DVM, deactive it for those who do.
     CUSTOM_PROCESSING_MESSAGE = None
     LOGLEVEL = LogLevel.DEBUG
+    KIND = None
 
     # Make sure you have the cashu library installed and built correctly on your system, before enableing nutzaps for a DVM
     # this is not installed by default
