@@ -21,6 +21,7 @@ def playground(announce=False):
     identifier = "duckduckchat"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(5050)  # Manually set the Kind Number (see data-vending-machines.org)
+    dvm_config.SEND_FEEDBACK_EVENTS = False
 
     # Add NIP89
     nip89info = {
