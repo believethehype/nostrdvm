@@ -46,7 +46,8 @@ class GenericDVM(DVMTaskInterface):
                     prompt = tag.as_vec()[1]
 
         request_form = {"jobID": event.id().to_hex()}
-        self.options["input"] = prompt
+        if prompt != "":
+            self.options["input"] = prompt
         request_form['options'] = json.dumps(self.options)
         return request_form
 
