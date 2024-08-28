@@ -102,27 +102,8 @@ def playground():
                                       update_rate=global_update_rate,
                                       processing_msg=custom_processing_msg,
                                       update_db=update_db)
-    discovery_mostr.run()
+    discovery_mostr.run(True)
 
-    # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
-    # discovery_test_sub.run()
-
-    # Subscription Manager DVM
-    # subscription_config = DVMConfig()
-    # subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
-    # npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
-    # invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
-    # subscription_config.LNBITS_INVOICE_KEY = invoice_key
-    # subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
-    # subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    # sub_admin_config = AdminConfig()
-    # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
-
-    # currently there is none, but add this once subscriptions are live.
-    # x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
-    # x.start()
-
-    # keep_alive()
 
 
 if __name__ == '__main__':
