@@ -267,6 +267,35 @@ async def nostr_client_generic_test(ptag):
     return event.as_json()
 
 
+async def nostr_client_duckduck_test(ptag, query):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    relay_list = ["wss://nostr.oxtr.dev", "wss://relay.primal.net",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task"])
+
+    pTag = Tag.parse(["p", ptag])
+    iTag = Tag.parse(["i", query, "text"])
+
+    tags = [relaysTag, alttag, pTag, iTag]
+
+    event = EventBuilder(Kind(5050), str("Give me content"),
+                         tags).to_event(keys)
+
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    for relay in relay_list:
+        await client.add_relay(relay)
+    ropts = RelayOptions().ping(False)
+    await client.connect()
+    config = DVMConfig
+    await send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+
+
+
 
 async def nostr_client_test_discovery_user(user, ptag):
     keys = Keys.parse(check_and_set_private_key("test_client"))
@@ -390,7 +419,7 @@ async def nostr_client():
     #await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
    # await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "8e998d62eb20ec892acf9d5e8efa58050ccd951cae15a64eabbc5c0a7c74d185")
 
-    await nostr_client_generic_test("da1a5e31dec2d34e09da02974f832d3e4df81d9f254a8035e91da615dcb53920")
+    await nostr_client_duckduck_test("aa8ab5b774d47e7b29a985dd739cfdcccf93451678bf7977ba1b2e094ecd8b30", "Tell me a joke")
 
     # await nostr_client_test_search_profile("dontbelieve")
     #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
