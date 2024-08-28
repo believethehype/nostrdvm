@@ -419,7 +419,7 @@ async def nostr_client():
     #await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
    # await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "8e998d62eb20ec892acf9d5e8efa58050ccd951cae15a64eabbc5c0a7c74d185")
 
-    await nostr_client_duckduck_test("aa8ab5b774d47e7b29a985dd739cfdcccf93451678bf7977ba1b2e094ecd8b30", "Tell me a joke")
+    await nostr_client_duckduck_test("a018ba05af400b52772e33162d8326fca4a167fe7b6d3cd2382e14cac2af6841", "Write me a poem about purple ostriches")
 
     # await nostr_client_test_search_profile("dontbelieve")
     #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
