@@ -2,7 +2,7 @@
 import json
 import sqlite3
 
-from _sqlite3 import Error
+from sqlite3 import Error
 from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
