@@ -38,8 +38,15 @@ class GenericDVM(DVMTaskInterface):
     async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
         print(self.dvm_config.PRIVATE_KEY)
+        prompt = ""
+        for tag in event.tags():
+            if tag.as_vec()[0] == 'i':
+                input_type = tag.as_vec()[2]
+                if input_type == "text":
+                    prompt = tag.as_vec()[1]
 
         request_form = {"jobID": event.id().to_hex()}
+        self.options["input"] = prompt
         request_form['options'] = json.dumps(self.options)
         return request_form
 
