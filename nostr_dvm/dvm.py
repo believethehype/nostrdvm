@@ -204,7 +204,7 @@ class DVM:
                                                            self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
-                    if dvm.TASK == task and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:
+                    if dvm.TASK == task or dvm.TASK == "generic" and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:
                         task_is_free = True
 
                 cashu_redeemed = False
@@ -542,7 +542,7 @@ class DVM:
 
                 task = await get_task(original_event, self.client, self.dvm_config)
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
-                    if task == dvm.TASK:
+                    if task == dvm.TASK or dvm.TASK == "generic":
                         try:
                             post_processed = await dvm.post_process(data, original_event)
                             await send_nostr_reply_event(post_processed, original_event.as_json())
@@ -785,7 +785,7 @@ class DVM:
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     result = ""
                     try:
-                        if task == dvm.TASK:
+                        if task == dvm.TASK or dvm.TASK == "generic":
 
                             request_form = await dvm.create_request_from_nostr_event(job_event, self.client,
                                                                                      self.dvm_config)
