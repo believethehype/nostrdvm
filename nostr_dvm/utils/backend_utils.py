@@ -135,15 +135,14 @@ async def check_task_is_supported(event: Event, client, config=None):
 
         # See if current dvm supports the task
         task = await get_task(event, client=client, dvm_config=dvm_config)
-        if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS):
-            return False, task
+       # if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS) and not task == "generic":
+       #     return False, task
         # See if current dvm can handle input for given task
         for dvm in dvm_config.SUPPORTED_DVMS:
             if dvm.TASK == task:
                 if not await dvm.is_input_supported(event.tags(), client, config):
                     return False, task
         return True, task
-
 
     except Exception as e:
         print("Check task: " + str(e))
@@ -185,7 +184,7 @@ def check_url_is_readable(url):
 def get_amount_per_task(task, dvm_config, duration=1):
     #  duration is either static 1 (for images etc) or in seconds by default (e.g. audio/video)
     for dvm in dvm_config.SUPPORTED_DVMS:  # this is currently just one
-        if dvm.TASK == task:
+        if dvm.TASK == task or dvm.TASK  == "generic":
             amount = dvm.FIX_COST + (dvm.PER_UNIT_COST * duration)
             return amount
     else:
