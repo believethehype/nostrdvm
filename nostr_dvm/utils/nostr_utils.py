@@ -143,6 +143,27 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
         return relays
 
 
+async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
+    ptags = []
+    for tag in event_to_send.tags():
+        if tag.as_vec()[0] == 'p':
+            ptag = PublicKey.parse(tag.as_vec()[1])
+            ptags.append(ptag)
+
+    filter = Filter().kinds([EventDefinitions.KIND_FOLLOW_LIST]).authors(ptags)
+    events = await client.get_events_of([filter], timedelta(dvm_config.RELAY_TIMEOUT))
+    if len(events) == 0:
+        return []
+    else:
+        followlist = events[0]
+        content = json.loads(followlist.content())
+        relays = []
+        for relay in content:
+           relays.append(relay)
+        return relays
+
+
+
 async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
     # 1. OK, Let's overcomplicate things.
@@ -167,7 +188,8 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     # 4. If we don't find inbox relays (e.g. because the user didn't announce them, we just send to our default relays
     if len(relays) == 0:
         print("[" + dvm_config.NIP89.NAME + "] No Inbox found, replying to generic relays")
-        relays = dvm_config.RELAY_LIST
+        relays = await get_main_relays(event, client, dvm_config)
+
         #eventid = await send_event(event, client, dvm_config)
         #return eventid
 
@@ -195,6 +217,23 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     except Exception as e:
         event_id = None
         print(e)
+
+    # 5. Fallback, if we couldn't send the event to any relay, we try to send to generic relays instead.
+    if event_id is None:
+        for relay in relays:
+            outboxclient.remove_relay(relay)
+
+        relays = await get_main_relays(event, client, dvm_config)
+        for relay in relays:
+            opts = RelayOptions().ping(False)
+            await outboxclient.add_relay_with_opts(relay, opts)
+        try:
+            event_id = await outboxclient.send_event(event)
+        except Exception as e:
+            # Love yourself then.
+            event_id = None
+            print(e)
+
 
     await outboxclient.shutdown()
     return event_id
