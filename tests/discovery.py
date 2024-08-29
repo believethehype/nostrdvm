@@ -631,7 +631,7 @@ def playground():
     admin_config_db_scheduler= AdminConfig()
     options_animal = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 48 * 60 * 60,  # 48h since gmt,
+        "db_since": 24 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
     image = ""
@@ -855,7 +855,7 @@ def playground():
 
         "must_list": ["http"],
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 48 * 60 * 60,  # 48h since gmt,
+        "db_since": 24 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
 
@@ -1049,6 +1049,52 @@ def playground():
 
     # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
     # discovery_test_sub.run()
+
+
+    admin_config_nostriga = AdminConfig()
+    admin_config_nostriga.REBROADCAST_NIP89 = False #rebroadcast_NIP89
+    admin_config_nostriga.REBROADCAST_NIP65_RELAY_LIST =  False #rebroadcast_NIP65_Relay_List
+    admin_config_nostriga.UPDATE_PROFILE = update_profile
+    admin_config_nostriga.DELETE_NIP89 = True
+    admin_config_nostriga.PRIVKEY = "6221e31813df07037dd90a608fc4cf29222c59da130f76c7f8d0d19c3a876d8e"
+    admin_config_nostriga.EVENTID = "24ac21fb32993744232356bafcabd821e4afed4b18aac8d7e670d1071f6ad77a"
+    admin_config_nostriga.POW = True
+    options_nostriga = {
+        "search_list": ["nostriga", "#nostriga", "#noobday" ],
+        "avoid_list": ["porn", "smoke", "nsfw",
+                       "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
+                       "moderna", "pfizer", "corona", "socialism", "critical theory", "murder", "tax", "engagement",
+                       "gdp", "global markets",
+                       "presidency", "dollar", "asset", "microsoft", "amazon", "billionaire", "ceo", "industry",
+                       "white house",  "summary", "wealth", "beef", "cunt", "nigger", "business",
+                       "retail", "bakery", "synth", "slaughterhouse", "hamas", "dog days", "ww3", "socialmedia",
+                       "nintendo",  "deepfake", "congressman", "cypherpunk", "minister", "dissentwatch",
+                       "inkblot", "covid", "robot", "pandemic", "bethesda", "zap farming", " defi ", " minister ",
+                       "nostr-hotter-site", "palestine", "https://boards.4chan", "https://techcrunch.com",
+                       "https://screenrant.com"],
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 12 * 60 * 60,  # 12h since gmt
+        "personalized": False,
+        "logger": False}
+
+    image = "https://image.nostr.build/007c8b252f1ea60361082921e1c232260e823c903e7edab092de47ae63bdcf0b.png"
+    description = "I'm a temporary DVM and I show notes about Nostriga'"
+    custom_processing_msg = ["Finding notes about Nostriga #nostriga", ]
+    update_db = False
+    cost = 0
+
+    #discovery_nostriga = build_example_topic("Nostriga", "discovery_content_nostriga",
+    #                                       admin_config_nostriga, options_nostriga,
+    #                                       image=image,
+    #                                       description=description,
+    #                                       update_rate=global_update_rate,
+    #                                       cost=cost,
+    #                                       processing_msg=custom_processing_msg,
+    #                                       update_db=update_db)
+    #discovery_nostriga.run()
+
+
+
 
     # Subscription Manager DVM
     subscription_config = DVMConfig()
