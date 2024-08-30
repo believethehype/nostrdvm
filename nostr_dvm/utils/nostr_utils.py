@@ -156,11 +156,15 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
         return []
     else:
         followlist = events[0]
-        content = json.loads(followlist.content())
-        relays = []
-        for relay in content:
-           relays.append(relay)
-        return relays
+        try:
+            content = json.loads(followlist.content())
+            relays = []
+            for relay in content:
+               relays.append(relay)
+            return relays
+        except:
+            return []
+
 
 
 
