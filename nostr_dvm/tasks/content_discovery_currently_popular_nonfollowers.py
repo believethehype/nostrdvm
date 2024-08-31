@@ -144,9 +144,8 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         database = await NostrDatabase.sqlite(self.db_name)
 
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
-        await cli.add_relay("wss://relay.damus.io")
-        await cli.add_relay("wss://nostr.oxtr.dev")
-        await cli.add_relay("wss://nostr.mom")
+        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            await cli.add_relay(relay)
 
         # ropts = RelayOptions().ping(False)
         # cli.add_relay_with_opts("wss://nostr.band", ropts)
@@ -173,8 +172,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
             print("Couldn't find follower List")
             return []
 
-
-
+        print(len(followings))
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -182,8 +180,8 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
         events = await database.query([filter1])
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+
+        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
 
         for event in events:
@@ -198,6 +196,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
             if len(reactions) >= self.min_reactions:
                 ns.finallist[event.id().to_hex()] = len(reactions)
 
+        print(len(ns.finallist))
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
@@ -254,6 +253,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
                     "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
         except Exception as e:
             print(e)
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the

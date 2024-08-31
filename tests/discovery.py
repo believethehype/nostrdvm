@@ -758,7 +758,8 @@ def playground():
         "db_since": 60 * 60 * 6,  # 8h since gmt,
     }
     cost = 0
-    image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
+    #image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
+    image = "https://i.nostr.build/U5AO3vUMy47NWSQG.png"
     discovery_topzaps = build_example_top_zapped("Top Zapped notes",
                                                  "discovery_content_top_zaps",
                                                  admin_config=admin_config_top_zaps,
@@ -943,8 +944,8 @@ def playground():
         "db_since": 2 * 60 * 60,  # 2h since gmt,
     }
     cost = 0
-    image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
-
+    #image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
+    image = "https://i.nostr.build/ZJqko0W9ApEVZAPt.png"
     discovery_followers = build_example_popular_followers(
         "Popular from npubs you follow",
         "discovery_content_followers",
@@ -972,7 +973,7 @@ def playground():
     update_db = False
     options_nonfollowers_popular = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 3 * 60 * 60,  # 2h since gmt,
+        "db_since": 2 * 60 * 60,  # 2h since gmt,
     }
     cost = 0
     image = "https://i.nostr.build/l11EczDmpZBaxlRm.jpg"
@@ -1005,7 +1006,8 @@ def playground():
         "db_since": 60 * 60 * 2,  # 1h since gmt,
     }
     cost = 0
-    image = "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg"
+    #image = "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg"
+    image = "https://i.nostr.build/fsGWicUhyRrfy85d.jpg"
     discovery_one_per_follow = build_example_oneperfollow("One per follow",
                                                           "discovery_latest_per_follow",
                                                           admin_config=admin_config_opf,
@@ -1035,7 +1037,8 @@ def playground():
         "db_since": 60 * 60,  # 1h since gmt,
     }
     cost = 0
-    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg"
+    #image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg"
+    image = "https://i.nostr.build/AnBKrfAIRMhWm0h3.jpg"
     discovery_global = build_example_popular("Currently Popular Notes DVM",
                                              "discovery_content_test",
                                              admin_config=admin_config_global_popular,
