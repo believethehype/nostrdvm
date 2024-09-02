@@ -26,8 +26,9 @@ def playground(announce=False):
     identifier = "flux"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
-    dvm_config.SEND_FEEDBACK_EVENTS = False
-    #dvm_config.FIX_COST = 20
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = ["Generating image.."]
+    dvm_config.SEND_FEEDBACK_EVENTS = True
+    dvm_config.FIX_COST = 20
 
     # Add NIP89
     nip89info = {
