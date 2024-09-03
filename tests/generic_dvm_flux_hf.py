@@ -42,7 +42,7 @@ def playground(announce=False):
     }
 
     nip89config = NIP89Config()
-    nip89config.KIND = kind
+    nip89config.KIND = Kind(kind)
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
@@ -65,7 +65,7 @@ def playground(announce=False):
         def query(payload):
             response = requests.post(API_URL, headers=headers, json=payload)
             if response.status_code == 500:
-                raise Exception("Internal server error, try again later.")
+                raise Exception(response.text)
             else:
                 return response.content
 
@@ -76,12 +76,14 @@ def playground(announce=False):
         })
         import io
         from PIL import Image
-
-        image = Image.open(io.BytesIO(image_bytes))
-        image.save("flux.png")
-        url = await upload_media_to_hoster("flux.png")
-        os.remove("flux.png")
-        return url
+        try:
+            image = Image.open(io.BytesIO(image_bytes))
+            image.save("flux.png")
+            url = await upload_media_to_hoster("flux.png")
+            os.remove("flux.png")
+            return url
+        except Exception as e:
+            raise Exception(e)
 
 
     dvm.process = process  # overwrite the process function with the above one
