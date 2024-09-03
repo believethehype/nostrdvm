@@ -12,6 +12,7 @@ from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from nostr_dvm.utils.output_utils import send_job_status_reaction
 
 
 def playground(announce=False):
@@ -43,7 +44,8 @@ def playground(announce=False):
     identifier = "duckduckchat_llm"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
-    dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.CUSTOM_PROCESSING_MESSAGE = "Creating a personalized feed based on the topics you write about. This might take a moment."
+
 
     # Add NIP89
     nip89info = {
@@ -69,6 +71,7 @@ def playground(announce=False):
                      admin_config=admin_config, options=options)
 
     async def process(request_form):
+        since = 3 * 60 * 60
         options = dvm.set_options(request_form)
         sk = SecretKey.from_hex(dvm.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
@@ -109,6 +112,9 @@ def playground(announce=False):
             result = result.replace(", ", ",")
             print(result)
 
+        content = dvm_config.CUSTOM_PROCESSING_MESSAGE + "\n\nYour topics are:\n"+result.replace(",", ", ")
+        await send_job_status_reaction(original_event_id_hex=dvm.options["request_event_id"], original_event_author_hex=dvm.options["request_event_author"],  client=cli, dvm_config=dvm_config, content=content)
+
         #prompt = "Only reply with the result. For each word in this comma seperated list, add 3 synonyms to the list. Return one single list seperated with commas.: " + result
         #async with DuckChat(model=ModelType.GPT4o) as chat:
         #    query = prompt
@@ -121,7 +127,7 @@ def playground(announce=False):
 
         database = await NostrDatabase.sqlite("db/nostr_recent_notes.db")
 
-        timestamp_since = Timestamp.now().as_secs() -   4 * 60 * 60
+        timestamp_since = Timestamp.now().as_secs() -   since
         since = Timestamp.from_secs(timestamp_since)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)

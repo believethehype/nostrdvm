@@ -52,6 +52,8 @@ class GenericDVM(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         self.options["user"] = user
+        self.options["request_event_id"] = event.id().to_hex()
+        self.options["request_event_author"] = event.author().to_hex()
         if prompt != "":
             self.options["input"] = prompt
         request_form['options'] = json.dumps(self.options)
