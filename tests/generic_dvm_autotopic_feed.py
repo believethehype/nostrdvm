@@ -57,7 +57,7 @@ def playground(announce=False):
     }
 
     nip89config = NIP89Config()
-    nip89config.KIND = kind
+    nip89config.KIND = Kind(kind)
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
