@@ -6,13 +6,15 @@ from types import NoneType
 
 import emoji
 import requests
-from nostr_sdk import Tag, PublicKey, EventId, Keys
+from nostr_sdk import Tag, PublicKey, EventId, Keys, nip04_encrypt, EventBuilder, LogLevel
 from pyupload.uploader import CatboxUploader
 
 import pandas
-
+from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nip98_utils import generate_nip98_header
+from nostr_dvm.utils.nostr_utils import send_event_outbox
 
 '''
 Post process results to either given output format or a Nostr readable plain text.
@@ -290,3 +292,35 @@ def build_status_reaction(status, task, amount, content, dvm_config):
         reaction = emoji.emojize(":thumbs_down:")
 
     return alt_description, reaction
+
+
+
+async def send_job_status_reaction(original_event_id_hex, original_event_author_hex, client, dvm_config,
+                                   content=None,
+                                   status="processing", user=None):
+
+    alt_description, reaction = build_status_reaction(status, "generic", 0, content, dvm_config)
+
+    e_tag = Tag.parse(["e", original_event_id_hex])
+    p_tag = Tag.parse(["p", original_event_author_hex])
+    alt_tag = Tag.parse(["alt", content])
+    status_tag = Tag.parse(["status", status])
+
+    reply_tags = [e_tag, alt_tag, status_tag]
+
+    reply_tags.append(p_tag)
+    content = reaction
+
+    keys = Keys.parse(dvm_config.PRIVATE_KEY)
+    reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
+    # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
+    await send_event_outbox(reaction_event, client=client, dvm_config=dvm_config)
+
+    if dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+        print(bcolors.YELLOW + "[" + dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
+            EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
+    elif dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
+        print(bcolors.YELLOW + "[" + dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
+            EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.id().to_hex() + bcolors.ENDC)
+
+    return reaction_event.as_json()
