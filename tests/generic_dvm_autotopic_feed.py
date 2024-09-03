@@ -45,7 +45,7 @@ def playground(announce=False):
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
     dvm_config.CUSTOM_PROCESSING_MESSAGE = "Creating a personalized feed based on the topics you write about. This might take a moment."
-
+    dvm_config.FIX_COST = 10
 
     # Add NIP89
     nip89info = {
@@ -64,7 +64,7 @@ def playground(announce=False):
     nip89config.CONTENT = json.dumps(nip89info)
 
     options = {
-        "input": "How do you call a noisy ostrich?",
+        "input": "",
     }
 
     dvm = GenericDVM(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -138,16 +138,16 @@ def playground(announce=False):
         ns.finallist = {}
 
         for event in events:
-            if all(ele in event.content().lower() for ele in []):
-                if any(ele in event.content().lower() for ele in result):
-                    if not any(ele in event.content().lower() for ele in []):
-                        filt = Filter().kinds(
-                            [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
-                             definitions.EventDefinitions.KIND_REPOST,
-                             definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                        reactions = await database.query([filt])
-                        if len(reactions) >= 1:
-                            ns.finallist[event.id().to_hex()] = len(reactions)
+            #if all(ele in event.content().lower() for ele in []):
+            if any(ele in event.content().lower() for ele in result):
+                    #if not any(ele in event.content().lower() for ele in []):
+                    filt = Filter().kinds(
+                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                         definitions.EventDefinitions.KIND_REPOST,
+                         definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+                    reactions = await database.query([filt])
+                    if len(reactions) >= 1:
+                        ns.finallist[event.id().to_hex()] = len(reactions)
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(200)]
