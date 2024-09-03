@@ -204,7 +204,7 @@ class DVM:
                                                            self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
-                    if dvm.TASK == task or dvm.TASK == "generic" and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:
+                    if (dvm.TASK == task or dvm.TASK == "generic") and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:
                         task_is_free = True
 
                 cashu_redeemed = False
