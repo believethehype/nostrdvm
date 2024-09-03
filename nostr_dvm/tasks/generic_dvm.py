@@ -39,13 +39,19 @@ class GenericDVM(DVMTaskInterface):
         self.dvm_config = dvm_config
         print(self.dvm_config.PRIVATE_KEY)
         prompt = ""
+        user = event.author().to_hex()
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":
                     prompt = tag.as_vec()[1]
+            elif tag.as_vec()[0] == 'param':
+                if tag.as_vec()[1] == 'user':
+                    user = tag.as_vec()[2]
 
         request_form = {"jobID": event.id().to_hex()}
+
+        self.options["user"] = user
         if prompt != "":
             self.options["input"] = prompt
         request_form['options'] = json.dumps(self.options)
