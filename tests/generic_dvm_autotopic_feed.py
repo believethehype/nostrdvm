@@ -40,7 +40,7 @@ def playground(announce=False):
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
     admin_config.UPDATE_PROFILE = announce
 
-    name = "Personalized Feed"
+    name = "Your topics (beta)"
     identifier = "duckduckchat_llm"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
@@ -50,8 +50,8 @@ def playground(announce=False):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
-        "about": "I'm briding DuckDuckAI'",
+        "image": "https://i.nostr.build/I8fJo0n355cbNEbS.png", # "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
+        "about": "I create a personalized feed based on topics you were writing about recently",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {
@@ -64,14 +64,14 @@ def playground(announce=False):
     nip89config.CONTENT = json.dumps(nip89info)
 
     options = {
-        "input": "",
+        "input": "How do you call a noisy ostrich?",
     }
 
     dvm = GenericDVM(name=name, dvm_config=dvm_config, nip89config=nip89config,
                      admin_config=admin_config, options=options)
 
     async def process(request_form):
-        since = 3 * 60 * 60
+        since = 2 * 60 * 60
         options = dvm.set_options(request_form)
         sk = SecretKey.from_hex(dvm.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
@@ -112,7 +112,7 @@ def playground(announce=False):
             result = result.replace(", ", ",")
             print(result)
 
-        content = dvm_config.CUSTOM_PROCESSING_MESSAGE + "\n\nYour topics are:\n"+result.replace(",", ", ")
+        content = "I identified these as your topics:\n\n"+result.replace(",", ", ") + "\n\nProcessing, just a few more seconds..."
         await send_job_status_reaction(original_event_id_hex=dvm.options["request_event_id"], original_event_author_hex=dvm.options["request_event_author"],  client=cli, dvm_config=dvm_config, content=content)
 
         #prompt = "Only reply with the result. For each word in this comma seperated list, add 3 synonyms to the list. Return one single list seperated with commas.: " + result
@@ -136,10 +136,11 @@ def playground(announce=False):
         if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
+        search_list = result.split(',')
 
         for event in events:
             #if all(ele in event.content().lower() for ele in []):
-            if any(ele in event.content().lower() for ele in result):
+            if any(ele in event.content().lower() for ele in search_list):
                     #if not any(ele in event.content().lower() for ele in []):
                     filt = Filter().kinds(
                         [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
