@@ -24,6 +24,13 @@ class DVMConfig:
                    "wss://nostr.oxtr.dev",
                   "wss://relay.nostr.net" , "wss://relay.primal.net"] #, "wss://relay.snort.social"]
 
+    MUTE =  ["npub1x5vhtx7j2prvueeenwf7tmesrzmuzc50zs0aakgd75v5c30ekj3s5zjckj",
+              "npub1l03urys27uet2u6wq6u90rnzf7kv5c3wfu3cyndqz9lq75g46c5q0wkpsj",
+              "npub17g7qhlu4caefd88vateedm9wau9ys6xt6jhjcfu2kqyw9xmnucxs5d6crj",
+              "npub1epwccahqndqhseh6q02seu40cqa2ghk3u9tvu92yh4hd6lmxg33spwzujc",
+              "npub1v0kgu3hymtd4fw9zrlem6l74c3cwl8jdqentt4qsxrrzan6paxaqkkf6dr",
+            ]
+
     AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     #If a DVM has a paid subscription, overwrite list without the paid one.
 

@@ -75,7 +75,8 @@ async function generate_feed(id) {
         let tags = []
         //tags.push(["param", "max_results", "200"])
         tags.push(["param", "user", store.state.pubkey.toHex()])
-
+        let r = store.state.relays.join(",")
+        tags.push(["relays", r])
         let res;
         let requestid;
 

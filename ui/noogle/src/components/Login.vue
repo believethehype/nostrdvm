@@ -686,7 +686,10 @@ export default {
             let limits = RelayLimits.disable()
         let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
-        for (const relay of store.state.relays){
+
+
+
+          for (const relay of store.state.relays){
           await client.addRelay(relay);
         }
         await client.connect();
