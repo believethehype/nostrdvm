@@ -8,7 +8,7 @@ from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKe
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -97,7 +97,7 @@ class DiscoverReports(DVMTaskInterface):
         # if we don't add users, e.g. by a wot, we check all our followers.
         if len(pubkeys) == 0:
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
-            followers = await cli.get_events_of([followers_filter], timedelta(seconds=5))
+            followers = await cli.get_events_of([followers_filter],relay_timeout)
 
             if len(followers) > 0:
                 result_list = []
@@ -118,7 +118,7 @@ class DiscoverReports(DVMTaskInterface):
             options["since_days"])  # TODO make this an option, 180 days for now
         since = Timestamp.from_secs(ago)
         kind1984_filter = Filter().authors(pubkeys).kind(Kind(1984)).since(since)
-        reports = await cli.get_events_of([kind1984_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        reports = await cli.get_events_of([kind1984_filter], relay_timeout)
 
         bad_actors = []
         ns.dic = {}

@@ -9,7 +9,7 @@ from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKe
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -81,7 +81,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
-        followers = await cli.get_events_of([followers_filter], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        followers = await cli.get_events_of([followers_filter], relay_timeout)
 
         if len(followers) > 0:
             result_list = []
@@ -118,7 +118,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     filters = []
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(Kind(3))
                     filters.append(filter1)
-                    followers = await cli.get_events_of(filters, timedelta(seconds=3))
+                    followers = await cli.get_events_of(filters, relay_timeout)
 
                     if len(followers) > 0:
                         result_list = []

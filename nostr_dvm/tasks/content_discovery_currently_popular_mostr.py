@@ -9,7 +9,7 @@ from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKe
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout_long
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
@@ -126,50 +126,9 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
-        profilestorequest = []
-        #for event in events:
-        #    filt = Filter().kinds([EventDefinitions.KIND_PROFILE]).pubkey(event.author())
-        #    profiles = await database.query([filt])
-        #    # If the event is not in the DB, fetch it. I will be in the DB afterwards
-        #    if len(profiles) == 0 and event.author() not in profilestorequest:
-        #        profilestorequest.append(event.author())
-
-
-        #if len(profilestorequest) > 0:
-        #    print("requesting " + str(len(profilestorequest)) + " profiles")
-        #
-        #    for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
-        #        await cli.add_relay(relay)
-        #
-        #
-        #    await cli.connect()
-        #
-        #
-        #    chunks = [profilestorequest[x:x + 200] for x in range(0, len(profilestorequest), 200)]
-        #    index = 1
-        #    for entry in chunks:
-        #        print("Iteration " + str(index))
-        #        index += 1
-        #        filt = Filter().kinds([EventDefinitions.KIND_PROFILE]).authors(entry)
-        #        evts = await cli.get_events_of([filt], None)
-        #        if len(evts) > 0:
-        #            print(len(evts))
-        #        else:
-        #            print("Couldn't find profiles")
-
 
         for event in events:
 
-            #filt = Filter().kinds([EventDefinitions.KIND_PROFILE]).author(event.author())
-            #profiles = await cli.database().query([filt])
-            # If the event is not in the DB, fetch it. I will be in the DB afterwards
-            #if len(profiles) == 0:
-            #   print("No profile found")
-            #   continue
-            #else:
-            #    profile: Event = profiles[0]
-
-            #if "@mostr.pub" in profile.content() or "@momostr.pink" in profile.content():
             if event.created_at().as_secs() > timestamp_since:
                 filt = Filter().kinds(
                     [EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST,
@@ -258,7 +217,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
             # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
             try:
-                events = await cli.get_events_of([filter1, filter2, filter3], timedelta(20))
+                events = await cli.get_events_of([filter1, filter2, filter3], relay_timeout_long)
             except Exception as e:
                 print(e)
             # Do not delete profiles

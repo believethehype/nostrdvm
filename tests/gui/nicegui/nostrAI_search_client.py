@@ -9,7 +9,7 @@ from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, \
 from nostr_dvm.utils import dvmconfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key, get_events_by_id
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 
 
 @ui.page('/', dark=True)
@@ -65,8 +65,8 @@ async def init():
             [EventDefinitions.KIND_FEEDBACK]).since(now).event(eventid)
         lastfeedback = ""
         while not response:
-            events = await client.get_events_of([feedbackfilter], timedelta(seconds=3))
-            fevents = await client.get_events_of([feedbackfilter2], timedelta(seconds=3))
+            events = await client.get_events_of([feedbackfilter], relay_timeout)
+            fevents = await client.get_events_of([feedbackfilter2], relay_timeout)
             if len(fevents) > 0:
                 if lastfeedback != fevents[0].content():
                     for tag in fevents[0].tags():

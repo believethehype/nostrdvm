@@ -96,10 +96,6 @@ class SearchUser(DVMTaskInterface):
 
         filter1 = Filter().kind(Kind(0))
         events = await cli.database().query([filter1])
-        # for event in events:
-        #    print(event.as_json())
-
-        # events = cli.get_events_of([notes_filter], timedelta(seconds=5))
 
         result_list = []
         print("Events: " + str(len(events)))

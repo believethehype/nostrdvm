@@ -1,7 +1,8 @@
 import os
 from dataclasses import dataclass
+from datetime import timedelta
 
-from nostr_sdk import Event, Kind
+from nostr_sdk import Event, Kind, EventSource
 
 
 class EventDefinitions:
@@ -105,3 +106,6 @@ class InvoiceToWatch:
     is_paid: bool
     expires: int
 
+
+relay_timeout = EventSource.relays(timedelta(seconds=5))
+relay_timeout_long = EventSource.relays(timedelta(seconds=10))

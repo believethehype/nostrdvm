@@ -9,6 +9,8 @@ import pandas as pd
 
 import warnings
 
+from nostr_dvm.utils.definitions import relay_timeout
+
 warnings.filterwarnings('ignore')
 
 from nostr_sdk import RelayLimits, PublicKey, Options, Client, SecretKey, Keys, NostrSigner, RelayOptions, Filter, \
@@ -35,7 +37,7 @@ async def getmetadata(npub):
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    events = await client.get_events_of([profile_filter], timedelta(seconds=4))
+    events = await client.get_events_of([profile_filter], relay_timeout)
     if len(events) > 0:
         try:
             profile = json.loads(events[0].content())

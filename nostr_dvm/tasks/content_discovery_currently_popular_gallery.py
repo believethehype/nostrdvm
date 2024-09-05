@@ -9,7 +9,7 @@ from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKe
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
@@ -172,7 +172,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
 
         filter2 = Filter().ids(ids)
-        events = await cli.get_events_of([filter2], timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
+        events = await cli.get_events_of([filter2], relay_timeout)
 
         print(len(events))
 
@@ -277,6 +277,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                     "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
         except Exception as e:
             print(e)
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the

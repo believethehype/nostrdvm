@@ -6,9 +6,10 @@ from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
-    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner
+    Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner, Connection, ConnectionTarget, \
+    EventSource
 
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
 
 
 async def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
@@ -16,7 +17,7 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
     if len(split) == 3:
         pk = PublicKey.from_hex(split[1])
         id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-        events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+        events = await client.get_events_of([id_filter], relay_timeout)
     else:
         if str(event_id).startswith('note'):
             event_id = EventId.from_bech32(event_id)
@@ -31,8 +32,7 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
             event_id = EventId.from_hex(event_id)
 
         id_filter = Filter().id(event_id).limit(1)
-        #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
-        events = await client.get_events_of([id_filter], timedelta(seconds=5))
+        events = await client.get_events_of([id_filter], relay_timeout)
 
 
     if len(events) > 0:
@@ -43,7 +43,8 @@ async def get_event_by_id(event_id: str, client: Client, config=None) -> Event |
         return None
 
 async def get_events_async(client, filter, timeout):
-    events = await client.get_events_of([filter], timedelta(seconds=timeout))
+    source_l = EventSource.relays(timedelta(seconds=timeout))
+    events = await client.get_events_of([filter], source_l)
     return events
 
 
@@ -55,8 +56,7 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
         if len(split) == 3:
             pk = PublicKey.from_hex(split[1])
             id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-            events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
-            #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+            events = await client.get_events_of([id_filter], relay_timeout)
         else:
             if str(event_id).startswith('note'):
                 event_id = EventId.from_bech32(event_id)
@@ -72,9 +72,8 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
             search_ids.append(event_id)
 
             id_filter = Filter().ids(search_ids)
-            events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+            events = await client.get_events_of([id_filter], relay_timeout)
 
-    #events = client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
     if len(events) > 0:
         return events
     else:
@@ -84,7 +83,7 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
 async def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
     id_filter = Filter().ids(event_ids)
     #events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
-    events = await client.get_events_of([id_filter], timedelta(seconds=config.RELAY_TIMEOUT))
+    events = await client.get_events_of([id_filter], relay_timeout)
     if len(events) > 0:
         return events
     else:
@@ -109,9 +108,8 @@ async def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Eve
         job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
     else:
         job_id_filter = Filter().event(event_id).limit(1)
-    events = await client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
-    #events = await get_events_async(client, job_id_filter, dvm_config.RELAY_TIMEOUT)
-    #events = client.get_events_of([job_id_filter], timedelta(seconds=dvm_config.RELAY_TIMEOUT))
+    events = await client.get_events_of([job_id_filter], relay_timeout)
+
 
     if len(events) > 0:
         return events[0]
@@ -127,7 +125,7 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
             ptags.append(ptag)
 
     filter = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
-    events = await client.get_events_of([filter], timedelta(dvm_config.RELAY_TIMEOUT))
+    events = await client.get_events_of([filter], relay_timeout)
     if len(events) == 0:
         return []
     else:
@@ -150,8 +148,13 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
             ptag = PublicKey.parse(tag.as_vec()[1])
             ptags.append(ptag)
 
+    if len(await client.relays()) == 0:
+            for relay in dvm_config.RELAY_LIST:
+                await client.add_relay(relay)
+
+    await client.connect()
     filter = Filter().kinds([EventDefinitions.KIND_FOLLOW_LIST]).authors(ptags)
-    events = await client.get_events_of([filter], timedelta(dvm_config.RELAY_TIMEOUT))
+    events = await client.get_events_of([filter], relay_timeout)
     if len(events) == 0:
         return []
     else:
@@ -199,25 +202,35 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
     # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
     relaylimits = RelayLimits.disable()
+    connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
+    #connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
     opts = (
-        Options().wait_for_send(False).send_timeout(timedelta(seconds=dvm_config.RELAY_TIMEOUT)).relay_limits(
-            relaylimits))
+        Options().wait_for_send(False).send_timeout(timedelta(seconds=20)).relay_limits(
+            relaylimits)).connection(connection).connection_timeout(timedelta(seconds=120))
+
+
+
     sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
     signer = NostrSigner.keys(keys)
+    client = Client.with_opts(signer, opts)
+
+
+
     outboxclient = Client.with_opts(signer, opts)
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays:
-        opts = RelayOptions().ping(False)
         try:
-            await outboxclient.add_relay_with_opts(relay, opts)
+            await outboxclient.add_relay(relay)
         except:
             print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
-
+#
     await outboxclient.connect()
     try:
+        print("Connected, sending event")
         event_id = await outboxclient.send_event(event)
+        print(event_id.output)
     except Exception as e:
         event_id = None
         print(e)
@@ -227,11 +240,13 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         for relay in relays:
             await outboxclient.remove_relay(relay)
 
+
         relays = await get_main_relays(event, client, dvm_config)
         for relay in relays:
             opts = RelayOptions().ping(False)
             await outboxclient.add_relay_with_opts(relay, opts)
         try:
+            await outboxclient.connect()
             event_id = await outboxclient.send_event(event)
         except Exception as e:
             # Love yourself then.

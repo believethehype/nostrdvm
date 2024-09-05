@@ -18,6 +18,7 @@ from scipy.sparse import lil_matrix, csr_matrix, isspmatrix_csr
 
 from nostr_sdk import Options, Keys, NostrSigner, NostrDatabase, ClientBuilder, SecretKey, Kind, PublicKey, Filter
 
+from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 
@@ -60,7 +61,7 @@ async def get_following(pks, max_time_request=10, newer_than_time=None):
 
     await cli.connect()
 
-    events = await cli.get_events_of([filter], datetime.timedelta(seconds=max_time_request))
+    events = await cli.get_events_of([filter], relay_timeout)
 
     # initializing the graph structure
     following = nx.DiGraph()
@@ -598,7 +599,8 @@ async def get_metadata(npub):
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    events = await client.get_events_of([profile_filter], datetime.timedelta(seconds=4))
+
+    events = await client.get_events_of([profile_filter], relay_timeout)
     if len(events) > 0:
         try:
             profile = json.loads(events[0].content())
