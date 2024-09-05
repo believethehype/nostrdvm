@@ -383,6 +383,9 @@ class Subscription:
 
         async def handle_subscription_renewal(subscription):
             zaps = json.loads(subscription.zaps)
+
+
+
             success = await pay_zap_split(subscription.nwc, subscription.amount, zaps, subscription.tier,
                                           subscription.unit)
             if success:
@@ -393,6 +396,7 @@ class Subscription:
             else:
                 end = Timestamp.now().as_secs()
                 recipe = subscription.recipe
+                delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
 
             update_subscription_sql_table(dvm_config.DB, subscription.id,
                                           subscription.recipent,
@@ -421,6 +425,12 @@ class Subscription:
                 subscriptions = get_all_subscriptions_from_sql_table(dvm_config.DB)
 
                 for subscription in subscriptions:
+
+
+                    if subscription.nwc == "":
+                        delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
+
+
                     if subscription.active:
                         if subscription.end < Timestamp.now().as_secs():
                             # We could directly zap, but let's make another check if our subscription expired
