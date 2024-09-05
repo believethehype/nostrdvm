@@ -850,7 +850,6 @@ class DVM:
 
                         return
 
-        # await self.client.handle_notifications(NotificationHandler)
         asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
         while True:

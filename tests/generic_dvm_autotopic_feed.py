@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import timedelta
 from pathlib import Path
@@ -10,6 +11,7 @@ from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, Rel
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import send_job_status_reaction
@@ -40,12 +42,22 @@ def playground(announce=False):
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
     admin_config.UPDATE_PROFILE = announce
 
+
+
+
     name = "Your topics (beta)"
     identifier = "duckduckchat_llm"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
     dvm_config.CUSTOM_PROCESSING_MESSAGE = "Creating a personalized feed based on the topics you write about. This might take a moment."
     dvm_config.FIX_COST = 10
+
+
+    admin_config.DELETE_NIP89 = True
+    admin_config.POW = True
+    admin_config.EVENTID = "5322b731230cf8961f8403d025722a381af9b012b5d5f6dcc09f88e160f4e4ff"
+    admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
+
 
     # Add NIP89
     nip89info = {
@@ -69,6 +81,22 @@ def playground(announce=False):
 
     dvm = GenericDVM(name=name, dvm_config=dvm_config, nip89config=nip89config,
                      admin_config=admin_config, options=options)
+
+
+    async def process_request(request_form, prompt):
+        result = ""
+        try:
+            from duck_chat import DuckChat
+            options = dvm.set_options(request_form)
+            result = ""
+            async with DuckChat(model=ModelType.GPT4o) as chat:
+                query = prompt
+                result = await chat.ask_question(query)
+                result = result.replace(", ", ",")
+                print(result)
+        except Exception as e:
+            print(e)
+        return result
 
     async def process(request_form):
         since = 2 * 60 * 60
@@ -94,7 +122,7 @@ def playground(announce=False):
         author = PublicKey.parse(options["user"])
         filterauth = Filter().kind(definitions.EventDefinitions.KIND_NOTE).author(author).limit(100)
 
-        evts = await cli.get_events_of([filterauth], timedelta(5))
+        evts = await cli.get_events_of([filterauth], relay_timeout)
 
         text = ""
         for event in evts:
@@ -104,16 +132,11 @@ def playground(announce=False):
 
         prompt = "Only reply with the result. Here is a list of notes, seperated by ;. Find the 20 most important keywords and return them by a comma seperated list: " + text
 
-        from duck_chat import DuckChat
-        options = dvm.set_options(request_form)
-        async with DuckChat(model=ModelType.GPT4o) as chat:
-            query =  prompt
-            result = await chat.ask_question(query)
-            result = result.replace(", ", ",")
-            print(result)
-
+        #loop = asyncio.get_running_loop()
+        result = asyncio.run(process_request(request_form, prompt))
         content = "I identified these as your topics:\n\n"+result.replace(",", ", ") + "\n\nProcessing, just a few more seconds..."
         await send_job_status_reaction(original_event_id_hex=dvm.options["request_event_id"], original_event_author_hex=dvm.options["request_event_author"],  client=cli, dvm_config=dvm_config, content=content)
+
 
         #prompt = "Only reply with the result. For each word in this comma seperated list, add 3 synonyms to the list. Return one single list seperated with commas.: " + result
         #async with DuckChat(model=ModelType.GPT4o) as chat:
@@ -121,7 +144,7 @@ def playground(announce=False):
         #    result = await chat.ask_question(query)
         #    result = result.replace(", ", ",")
         #    print(result)
-
+        result = ""
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
@@ -136,11 +159,11 @@ def playground(announce=False):
         if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
-        search_list = result.split(',')
+        search_list = result.split('')
 
         for event in events:
             #if all(ele in event.content().lower() for ele in []):
-            if any(ele in event.content().lower() for ele in search_list):
+            if any(ele in event.content().lower() for ele in result):
                     #if not any(ele in event.content().lower() for ele in []):
                     filt = Filter().kinds(
                         [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,

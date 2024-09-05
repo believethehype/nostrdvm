@@ -79,7 +79,7 @@ class TranslationLibre(DVMTaskInterface):
         options = self.set_options(request_form)
         request = {
             "q": options["text"],
-            "source": "auto",
+            "relay_timeout": "auto",
             "target": options["language"]
         }
         if options["libre_api_key"] != "":

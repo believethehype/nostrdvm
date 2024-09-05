@@ -215,16 +215,16 @@ def OvercastDownload(source_url, target_location):
         return None
 
     def get_url(html_string):
-        """Find the URL from the <audio><source>.... tag"""
+        """Find the URL from the <audio><relay_timeout>.... tag"""
 
-        url = re.findall(r"<source src=\"(.+?)\"", html_string)
+        url = re.findall(r"<relay_timeout src=\"(.+?)\"", html_string)
         if len(url) == 1:
             # strip off the last 4 characters to cater for the #t=0 in the URL
             # which urlretrieve flags as invalid
             return url[0][:-4]
         return None
 
-    """Given a Overcast source URL fetch the file it points to"""
+    """Given a Overcast relay_timeout URL fetch the file it points to"""
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) "
                       "AppleWebKit/537.11 (KHTML, like Gecko) "

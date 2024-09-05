@@ -8,6 +8,7 @@ from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotificatio
     nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event, SecretKey, Kind
 
 from nostr_dvm.utils import definitions, dvmconfig
+from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.gallery_utils import gallery_announce_list
 from nostr_dvm.utils.nip89_utils import NIP89Config
@@ -61,7 +62,7 @@ async def test_referred_events(client, event_id, kinds=None):
     else:
         job_id_filter = Filter().event(EventId.from_hex(event_id))
 
-    events = await client.get_events_of([job_id_filter], timedelta(seconds=5))
+    events = await client.get_events_of([job_id_filter], relay_timeout)
 
     if len(events) > 0:
         for event in events:
@@ -141,7 +142,7 @@ async def test_search_by_user_since_days(client, pubkey, days, prompt):
     since = Timestamp.from_secs(dif)
 
     filterts = Filter().search(prompt).author(pubkey).kinds([Kind(1)]).since(since)
-    events = await client.get_events_of([filterts], timedelta(seconds=5))
+    events = await client.get_events_of([filterts], relay_timeout)
 
     if len(events) > 0:
         for event in events:

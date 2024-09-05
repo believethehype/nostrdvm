@@ -25,54 +25,6 @@ async def nwc_zap(connectionstr, bolt11, keys, externalrelay=None):
 
     event_id = await nwc.pay_invoice(bolt11)
     print("NWC event: " + event_id)
-
-
-    #target_pubkey, relay, secret = parse_connection_str(connectionstr)
-    #print(target_pubkey)
-    #print(relay)
-    #print(secret)
-    #SecretSK = Keys.parse(secret)
-
-    #content = {
-    #    "method": "pay_invoice",
-    #    "params": {
-    #        "invoice": bolt11
-    #    }
-    #}
-
-    #signer = NostrSigner.keys(keys)
-    #client = Client(signer)
-    #client.add_relay(relay)
-    #if externalrelay is not None:
-    #    client.add_relay(externalrelay)
-
-    #client.connect()
-
-    #client_public_key = PublicKey.from_hex(target_pubkey)
-    #encrypted_content = nip04_encrypt(SecretSK.secret_key(), client_public_key, json.dumps(content))
-
-    #pTag = Tag.parse(["p", client_public_key.to_hex()])
-
-    #event = EventBuilder(23194, encrypted_content,
-    #                     [pTag]).to_event(keys)
-
-    #ts = Timestamp.now()
-    #event_id = client.send_event(event)
-
-
-
-
-
-
-    #nwc_response_filter = Filter().kind(23195).since(ts)
-    #events = client.get_events_of([nwc_response_filter], timedelta(seconds=5))
-
-    #if len(events) > 0:
-    #    for evt in events:
-    #        print(evt.as_json())
-    #else:
-    #    print("No response found")
-
     return event_id
 
 

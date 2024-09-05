@@ -5,7 +5,7 @@ from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKe
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -132,7 +132,7 @@ class AdvancedSearch(DVMTaskInterface):
             notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
                 search_since).until(search_until).limit(options["max_results"])
 
-        events = await cli.get_events_of([notes_filter], timedelta(seconds=5))
+        events = await cli.get_events_of([notes_filter], relay_timeout)
 
         result_list = []
         if len(events) > 0:
