@@ -59,8 +59,12 @@ let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((
            try{
               tags.push(["i", tag.id, "event"])
            }
+
            catch{}
          }
+
+       let r = store.state.relays.join(",")
+       tags.push(["relays", r])
 
 
         let res;

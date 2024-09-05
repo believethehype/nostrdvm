@@ -61,6 +61,8 @@ async function generate_image(message) {
         let tags = [
               ["i", message, "text"]
             ]
+        let r = store.state.relays.join(",")
+        tags.push(["relays", r])
 
         hasmultipleinputs = false
         if (urlinput.value !== "" && urlinput.value.startsWith('http')){

@@ -583,7 +583,9 @@ class DVM:
             for tag in original_event.tags():
                 if tag.as_vec()[0] == "relays":
                     relay_tag = tag
-                    break
+                if tag.as_vec()[0] == "client":
+                    client = tag.as_vec()[1]
+                    reply_tags.append(Tag.parse(["client", client]))
             if relay_tag is not None:
                 reply_tags.append(relay_tag)
 

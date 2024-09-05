@@ -136,6 +136,11 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
 
             await cli.connect()
 
+
+
+            # Mute public key
+            await cli.mute_public_keys(self.dvm_config.MUTE)
+
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
