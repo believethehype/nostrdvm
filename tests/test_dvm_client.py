@@ -221,6 +221,7 @@ async def nostr_client_custom_discovery(user, ptag):
     paramTagSearch = Tag.parse(["param", "search_list", search])
     paramTagAvoid = Tag.parse(["param", "avoid_list", avoid])
     paramTagMust = Tag.parse(["param", "must_list", must])
+
     pTag = Tag.parse(["p", ptag])
 
     tags = [relaysTag, alttag, paramTag, pTag, paramTagSearch, paramTagMust, paramTagAvoid]
@@ -282,6 +283,32 @@ async def nostr_client_duckduck_test(ptag, query):
     tags = [relaysTag, alttag, pTag, iTag]
 
     event = EventBuilder(Kind(5050), str("Give me content"),
+                         tags).to_event(keys)
+
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    for relay in relay_list:
+        await client.add_relay(relay)
+    ropts = RelayOptions().ping(False)
+    await client.connect()
+    config = DVMConfig
+    await send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+async def nostr_client_flux_schnell(ptag, query):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    relay_list = ["wss://nostr.oxtr.dev", "wss://relay.primal.net",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task"])
+
+    pTag = Tag.parse(["p", ptag])
+    iTag = Tag.parse(["i", query, "text"])
+
+    tags = [relaysTag, alttag, pTag, iTag]
+
+    event = EventBuilder(Kind(5100), str("Give me image"),
                          tags).to_event(keys)
 
     signer = NostrSigner.keys(keys)
@@ -417,9 +444,10 @@ async def nostr_client():
     # await nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
     #await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
-   # await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "8e998d62eb20ec892acf9d5e8efa58050ccd951cae15a64eabbc5c0a7c74d185")
-
-    await nostr_client_duckduck_test("a018ba05af400b52772e33162d8326fca4a167fe7b6d3cd2382e14cac2af6841", "Write me a poem about purple ostriches")
+    #await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "7a63849b684d90c0de983492578b12e147e56f5d79ed6585cc64e5aa8a122744")
+    #"a018ba05af400b52772e33162d8326fca4a167fe7b6d3cd2382e14cac2af6841"
+    #await nostr_client_duckduck_test(PublicKey.parse("aa8ab5b774d47e7b29a985dd739cfdcccf93451678bf7977ba1b2e094ecd8b30").to_hex() , "How do i create a dockerfile for python 3.12")
+    await nostr_client_flux_schnell("d57f1efb7582f58cade6f482d53eefa998d8082711b996aae3dc5f5527cbdd6e" , "topics")
 
     # await nostr_client_test_search_profile("dontbelieve")
     #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]

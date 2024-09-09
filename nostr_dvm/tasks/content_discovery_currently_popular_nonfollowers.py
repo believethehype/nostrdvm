@@ -38,9 +38,13 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
     must_list = []
     personalized = True
     result = ""
+    database = None
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
+
+        if dvm_config.DATABASE is not None:
+            self.database = dvm_config.DATABASE
 
         self.request_form = {"jobID": "generic"}
         opts = {
@@ -141,9 +145,10 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = await NostrDatabase.sqlite(self.db_name)
+        if self.database is None:
+            self.database = await NostrDatabase.sqlite(self.db_name)
 
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        cli = ClientBuilder().database(self.database).signer(signer).opts(opts).build()
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
             await cli.add_relay(relay)
 
@@ -179,7 +184,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
-        events = await database.query([filter1])
+        events = await self.database.query([filter1])
 
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
@@ -192,7 +197,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
                 [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                  definitions.EventDefinitions.KIND_REPOST,
                  definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-            reactions = await database.query([filt])
+            reactions = await self.database.query([filt])
             if len(reactions) >= self.min_reactions:
                 ns.finallist[event.id().to_hex()] = len(reactions)
 

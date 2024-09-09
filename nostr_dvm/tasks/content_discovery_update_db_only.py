@@ -39,6 +39,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     must_list = []
     personalized = False
     result = ""
+    database = None
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -46,6 +47,8 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
         # Generate Generic request form for dvms that provide generic results (e.g only a calculation per update,
         # not per call)
         self.request_form = {"jobID": "generic"}
+        if dvm_config.DATABASE is not None:
+            self.database = dvm_config.DATABASE
         opts = {
             "max_results": 200,
         }
@@ -128,8 +131,9 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             signer = NostrSigner.keys(keys)
-            database = await NostrDatabase.sqlite(self.db_name)
-            cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+            if self.database is None:
+                self.database = await NostrDatabase.sqlite(self.db_name)
+            cli = ClientBuilder().signer(signer).database(self.database).opts(opts).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
                 await cli.add_relay(relay)
