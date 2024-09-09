@@ -204,23 +204,19 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     relaylimits = RelayLimits.disable()
     connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
     #connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
-    opts = (
-        Options().wait_for_send(False).send_timeout(timedelta(seconds=20)).relay_limits(
-            relaylimits)).connection(connection).connection_timeout(timedelta(seconds=120))
+    opts = ((
+        Options().wait_for_send(False).send_timeout(timedelta(seconds=5)).relay_limits(
+            relaylimits)).connection(connection).connection_timeout(timedelta(seconds=30)))
 
 
 
     sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
     signer = NostrSigner.keys(keys)
-    client = Client.with_opts(signer, opts)
-
-
-
     outboxclient = Client.with_opts(signer, opts)
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
-    for relay in relays:
+    for relay in relays[:5]:
         try:
             await outboxclient.add_relay(relay)
         except:
@@ -290,7 +286,8 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False):
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
-                await client.remove_relay(relay)
+                if relay not in dvm_config.RELAY_LIST:
+                    await client.remove_relay(relay)
         #if blastr:
         #    client.remove_relay("wss://nostr.mutinywallet.com")
         return event_id

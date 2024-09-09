@@ -139,7 +139,7 @@ class DVM:
                     return
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
                     print(
-                        bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + bcolors.ENDC)
+                        bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + " (" + user.npub + ")" + bcolors.ENDC)
                 duration = await input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
@@ -347,7 +347,7 @@ class DVM:
                                                                                  config=self.dvm_config)
                             if job_event is not None and task_supported:
                                 print("NutZap received for NIP90 task: " + str(received_amount) + " Sats from " + str(
-                                    user.name))
+                                    user.name + " (" + user.npub + ")" ))
                                 if amount <= received_amount:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     await send_job_status_reaction(job_event, "processing", client=self.client,
@@ -436,7 +436,7 @@ class DVM:
                                                                                  config=self.dvm_config)
                             if job_event is not None and task_supported:
                                 print("Zap received for NIP90 task: " + str(invoice_amount) + " Sats from " + str(
-                                    user.name))
+                                    user.name + " (" + user.npub + ")" ))
                                 if amount <= invoice_amount:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     await send_job_status_reaction(job_event, "processing", client=self.client,
@@ -473,14 +473,14 @@ class DVM:
                                                                  "Someone zapped the result of an exisiting Task. Nice")
                     elif not anon:
                         print("[" + self.dvm_config.NIP89.NAME + "] Note Zap received for DVM balance: " +
-                              str(invoice_amount) + " Sats from " + str(user.name))
+                              str(invoice_amount) + " Sats from " + str(user.name + " (" + user.npub + ")" ))
                     #    update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                     #                        config=self.dvm_config)
 
                     # a regular note
                 elif not anon and dvm_config.NIP88 is None:
                     print("[" + self.dvm_config.NIP89.NAME + "] Profile Zap received for DVM balance: " +
-                          str(invoice_amount) + " Sats from " + str(user.name))
+                          str(invoice_amount) + " Sats from " + str(user.name + " (" + user.npub + ")"))
                 # update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                 #                     config=self.dvm_config)
 

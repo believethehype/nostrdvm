@@ -1,10 +1,11 @@
+import asyncio
 import json
 import os
 import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
+from nostr_sdk import init_logger, LogLevel, Keys, NostrDatabase
 
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
 from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverContentLatestWiki
@@ -35,13 +36,13 @@ rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know
 rebroadcast_NIP65_Relay_List = True
 update_profile = False
 
-global_update_rate = 120     # set this high on first sync so db can fully sync before another process trys to.
-use_logger = True
-log_level = LogLevel.ERROR
+global_update_rate = 180     # set this high on first sync so db can fully sync before another process trys to.
+use_logger = False
+log_level = LogLevel.INFO
 
 
 
-RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
+RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
 RELAY_LIST = ["wss://relay.primal.net",
               "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
@@ -52,7 +53,7 @@ if use_logger:
 
 
 def build_db_scheduler(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
-                  processing_msg=None, update_db=True):
+                  processing_msg=None, update_db=True, database=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -61,6 +62,7 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.DATABASE = database
 
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
@@ -276,7 +278,7 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
 
 
 def build_example_topic(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
-                        processing_msg=None, update_db=True):
+                        processing_msg=None, update_db=True, database=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -287,6 +289,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.DATABASE = database
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -321,7 +324,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
 
 
 def build_example_popular(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
-                          update_db=True):
+                          update_db=True, database=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.LOGLEVEL = LogLevel.INFO
@@ -334,6 +337,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.DATABASE = database
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -412,7 +416,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
                                                    admin_config=admin_config)
 
 def build_example_popular_non_followers(name, identifier, admin_config, options, image, cost=0, update_rate=300,
-                                    processing_msg=None, update_db=True):
+                                    processing_msg=None, update_db=True, database=None):
 
 
     dvm_config = build_default_config(identifier)
@@ -421,6 +425,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.DATABASE = database
     # Activate these to use a subscription based model instead
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
@@ -481,7 +486,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
 
 def build_example_top_zapped(name, identifier, admin_config, options, image, cost=0, update_rate=180,
                              processing_msg=None,
-                             update_db=True):
+                             update_db=True, database=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -493,6 +498,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.DATABASE = database
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
     #                         ]
@@ -623,15 +629,18 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
                                                  admin_config=admin_config, options=options)
 
 
+async def init_db(database):
+    return await NostrDatabase.sqlite(database)
 
 def playground():
 
-
+    main_db = "db/nostr_recent_notes.db"
+    DATABASE = asyncio.run(init_db(main_db))
     #DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler= AdminConfig()
     options_animal = {
-        "db_name": "db/nostr_recent_notes.db",
-        "db_since": 24 * 60 * 60,  # 48h since gmt,
+        "db_name": main_db,
+        "db_since": 12 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
     image = ""
@@ -643,7 +652,8 @@ def playground():
                                             description=about,
                                             update_rate=global_update_rate,
                                             cost=0,
-                                            update_db=True)
+                                            update_db=True,
+                                            database=DATABASE)
     db_scheduler.run()
 
 
@@ -665,19 +675,19 @@ def playground():
         "db_since": 60 * 60 * 24 * 30,  # 1h since gmt,
     }
 
-    cost = 0
-    image = "https://i.nostr.build/4Rw6lrsH5O0P5zjT.jpg"
-    discover_gallery = build_example_gallery("Gallery entries",
-                                      "discovery_gallery_entries",
-                                      admin_config=admin_config_gallery,
-                                      options=options_gallery,
-                                      image=image,
-                                      cost=cost,
-                                      update_rate=global_update_rate,
-                                      processing_msg=custom_processing_msg,
-                                      update_db=update_db)
-    discover_gallery.run()
-
+    # cost = 0
+    # image = "https://i.nostr.build/4Rw6lrsH5O0P5zjT.jpg"
+    # discover_gallery = build_example_gallery("Gallery entries",
+    #                                   "discovery_gallery_entries",
+    #                                   admin_config=admin_config_gallery,
+    #                                   options=options_gallery,
+    #                                   image=image,
+    #                                   cost=cost,
+    #                                   update_rate=global_update_rate,
+    #                                   processing_msg=custom_processing_msg,
+    #                                   update_db=update_db)
+    # discover_gallery.run()
+    #
 
 
     # Latest Longform
@@ -755,7 +765,7 @@ def playground():
 
     options_top_zapped = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 6,  # 8h since gmt,
+        "db_since": 60 * 60 * 2,  # 8h since gmt,
     }
     cost = 0
     #image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
@@ -768,7 +778,8 @@ def playground():
                                                  cost=cost,
                                                  update_rate=global_update_rate,
                                                  processing_msg=custom_processing_msg,
-                                                 update_db=update_db)
+                                                 update_db=update_db,
+                                                 database=DATABASE)
 
     discovery_topzaps.run()
 
@@ -856,7 +867,7 @@ def playground():
 
         "must_list": ["http"],
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 24 * 60 * 60,  # 48h since gmt,
+        "db_since": 12 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
 
@@ -875,7 +886,8 @@ def playground():
                                             update_rate=global_update_rate,
                                             cost=cost,
                                             processing_msg=custom_processing_msg,
-                                            update_db=update_db)
+                                            update_db=update_db,
+                                            database = DATABASE)
 
     discovery_animals.run()
 
@@ -923,7 +935,8 @@ def playground():
                                              update_rate=global_update_rate,
                                              cost=cost,
                                              processing_msg=custom_processing_msg,
-                                             update_db=update_db)
+                                             update_db=update_db,
+                                             database=DATABASE)
     discovery_garden.run()
 
     # Popular Followers
@@ -943,6 +956,7 @@ def playground():
         "db_name": "db/nostr_recent_notes.db",
         "db_since": 2 * 60 * 60,  # 2h since gmt,
     }
+
     cost = 0
     #image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
     image = "https://i.nostr.build/ZJqko0W9ApEVZAPt.png"
@@ -987,7 +1001,8 @@ def playground():
         image=image,
         update_rate=global_update_rate,
         processing_msg=custom_processing_msg,
-        update_db=update_db)
+        update_db=update_db,
+        database=DATABASE)
     discovery_non_followers.run()
 
     admin_config_opf = AdminConfig()
@@ -1047,7 +1062,8 @@ def playground():
                                              cost=cost,
                                              update_rate=global_update_rate,
                                              processing_msg=custom_processing_msg,
-                                             update_db=update_db)
+                                             update_db=update_db,
+                                             database=DATABASE)
     discovery_global.run()
 
     # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
@@ -1059,9 +1075,9 @@ def playground():
     admin_config_nostriga.REBROADCAST_NIP65_RELAY_LIST =  False #rebroadcast_NIP65_Relay_List
     admin_config_nostriga.UPDATE_PROFILE = update_profile
     admin_config_nostriga.DELETE_NIP89 = True
-    admin_config_nostriga.PRIVKEY = "6221e31813df07037dd90a608fc4cf29222c59da130f76c7f8d0d19c3a876d8e"
-    admin_config_nostriga.EVENTID = "24ac21fb32993744232356bafcabd821e4afed4b18aac8d7e670d1071f6ad77a"
-    admin_config_nostriga.POW = True
+    #admin_config_nostriga.PRIVKEY = "6221e31813df07037dd90a608fc4cf29222c59da130f76c7f8d0d19c3a876d8e"
+    #admin_config_nostriga.EVENTID = "24ac21fb32993744232356bafcabd821e4afed4b18aac8d7e670d1071f6ad77a"
+    #admin_config_nostriga.POW = True
     options_nostriga = {
         "search_list": ["nostriga", "#nostriga", "#noobday" ],
         "avoid_list": ["porn", "smoke", "nsfw",

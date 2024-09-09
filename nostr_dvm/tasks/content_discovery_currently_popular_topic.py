@@ -37,10 +37,14 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
     must_list = []
     personalized = False
     result = ""
+    database = None
+
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
 
+        if dvm_config.DATABASE is not None:
+            self.database = dvm_config.DATABASE
         self.request_form = {"jobID": "generic"}
         opts = {
             "max_results": 200,
@@ -139,14 +143,15 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
-        database = await NostrDatabase.sqlite(self.db_name)
+        if self.database is None:
+            self.database = await NostrDatabase.sqlite(self.db_name)
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
-        events = await database.query([filter1])
+        events = await self.database.query([filter1])
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
@@ -159,7 +164,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                             [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                              definitions.EventDefinitions.KIND_REPOST,
                              definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                        reactions = await database.query([filt])
+                        reactions = await self.database.query([filt])
                         if len(reactions) >= self.min_reactions:
                             ns.finallist[event.id().to_hex()] = len(reactions)
 
