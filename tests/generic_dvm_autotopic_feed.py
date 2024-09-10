@@ -8,6 +8,7 @@ from duck_chat import ModelType
 from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, Options, Client, Tag, \
     LogLevel, Timestamp, NostrDatabase
 
+from nostr_dvm.tasks.content_discovery_currently_popular_topic import DicoverContentCurrentlyPopularbyTopic
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -50,7 +51,7 @@ def playground(announce=False):
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
     dvm_config.CUSTOM_PROCESSING_MESSAGE = "Creating a personalized feed based on the topics you write about. This might take a moment."
-    dvm_config.FIX_COST = 10
+    dvm_config.FIX_COST = 0
 
 
     admin_config.DELETE_NIP89 = True
@@ -79,15 +80,14 @@ def playground(announce=False):
         "input": "How do you call a noisy ostrich?",
     }
 
-    dvm = GenericDVM(name=name, dvm_config=dvm_config, nip89config=nip89config,
+    dvm = DicoverContentCurrentlyPopularbyTopic(name=name, dvm_config=dvm_config, nip89config=nip89config,
                      admin_config=admin_config, options=options)
 
 
-    async def process_request(request_form, prompt):
+    async def process_request(options, prompt):
         result = ""
         try:
             from duck_chat import DuckChat
-            options = dvm.set_options(request_form)
             result = ""
             async with DuckChat(model=ModelType.GPT4o) as chat:
                 query = prompt
@@ -133,7 +133,7 @@ def playground(announce=False):
         prompt = "Only reply with the result. Here is a list of notes, seperated by ;. Find the 20 most important keywords and return them by a comma seperated list: " + text
 
         #loop = asyncio.get_running_loop()
-        result = asyncio.run(process_request(request_form, prompt))
+        result =  await process_request(options, prompt)
         content = "I identified these as your topics:\n\n"+result.replace(",", ", ") + "\n\nProcessing, just a few more seconds..."
         await send_job_status_reaction(original_event_id_hex=dvm.options["request_event_id"], original_event_author_hex=dvm.options["request_event_author"],  client=cli, dvm_config=dvm_config, content=content)
 
@@ -148,7 +148,7 @@ def playground(announce=False):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        database = await NostrDatabase.sqlite("db/nostr_recent_notes.db")
+        database = NostrDatabase.lmdb("db/nostr_recent_notes.db")
 
         timestamp_since = Timestamp.now().as_secs() -   since
         since = Timestamp.from_secs(timestamp_since)

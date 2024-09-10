@@ -106,6 +106,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         from nostr_sdk import Filter
         from types import SimpleNamespace
 
+
         ns = SimpleNamespace()
         options = self.set_options(request_form)
 
@@ -114,8 +115,16 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = await NostrDatabase.sqlite(self.db_name)
+
+
+        database = NostrDatabase.lmdb(self.db_name)
+        try:
+            await database.delete(Filter().until(Timestamp.from_secs(
+                Timestamp.now().as_secs() - self.db_since)))
+        except Exception as e:
+            print(e)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -153,6 +162,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         # await cli.shutdown()
         return json.dumps(result_list)
 
+
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
         for tag in event.tags():
@@ -183,7 +193,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             signer = NostrSigner.keys(keys)
-            database = await NostrDatabase.sqlite(self.db_name)
+            database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
@@ -221,7 +231,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             except Exception as e:
                 print(e)
             # Do not delete profiles
-            await cli.database().delete(Filter().kinds([EventDefinitions.KIND_NOTE, EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST, EventDefinitions.KIND_REACTION]).until(Timestamp.from_secs(
+            await cli.database().delete(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:

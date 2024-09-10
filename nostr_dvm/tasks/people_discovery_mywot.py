@@ -217,7 +217,7 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = await NostrDatabase.sqlite(self.db_name)
+        database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
@@ -257,7 +257,7 @@ async def analyse_users(user_ids=None, dunbar=100000000):
                 print(npub)
                 print(e)
 
-        database = await NostrDatabase.sqlite("db/nostr_followlists.db")
+        database = NostrDatabase.lmdb("db/nostr_followlists.db")
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query([followers_filter])
         allfriends = []

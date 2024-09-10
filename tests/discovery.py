@@ -37,12 +37,12 @@ rebroadcast_NIP65_Relay_List = True
 update_profile = False
 
 global_update_rate = 180     # set this high on first sync so db can fully sync before another process trys to.
-use_logger = False
+use_logger = True
 log_level = LogLevel.INFO
 
 
+RECONCILE_DB_RELAY_LIST = [ "wss://nostr.oxtr.dev", "wss://relay.damus.io", "wss://relay.primal.net"]
 
-RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
 RELAY_LIST = ["wss://relay.primal.net",
               "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
@@ -630,7 +630,7 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
 
 
 async def init_db(database):
-    return await NostrDatabase.sqlite(database)
+    return NostrDatabase.lmdb(database)
 
 def playground():
 

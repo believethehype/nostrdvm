@@ -51,7 +51,7 @@ async def parse_zap_event_tags(zap_event, keys, name, client, config):
                                                                         keys.secret_key(),
                                                                         zap_request_event.author())
                         decrypted_private_event = Event.from_json(decrypted_content)
-                        if decrypted_private_event.kind().as_u64() == 9733:
+                        if decrypted_private_event.kind().as_u16() == 9733:
                             sender = decrypted_private_event.author().to_hex()
                             message = decrypted_private_event.content()
                             # if message != "":
