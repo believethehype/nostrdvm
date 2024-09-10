@@ -71,7 +71,7 @@ async def nostr_client():
             print(f"Received new event from {relay_url}: {event.as_json()}")
             if event.kind() == 7000:
                 print("[Nostr Client]: " + event.as_json())
-            elif 6000 < event.kind().as_u64() < 6999:
+            elif 6000 < event.kind().as_u16() < 6999:
                 print("[Nostr Client]: " + event.as_json())
                 print("[Nostr Client]: " + event.content())
 

@@ -57,7 +57,7 @@ async def sync_db():
     opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=5)))
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
     signer = NostrSigner.keys(keys)
-    database = await NostrDatabase.sqlite("db/nostr_followlists.db")
+    database = NostrDatabase.lmdb("db/nostr_followlists.db")
     cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
     await cli.add_relay("wss://relay.damus.io")  # TODO ADD MORE
@@ -86,7 +86,7 @@ async def analyse_users(user_ids=None):
                 print(npub)
                 print(e)
 
-        database = await NostrDatabase.sqlite("db/nostr_followlists.db")
+        database = NostrDatabase.lmdb("db/nostr_followlists.db")
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query([followers_filter])
         allfriends = []

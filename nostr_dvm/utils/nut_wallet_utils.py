@@ -6,13 +6,14 @@ from datetime import timedelta
 
 import requests
 from nostr_dvm.utils.database_utils import fetch_user_metadata
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import pay_bolt11_ln_bits, zaprequest
 from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
     EventId, nip04_decrypt, nip04_encrypt, Options, NostrSigner, PublicKey, init_logger, LogLevel, Metadata
 from nostr_dvm.utils.print import bcolors
+
 
 class NutWallet(object):
     def __init__(self):
@@ -28,7 +29,7 @@ class NutWallet(object):
         self.a: str = ""
         self.legacy_encryption: bool = False  # Use Nip04 instead of Nip44, for reasons, turn to False ASAP.
         self.trust_unknown_mints: bool = False
-        self.missing_balance_strategy: str = "mint" #swap to use existing tokens from other mints (fees!) or mint to mint from lightning
+        self.missing_balance_strategy: str = "mint"  #none to do nothing until manually minted, mint to mint from lightning or swap to use existing tokens from other mints (fees!) (not working yet!)
 
 
 class NutMint(object):
@@ -44,7 +45,6 @@ class NutMint(object):
         for proof in self.proofs:
             balance += proof.amount
         return balance
-
 
 
 class NutZapWallet:
@@ -72,8 +72,8 @@ class NutZapWallet:
         new_nut_wallet.description = description
         new_nut_wallet.mints = mint_urls
         new_nut_wallet.relays = relays
-        new_nut_wallet.d = "wallet"  # sha256(str(new_nut_wallet.name + new_nut_wallet.description).encode('utf-8')).hexdigest()[:16]
-        new_nut_wallet.a = str(Kind(7375).as_u64()) + ":" + keys.public_key().to_hex() + ":" + new_nut_wallet.d
+        new_nut_wallet.d = "wallet"
+        new_nut_wallet.a = str(Kind(7375).as_u16()) + ":" + keys.public_key().to_hex() + ":" + new_nut_wallet.d
         print("Creating Wallet..")
         send_response_id = await self.create_or_update_nut_wallet_event(new_nut_wallet, client, keys)
 
@@ -120,7 +120,8 @@ class NutZapWallet:
         nut_wallet = None
 
         wallet_filter = Filter().kind(EventDefinitions.KIND_NUT_WALLET).author(keys.public_key())
-        wallets = await client.get_events_of([wallet_filter], timedelta(10))
+        #relay_timeout = EventSource.relays(timedelta(seconds=10))
+        wallets = await client.get_events_of([wallet_filter], relay_timeout_long)
 
         if len(wallets) > 0:
 
@@ -194,7 +195,8 @@ class NutZapWallet:
 
             # Now all proof events
             proof_filter = Filter().kind(Kind(7375)).author(keys.public_key())
-            proof_events = await client.get_events_of([proof_filter], timedelta(5))
+            #relay_timeout = EventSource.relays(timedelta(seconds=5))
+            proof_events = await client.get_events_of([proof_filter], relay_timeout)
 
             latest_proof_sec = 0
             latest_proof_event_id = EventId
@@ -247,7 +249,7 @@ class NutZapWallet:
                         nut_proof.amount = proof['amount']
                         nut_proof.C = proof['C']
                         nut_mint.proofs.append(nut_proof)
-                        #print(proof)
+                        # print(proof)
 
                 mints = [x for x in nut_wallet.nutmints if x.mint_url == mint_url]
                 if len(mints) == 0:
@@ -347,8 +349,8 @@ class NutZapWallet:
                 "secret": proof['secret'],
                 "C": proof['C']
             }
-            #print("Mint proofs:")
-            #print(proof)
+            # print("Mint proofs:")
+            # print(proof)
             new_proofs.append(proofjson)
         old_event_id = mint.previous_event_id
 
@@ -447,7 +449,8 @@ class NutZapWallet:
 
     async def fetch_mint_info_event(self, pubkey, client):
         mint_info_filter = Filter().kind(Kind(10019)).author(PublicKey.parse(pubkey))
-        preferences = await client.get_events_of([mint_info_filter], timedelta(5))
+        #relay_timeout = EventSource.relays(timedelta(seconds=5))
+        preferences = await client.get_events_of([mint_info_filter], relay_timeout)
         mints = []
         relays = []
         pubkey = ""
@@ -517,21 +520,23 @@ class NutZapWallet:
 
         return await self.update_nut_wallet(nut_wallet, [mint_url], client, keys)
 
-
-    async def handle_low_balance_on_mint(self, nut_wallet, outgoing_mint_url, mint, amount, client, keys):
+    async def handle_low_balance_on_mint(self, nut_wallet, mint_to_send, mint, amount, client, keys):
 
         required_amount = amount - mint.available_balance()
+
         if nut_wallet.missing_balance_strategy == "mint":
-            await self.mint_cashu(nut_wallet, outgoing_mint_url, client, keys, required_amount)
+            await self.mint_cashu(nut_wallet, mint_to_send, client, keys, required_amount)
 
         elif nut_wallet.missing_balance_strategy == "swap":
             for nutmint in nut_wallet.nutmints:
                 estimated_fees = 3
-                if nutmint.available_balance() > required_amount+estimated_fees:
-                    await self.swap(required_amount, nutmint.mint_url, outgoing_mint_url)
+                if nutmint.available_balance() > required_amount + estimated_fees:
+                    print(nutmint.mint_url)
+                    await self.swap(required_amount, mint_to_send, nutmint.mint_url, nut_wallet)
                     break
-
-
+        else:
+            print(bcolors.RED + "[" + nut_wallet.name + "] Not enough Balance on Mint, mint some tokens first. " + str(
+                amount) + " " + nut_wallet.unit + bcolors.ENDC)
 
     async def send_nut_zap(self, amount, comment, nut_wallet: NutWallet, zapped_event, zapped_user, client: Client,
                            keys: Keys):
@@ -561,7 +566,6 @@ class NutZapWallet:
             mint = self.get_mint(nut_wallet, mint_url)
             if mint.available_balance() < amount:
                 await self.handle_low_balance_on_mint(nut_wallet, mint_url, mint, amount, client, keys)
-
 
             # If that's not the case, iterate over the recipents mints and try to mint there. This might be a bit dangerous as not all mints might give cashu, so loss of ln is possible
             if mint_url is None:
@@ -687,39 +691,39 @@ class NutZapWallet:
         from cashu.wallet.wallet import Wallet
         from cashu.core.base import Proof
         from cashu.core.crypto.keys import PrivateKey
-
-        proofs = []
-        mint_url = ""
-        amount = 0
-        unit = "sat"
-        zapped_user = ""
-        zapped_event = ""
-        sender = event.author().to_hex()
-        message = event.content()
-        for tag in event.tags():
-            if tag.as_vec()[0] == "proof":
-                proof_json = json.loads(tag.as_vec()[1])
-                proof = Proof().from_dict(proof_json)
-                proofs.append(proof)
-            elif tag.as_vec()[0] == "u":
-                mint_url = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "amount":
-                amount = int(tag.as_vec()[1])
-            elif tag.as_vec()[0] == "unit":
-                unit = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "p":
-                zapped_user = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "e":
-                zapped_event = tag.as_vec()[1]
-
-        cashu_wallet = await Wallet.with_db(
-            url=mint_url,
-            db="db/Receiver",
-            name="receiver",
-        )
-        cashu_wallet.private_key = PrivateKey(bytes.fromhex(nut_wallet.privkey), raw=True)
-        await cashu_wallet.load_mint()
         try:
+            proofs = []
+            mint_url = ""
+            amount = 0
+            unit = "sat"
+            zapped_user = ""
+            zapped_event = ""
+            sender = event.author().to_hex()
+            message = event.content()
+            for tag in event.tags():
+                if tag.as_vec()[0] == "proof":
+                    proof_json = json.loads(tag.as_vec()[1])
+                    proof = Proof().from_dict(proof_json)
+                    proofs.append(proof)
+                elif tag.as_vec()[0] == "u":
+                    mint_url = tag.as_vec()[1]
+                elif tag.as_vec()[0] == "amount":
+                    amount = int(tag.as_vec()[1])
+                elif tag.as_vec()[0] == "unit":
+                    unit = tag.as_vec()[1]
+                elif tag.as_vec()[0] == "p":
+                    zapped_user = tag.as_vec()[1]
+                elif tag.as_vec()[0] == "e":
+                    zapped_event = tag.as_vec()[1]
+
+            cashu_wallet = await Wallet.with_db(
+                url=mint_url,
+                db="db/Receiver",
+                name="receiver",
+            )
+            cashu_wallet.private_key = PrivateKey(bytes.fromhex(nut_wallet.privkey), raw=True)
+            await cashu_wallet.load_mint()
+
             new_proofs, _ = await cashu_wallet.redeem(proofs)
             mint = self.get_mint(nut_wallet, mint_url)
             print(mint.proofs)
@@ -734,7 +738,6 @@ class NutZapWallet:
         except Exception as e:
             print(bcolors.RED + str(e) + bcolors.ENDC)
             return None, message, sender
-
 
     async def melt_cashu(self, nut_wallet, mint_url, total_amount, client, keys, lud16=None, npub=None):
         from cashu.wallet.wallet import Wallet
@@ -774,35 +777,43 @@ class NutZapWallet:
             total_amount - estimated_fees) + " (Fees: " + str(estimated_fees) + ") " + nut_wallet.unit
               + bcolors.ENDC)
 
-    async def swap(self, amountinsats, outgoing_mint_url, incoming_mint_url):
+    async def swap(self, amountinsats, incoming_mint_url, outgoing_mint_url, nut_wallet):
+        #TODO this doesn't seem to work yet.
         from cashu.wallet.cli.cli_helpers import print_mint_balances
         from cashu.wallet.wallet import Wallet
-        # print("Select the mint to swap from:")
-        # outgoing_wallet = await get_mint_wallet(ctx, force_select=True)
+        from cashu.core.crypto.keys import PrivateKey
+
+
+        outgoing_mint = self.get_mint(nut_wallet, outgoing_mint_url)
 
         outgoing_wallet = await Wallet.with_db(
             url=outgoing_mint_url,
-            db="db/Sender",
-            name="sender",
+            db="db/Cashu",
+            name="outgoing",
         )
+        outgoing_wallet.private_key = PrivateKey(bytes.fromhex(nut_wallet.privkey), raw=True)
+        await outgoing_wallet.load_mint()
+        outgoing_wallet.proofs = outgoing_mint.proofs
 
-        print("Select the mint to swap to:")
-        # incoming_wallet = await get_mint_wallet(ctx, force_select=True)
+        print(outgoing_wallet.available_balance)
 
+
+        incoming_mint = self.get_mint(nut_wallet, incoming_mint_url)
         incoming_wallet = await Wallet.with_db(
             url=incoming_mint_url,
-            db="db/Receiver",
-            name="reeciver",
+            db="db/Cashu",
+            name="incoming",
         )
-
+        incoming_wallet.private_key = PrivateKey(bytes.fromhex(nut_wallet.privkey), raw=True)
         await incoming_wallet.load_mint()
-        await outgoing_wallet.load_mint()
+        incoming_wallet.proofs = incoming_mint.proofs
+
+
 
         if incoming_wallet.url == outgoing_wallet.url:
             raise Exception("mints for swap have to be different")
 
         print("Incoming Mint units: " + incoming_wallet.unit.name)
-
         assert amountinsats > 0, "amount is not positive"
 
         # request invoice from incoming mint
@@ -816,9 +827,13 @@ class NutZapWallet:
         send_proofs, fees = await outgoing_wallet.select_to_send(
             outgoing_wallet.proofs, total_amount, set_reserved=True
         )
-        await outgoing_wallet.melt(
-            send_proofs, invoice.bolt11, quote.fee_reserve, quote.quote
-        )
+
+        try:
+            await outgoing_wallet.melt(
+                proofs=send_proofs, invoice=invoice.bolt11, fee_reserve_sat=quote.fee_reserve, quote_id=quote.quote
+            )
+        except:
+            print("anyways..")
 
         # mint token in incoming mint
         await incoming_wallet.mint(amountinsats, id=invoice.id)

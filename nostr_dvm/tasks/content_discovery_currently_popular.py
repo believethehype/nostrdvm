@@ -109,7 +109,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
-        database = await NostrDatabase.sqlite(self.db_name)
+        database = NostrDatabase.lmdb(self.db_name)
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -175,7 +175,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             signer = NostrSigner.keys(keys)
-            database = await NostrDatabase.sqlite(self.db_name)
+            database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:

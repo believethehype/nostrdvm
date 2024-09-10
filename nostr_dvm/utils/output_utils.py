@@ -318,9 +318,9 @@ async def send_job_status_reaction(original_event_id_hex, original_event_author_
 
     if dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
         print(bcolors.YELLOW + "[" + dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
-            EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
+            EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
     elif dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
         print(bcolors.YELLOW + "[" + dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
-            EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.id().to_hex() + bcolors.ENDC)
+            EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.id().to_hex() + bcolors.ENDC)
 
     return reaction_event.as_json()

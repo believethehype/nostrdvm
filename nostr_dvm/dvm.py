@@ -91,11 +91,11 @@ class DVM:
             async def handle(self, relay_url, subscription_id, nostr_event: Event):
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                     print(nostr_event.as_json())
-                if EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= nostr_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64():
+                if EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u16() <= nostr_event.kind().as_u16() <= EventDefinitions.KIND_NIP90_GENERIC.as_u16():
                     await handle_nip90_job_event(nostr_event)
-                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_ZAP.as_u64():
+                elif nostr_event.kind().as_u16() == EventDefinitions.KIND_ZAP.as_u16():
                     await handle_zap(nostr_event)
-                elif nostr_event.kind().as_u64() == EventDefinitions.KIND_NIP61_NUT_ZAP.as_u64():
+                elif nostr_event.kind().as_u16() == EventDefinitions.KIND_NIP61_NUT_ZAP.as_u16():
                     await handle_nutzap(nostr_event)
 
             async def handle_msg(self, relay_url, msg):
@@ -575,7 +575,7 @@ class DVM:
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
             p_tag = Tag.parse(["p", original_event.author().to_hex()])
             alt_tag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
-                original_event.kind().as_u64()) + ". The task was: " + original_event.content()])
+                original_event.kind().as_u16()) + ". The task was: " + original_event.content()])
             status_tag = Tag.parse(["status", "success"])
             reply_tags = [request_tag, e_tag, p_tag, alt_tag, status_tag]
 
@@ -607,17 +607,17 @@ class DVM:
                 content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
                                         content)
 
-            reply_event = EventBuilder(Kind(original_event.kind().as_u64() + 1000), str(content), reply_tags).to_event(
+            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content), reply_tags).to_event(
                 self.keys)
 
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
-                    original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
+                    original_event.kind().as_u16() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
             elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
                 print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
-                    original_event.kind().as_u64() + 1000) + " Job Response event sent: " + reply_event.id().to_hex() + bcolors.ENDC)
+                    original_event.kind().as_u16() + 1000) + " Job Response event sent: " + reply_event.id().to_hex() + bcolors.ENDC)
 
         async def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None,
                                            content=None,
@@ -729,10 +729,10 @@ class DVM:
 
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
-                    EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
+                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
             elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
                 print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
-                    EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + status + " " + reaction_event.id().to_hex() + bcolors.ENDC)
+                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.id().to_hex() + bcolors.ENDC)
 
             return reaction_event.as_json()
 
@@ -779,8 +779,8 @@ class DVM:
 
         async def do_work(job_event, amount):
             if ((
-                    EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() <= job_event.kind().as_u64() <= EventDefinitions.KIND_NIP90_GENERIC.as_u64())
-                    or job_event.kind().as_u64() == EventDefinitions.KIND_DM.as_u64()):
+                    EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u16() <= job_event.kind().as_u16() <= EventDefinitions.KIND_NIP90_GENERIC.as_u16())
+                    or job_event.kind().as_u16() == EventDefinitions.KIND_DM.as_u16()):
 
                 task = await get_task(job_event, client=self.client, dvm_config=self.dvm_config)
 

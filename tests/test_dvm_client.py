@@ -444,18 +444,18 @@ async def nostr_client():
     # await nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
     #await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
-    #await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "7a63849b684d90c0de983492578b12e147e56f5d79ed6585cc64e5aa8a122744")
+    await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "7a63849b684d90c0de983492578b12e147e56f5d79ed6585cc64e5aa8a122744")
     #"a018ba05af400b52772e33162d8326fca4a167fe7b6d3cd2382e14cac2af6841"
-    #await nostr_client_duckduck_test(PublicKey.parse("aa8ab5b774d47e7b29a985dd739cfdcccf93451678bf7977ba1b2e094ecd8b30").to_hex() , "How do i create a dockerfile for python 3.12")
-    await nostr_client_flux_schnell("d57f1efb7582f58cade6f482d53eefa998d8082711b996aae3dc5f5527cbdd6e" , "topics")
+   # await nostr_client_duckduck_test(PublicKey.parse("7a63849b684d90c0de983492578b12e147e56f5d79ed6585cc64e5aa8a122744").to_hex() , "How do i create a dockerfile for python 3.12")
+    #await nostr_client_flux_schnell("d57f1efb7582f58cade6f482d53eefa998d8082711b996aae3dc5f5527cbdd6e" , "topics")
 
     # await nostr_client_test_search_profile("dontbelieve")
     #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
-    # await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "ab6cdf12ca3ae5109416295b8cd8a53fdec3a9d54beb7a9aee0ebfb67cb4edf7")
+    #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "ab6cdf12ca3ae5109416295b8cd8a53fdec3a9d54beb7a9aee0ebfb67cb4edf7")
     # await nostr_client_test_discovery_gallery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "4add3944eb596a27a650f9b954f5ed8dfefeec6ca50473605b0fbb058dd11306")
 
-    # await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
-    #                                      "2cf10ff849d2769b2b021bd93a0270d03eecfd14126d07f94c6ca2269cb3f3b1")
+    #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
+    #                                      "7a63849b684d90c0de983492578b12e147e56f5d79ed6585cc64e5aa8a122744")
 
     # await nostr_client_test_censor_filter(wot)
     # await nostr_client_test_inactive_filter("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64")
@@ -486,7 +486,7 @@ async def nostr_client():
 
             print(
                 bcolors.BLUE + f"Received new event from {relay_url}: {event.as_json()}" + bcolors.ENDC)
-            if event.kind().as_u64() == 7000:
+            if event.kind().as_u16() == 7000:
                 print("[Nostr Client]: " + event.as_json())
                 amount_sats = 0
                 status = ""
@@ -512,15 +512,15 @@ async def nostr_client():
                                                      keys)
 
 
-            elif 6000 < event.kind().as_u64() < 6999:
+            elif 6000 < event.kind().as_u16() < 6999:
                 print("[Nostr Client]: " + event.as_json())
                 print("[Nostr Client]: " + event.content())
 
-            elif event.kind().as_u64() == 4:
+            elif event.kind().as_u16() == 4:
                 dec_text = nip04_decrypt(sk, event.author(), event.content())
                 print("[Nostr Client]: " + f"Received new msg: {dec_text}")
 
-            elif event.kind().as_u64() == 9735:
+            elif event.kind().as_u16() == 9735:
                 print("[Nostr Client]: " + f"Received new zap:")
                 print(event.as_json())
 
