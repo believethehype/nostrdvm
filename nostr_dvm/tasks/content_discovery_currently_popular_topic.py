@@ -93,6 +93,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         # default values
         max_results = 200
+        user = event.author().to_hex()
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -101,6 +102,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 param = tag.as_vec()[1]
                 if param == "max_results":  # check for param type
                     max_results = int(tag.as_vec()[2])
+                elif param == "user":  # check for param type
+                    user = (tag.as_vec()[2])
                 elif param == "search_list":  # check for param type
                     self.search_list = str(tag.as_vec()[2]).split(",")
                     print(self.search_list)
@@ -113,6 +116,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         options = {
             "max_results": max_results,
+            "request_event_id": event.id().to_hex(),
+            "request_event_author": event.author().to_hex()
         }
         request_form['options'] = json.dumps(options)
         self.request_form = request_form

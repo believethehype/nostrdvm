@@ -466,6 +466,8 @@ async def nostr_client():
     # await nostr_client_test_image_private("a beautiful ostrich watching the sunset")
 
     nutzap_wallet = NutZapWallet()
+
+
     nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
     #dangerous, dont use this, except your wallet is messed up.
     delete = False
