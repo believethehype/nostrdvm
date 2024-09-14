@@ -41,10 +41,10 @@ use_logger = True
 log_level = LogLevel.INFO
 
 
-RECONCILE_DB_RELAY_LIST = [ "wss://nostr.oxtr.dev", "wss://relay.damus.io", "wss://relay.primal.net"]
+RECONCILE_DB_RELAY_LIST = [ "wss://relay.damus.io", "wss://relay.primal.net"]
 
 RELAY_LIST = ["wss://relay.primal.net",
-              "wss://nostr.mom", "wss://nostr.oxtr.dev",
+              "wss://nostr.mom",
               "wss://relay.nostr.net"
               ]
 
@@ -147,6 +147,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config.USE_OWN_VENV = False
     dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
@@ -288,6 +289,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
@@ -336,6 +338,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     #"wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
@@ -381,6 +384,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
     #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
@@ -430,6 +434,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.SUBSCRIPTION_REQUIRED = True
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -497,6 +502,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
@@ -544,6 +550,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
 
@@ -594,12 +601,9 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     dvm_config.UPDATE_DATABASE = False
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
-    dvm_config.RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.primal.net"]
-    # "wss://relay.nostr.net"]
+    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -1049,7 +1053,7 @@ def playground():
 
     options_global_popular = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60,  # 1h since gmt,
+        "db_since": 60 * 60 * 4,  # 1h since gmt,
     }
     cost = 0
     #image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg"
