@@ -38,11 +38,7 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.primal.net"]
-    # "wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
