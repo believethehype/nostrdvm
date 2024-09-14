@@ -149,9 +149,6 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
-    #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #              "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
 
@@ -289,9 +286,6 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -331,14 +325,9 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
-    #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-    #"wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -380,9 +369,6 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -495,9 +481,6 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    #dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -545,12 +528,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
 
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
-    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-    # "wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -591,11 +569,7 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.primal.net"]
-    # "wss://relay.nostr.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    # dvm_config.RELAY_LIST = ["wss://dvms.f7z.io",
-    #                         "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg"
-    #                         ]
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89

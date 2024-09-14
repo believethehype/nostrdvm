@@ -20,9 +20,8 @@ class DVMConfig:
                   "wss://relay.nostr.net"
                   ]
 
-    RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr21.com",
-                   "wss://nostr.oxtr.dev",
-                  "wss://relay.nostr.net" , "wss://relay.primal.net"] #, "wss://relay.snort.social"]
+    RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
+                  "wss://relay.nostr.net" , "wss://relay.primal.net"]
 
     # Straight Censorship (reply guy spam)
     MUTE =   [PublicKey.parse("npub1x5vhtx7j2prvueeenwf7tmesrzmuzc50zs0aakgd75v5c30ekj3s5zjckj"),
