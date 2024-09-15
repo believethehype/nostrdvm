@@ -100,7 +100,7 @@
     <h2 class="card-title">{{ dvm.name }}</h2>
     <h3 class="fa-cut text-gray" >Kind: {{ dvm.kind }}</h3>
 
-          <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.about)"></h3>
+          <h3  v-if="dvm.about !== null" class="fa-cut" v-html="dvm.about"></h3>
     <div class="card-actions justify-end">
      <button className="btn" @click="copyDoiToClipboard(dvm.event);">Copy Event Json</button>
     </div>

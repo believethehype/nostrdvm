@@ -41,10 +41,10 @@ use_logger = True
 log_level = LogLevel.INFO
 
 
-RECONCILE_DB_RELAY_LIST = [ "wss://relay.damus.io", "wss://relay.primal.net"]
+RECONCILE_DB_RELAY_LIST = [ "wss://relay.damus.io", "wss://relay.primal.net", "wss://nostr.oxtr.dev"]
 
 RELAY_LIST = ["wss://relay.primal.net",
-              "wss://nostr.mom",
+              "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
               ]
 
@@ -415,12 +415,12 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.DATABASE = database
     # Activate these to use a subscription based model instead
-    dvm_config.FIX_COST = cost
+    dvm_config.FIX_COST = 10
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    dvm_config.SUBSCRIPTION_REQUIRED = True
+    dvm_config.SUBSCRIPTION_REQUIRED = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP88 = False
     #admin_config.REBROADCAST_NIP89 = True
@@ -435,8 +435,8 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
         "lud16": dvm_config.LN_ADDRESS,
         "encryptionSupported": True,
         "cashuAccepted": True,
-        "subscription": True,
-        "personalized": False,
+        "subscription": False,
+        "personalized": True,
         "nip90Params": {
             "max_results": {
                 "required": False,
@@ -468,7 +468,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentCurrentlyPopularNonFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                      nip88config=nip88config,
+                                                      #nip88config=nip88config,
                                                       admin_config=admin_config,
                                                       options=options)
 
@@ -620,7 +620,7 @@ def playground():
     admin_config_db_scheduler= AdminConfig()
     options_animal = {
         "db_name": main_db,
-        "db_since": 12 * 60 * 60,  # 48h since gmt,
+        "db_since": 48 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
     image = ""
@@ -811,6 +811,34 @@ def playground():
                                           update_db=True)
     discovery_mostr.run()
 
+    # Popular Garden&Plants
+    admin_config_asknostr = AdminConfig()
+    admin_config_asknostr.REBROADCAST_NIP89 =rebroadcast_NIP89
+    admin_config_asknostr.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_asknostr.UPDATE_PROFILE = update_profile
+    options_plants = {
+        "search_list": ["#asknostr"],
+        "avoid_list": [],
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 24 * 60 * 60,  # 12h since gmt
+        "personalized": False,
+        "logger": False}
+
+    image = "https://i.nostr.build/vIixmuRacIhULsrP.png"
+    description = "I show popular questions #asknostr"
+    custom_processing_msg = ["Finding the best notes for you.. #asknostr"]
+    update_db = False
+    cost = 0
+    discovery_asknostr = build_example_topic("Popular on #asknostr", "discovery_content_asknostr",
+                                           admin_config_asknostr, options_plants,
+                                           image=image,
+                                           description=description,
+                                           update_rate=global_update_rate,
+                                           cost=cost,
+                                           processing_msg=custom_processing_msg,
+                                           update_db=update_db,
+                                           database=DATABASE)
+    discovery_asknostr.run()
 
     # Popular Animals (Fluffy frens)
     admin_config_animals = AdminConfig()
@@ -1029,7 +1057,7 @@ def playground():
 
     options_global_popular = {
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 4,  # 1h since gmt,
+        "db_since": 60 * 60 * 1,  # 1h since gmt,
     }
     cost = 0
     #image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg"
