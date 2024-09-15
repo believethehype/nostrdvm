@@ -239,8 +239,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
         relays = await get_main_relays(event, client, dvm_config)
         for relay in relays:
-            opts = RelayOptions().ping(False)
-            await outboxclient.add_relay_with_opts(relay, opts)
+            await outboxclient.add_relay(relay)
         try:
             await outboxclient.connect()
             event_id = await outboxclient.send_event(event)

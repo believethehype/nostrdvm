@@ -139,7 +139,7 @@ class DVM:
                     return
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
                     print(
-                        bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + " (" + user.npub + ")" + bcolors.ENDC)
+                        bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + " (" + PublicKey.parse(user.npub).to_bech32() + ")" + bcolors.ENDC)
                 duration = await input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
