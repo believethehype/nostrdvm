@@ -132,11 +132,11 @@ def create_bolt11_lud16(lud16, amount):
 
 
 def create_lnbits_account(name):
-    if os.getenv("LNBITS_ADMIN_ID") is None or os.getenv("LNBITS_ADMIN_ID") == "":
+    if os.getenv("LNBITS_WALLET_ID") is None or os.getenv("LNBITS_WALLET_ID") == "":
         print("No admin id set, no wallet created.")
         return "", "", "", "", "failed"
     data = {
-        'admin_id': os.getenv("LNBITS_ADMIN_ID"),
+        'admin_id': os.getenv("LNBITS_WALLET_ID"),
         'wallet_name': name,
         'user_name': name,
     }
@@ -379,7 +379,6 @@ def check_and_set_ln_bits_keys(identifier, npub):
         invoicekey, adminkey, walletid, userid, success = create_lnbits_account(identifier)
         add_key_to_env_file("LNBITS_INVOICE_KEY_" + identifier.upper(), invoicekey)
         add_key_to_env_file("LNBITS_ADMIN_KEY_" + identifier.upper(), adminkey)
-        add_key_to_env_file("LNBITS_USER_ID_" + identifier.upper(), userid)
         add_key_to_env_file("LNBITS_WALLET_ID_" + identifier.upper(), userid)
 
         lnaddress = ""
@@ -390,11 +389,10 @@ def check_and_set_ln_bits_keys(identifier, npub):
         add_key_to_env_file("LNADDRESS_" + identifier.upper(), lnaddress)
         add_key_to_env_file("LNADDRESS_PIN_" + identifier.upper(), pin)
 
-        return invoicekey, adminkey, userid, walletid, lnaddress
+        return invoicekey, adminkey, walletid, lnaddress
     else:
         return (os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()),
                 os.getenv("LNBITS_ADMIN_KEY_" + identifier.upper()),
-                os.getenv("LNBITS_USER_ID_" + identifier.upper()),
                 os.getenv("LNBITS_WALLET_ID_" + identifier.upper()),
                 os.getenv("LNADDRESS_" + identifier.upper()))
 
