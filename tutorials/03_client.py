@@ -1,5 +1,5 @@
-#Welcome to part 4. This actually is is a simplistic client that will interact with our DVM.
-# We will address the DVM we created in part 03, so make sure it's still running and run this Script in a new instance.
+#Welcome to part 3. This actually is is a simplistic client that will interact with our DVM.
+# We will address the DVM we created in part 02, so make sure it's still running and run this Script in a new instance.
 # Copy the DVM's hex key that pops up at the beginning and replace the one down in the main function with your DVM's key.
 # This way we will tag it and it will know it should reply to us.
 

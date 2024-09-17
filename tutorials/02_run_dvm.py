@@ -2,21 +2,21 @@
 # Go to the very bottom of this code and replace the identifier with the one from last exercise.
 # We use a GenericDVM kind to start with. Now what's this? We have many predefined tasks in the task folder, but
 # the genericDVM gives you some control for simple manipulation without caring about the tasks. Important is that
-# we set the Kind of the GenericDVM. In Line 20 you see that we give it Kind 5050 (Text generation).
+# we set the Kind of the GenericDVM. In Line 28 you see that we give it Kind 5050 (Text generation).
 # On https://www.data-vending-machines.org/ there's an overview on all current kinds.
 # On https://github.com/nostr-protocol/data-vending-machines/ you can make a PR for your own kind, if you come up with one later.
 # Check the run_dvm function for more explanations
-
-
+import os
 from pathlib import Path
 
 import dotenv
 
 from nostr_dvm.tasks.generic_dvm import GenericDVM
-from nostr_sdk import Kind
+from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config
+from nostr_dvm.utils.zap_utils import change_ln_address
 
 
 def run_dvm(identifier):
@@ -74,5 +74,9 @@ if __name__ == '__main__':
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
     # Replace the identifier with the one from the last notebook, or a new dvmconfig will be stored
-    identifier = "tutorial01_xxxxxxxx"
+    identifier = "tutorial01"
+
+    # psst, you can change your lightning address here:
+    # change_ln_address(identifier, "a_cool_new_address")
+
     run_dvm(identifier)
