@@ -14,7 +14,8 @@ from bech32 import bech32_decode, convertbits, bech32_encode
 from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key, Kind, \
     Timestamp
 
-from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags
+from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags, update_profile, \
+    update_profile_lnaddress
 from hashlib import sha256
 import dotenv
 
@@ -417,7 +418,7 @@ def check_and_set_ln_bits_keys(identifier, npub):
                 os.getenv("LNADDRESS_" + identifier.upper()))
 
 
-def change_ln_address(identifier, new_identifier):
+async def change_ln_address(identifier, new_identifier, dvm_config, updateprofile=False):
     previous_identifier = os.getenv("LNADDRESS_" + identifier.upper()).split("@")[0]
     pin = os.getenv("LNADDRESS_PIN_" + identifier.upper())
     npub = Keys.parse(os.getenv("DVM_PRIVATE_KEY_" + identifier.upper())).public_key().to_hex()
@@ -425,6 +426,9 @@ def change_ln_address(identifier, new_identifier):
     add_key_to_env_file("LNADDRESS_" + identifier.upper(), lnaddress)
     add_key_to_env_file("LNADDRESS_PIN_" + identifier.upper(), pin)
     print("changed lnaddress")
+    if updateprofile:
+        private_key = os.getenv("DVM_PRIVATE_KEY_" + identifier.upper())
+        await update_profile_lnaddress(private_key, dvm_config, lud16=lnaddress)
 
 def add_key_to_env_file(value, oskey):
     env_path = Path('.env')

@@ -12,7 +12,6 @@ from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
 
 
-
 async def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
     split = event_id.split(":")
     if len(split) == 3:
@@ -356,6 +355,24 @@ def check_and_decrypt_own_tags(event, dvm_config):
         print(e)
 
     return event
+
+
+async def update_profile_lnaddress(private_key,  dvm_config,  lud16="",):
+    keys = Keys.parse(private_key)
+    opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=5))
+            .skip_disconnected_relays(True))
+
+    signer = NostrSigner.keys(keys)
+    client = Client.with_opts(signer, opts)
+    for relay in dvm_config.RELAY_LIST:
+        await client.add_relay(relay)
+    await client.connect()
+
+    metadata = Metadata() \
+        .set_lud16(lud16) \
+        .set_nip05(lud16)
+
+    await client.set_metadata(metadata)
 
 
 async def update_profile(dvm_config, client, lud16=""):

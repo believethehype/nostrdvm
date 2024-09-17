@@ -6,6 +6,7 @@
 # On https://www.data-vending-machines.org/ there's an overview on all current kinds.
 # On https://github.com/nostr-protocol/data-vending-machines/ you can make a PR for your own kind, if you come up with one later.
 # Check the run_dvm function for more explanations
+import asyncio
 import os
 from pathlib import Path
 
@@ -14,7 +15,7 @@ import dotenv
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.dvmconfig import build_default_config
+from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.zap_utils import change_ln_address
 
@@ -77,6 +78,6 @@ if __name__ == '__main__':
     identifier = "tutorial01"
 
     # psst, you can change your lightning address here:
-    # change_ln_address(identifier, "a_cool_new_address")
+    #asyncio.run(change_ln_address(identifier, "test",  DVMConfig(), True))
 
     run_dvm(identifier)
