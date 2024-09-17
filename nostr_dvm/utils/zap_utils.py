@@ -1,6 +1,8 @@
 # LIGHTNING/ZAP FUNCTIONS
 import json
 import os
+import random
+import string
 import urllib.parse
 from pathlib import Path
 
@@ -347,20 +349,26 @@ def get_price_per_sat(currency):
 
     return price_currency_per_sat
 
+def randomword(length):
+   letters = string.ascii_lowercase
+   return ''.join(random.choice(letters) for i in range(length))
 
-def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
+def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain, newname = " ", currentname=" "):
+
+    if newname == " ":
+        newname = identifier
+
     print(os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()))
     data = {
-        'name': identifier,
+        'name': newname,
         'domain': nostdressdomain,
         'kind': "lnbits",
         'host': os.getenv("LNBITS_HOST"),
         'key': os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()),
         'pin': pin,
         'npub': npub,
-        'currentname': " "
+        'currentname': currentname
     }
-
     try:
         url = "https://" + nostdressdomain + "/api/easy/"
         res = requests.post(url, data=data)
@@ -368,10 +376,22 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain):
         obj = json.loads(res.text)
 
         if obj.get("ok"):
-            return identifier + "@" + nostdressdomain, obj["pin"]
+            return data["name"] + "@" + nostdressdomain, obj["pin"]
+
     except Exception as e:
-        print(e)
-        return "", ""
+        print("Creating random name..")
+        data["name"] = data["name"] + "_" + randomword(10)
+        try:
+            url = "https://" + nostdressdomain + "/api/easy/"
+            res = requests.post(url, data=data)
+            print(res.text)
+            obj = json.loads(res.text)
+
+            if obj.get("ok"):
+                return data["name"] + "@" + nostdressdomain, obj["pin"]
+
+        except Exception as e:
+            return "", ""
 
 
 def check_and_set_ln_bits_keys(identifier, npub):
@@ -385,7 +405,7 @@ def check_and_set_ln_bits_keys(identifier, npub):
         pin = ""
         if os.getenv("NOSTDRESS_DOMAIN") and success != "failed":
             print(os.getenv("NOSTDRESS_DOMAIN"))
-            lnaddress, pin = make_ln_address_nostdress(identifier, npub, " ", os.getenv("NOSTDRESS_DOMAIN"))
+            lnaddress, pin = make_ln_address_nostdress(identifier, npub, " ", os.getenv("NOSTDRESS_DOMAIN"), identifier)
         add_key_to_env_file("LNADDRESS_" + identifier.upper(), lnaddress)
         add_key_to_env_file("LNADDRESS_PIN_" + identifier.upper(), pin)
 
@@ -396,6 +416,15 @@ def check_and_set_ln_bits_keys(identifier, npub):
                 os.getenv("LNBITS_WALLET_ID_" + identifier.upper()),
                 os.getenv("LNADDRESS_" + identifier.upper()))
 
+
+def change_ln_address(identifier, new_identifier):
+    previous_identifier = os.getenv("LNADDRESS_" + identifier.upper()).split("@")[0]
+    pin = os.getenv("LNADDRESS_PIN_" + identifier.upper())
+    npub = Keys.parse(os.getenv("DVM_PRIVATE_KEY_" + identifier.upper())).public_key().to_hex()
+    lnaddress, pin = make_ln_address_nostdress(identifier, npub, pin, os.getenv("NOSTDRESS_DOMAIN"), new_identifier, currentname=previous_identifier)
+    add_key_to_env_file("LNADDRESS_" + identifier.upper(), lnaddress)
+    add_key_to_env_file("LNADDRESS_PIN_" + identifier.upper(), pin)
+    print("changed lnaddress")
 
 def add_key_to_env_file(value, oskey):
     env_path = Path('.env')
