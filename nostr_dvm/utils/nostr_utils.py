@@ -12,6 +12,7 @@ from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
 
 
+
 async def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
     split = event_id.split(":")
     if len(split) == 3:
@@ -258,7 +259,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
 
 
-async def send_event(event: Event, client: Client, dvm_config, blastr=False):
+async def send_event(event: Event, client: Client, dvm_config):
     try:
         relays = []
         for tag in event.tags():
@@ -277,11 +278,8 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False):
             if relay not in dvm_config.RELAY_LIST:
                 await client.add_relay(relay)
 
-        #if blastr:
-        #    client.add_relay("wss://nostr.mutinywallet.com")
         try:
             event_id = await client.send_event(event)
-            #event_id = output.id
         except Exception as e:
             print(e)
             event_id = None
@@ -290,8 +288,6 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False):
             if relay not in dvm_config.RELAY_LIST:
                 if relay not in dvm_config.RELAY_LIST:
                     await client.remove_relay(relay)
-        #if blastr:
-        #    client.remove_relay("wss://nostr.mutinywallet.com")
         return event_id
     except Exception as e:
         print(e)
