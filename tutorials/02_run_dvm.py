@@ -1,5 +1,4 @@
 # Welcome back, this time we don't use a notebook, but we run an actual Python Script.
-# Go to the very bottom of this code and replace the identifier with the one from last exercise.
 # We use a GenericDVM kind to start with. Now what's this? We have many predefined tasks in the task folder, but
 # the genericDVM gives you some control for simple manipulation without caring about the tasks. Important is that
 # we set the Kind of the GenericDVM. In Line 28 you see that we give it Kind 5050 (Text generation).
