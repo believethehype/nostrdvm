@@ -126,5 +126,5 @@ if __name__ == '__main__':
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
     # Replace this key with the one from your DVM from part 3.
-    target_dvm_npub = "9937b858d8482610d67957778a62e2617260952c192579a7c7859bf18f86baf1"
+    target_dvm_npub = "aaf3b2bda1f19651417af4b1ccc35ebb6675d718843fdc444bdca4da1c8cd2fc"
     asyncio.run(nostr_client(target_dvm_npub))
