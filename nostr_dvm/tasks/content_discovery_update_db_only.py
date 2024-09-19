@@ -8,7 +8,7 @@ from itertools import islice
 import networkx as nx
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayLimits
+    RelayLimits, RelayFilteringMode
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -132,11 +132,14 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
         try:
             relaylimits = RelayLimits.disable()
             opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT))).relay_limits(relaylimits)
+            if self.dvm_config.WOT_FILTERING:
+                opts = opts.filtering_mode(RelayFilteringMode.WHITELIST)
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             signer = NostrSigner.keys(keys)
             if self.database is None:
                 self.database = NostrDatabase.lmdb(self.db_name)
+
             cli = ClientBuilder().signer(signer).database(self.database).opts(opts).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
