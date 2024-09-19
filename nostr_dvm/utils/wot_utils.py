@@ -162,7 +162,6 @@ async def _build_network_from(index_map, network_graph, visited_pk=None, depth=2
         # extend the network graph
         network_graph.update(following)
 
-        print('current network: ' + str(len(index_map)) + ' npubs', end='\r')
 
     if depth == 1:
         return index_map, network_graph
