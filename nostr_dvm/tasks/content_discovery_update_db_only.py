@@ -18,7 +18,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
-from nostr_dvm.utils.wot_utils import build_network_from, save_network, print_results
+from nostr_dvm.utils.wot_utils import build_wot_network, save_network, print_results
 
 """
 This File contains a Module to update the database for content discovery dvms
@@ -147,12 +147,9 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
 
 
             if self.dvm_config.WOT_FILTERING:
-                user = self.dvm_config.WOT_BASED_ON_NPUB
-                depth = self.dvm_config.WOT_DEPTH
-                print("Calculating WOT for " + user)
-
+                print("Calculating WOT for " + str(self.dvm_config.WOT_BASED_ON_NPUBS))
                 filtering = cli.filtering()
-                index_map, G = await build_network_from(user, depth=depth, max_batch=500, max_time_request=10)
+                index_map, G = await build_wot_network(self.dvm_config.WOT_BASED_ON_NPUBS, depth=self.dvm_config.WOT_DEPTH, max_batch=500, max_time_request=10)
 
                 # Do we actually need pagerank here?
                 #print('computing global pagerank...')

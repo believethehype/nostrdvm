@@ -19,7 +19,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events, post_process_list_to_users
-from nostr_dvm.utils.wot_utils import build_network_from, save_network, load_network, print_results, \
+from nostr_dvm.utils.wot_utils import build_wot_network, save_network, load_network, print_results, \
     convert_index_to_hex
 
 """
@@ -141,7 +141,7 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         #hop1
         user_id = PublicKey.parse(options["user"]).to_hex()
 
-        index_map, G = await build_network_from(options["user"], depth=int(options["hops"]), max_batch=500, max_time_request=10)
+        index_map, G = await build_wot_network(options["user"], depth=int(options["hops"]), max_batch=500, max_time_request=10)
         if use_files:
             save_network(index_map, G, options["user"])
 
