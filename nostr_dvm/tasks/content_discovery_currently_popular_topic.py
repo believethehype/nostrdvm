@@ -93,6 +93,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         # default values
         max_results = 200
+        user = event.author().to_hex()
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -101,6 +102,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 param = tag.as_vec()[1]
                 if param == "max_results":  # check for param type
                     max_results = int(tag.as_vec()[2])
+                elif param == "user":  # check for param type
+                    user = (tag.as_vec()[2])
                 elif param == "search_list":  # check for param type
                     self.search_list = str(tag.as_vec()[2]).split(",")
                     print(self.search_list)
@@ -113,6 +116,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         options = {
             "max_results": max_results,
+            "request_event_id": event.id().to_hex(),
+            "request_event_author": event.author().to_hex()
         }
         request_form['options'] = json.dumps(options)
         self.request_form = request_form
@@ -144,29 +149,34 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         options = self.set_options(request_form)
         if self.database is None:
-            self.database = await NostrDatabase.sqlite(self.db_name)
+            self.database = NostrDatabase.lmdb(self.db_name)
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
+        filters = []
+        for word in self.search_list:
+            filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(word)
+            filters.append(filter)
 
-        events = await self.database.query([filter1])
+
+
+        events = await self.database.query(filters)
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
 
         for event in events:
             if all(ele in event.content().lower() for ele in self.must_list):
-                if any(ele in event.content().lower() for ele in self.search_list):
-                    if not any(ele in event.content().lower() for ele in self.avoid_list):
-                        filt = Filter().kinds(
-                            [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
-                             definitions.EventDefinitions.KIND_REPOST,
-                             definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                        reactions = await self.database.query([filt])
-                        if len(reactions) >= self.min_reactions:
-                            ns.finallist[event.id().to_hex()] = len(reactions)
+                #if any(ele in event.content().lower() for ele in self.search_list):
+                if not any(ele in event.content().lower() for ele in self.avoid_list):
+                    filt = Filter().kinds(
+                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                         definitions.EventDefinitions.KIND_REPOST,
+                         definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+                    reactions = await self.database.query([filt])
+                    if len(reactions) >= self.min_reactions:
+                        ns.finallist[event.id().to_hex()] = len(reactions)
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
@@ -198,7 +208,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             signer = NostrSigner.keys(keys)
-            database = await NostrDatabase.sqlite(self.db_name)
+            database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:

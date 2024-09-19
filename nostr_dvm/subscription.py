@@ -159,7 +159,7 @@ class Subscription:
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
             await send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.NAME + "]" + ": Sent Kind " + str(
-                EventDefinitions.KIND_FEEDBACK.as_u64()) + " Reaction: " + "success" + " " + reaction_event.as_json())
+                EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + "success" + " " + reaction_event.as_json())
 
         async def pay_zap_split(nwc, overall_amount, zaps, tier, unit="msats"):
             overallsplit = 0

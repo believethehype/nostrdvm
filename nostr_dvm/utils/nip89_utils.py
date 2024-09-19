@@ -26,7 +26,7 @@ def nip89_create_d_tag(name, pubkey, image):
 
 
 async def nip89_announce_tasks(dvm_config, client):
-    k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND.as_u64())])
+    k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND.as_u16())])
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
@@ -65,7 +65,7 @@ async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, 
 async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Client, config):
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
-        ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u64()) + ":" + keys.public_key().to_hex() + ":" + dtag])
+        ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
     event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config)
@@ -73,8 +73,8 @@ async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
 async def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client: Client, config):
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
-        ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u64()) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_pow_event(keys, 28)
+        ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).pow(28).to_event(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config)
 
@@ -91,7 +91,7 @@ async def nip89_fetch_all_dvms(client):
 
 
 async def nip89_fetch_events_pubkey(client, pubkey, kind):
-    ktags = [str(kind.as_u64())]
+    ktags = [str(kind.as_u16())]
     nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.parse(pubkey)).
                    custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags))
     events = await client.get_events_of([nip89filter], relay_timeout)

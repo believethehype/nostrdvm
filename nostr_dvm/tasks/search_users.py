@@ -83,7 +83,7 @@ class SearchUser(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        database = await NostrDatabase.sqlite(self.db_name)
+        database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
         await cli.add_relay(self.relay)
@@ -143,7 +143,7 @@ class SearchUser(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
-        database = await NostrDatabase.sqlite(self.db_name)
+        database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
         await cli.add_relay(self.relay)

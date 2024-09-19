@@ -92,7 +92,7 @@ async def get_task(event, client, dvm_config):
         else:
 
             for dvm in dvm_config.SUPPORTED_DVMS:
-                if dvm.KIND.as_u64() == event.kind().as_u64():
+                if dvm.KIND.as_u16() == event.kind().as_u16():
                     return dvm.TASK
     except Exception as e:
         print("Get task: " + str(e))

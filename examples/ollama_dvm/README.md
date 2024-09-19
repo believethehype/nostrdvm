@@ -9,7 +9,7 @@ Projects in this folder contain ready-to-use DVMs. To tun the DVM following the 
 Create a new venv in this directory by opening the terminal here, or navigate to this directory and type: `"python -m venv venv"`
   - Place .env file (based on .env_example) in this folder.
   - Recommended but optional:
-    - Create a `LNbits` account on an accessible instance of your choice, enter one account's id and admin key (this account will create other accounts for the dvms) Open the .env file and enter this info to `LNBITS_ADMIN_KEY`, `LNBITS_ADMIN_ID`, `LNBITS_HOST`.
+    - Create a `LNbits` account on an accessible instance of your choice, enter one account's id and admin key (this account will create other accounts for the dvms) Open the .env file and enter this info to `LNBITS_ADMIN_KEY`, `LNBITS_WALLET_ID`, `LNBITS_HOST`.
     - If you are running an own instance of `Nostdress` enter `NOSTDRESS_DOMAIN` or use the default one.
   - Activate the venv with
     - MacOS/Linux: source ./venv/bin/activate

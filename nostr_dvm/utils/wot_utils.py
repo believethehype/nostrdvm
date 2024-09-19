@@ -93,7 +93,7 @@ async def get_following(pks, max_time_request=10, newer_than_time=None):
     return following
 
 
-async def build_network_from(seed_pks, depth=2, max_batch=500, max_time_request=10):
+async def build_wot_network(seed_pks, depth=2, max_batch=500, max_time_request=10):
     if not seed_pks:
         print('Error: seed_pks cannot be empty')
         return
@@ -636,5 +636,5 @@ async def convert_index_to_hex(graph, index_map, show_results_num):
 def test():
     # WARNING, DEPENDING ON DEPTH THIS TAKES LONG
     user = '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d'
-    index_map, network_graph = asyncio.run(build_network_from(user, depth=2, max_batch=500, max_time_request=10))
+    index_map, network_graph = asyncio.run(build_wot_network(user, depth=2, max_batch=500, max_time_request=10))
     save_network(index_map, network_graph, user)

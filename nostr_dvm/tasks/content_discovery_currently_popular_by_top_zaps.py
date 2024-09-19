@@ -115,7 +115,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         #keys = Keys.parse(sk.to_hex())
         #signer = NostrSigner.keys(keys)
 
-        database = await NostrDatabase.sqlite(self.db_name)
+        database = NostrDatabase.lmdb(self.db_name)
         #cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
         #await cli.connect()
@@ -230,7 +230,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             signer = NostrSigner.keys(keys)
-            database = await NostrDatabase.sqlite(self.db_name)
+            database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:

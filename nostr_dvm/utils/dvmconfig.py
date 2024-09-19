@@ -20,30 +20,16 @@ class DVMConfig:
                   "wss://relay.nostr.net"
                   ]
 
-    RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr21.com",
-                   "wss://nostr.oxtr.dev",
-                  "wss://relay.nostr.net" , "wss://relay.primal.net"] #, "wss://relay.snort.social"]
+    RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
+                  "wss://relay.nostr.net" , "wss://relay.primal.net"]
 
     # Straight Censorship (reply guy spam)
-    MUTE =   [PublicKey.parse("npub1x5vhtx7j2prvueeenwf7tmesrzmuzc50zs0aakgd75v5c30ekj3s5zjckj"),
-              PublicKey.parse("npub1l03urys27uet2u6wq6u90rnzf7kv5c3wfu3cyndqz9lq75g46c5q0wkpsj"),
-              PublicKey.parse("npub17g7qhlu4caefd88vateedm9wau9ys6xt6jhjcfu2kqyw9xmnucxs5d6crj"),
-              PublicKey.parse("npub1epwccahqndqhseh6q02seu40cqa2ghk3u9tvu92yh4hd6lmxg33spwzujc"),
-              PublicKey.parse("npub1v0kgu3hymtd4fw9zrlem6l74c3cwl8jdqentt4qsxrrzan6paxaqkkf6dr"),
-              PublicKey.parse("npub1y8teqt2jay2ulww87wlmpe97gxhjqvhva60jv3ghp8emgk2da3psc2x7lt"),
-              PublicKey.parse("npub1drz9ts6esv22vplg9vunajwhts4ecaxvusmpxwy8yy683ejnzfnqvfvtk9"),
-              PublicKey.parse("npub1af5hgjkjpdqavpu3xqz092xjrvrpr3nzfftp4pgh4nez635hznas7m0vvn"),
-              PublicKey.parse("npub1rwxfxn33mmt9fe66qwg25lm9pm3nwtj5za5qm5cpqjsxlhk3dtsqkmunfe"),
-              PublicKey.parse("npub1l6y4l424ggvstc8a40n5c4rf8wwt5hlt5vuhn4dzvx9xf0eff9uqnc2fuw"),
-              PublicKey.parse("npub1q57y985vcazhx87naj5qhdyxxmtrrqakfq7lmvhxppvduqpfkesq3n46e8"),
-              PublicKey.parse("npub1dryv50m3rl6cx6ajeakmh3ygz83vjcdf6cga99yllmfx9ugqa04st0nk3w"),
-              PublicKey.parse("npub1xh3n3q2cp2wf9r66mmzmkyunyj8cf5r8aszsvwtdld6upqjmkxcsxgejsd"),
-              PublicKey.parse("npub1cek65lcyks0jjwx4y47c0zxmx8y22zn7zmhxktfjr32h2z5wtgeqn70vjc"),
-              PublicKey.parse("npub1y2v5mqw32m7n8mz4wpypcy7wt0t4hg93g67qw0fuyspjdspk0etqm0xx9y"),
-              PublicKey.parse("npub1cfgr520quxl8p74f5r3u5snt05dxyshfk88tcm5tuj78ypkdhgyqcpxkx2"),
-              PublicKey.parse("npub1620alhm0dyn063wlrlp6r8xzxlzdk9pp94xfag99gghj92wentlq23t6rz"),
-
-              ]
+    WOT_FILTERING = False
+    WOT_BASED_ON_NPUBS = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
+                         "460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c",
+                         "3f770d65d3a764a9c5cb503ae123e62ec7598ad035d836e2a810f3877a745b24"
+                    ]
+    WOT_DEPTH = 2
 
 
     AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
@@ -91,7 +77,7 @@ def build_default_config(identifier):
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.IDENTIFIER = identifier
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     dvm_config.LNBITS_INVOICE_KEY = invoice_key
     dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")

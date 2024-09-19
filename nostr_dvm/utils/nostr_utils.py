@@ -234,13 +234,15 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     # 5. Fallback, if we couldn't send the event to any relay, we try to send to generic relays instead.
     if event_id is None:
         for relay in relays:
-            await outboxclient.remove_relay(relay)
+            try:
+                await outboxclient.remove_relay(relay)
+            except:
+                print("Error removing relay: " + relay)
 
 
         relays = await get_main_relays(event, client, dvm_config)
         for relay in relays:
-            opts = RelayOptions().ping(False)
-            await outboxclient.add_relay_with_opts(relay, opts)
+            await outboxclient.add_relay(relay)
         try:
             await outboxclient.connect()
             event_id = await outboxclient.send_event(event)
@@ -256,7 +258,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 
 
 
-async def send_event(event: Event, client: Client, dvm_config, blastr=False):
+async def send_event(event: Event, client: Client, dvm_config):
     try:
         relays = []
         for tag in event.tags():
@@ -275,11 +277,8 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False):
             if relay not in dvm_config.RELAY_LIST:
                 await client.add_relay(relay)
 
-        #if blastr:
-        #    client.add_relay("wss://nostr.mutinywallet.com")
         try:
             event_id = await client.send_event(event)
-            #event_id = output.id
         except Exception as e:
             print(e)
             event_id = None
@@ -288,8 +287,6 @@ async def send_event(event: Event, client: Client, dvm_config, blastr=False):
             if relay not in dvm_config.RELAY_LIST:
                 if relay not in dvm_config.RELAY_LIST:
                     await client.remove_relay(relay)
-        #if blastr:
-        #    client.remove_relay("wss://nostr.mutinywallet.com")
         return event_id
     except Exception as e:
         print(e)
@@ -358,6 +355,24 @@ def check_and_decrypt_own_tags(event, dvm_config):
         print(e)
 
     return event
+
+
+async def update_profile_lnaddress(private_key,  dvm_config,  lud16="",):
+    keys = Keys.parse(private_key)
+    opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=5))
+            .skip_disconnected_relays(True))
+
+    signer = NostrSigner.keys(keys)
+    client = Client.with_opts(signer, opts)
+    for relay in dvm_config.RELAY_LIST:
+        await client.add_relay(relay)
+    await client.connect()
+
+    metadata = Metadata() \
+        .set_lud16(lud16) \
+        .set_nip05(lud16)
+
+    await client.set_metadata(metadata)
 
 
 async def update_profile(dvm_config, client, lud16=""):
