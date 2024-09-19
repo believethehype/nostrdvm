@@ -205,7 +205,7 @@ import {loadNWCObject} from "@/components/helper/Zap.vue"
 import {useDark, useEventListener, useToggle} from "@vueuse/core";
 import {ref} from "vue";
 import {webln} from "@getalby/sdk";
-import {nip04Decrypt} from "@rust-nostr/nostr-sdk/pkg/nostr_sdk_js_bg.wasm.js";
+import {contact_new, nip04Decrypt} from "@rust-nostr/nostr-sdk/pkg/nostr_sdk_js_bg.wasm.js";
 import app from "@/App.vue";
 const isDark = useDark();
 
@@ -752,6 +752,10 @@ export default {
 
         for (const entry of evts){
 
+          try {
+
+
+
           for (const tag in entry.tags){
             if (entry.tags[tag].asVec()[0] === "k")
               if(entry.tags[tag].asVec()[1] >= 5000 && entry.tags[tag].asVec()[1] <= 5999 &&  deadnip89s.filter(i => i.id === entry.id.toHex() ).length === 0) {   // blocklist.indexOf(entry.id.toHex()) < 0){
@@ -760,7 +764,8 @@ export default {
 
                 try {
 
-                    let jsonentry = JSON.parse(entry.content)
+                     let jsonentry = JSON.parse(entry.content)
+
 
                      let nip88    = {
                         title: "",
@@ -868,7 +873,17 @@ export default {
                       //jsonentry.reactions = await dvmreactions(entry.author.toHex())
                   //     console.log("REACTIONS:" + jsonentry.reactions)
                       jsonentry.id = entry.author.toHex()
-                      jsonentry.about = await parseandreplacenpubs(jsonentry.about)
+                       try{
+                           if (jsonentry.about != null){
+                                 jsonentry.about = await parseandreplacenpubs(jsonentry.about)
+                           }
+
+
+                       }
+                      catch(Error){
+                        console.log(Error)
+                      }
+
                       jsonentry.event = entry.asJson()
                       jsonentry.kind = entry.tags[tag].asVec()[1]
 
@@ -880,11 +895,13 @@ export default {
                 }
                 catch (error){
                   console.log(error)
+
                 }
 
               }
            }
-
+     }
+          catch {}
         }
 
        store.commit('set_nip89dvms', nip89dvms)

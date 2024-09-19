@@ -146,7 +146,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
         if self.database is None:
-            self.database = await NostrDatabase.sqlite(self.db_name)
+            self.database = NostrDatabase.lmdb(self.db_name)
 
         cli = ClientBuilder().database(self.database).signer(signer).opts(opts).build()
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
@@ -230,7 +230,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             signer = NostrSigner.keys(keys)
-            database = await NostrDatabase.sqlite(self.db_name)
+            database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:

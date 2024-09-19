@@ -153,8 +153,11 @@ async function send_search_request(msg) {
               ["param", "until", ((dateto.value/1000).toFixed(0))],
               ['param', 'users', JSON.stringify(users)]
             ]
-        let r = store.state.relays.join(",")
-        tags.push(["relays", r])
+       let r = ["relays"]
+        for (let relay of store.state.relays){
+              r.push(relay)
+            }
+        tags.push(r)
 
 
       let tags_as_str = JSON.stringify(tags)

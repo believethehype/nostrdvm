@@ -8,7 +8,7 @@ print(keys.public_key().to_bech32())
 
 async def reconcile_db():
     # Create/open SQLite database
-    database = await NostrDatabase.sqlite("nostr.db")
+    database = NostrDatabase.lmdb("nostr.db")
 
     # NOT AVAILABLE ON WINDOWS AT THE MOMENT!
     # Create/open nostrdb database
@@ -28,7 +28,7 @@ async def reconcile_db():
     await do_some_work()
 
 async def do_some_work():
-    database = await NostrDatabase.sqlite("nostr.db")
+    database = NostrDatabase.lmdb("nostr.db")
     f = Filter().author(keys.public_key()).limit(10)
     events = await database.query([f])
 

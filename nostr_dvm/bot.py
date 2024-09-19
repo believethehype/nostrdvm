@@ -68,7 +68,7 @@ class Bot:
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
-                kinds.append(Kind(dvm.KIND.as_u64() + 1000))
+                kinds.append(Kind(dvm.KIND.as_u16() + 1000))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
         await self.client.subscribe([zap_filter, dm_filter, nip17_filter, dvm_filter], None)
@@ -82,8 +82,8 @@ class Bot:
             keys = self.keys
 
             async def handle(self, relay_url, subscription_id, nostr_event):
-                if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u64() + 1000 <= nostr_event.kind().as_u64()
-                        <= EventDefinitions.KIND_NIP90_GENERIC.as_u64() + 1000):
+                if (EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u16() + 1000 <= nostr_event.kind().as_u16()
+                        <= EventDefinitions.KIND_NIP90_GENERIC.as_u16() + 1000):
                     await handle_nip90_response_event(nostr_event)
                 elif nostr_event.kind() == EventDefinitions.KIND_FEEDBACK:
                     await handle_nip90_feedback(nostr_event)
@@ -459,7 +459,7 @@ class Bot:
                             return
 
                     dvms = [x for x in self.dvm_config.SUPPORTED_DVMS if
-                            x.PUBLIC_KEY == nostr_event.author().to_hex() and x.KIND.as_u64() == nostr_event.kind().as_u64() - 1000]
+                            x.PUBLIC_KEY == nostr_event.author().to_hex() and x.KIND.as_u16() == nostr_event.kind().as_u16() - 1000]
                     if len(dvms) > 0:
                         dvm = dvms[0]
                         if dvm.dvm_config.EXTERNAL_POST_PROCESS_TYPE != PostProcessFunctionType.NONE:

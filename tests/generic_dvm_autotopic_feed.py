@@ -8,6 +8,7 @@ from duck_chat import ModelType
 from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, Options, Client, Tag, \
     LogLevel, Timestamp, NostrDatabase
 
+
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -50,13 +51,13 @@ def playground(announce=False):
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
     dvm_config.CUSTOM_PROCESSING_MESSAGE = "Creating a personalized feed based on the topics you write about. This might take a moment."
-    dvm_config.FIX_COST = 10
+    dvm_config.FIX_COST = 0
 
 
-    admin_config.DELETE_NIP89 = True
-    admin_config.POW = True
-    admin_config.EVENTID = "5322b731230cf8961f8403d025722a381af9b012b5d5f6dcc09f88e160f4e4ff"
-    admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
+    #admin_config.DELETE_NIP89 = True
+    #admin_config.POW = True
+    #admin_config.EVENTID = "5322b731230cf8961f8403d025722a381af9b012b5d5f6dcc09f88e160f4e4ff"
+    #admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
 
     # Add NIP89
@@ -83,12 +84,10 @@ def playground(announce=False):
                      admin_config=admin_config, options=options)
 
 
-    async def process_request(request_form, prompt):
+    async def process_request(options, prompt):
         result = ""
         try:
             from duck_chat import DuckChat
-            options = dvm.set_options(request_form)
-            result = ""
             async with DuckChat(model=ModelType.GPT4o) as chat:
                 query = prompt
                 result = await chat.ask_question(query)
@@ -119,7 +118,8 @@ def playground(announce=False):
 
         await cli.connect()
         #pip install -U https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
-        author = PublicKey.parse(options["user"])
+        author = PublicKey.parse(options["request_event_author"])
+        print(options["request_event_author"])
         filterauth = Filter().kind(definitions.EventDefinitions.KIND_NOTE).author(author).limit(100)
 
         evts = await cli.get_events_of([filterauth], relay_timeout)
@@ -128,12 +128,14 @@ def playground(announce=False):
         for event in evts:
             text = text + event.content() + ";"
 
+
         text = text[:6000]
 
         prompt = "Only reply with the result. Here is a list of notes, seperated by ;. Find the 20 most important keywords and return them by a comma seperated list: " + text
 
         #loop = asyncio.get_running_loop()
-        result = asyncio.run(process_request(request_form, prompt))
+        result =  await process_request(options, prompt)
+        print(result)
         content = "I identified these as your topics:\n\n"+result.replace(",", ", ") + "\n\nProcessing, just a few more seconds..."
         await send_job_status_reaction(original_event_id_hex=dvm.options["request_event_id"], original_event_author_hex=dvm.options["request_event_author"],  client=cli, dvm_config=dvm_config, content=content)
 
@@ -144,11 +146,11 @@ def playground(announce=False):
         #    result = await chat.ask_question(query)
         #    result = result.replace(", ", ",")
         #    print(result)
-        result = ""
+
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        database = await NostrDatabase.sqlite("db/nostr_recent_notes.db")
+        database = NostrDatabase.lmdb("db/nostr_recent_notes.db")
 
         timestamp_since = Timestamp.now().as_secs() -   since
         since = Timestamp.from_secs(timestamp_since)
@@ -159,7 +161,7 @@ def playground(announce=False):
         if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
-        search_list = result.split('')
+        #search_list = result.split(',')
 
         for event in events:
             #if all(ele in event.content().lower() for ele in []):
