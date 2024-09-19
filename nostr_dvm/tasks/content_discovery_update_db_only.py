@@ -1,7 +1,11 @@
 import asyncio
 import json
 import os
+import time
 from datetime import timedelta
+from itertools import islice
+
+import networkx as nx
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
     RelayLimits
@@ -14,7 +18,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
-
+from nostr_dvm.utils.wot_utils import build_network_from, save_network, print_results
 
 """
 This File contains a Module to update the database for content discovery dvms
@@ -138,18 +142,46 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
                 await cli.add_relay(relay)
 
+
             await cli.connect()
+
+
+            if self.dvm_config.WOT_FILTERING:
+                user = self.dvm_config.WOT_BASED_ON_NPUB
+                depth = self.dvm_config.WOT_DEPTH
+                print("Calculating WOT for " + user)
+
+                filtering = cli.filtering()
+                index_map, G = await build_network_from(user, depth=depth, max_batch=500, max_time_request=10)
+
+                # Do we actually need pagerank here?
+                #print('computing global pagerank...')
+                #tic = time.time()
+                #p_G = nx.pagerank(G, tol=1e-12)
+                # print("network after pagerank: " + str(len(p_G)))
+
+                wot_keys = []
+                for item in islice(G, len(G)):
+                    key = next((PublicKey.parse(pubkey) for pubkey, id in index_map.items() if id == item),
+                               None)
+                    wot_keys.append(key)
+
+                #toc = time.time()
+                #print(f'finished in {toc - tic} seconds')
+                await filtering.add_public_keys(wot_keys)
+
+
 
 
 
             # Mute public key
-            await cli.mute_public_keys(self.dvm_config.MUTE)
+            #await cli. (self.dvm_config.MUTE)
 
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
             filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                                      definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+                                      definitions.EventDefinitions.KIND_ZAP]).since(since) # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:

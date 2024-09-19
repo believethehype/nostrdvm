@@ -63,6 +63,7 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
+    dvm_config.WOT_FILTERING = True
 
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
@@ -1127,7 +1128,7 @@ def playground():
     subscription_config = DVMConfig()
     subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
     npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
+    invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
     subscription_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     subscription_config.RELAY_LIST = RELAY_LIST
     subscription_config.LNBITS_INVOICE_KEY = invoice_key
