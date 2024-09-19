@@ -621,7 +621,7 @@ def playground():
     admin_config_db_scheduler= AdminConfig()
     options_animal = {
         "db_name": main_db,
-        "db_since": 48 * 60 * 60,  # 48h since gmt,
+        "db_since": 6 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
     image = ""

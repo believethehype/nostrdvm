@@ -14,7 +14,7 @@
       <excludeFolder url="file://$MODULE_DIR$/p1234" />
       <excludeFolder url="file://$MODULE_DIR$/p23" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11 (dvm)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 (dvm)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
