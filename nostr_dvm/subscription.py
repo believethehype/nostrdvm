@@ -350,13 +350,12 @@ class Subscription:
 
                             await send_status_success(nostr_event, "noogle.lol")
 
-                            keys = Keys.parse(dvm_config.PRIVATE_KEY)
                             message = ("Subscribed to DVM " + tier + ". Renewing on: " + str(
                                 Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
                                                                                                        " ") + " GMT"))
-                            evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscriber), message,
-                                                                    None).to_event(keys)
-                            await send_event(evt, client=self.client, dvm_config=dvm_config)
+
+                            self.client.send_private_msg(PublicKey.parse(subscriber), message, None)
+
 
 
 
@@ -415,10 +414,9 @@ class Subscription:
                     "Renewed Subscription to DVM " + subscription.tier + ". Next renewal: " + str(
                 Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
                                                                                        " ")))
-            evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(subscription.subscriber),
-                                                    message,
-                                                    None).to_event(keys)
-            await send_event(evt, client=self.client, dvm_config=dvm_config)
+            #await self.client.send_direct_msg(PublicKey.parse(subscription.subscriber), message, None)
+            await self.client.send_private_msg(PublicKey.parse(subscription.subscriber), message, None)
+
 
         async def check_subscriptions():
             try:

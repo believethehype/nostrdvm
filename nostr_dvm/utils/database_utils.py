@@ -196,9 +196,8 @@ async def update_user_balance(db, npub, additional_sats, client, config, giftwra
             if giftwrap:
                 await client.send_private_msg(PublicKey.parse(npub), message, None)
             else:
-                evt = EventBuilder.encrypted_direct_msg(keys, PublicKey.parse(npub), message,
-                                                        None).to_event(keys)
-                await send_event(evt, client=client, dvm_config=config)
+                #await client.send_direct_msg(PublicKey.parse(npub), message, None)
+                await client.send_private_msg(PublicKey.parse(npub), message, None)
 
 
 def update_user_subscription(npub, subscribed_until, client, dvm_config):
