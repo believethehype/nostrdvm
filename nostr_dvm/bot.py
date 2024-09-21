@@ -41,6 +41,9 @@ class Bot:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+        self.CHATBOT = False
+
+
 
         wait_for_send = True
         skip_disconnected_relays = True
@@ -57,6 +60,11 @@ class Bot:
         print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME)  # +
         # " Supported DVM tasks: " +
         # ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
+        if dvm_config.CHATBOT is not None:
+            if dvm_config.CHATBOT is True:
+                self.CHATBOT = True
+                self.DVM_KEY = dvm_config.DVM_KEY
+
 
         for relay in self.dvm_config.RELAY_LIST:
             await self.client.add_relay(relay)
@@ -69,6 +77,8 @@ class Bot:
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
                 kinds.append(Kind(dvm.KIND.as_u16() + 1000))
+        if self.CHATBOT:
+            kinds.append(Kind(6050))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
         await self.client.subscribe([zap_filter, dm_filter, nip17_filter, dvm_filter], None)
@@ -106,6 +116,7 @@ class Bot:
                 return
 
         async def handle_dm(nostr_event, giftwrap):
+
             sender = nostr_event.author().to_hex()
             if sender == self.keys.public_key().to_hex():
                 return
@@ -145,149 +156,180 @@ class Bot:
 
                     print("[" + self.NAME + "]" + sealed + "Message from " + user.name + ": " + decrypted_text)
 
-                    # if user selects an index from the overview list...
-                    if decrypted_text != "" and decrypted_text[0].isdigit():
 
-                        split = decrypted_text.split(' ')
-                        index = int(split[0]) - 1
-                        # if user sends index info, e.g. 1 info, we fetch the nip89 information and reply with it.
-                        if len(split) > 1 and split[1].lower() == "info":
-                            await answer_nip89(nostr_event, index, giftwrap, sender)
-                        # otherwise we probably have to do some work, so build an event from input and send it to the DVM
-                        else:
-                            task = self.dvm_config.SUPPORTED_DVMS[index].TASK
-                            print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) +
-                                  ", Balance: " + str(user.balance) + " Sats) Task: " + str(task))
+                    if not self.CHATBOT:
+                        # if user selects an index from the overview list...
+                        if decrypted_text != "" and decrypted_text[0].isdigit():
 
-                            if user.isblacklisted:
-                                # If users are blacklisted for some reason, tell them.
-                                answer_blacklisted(nostr_event, giftwrap, sender)
-
+                            split = decrypted_text.split(' ')
+                            index = int(split[0]) - 1
+                            # if user sends index info, e.g. 1 info, we fetch the nip89 information and reply with it.
+                            if len(split) > 1 and split[1].lower() == "info":
+                                await answer_nip89(nostr_event, index, giftwrap, sender)
+                            # otherwise we probably have to do some work, so build an event from input and send it to the DVM
                             else:
-                                # Parse inputs to params
-                                tags = build_params(decrypted_text, sender, index)
-                                p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
+                                task = self.dvm_config.SUPPORTED_DVMS[index].TASK
+                                print("[" + self.NAME + "] Request from " + str(user.name) + " (" + str(user.nip05) +
+                                      ", Balance: " + str(user.balance) + " Sats) Task: " + str(task))
 
-                                if self.dvm_config.SUPPORTED_DVMS[index].SUPPORTS_ENCRYPTION:
-                                    tags_str = []
-                                    for tag in tags:
-                                        tags_str.append(tag.as_vec())
-                                    params_as_str = json.dumps(tags_str)
-                                    print(params_as_str)
-                                    #  and encrypt them
-                                    encrypted_params = nip04_encrypt(self.keys.secret_key(),
-                                                                     PublicKey.from_hex(
-                                                                         self.dvm_config.SUPPORTED_DVMS[
-                                                                             index].PUBLIC_KEY),
-                                                                     params_as_str)
-                                    #  add encrypted and p tag on the outside
-                                    encrypted_tag = Tag.parse(['encrypted'])
-                                    #  add the encrypted params to the content
-                                    nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
-                                                                 encrypted_params, [p_tag, encrypted_tag]).
-                                                    to_event(self.keys))
+                                if user.isblacklisted:
+                                    # If users are blacklisted for some reason, tell them.
+                                    await answer_blacklisted(nostr_event, giftwrap, sender)
+
                                 else:
-                                    tags.append(p_tag)
+                                    # Parse inputs to params
+                                    tags = build_params(decrypted_text, sender, index)
+                                    p_tag = Tag.parse(['p', self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY])
 
-                                    nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
-                                                                 "", tags).
-                                                    to_event(self.keys))
+                                    if self.dvm_config.SUPPORTED_DVMS[index].SUPPORTS_ENCRYPTION:
+                                        tags_str = []
+                                        for tag in tags:
+                                            tags_str.append(tag.as_vec())
+                                        params_as_str = json.dumps(tags_str)
+                                        print(params_as_str)
+                                        #  and encrypt them
+                                        encrypted_params = nip04_encrypt(self.keys.secret_key(),
+                                                                         PublicKey.from_hex(
+                                                                             self.dvm_config.SUPPORTED_DVMS[
+                                                                                 index].PUBLIC_KEY),
+                                                                         params_as_str)
+                                        #  add encrypted and p tag on the outside
+                                        encrypted_tag = Tag.parse(['encrypted'])
+                                        #  add the encrypted params to the content
+                                        nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
+                                                                     encrypted_params, [p_tag, encrypted_tag]).
+                                                        to_event(self.keys))
+                                    else:
+                                        tags.append(p_tag)
 
-                                # remember in the job_list that we have made an event, if anybody asks for payment,
-                                # we know we actually sent the request
-                                entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
-                                         "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False,
-                                         "giftwrap": giftwrap}
-                                self.job_list.append(entry)
+                                        nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
+                                                                     "", tags).
+                                                        to_event(self.keys))
 
-                                # send the event to the DVM
-                                await send_event(nip90request, client=self.client, dvm_config=self.dvm_config)
-                                # print(nip90request.as_json())
+                                    # remember in the job_list that we have made an event, if anybody asks for payment,
+                                    # we know we actually sent the request
+                                    entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
+                                             "dvm_key": self.dvm_config.SUPPORTED_DVMS[index].PUBLIC_KEY, "is_paid": False,
+                                             "giftwrap": giftwrap}
+                                    self.job_list.append(entry)
 
-
-                    elif decrypted_text.lower().startswith("invoice"):
-                        requests_rq = False
-                        amount_str = decrypted_text.lower().split(" ")[1]
-                        if amount_str == "qr":
-                            amount_str = decrypted_text.lower().split(" ")[2]
-                            requests_rq = True
-                        try:
-                            amount = int(amount_str)
-                        except:
-                            amount = 100
-
-                        invoice, hash = create_bolt11_ln_bits(amount, self.dvm_config)
-                        expires = nostr_event.created_at().as_secs() + (60 * 60 * 24)
-                        qr_code = "https://qrcode.tec-it.com/API/QRCode?data=" + invoice + "&backcolor=%23ffffff&size=small&quietzone=1&errorcorrection=H"
-
-                        self.invoice_list.append(
-                            InvoiceToWatch(sender=sender, bolt11=invoice, payment_hash=hash, is_paid=False,
-                                           expires=expires, amount=amount))
-
-                        if requests_rq:
-                            message = invoice + "\n" + qr_code
-                        else:
-                            message = invoice
-                        if giftwrap:
-                            await self.client.send_private_msg(PublicKey.parse(sender), message, None)
-                        else:
-                            await asyncio.sleep(2.0)
-                            evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
-                                                                    message, None).to_event(self.keys)
-                            await send_event(evt, client=self.client, dvm_config=dvm_config)
+                                    # send the event to the DVM
+                                    await send_event(nip90request, client=self.client, dvm_config=self.dvm_config)
+                                    # print(nip90request.as_json())
 
 
-                    elif decrypted_text.lower().startswith("balance"):
-                        await asyncio.sleep(2.0)
-                        message = "Your current balance is " + str(user.balance) + (" Sats. Zap me to add to your "
-                                                                                    "balance. I will use your "
-                                                                                    "balance interact with the DVMs "
-                                                                                    "for you.\nI support both "
-                                                                                    "public and private Zaps, "
-                                                                                    "as well as "
-                                                                                    "Zapplepay.\nOr write \"invoice "
-                                                                                    "100\" to receive an invoice of "
-                                                                                    "100 sats (or any other amount) "
-                                                                                    "to top up your balance")
-                        if giftwrap:
-                            await self.client.send_private_msg(PublicKey.parse(sender), message, None)
-                        else:
-                            evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
-                                                                    message, None).to_event(self.keys)
-                            await send_event(evt, client=self.client, dvm_config=dvm_config)
-                    elif decrypted_text.startswith("cashuA"):
-                        print("Received Cashu token:" + decrypted_text)
-                        cashu_redeemed, cashu_message, total_amount, fees = await redeem_cashu(decrypted_text,
-                                                                                               self.dvm_config,
-                                                                                               self.client)
-                        print(cashu_message)
-                        if cashu_message == "success":
-                            await update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
-                                                      config=self.dvm_config)
-                        else:
-                            await asyncio.sleep(2.0)
-                            message = "Error: " + cashu_message + ". Token has not been redeemed."
+                        elif decrypted_text.lower().startswith("invoice"):
+                            requests_rq = False
+                            amount_str = decrypted_text.lower().split(" ")[1]
+                            if amount_str == "qr":
+                                amount_str = decrypted_text.lower().split(" ")[2]
+                                requests_rq = True
+                            try:
+                                amount = int(amount_str)
+                            except:
+                                amount = 100
 
+                            invoice, hash = create_bolt11_ln_bits(amount, self.dvm_config)
+                            expires = nostr_event.created_at().as_secs() + (60 * 60 * 24)
+                            qr_code = "https://qrcode.tec-it.com/API/QRCode?data=" + invoice + "&backcolor=%23ffffff&size=small&quietzone=1&errorcorrection=H"
+
+                            self.invoice_list.append(
+                                InvoiceToWatch(sender=sender, bolt11=invoice, payment_hash=hash, is_paid=False,
+                                               expires=expires, amount=amount))
+
+                            if requests_rq:
+                                message = invoice + "\n" + qr_code
+                            else:
+                                message = invoice
                             if giftwrap:
                                 await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                             else:
-                                evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.from_hex(sender), message,
-                                                                        None).to_event(self.keys)
-                                await send_event(evt, client=self.client, dvm_config=self.dvm_config)
-                    elif decrypted_text.lower().startswith("what's the second best"):
-                        await asyncio.sleep(2.0)
-                        message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
-                        if giftwrap:
-                            await self.client.send_private_msg(PublicKey.parse(sender), message, None)
-                        else:
-                            evt = await EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
-                                                                          message,
-                                                                          nostr_event.id()).to_event(self.keys)
-                            await send_event(evt, client=self.client, dvm_config=self.dvm_config)
+                                #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
+                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
 
+
+
+                        elif decrypted_text.lower().startswith("balance"):
+                            await asyncio.sleep(2.0)
+                            message = "Your current balance is " + str(user.balance) + (" Sats. Zap me to add to your "
+                                                                                        "balance. I will use your "
+                                                                                        "balance interact with the DVMs "
+                                                                                        "for you.\nI support both "
+                                                                                        "public and private Zaps, "
+                                                                                        "as well as "
+                                                                                        "Zapplepay.\nOr write \"invoice "
+                                                                                        "100\" to receive an invoice of "
+                                                                                        "100 sats (or any other amount) "
+                                                                                        "to top up your balance")
+                            if giftwrap:
+                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                            else:
+                                #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
+                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                        elif decrypted_text.startswith("cashuA"):
+                            print("Received Cashu token:" + decrypted_text)
+                            cashu_redeemed, cashu_message, total_amount, fees = await redeem_cashu(decrypted_text,
+                                                                                                   self.dvm_config,
+                                                                                                   self.client)
+                            print(cashu_message)
+                            if cashu_message == "success":
+                                await update_user_balance(self.dvm_config.DB, sender, total_amount, client=self.client,
+                                                          config=self.dvm_config)
+                            else:
+                                await asyncio.sleep(2.0)
+                                message = "Error: " + cashu_message + ". Token has not been redeemed."
+
+                                if giftwrap:
+                                    await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                else:
+                                   #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
+                                   await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                        elif decrypted_text.lower().startswith("what's the second best"):
+                            await asyncio.sleep(2.0)
+                            message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
+                            if giftwrap:
+                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                            else:
+                                #await self.client.send_direct_msg(PublicKey.parse(sender), message,  nostr_event.id())
+                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+
+                        else:
+
+                            # Build an overview of known DVMs and send it to the user
+                            await answer_overview(nostr_event, giftwrap, sender)
                     else:
-                        # Build an overview of known DVMs and send it to the user
-                        await answer_overview(nostr_event, giftwrap, sender)
+                        kind = 5050
+                        tags = []
+                        print(decrypted_text)
+                        input_tag = Tag.parse(["i", decrypted_text, "text"])
+                        tags.append(input_tag)
+
+                        alt_tag = Tag.parse(["alt", "text-generation"])
+                        tags.append(alt_tag)
+                        relaylist = ["relays"]
+                        for relay in self.dvm_config.RELAY_LIST:
+                            relaylist.append(relay)
+                        relays_tag = Tag.parse(relaylist)
+                        tags.append(relays_tag)
+                        output_tag = Tag.parse(["output", "text/plain"])
+                        tags.append(output_tag)
+
+                        p_tag = Tag.parse(['p', self.DVM_KEY])
+                        tags.append(p_tag)
+
+                        nip90request = (EventBuilder(Kind(kind),
+                                                     "", tags).
+                                        to_event(self.keys))
+
+
+                        entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
+                                 "dvm_key": self.DVM_KEY, "is_paid": False,
+                                 "giftwrap": giftwrap}
+                        self.job_list.append(entry)
+
+                        # send the event to the DVM
+                        await send_event(nip90request, client=self.client, dvm_config=self.dvm_config)
+
 
             except Exception as e:
                 print("Error in bot " + str(e))
@@ -346,12 +388,9 @@ class Bot:
                         if entry["giftwrap"]:
                             await self.client.send_private_msg(PublicKey.parse(entry["npub"]), content, None)
                         else:
-                            reply_event = EventBuilder.encrypted_direct_msg(self.keys,
-                                                                            PublicKey.from_hex(entry['npub']),
-                                                                            content,
-                                                                            None).to_event(self.keys)
-
-                            await send_event(reply_event, client=self.client, dvm_config=dvm_config)
+                            #await self.client.send_direct_msg(PublicKey.from_hex(entry['npub']), content, None)
+                            await self.client.send_private_msg(PublicKey.parse(entry['npub']),
+                                                              content, None)
                         print(status + ": " + content)
                         print(
                             "[" + self.NAME + "] Received reaction from " + nostr_event.author().to_hex() + " message to orignal sender " + user.name)
@@ -381,26 +420,20 @@ class Bot:
                                         await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message,
                                                                            None)
                                     else:
-                                        evt = EventBuilder.encrypted_direct_msg(self.keys,
-                                                                                PublicKey.parse(entry["npub"]),
-                                                                                message,
-                                                                                None).to_event(self.keys)
-                                        await send_event(evt, client=self.client, dvm_config=dvm_config)
+                                        #await self.client.send_direct_msg(PublicKey.parse(PublicKey.parse(entry["npub"])), message, None)
+                                        await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message, None)
+
                                     print(
                                         "[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
 
                                 else:
                                     print("Bot payment-required")
                                     await asyncio.sleep(2.0)
-                                    evt = EventBuilder.encrypted_direct_msg(self.keys,
-                                                                            PublicKey.parse(entry["npub"]),
-                                                                            "Current balance: " + str(
-                                                                                user.balance) + " Sats. Balance of " + str(
-                                                                                amount) + " Sats required. Please zap me with at least " +
-                                                                            str(int(amount - user.balance))
-                                                                            + " Sats, then try again.",
-                                                                            None).to_event(self.keys)
-                                    await send_event(evt, client=self.client, dvm_config=dvm_config)
+                                    message =   "Current balance: " + str( user.balance) + " Sats. Balance of " + str(amount) + " Sats required. Please zap me with at least " + str(int(amount - user.balance))+ " Sats, then try again.",
+                                    #await self.client.send_direct_msg(PublicKey.parse(PublicKey.parse(entry["npub"])),
+                                    #                                  message, None)
+                                    await self.client.send_private_msg(PublicKey.parse(entry["npub"]),
+                                                                      message, None)
                                     return
 
                                 if len(tag.as_vec()) > 2:
@@ -432,6 +465,7 @@ class Bot:
 
         async def handle_nip90_response_event(nostr_event: Event):
             try:
+
                 ptag = ""
                 etag = ""
                 is_encrypted = False
@@ -473,11 +507,8 @@ class Bot:
                     if entry["giftwrap"]:
                         await self.client.send_private_msg(PublicKey.parse(user.npub), content, None)
                     else:
-                        reply_event = EventBuilder.encrypted_direct_msg(self.keys,
-                                                                        PublicKey.parse(user.npub),
-                                                                        content,
-                                                                        None).to_event(self.keys)
-                        await send_event(reply_event, client=self.client, dvm_config=dvm_config)
+                        #await self.client.send_direct_msg(PublicKey.parse(user.npub), content, None)
+                        await self.client.send_private_msg(PublicKey.parse(user.npub), content, None)
 
             except Exception as e:
                 print(e)
@@ -547,23 +578,20 @@ class Bot:
 
             text = message + "\nSelect an Index and provide an input (e.g. \"2 A purple ostrich\")\nType \"index info\" to learn more about each DVM. (e.g. \"2 info\")\n\n Type \"balance\" to see your current balance"
             if giftwrap:
-                await self.client.send_private_msg(PublicKey.parse(sender), text, None)
+                await self.client.send_private_msg(PublicKey.parse(sender), text, nostr_event.id())
             else:
-                evt = EventBuilder.encrypted_direct_msg(self.keys, PublicKey.parse(sender),
-                                                        text,
-                                                        nostr_event.id()).to_event(self.keys)
+                #await self.client.send_direct_msg(PublicKey.parse(sender), text, nostr_event.id())
+                await self.client.send_private_msg(PublicKey.parse(sender), text, nostr_event.id())
 
-                await send_event(evt, client=self.client, dvm_config=dvm_config)
-
-        def answer_blacklisted(nostr_event, giftwrap, sender):
+        async def answer_blacklisted(nostr_event, giftwrap, sender):
             message = "Your are currently blocked from this service."
             if giftwrap:
-                self.client.send_sealed_msg(PublicKey.parse(sender), message, None)
+                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
             else:
-                # For some reason an admin might blacklist npubs, e.g. for abusing the service
-                evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                        message, None).to_event(self.keys)
-                send_event(evt, client=self.client, dvm_config=dvm_config)
+                #await self.client.send_direct_msg(nostr_event.author(), message, None)
+                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+
+
 
         async def answer_nip89(nostr_event, index, giftwrap, sender):
             info = await print_dvm_info(self.client, index)
@@ -574,9 +602,8 @@ class Bot:
             if giftwrap:
                 await self.client.send_private_msg(PublicKey.parse(sender), info, None)
             else:
-                evt = EventBuilder.encrypted_direct_msg(self.keys, nostr_event.author(),
-                                                        info, None).to_event(self.keys)
-                await send_event(evt, client=self.client, dvm_config=dvm_config)
+                #await self.client.send_direct_msg(nostr_event.author(), info, None)
+                await self.client.send_private_msg(PublicKey.parse(sender), info, None)
 
         def build_params(decrypted_text, author, index):
             tags = []

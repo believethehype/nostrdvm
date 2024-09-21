@@ -39,7 +39,10 @@ async def test():
                 try:
                     msg = nip04_decrypt(sk, event.author(), event.content())
                     print(f"Received new msg: {msg}")
-                    await client.send_direct_msg(event.author(), f"Echo: {msg}", event.id())
+                    #await client.send_direct_msg(event.author(), f"Echo: {msg}", event.id())
+                    await client.send_private_msg(event.author(), f"Echo: {msg}", event.id())
+
+
                 except Exception as e:
                     print(f"Error during content NIP04 decryption: {e}")
             elif event.kind().as_enum() == KindEnum.GIFT_WRAP():
