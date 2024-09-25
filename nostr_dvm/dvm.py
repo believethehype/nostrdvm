@@ -22,7 +22,7 @@ from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
     parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
 from nostr_dvm.utils.cashu_utils import redeem_cashu
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 
 
 class DVM:

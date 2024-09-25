@@ -7,10 +7,12 @@ from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
 
+from coincurve import PrivateKey
 from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Kind
 
 from nostr_dvm.utils.definitions import relay_timeout
-from nostr_dvm.utils.nostr_utils import send_event
+from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.nostr_utils import send_event, send_nip04_dm
 
 
 @dataclass
@@ -197,7 +199,8 @@ async def update_user_balance(db, npub, additional_sats, client, config, giftwra
                 await client.send_private_msg(PublicKey.parse(npub), message, None)
             else:
                 #await client.send_direct_msg(PublicKey.parse(npub), message, None)
-                await client.send_private_msg(PublicKey.parse(npub), message, None)
+                #await client.send_private_msg(PublicKey.parse(npub), message, None)
+                await send_nip04_dm(client, message, npub, config)
 
 
 def update_user_subscription(npub, subscribed_until, client, dvm_config):

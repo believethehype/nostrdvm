@@ -2,7 +2,7 @@ from nostr_sdk import Tag, Keys, EventBuilder, Kind
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import send_event
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 
 
 async def gallery_announce_list(tags, dvm_config, client):

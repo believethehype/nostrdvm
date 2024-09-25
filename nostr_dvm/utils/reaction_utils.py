@@ -4,7 +4,7 @@ from nostr_sdk import Tag, Keys, EventBuilder, Kind, NostrSigner, Client
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 
 
 async def create_reaction(keys, title, dtag):

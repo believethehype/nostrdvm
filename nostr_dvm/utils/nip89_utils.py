@@ -8,7 +8,7 @@ from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Clie
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.nostr_utils import send_event
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 
 
 class NIP89Config:
