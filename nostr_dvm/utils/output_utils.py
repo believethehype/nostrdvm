@@ -10,7 +10,7 @@ from nostr_sdk import Tag, PublicKey, EventId, Keys, nip04_encrypt, EventBuilder
 from pyupload.uploader import CatboxUploader
 
 import pandas
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nip98_utils import generate_nip98_header

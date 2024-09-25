@@ -7,7 +7,7 @@ from typing import List
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
     Nip19Event, SingleLetterTag, RelayOptions, RelayLimits, SecretKey, NostrSigner, Connection, ConnectionTarget, \
-    EventSource
+    EventSource, EventBuilder, Kind, nip04_encrypt
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
 
@@ -140,6 +140,29 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
                         relays.append(rtag)
         return relays
 
+
+async def get_dm_relays(event_to_send: Event, client: Client, dvm_config):
+    ptags = []
+    for tag in event_to_send.tags():
+        if tag.as_vec()[0] == 'p':
+            ptag = PublicKey.parse(tag.as_vec()[1])
+            ptags.append(ptag)
+
+    filter = Filter().kinds([Kind(10050)]).authors(ptags)
+    events = await client.get_events_of([filter], relay_timeout)
+    if len(events) == 0:
+        return []
+    else:
+        nip65event = events[0]
+        relays = []
+        for tag in nip65event.tags():
+            if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
+                    or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
+                rtag = tag.as_vec()[1]
+                if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                    if rtag.startswith("ws") and " " not in rtag:
+                        relays.append(rtag)
+        return relays
 
 async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
@@ -402,6 +425,38 @@ async def update_profile(dvm_config, client, lud16=""):
     print("[" + dvm_config.NIP89.NAME + "] Setting profile metadata for " + keys.public_key().to_bech32() + "...")
     print(metadata.as_json())
     await client.set_metadata(metadata)
+
+
+async def send_nip04_dm(client: Client, msg, receiver: PublicKey, dvm_config ):
+
+    signer = NostrSigner.keys(Keys.parse(dvm_config.PRIVATE_KEY))
+    content = await signer.nip04_encrypt(receiver, msg)
+    ptag = Tag.parse(["p", receiver.to_hex()])
+    event = EventBuilder(Kind(4), content, [ptag]).to_event(Keys.parse(dvm_config.PRIVATE_KEY))
+    await client.send_event(event)
+
+
+
+
+    # relays = await get_dm_relays(event, client, dvm_config)
+    #
+    # outboxclient = Client(signer)
+    # print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
+    #
+    # for relay in relays[:5]:
+    #     try:
+    #         await outboxclient.add_relay(relay)
+    #     except:
+    #         print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
+    # #
+    # await outboxclient.connect()
+    # try:
+    #     print("Connected, sending event")
+    #     event_id = await outboxclient.send_event(event)
+    #     print(event_id.output)
+    # except Exception as e:
+    #     print(e)
+
 
 
 def check_and_set_private_key(identifier):

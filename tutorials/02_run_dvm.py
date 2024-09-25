@@ -35,8 +35,15 @@ def run_dvm(identifier):
     name = "My very first DVM"
     # Next we initalize a GenericDVM with the name and the dvm_config and the options we just created, as well as
     # an empty AdminConfig() and NIP89Config(). We will check these out in later tutorials, so don't worry about them now.
+
+
+    # We add an admin config. By configuring it we can perform certain tasks, for example on start of the DVM
+    admin_config = AdminConfig()
+    # We broadcast our NIP65 inbox relays so other clients know where to write to so we receive it
+    admin_config.REBROADCAST_NIP65_RELAY_LIST = True
+
     dvm = GenericDVM(name=name, dvm_config=dvm_config, options=options,
-                     nip89config=NIP89Config(), admin_config=AdminConfig())
+                     nip89config=NIP89Config(), admin_config=admin_config)
 
 
     # Normally we would define the dvm interface as we do in the tasks folder (we will do it later in the tutorials as well,

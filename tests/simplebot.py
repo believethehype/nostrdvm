@@ -2,7 +2,10 @@ import asyncio
 import time
 
 from nostr_sdk import Client, NostrSigner, Keys, Event, UnsignedEvent, Filter, \
-    HandleNotification, Timestamp, nip04_decrypt, UnwrappedGift, init_logger, LogLevel, Kind, KindEnum
+    HandleNotification, Timestamp, nip04_decrypt, UnwrappedGift, init_logger, LogLevel, Kind, KindEnum, EventBuilder, \
+    Tag
+
+from nostr_dvm.utils.nostr_utils import send_nip04_dm
 
 
 async def test():
@@ -39,8 +42,7 @@ async def test():
                 try:
                     msg = nip04_decrypt(sk, event.author(), event.content())
                     print(f"Received new msg: {msg}")
-                    #await client.send_direct_msg(event.author(), f"Echo: {msg}", event.id())
-                    await client.send_private_msg(event.author(), f"Echo: {msg}", event.id())
+                    await send_nip04_dm(client, msg, event.author(), sk)
 
 
                 except Exception as e:

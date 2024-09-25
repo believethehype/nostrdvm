@@ -2,7 +2,7 @@ import asyncio
 import json
 import os
 import signal
-import time
+
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
@@ -13,12 +13,13 @@ from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.database_utils import get_or_add_user, update_user_balance, create_sql_table, update_sql_table
 from nostr_dvm.utils.definitions import EventDefinitions, InvoiceToWatch
 from nostr_dvm.utils.nip89_utils import nip89_fetch_events_pubkey, NIP89Config
-from nostr_dvm.utils.nostr_utils import send_event
+from nostr_dvm.utils.nostr_utils import send_event, send_nip04_dm
 from nostr_dvm.utils.output_utils import PostProcessFunctionType, post_process_list_to_users, \
     post_process_list_to_events
 from nostr_dvm.utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zaprequest, create_bolt11_ln_bits, \
     check_bolt11_ln_bits_is_paid, parse_amount_from_bolt11_invoice
 from nostr_dvm.utils.cashu_utils import redeem_cashu
+from nostr_dvm.utils.print_utils import bcolors
 
 
 class Bot:
@@ -57,7 +58,7 @@ class Bot:
 
         self.job_list = []
 
-        print("Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME)  # +
+        print(bcolors.BLUE + "Nostr BOT public key: " + str(pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + " Name: " + self.NAME + bcolors.ENDC)  # +
         # " Supported DVM tasks: " +
         # ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + "\n")
         if dvm_config.CHATBOT is not None:
@@ -245,7 +246,8 @@ class Bot:
                                 await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                             else:
                                 #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
-                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                await send_nip04_dm(self.client, message, sender, self.dvm_config)
 
 
 
@@ -264,8 +266,9 @@ class Bot:
                             if giftwrap:
                                 await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                             else:
+                                await send_nip04_dm(self.client, message, sender, self.dvm_config)
                                 #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
-                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         elif decrypted_text.startswith("cashuA"):
                             print("Received Cashu token:" + decrypted_text)
                             cashu_redeemed, cashu_message, total_amount, fees = await redeem_cashu(decrypted_text,
@@ -283,7 +286,9 @@ class Bot:
                                     await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                                 else:
                                    #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
-                                   await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                   #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                   #await send_nip04_dm(self.client, message, sender, self.keys)
+                                   await send_nip04_dm(self.client, message, sender, self.dvm_config)
                         elif decrypted_text.lower().startswith("what's the second best"):
                             await asyncio.sleep(2.0)
                             message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
@@ -291,8 +296,8 @@ class Bot:
                                 await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                             else:
                                 #await self.client.send_direct_msg(PublicKey.parse(sender), message,  nostr_event.id())
-                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
-
+                                #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                await send_nip04_dm(self.client, message, sender, self.dvm_config)
                         else:
 
                             # Build an overview of known DVMs and send it to the user
@@ -389,8 +394,9 @@ class Bot:
                             await self.client.send_private_msg(PublicKey.parse(entry["npub"]), content, None)
                         else:
                             #await self.client.send_direct_msg(PublicKey.from_hex(entry['npub']), content, None)
-                            await self.client.send_private_msg(PublicKey.parse(entry['npub']),
-                                                              content, None)
+                            #await self.client.send_private_msg(PublicKey.parse(entry['npub']),
+                            #                                  content, None)
+                            await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']), self.dvm_config)
                         print(status + ": " + content)
                         print(
                             "[" + self.NAME + "] Received reaction from " + nostr_event.author().to_hex() + " message to orignal sender " + user.name)
@@ -421,8 +427,9 @@ class Bot:
                                                                            None)
                                     else:
                                         #await self.client.send_direct_msg(PublicKey.parse(PublicKey.parse(entry["npub"])), message, None)
-                                        await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message, None)
-
+                                        #await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message, None)
+                                        await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']),
+                                                            self.dvm_config)
                                     print(
                                         "[" + self.NAME + "] Replying " + user.name + " with \"scheduled\" confirmation")
 
@@ -432,8 +439,13 @@ class Bot:
                                     message =   "Current balance: " + str( user.balance) + " Sats. Balance of " + str(amount) + " Sats required. Please zap me with at least " + str(int(amount - user.balance))+ " Sats, then try again.",
                                     #await self.client.send_direct_msg(PublicKey.parse(PublicKey.parse(entry["npub"])),
                                     #                                  message, None)
-                                    await self.client.send_private_msg(PublicKey.parse(entry["npub"]),
-                                                                      message, None)
+                                    #await self.client.send_private_msg(PublicKey.parse(entry["npub"]),
+                                    #
+                                    if entry["giftwrap"]:
+                                        await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message,
+                                                                           None)
+                                    else:
+                                        await send_nip04_dm(self.client, message, PublicKey.parse(entry['npub']), self.dvm_config)
                                     return
 
                                 if len(tag.as_vec()) > 2:
@@ -508,7 +520,8 @@ class Bot:
                         await self.client.send_private_msg(PublicKey.parse(user.npub), content, None)
                     else:
                         #await self.client.send_direct_msg(PublicKey.parse(user.npub), content, None)
-                        await self.client.send_private_msg(PublicKey.parse(user.npub), content, None)
+                        #await self.client.send_private_msg(PublicKey.parse(user.npub), content, None)
+                        await send_nip04_dm(self.client, content, PublicKey.parse(user.npub), self.dvm_config)
 
             except Exception as e:
                 print(e)
@@ -581,7 +594,8 @@ class Bot:
                 await self.client.send_private_msg(PublicKey.parse(sender), text, nostr_event.id())
             else:
                 #await self.client.send_direct_msg(PublicKey.parse(sender), text, nostr_event.id())
-                await self.client.send_private_msg(PublicKey.parse(sender), text, nostr_event.id())
+                #await self.client.send_private_msg(PublicKey.parse(sender), text, nostr_event.id())
+                await send_nip04_dm(self.client, text, PublicKey.parse(sender), self.dvm_config)
 
         async def answer_blacklisted(nostr_event, giftwrap, sender):
             message = "Your are currently blocked from this service."
@@ -589,7 +603,8 @@ class Bot:
                 await self.client.send_private_msg(PublicKey.parse(sender), message, None)
             else:
                 #await self.client.send_direct_msg(nostr_event.author(), message, None)
-                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
 
 
 
@@ -603,7 +618,7 @@ class Bot:
                 await self.client.send_private_msg(PublicKey.parse(sender), info, None)
             else:
                 #await self.client.send_direct_msg(nostr_event.author(), info, None)
-                await self.client.send_private_msg(PublicKey.parse(sender), info, None)
+                await send_nip04_dm(self.client, info, PublicKey.parse(sender), self.dvm_config)
 
         def build_params(decrypted_text, author, index):
             tags = []
