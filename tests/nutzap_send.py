@@ -11,7 +11,7 @@ import argparse
 from nostr_dvm.utils import dvmconfig
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 
 
 # Run with params for test functions or set the default here

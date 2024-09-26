@@ -17,7 +17,7 @@ from nostr_dvm.utils.nostr_utils import send_event, send_nip04_dm
 from nostr_dvm.utils.output_utils import PostProcessFunctionType, post_process_list_to_users, \
     post_process_list_to_events
 from nostr_dvm.utils.zap_utils import parse_zap_event_tags, pay_bolt11_ln_bits, zaprequest, create_bolt11_ln_bits, \
-    check_bolt11_ln_bits_is_paid, parse_amount_from_bolt11_invoice
+    check_bolt11_ln_bits_is_paid
 from nostr_dvm.utils.cashu_utils import redeem_cashu
 from nostr_dvm.utils.print_utils import bcolors
 
