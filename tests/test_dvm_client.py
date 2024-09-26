@@ -6,7 +6,7 @@ from threading import Thread
 
 from nostr_dvm.utils.nip65_utils import nip65_announce_relays
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \

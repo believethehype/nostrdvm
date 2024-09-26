@@ -9,7 +9,7 @@ from pathlib import Path
 from secp256k1 import PublicKey
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.print import bcolors
+from nostr_dvm.utils.print_utils import bcolors
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
