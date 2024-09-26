@@ -23,8 +23,6 @@ from nostr_dvm.utils.zap_utils import change_ln_address
 
 def run_dvm(identifier):
 
-
-    identifier = "bot_test"
     bot_config = build_default_config(identifier)
     # The main purpose is of the Bot is to be an indexable overview of multiple DVMs. But we will use it in "chatbot" mode here
     # by setting the CHATBOT option to true
@@ -38,7 +36,6 @@ def run_dvm(identifier):
     admin_config.UPDATE_PROFILE = True
     x = threading.Thread(target=Bot, args=([bot_config, admin_config]))
     x.start()
-
 
     # Now you can copy the npub to a Social client of your choice and (if tutorials 2 and 4 are running) it should reply
     # in your client.
@@ -59,8 +56,9 @@ if __name__ == '__main__':
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    # Replace the identifier with the one from the last notebook, or a new dvmconfig will be stored
-    identifier = "tutorial01"
+    # A unique identifier that will be used to store keys in your .env file as well as for your ln address.
+    # (If its already used it will get some random letters to it)
+    identifier = "chat_bot"
 
     # psst, you can change your lightning address here:
     #asyncio.run(change_ln_address(identifier, "test",  DVMConfig(), True))

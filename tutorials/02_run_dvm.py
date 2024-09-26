@@ -80,7 +80,8 @@ if __name__ == '__main__':
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    # Replace the identifier with the one from the last notebook, or a new dvmconfig will be stored
+    #A unique identifier that will be used to store keys in your .env file as well as for your ln address.
+    # (If its already used it will get some random letters to it)
     identifier = "tutorial01"
 
     # psst, you can change your lightning address here:
