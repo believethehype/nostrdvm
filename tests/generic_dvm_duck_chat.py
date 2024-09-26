@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from platform import system
 
 import dotenv
 from duck_chat import ModelType
@@ -54,7 +55,8 @@ def playground(announce=False):
         from duck_chat import DuckChat
         options = dvm.set_options(request_form)
         async with DuckChat(model=ModelType.GPT4o) as chat:
-            query =  options["input"]
+            system_prompt=  "You are a Bitcoiner.."
+            query = ("{System}: " + system_prompt +" {User}: "+  options["input"])
             result = await chat.ask_question(query)
             print(result)
         return result
