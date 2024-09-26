@@ -38,13 +38,13 @@ let dvms =[]
 let hasmultipleinputs = false
 let requestids = []
 
-async function generate_image(message) {
+async function generate_chat(message) {
 
        listen()
 
    try {
      if (message === undefined){
-       message = "A purple Ostrich"
+       message = "What is Nostr?"
      }
 
      if(store.state.pubkey === undefined){
@@ -53,11 +53,11 @@ async function generate_image(message) {
      }
 
         dvms = []
-        store.commit('set_imagedvm_results', dvms)
+        store.commit('set_chat_dvm_results', dvms)
         let client = store.state.client
 
-        let content = "NIP 90 Image Generation request"
-        let kind = 5100
+        let content = "NIP 90 Text Generation Request"
+        let kind = 5050
         let tags = [
               ["i", message, "text"]
             ]
@@ -91,7 +91,7 @@ async function generate_image(message) {
           res = await amberSignerService.signEvent(draft)
             requestid = res.id
              requestids.push(requestid)
-             store.commit('set_current_request_id_image', requestids)
+             store.commit('set_current_request_id_chat', requestids)
             await client.sendEvent(Event.fromJson(JSON.stringify(res)))
 
         }
@@ -109,7 +109,7 @@ async function generate_image(message) {
                console.log(signedEvent.id.toHex())
                requestid = signedEvent.id.toHex()
                requestids.push(requestid)
-               store.commit('set_current_request_id_image', requestids)
+               store.commit('set_current_request_id_chat', requestids)
                await client.sendEvent(signedEvent)
 
 
@@ -126,7 +126,7 @@ async function  listen() {
     let client = store.state.client
     let pubkey = store.state.pubkey
 
-    const filter = new Filter().kinds([7000, 6100, 6905]).pubkey(pubkey).since(Timestamp.now());
+    const filter = new Filter().kinds([7000, 6050, 6905]).pubkey(pubkey).since(Timestamp.now());
     await client.subscribe([filter]);
 
     const handle = {
@@ -136,13 +136,13 @@ async function  listen() {
                 return true
               }*/
             //const dvmname =  getNamefromId(event.author.toHex())
-            console.log("Received new event from", relayUrl);
+
              // console.log(event.asJ())
            let resonsetorequest = false
             sleep(0).then(async () => {
               for (let tag in event.tags) {
                 if (event.tags[tag].asVec()[0] === "e") {
-                   if (store.state.requestidImage.includes(event.tags[tag].asVec()[1])){
+                   if (store.state.requestidChat.includes(event.tags[tag].asVec()[1])){
                     resonsetorequest = true
                   }
                 }
@@ -165,7 +165,6 @@ async function  listen() {
                       result: "",
                       name: event.author.toBech32(),
                       about: "",
-                      image: "",
                       amount: 0,
                       bolt11: "",
                       nip90params: {},
@@ -226,31 +225,27 @@ async function  listen() {
 
 
                     for (const el of store.state.nip89dvms) {
-                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString() && el.kind === "5100" ) {
+                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString() && el.kind === "5050" ) {
                         jsonentry.name = el.name
                         jsonentry.about = el.about
                         jsonentry.image = el.image
                         jsonentry.nip90Params = el.nip90Params
-                        jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id), store.state.followings)
-                        jsonentry.reactions.negativeUser = false
-                        jsonentry.reactions.positiveUser = false
+                        //jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id), store.state.followings)
+                        //jsonentry.reactions.negativeUser = false
+                        //jsonentry.reactions.positiveUser = false
                         jsonentry.event = Event.fromJson(el.event)
 
 
                       }
                     }
-                    if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
-                      if (!hasmultipleinputs  ||
-                          (hasmultipleinputs && jsonentry.id !==  "04f74530a6ede6b24731b976b8e78fb449ea61f40ff10e3d869a3030c4edc91f")){
-                                              // DVM can not handle multiple inputs, straight up censorship until spec is fulfilled or requests are ignored.
-                         dvms.push(jsonentry)
-                      }
 
+                    if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
+                         dvms.push(jsonentry)
                     }
 
                     dvms.find(i => i.id === jsonentry.id).status = status
 
-                    store.commit('set_imagedvm_results', dvms)
+                    store.commit('set_chat_dvm_results', dvms)
 
 
                   } catch (error) {
@@ -263,47 +258,79 @@ async function  listen() {
                   console.log(event.content)
 
                 }
-                else if (event.kind === 6100) {
+                else if (event.kind === 6050) {
                   let entries = []
-                  console.log("6100:", event.content);
-
-
-
+                  //console.log("6050:", event.content);
+                   let  entryfound = false
                    for (const el of store.state.nip89dvms) {
-                         let status = "unknown"
-                    let jsonentry = {
-                      id: event.author.toHex(),
-                      kind: "",
-                      status: status,
-                      result: "",
-                      name: "Not announced" + event.author.toBech32(),
-                      about: "",
-                      image: "",
-                      amount: 0,
-                      bolt11: "",
-                      nip90params: {},
+
+
+
+
+                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) { // && el.kind === "5050" ) {
+                          let jsonentry = {
+                          id: event.author.toHex(),
+                          kind: el.kind,
+                          status: "finished",
+                          result: event.content,
+                          name: el.name,
+                          about: el.about,
+                          image: el.image,
+                          amount: 0,
+                          bolt11: "",
+                          nip90params: el.nip90Params,
+                            event:  Event.fromJson(el.event)
+                        }
+                          if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
+                            console.log("YES HERE")
+                           dvms.push(jsonentry)
+                           }
+                        else{
+                            dvms.find(i => i.id === event.author.toHex()).result = event.content
+                            dvms.find(i => i.id === event.author.toHex()).status = "finished"
+                        }
+
+                        entryfound = true
+
 
                     }
-                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString() && el.kind === "5100" ) {
-                        jsonentry.name = el.name
-                        jsonentry.about = el.about
-                        jsonentry.image = el.image
-                        jsonentry.nip90Params = el.nip90Params
-                        jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id), store.state.followings)
-                        jsonentry.event = Event.fromJson(el.event)
 
 
-                      }
-                    }
-                  if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
-                       dvms.push(jsonentry)
-                  }
 
-                  //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
-                  dvms.find(i => i.id === event.author.toHex()).result = event.content
-                  dvms.find(i => i.id === event.author.toHex()).status = "finished"
-                  store.commit('set_imagedvm_results', dvms)
+                      store.commit('set_chat_dvm_results', dvms)
+
+
+
+
                 }
+
+
+                 if (!entryfound){
+
+                        let jsonentry = {
+                          id: event.author.toHex(),
+                          kind: "",
+                          status: "finished",
+                          result: "",
+                          name: "Unannounced DVM",
+                          about: "",
+                          image: "",
+                          amount: 0,
+                          bolt11: "",
+                          nip90params: {},
+                        }
+                          if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
+                         console.log("IN THE OTHER THING")
+                           dvms.push(jsonentry)
+                           }
+                        else{
+                            dvms.find(i => i.id === event.author.toHex()).result = event.content
+                            dvms.find(i => i.id === event.author.toHex()).status = "finished"
+                        }
+                    store.commit('set_chat_dvm_results', dvms)
+                      }
+
+              }
               }
             })
         },
@@ -325,7 +352,7 @@ async function zap_local(invoice) {
     let success = await zap(invoice)
       if (success){
          dvms.find(i => i.bolt11 === invoice).status = "paid"
-         store.commit('set_imagedvm_results', dvms)
+         store.commit('set_chat_dvm_results', dvms)
       }
 }
 
@@ -365,24 +392,24 @@ const submitHandler = async () => {
    <br>
     <br>
     <h1 class="text-7xl font-black tracking-wide">DVM</h1>
-    <h1 class="text-7xl font-black tracking-wide">Image Generation</h1>
+    <h1 class="text-7xl font-black tracking-wide">Text Generation</h1>
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
-    Generate Images, the decentralized way</h2>
+    Ask AIs living on the Nostr</h2>
     <h3>
      <br>
-     <input class="c-Input" autofocus placeholder="A purple ostrich..." v-model="message" @keyup.enter="generate_image(message)" @keydown.enter="nextInput">
-     <button class="v-Button"  @click="generate_image(message)">Generate Image</button>
+     <input class="c-Input" autofocus placeholder="What is Nostr?" v-model="message" @keyup.enter="generate_chat(message)" @keydown.enter="nextInput">
+     <button class="v-Button"  @click="generate_chat(message)">Send</button>
     </h3>
-<details class="collapse bg-base " className="advanced" >
-  <summary class="collapse-title font-thin bg">Advanced Options</summary>
-  <div class="collapse-content font-size-0" className="z-10" id="collapse-settings">
-    <div>
-      <h4 className="inline-flex flex-none font-thin">Url to existing image:</h4>
-      <div className="inline-flex flex-none" style="width: 10px;"></div>
-      <input class="c-Input" style="width: 300px;"  placeholder="https://image.nostr.build/image123.jpg"  v-model="urlinput">
-      </div>
-  </div>
-</details>
+<!--<details class="collapse bg-base " className="advanced" >-->
+<!--  <summary class="collapse-title font-thin bg">Advanced Options</summary>-->
+<!--  <div class="collapse-content font-size-0" className="z-10" id="collapse-settings">-->
+<!--    <div>-->
+<!--      <h4 className="inline-flex flex-none font-thin">Url to existing image:</h4>-->
+<!--      <div className="inline-flex flex-none" style="width: 10px;"></div>-->
+<!--      <input class="c-Input" style="width: 300px;"  placeholder="https://image.nostr.build/image123.jpg"  v-model="urlinput">-->
+<!--      </div>-->
+<!--  </div>-->
+<!--</details>-->
   </div>
   <br>
 
@@ -415,7 +442,7 @@ const submitHandler = async () => {
   <div class="max-w-5xl relative space-y-3">
     <div class="grid grid-cols-1 gap-6">
 
-        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.imagedvmreplies"
+        <div className="card w-70 bg-base-100 shadow-xl flex flex-col"   v-for="dvm in store.state.chatdvmreplies"
             :key="dvm.id">
 
 
@@ -424,10 +451,11 @@ const submitHandler = async () => {
         <div className="card-body">
 
 <div className="playeauthor-wrapper">
-  <figure  className="w-20">
-       <img className="avatar" :src="dvm.image"  alt="DVM Picture" />
-  </figure>
 
+    <figure  className="w-28">
+                   <img className="avatar"  v-if="dvm.image && dvm.image !== ''" :src="dvm.image"  alt="DVM Picture" />
+                   <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
+    </figure>
 
           <h2 className="card-title">{{ dvm.name }}</h2>
   </div>
@@ -455,11 +483,13 @@ const submitHandler = async () => {
           </div>
 
         </div>
-            <figure className="w-full" >
-            <img  v-if="dvm.result" :src="dvm.result"  className="tooltip" data-top='Click to copy url' height="200" alt="DVM Picture" @click="copyurl(dvm.result)"/>
-           </figure>
+          <h3 class="fa-cut" v-html="StringUtil.parseHyperlinks(dvm.result)"></h3>
 
-          <div class="flex"  >
+<!--            <figure className="w-full" >-->
+<!--            <img  v-if="dvm.result" :src="dvm.result"  className="tooltip" data-top='Click to copy url' height="200" alt="DVM Picture" @click="copyurl(dvm.result)"/>-->
+<!--           </figure>-->
+
+          <div class="flex">
 
 
 

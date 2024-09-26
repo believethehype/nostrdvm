@@ -19,9 +19,11 @@ const store = createStore({
       requestidSearchProfile: String,
       requestidImage: [],
       requestidRecommendation: [],
+      requestidChat: [],
       requestidSummarization: [],
       requestidFilter: [],
       imagedvmreplies: [],
+      chatdvmreplies: [],
       nip89dvms: [],
       activesearchdvms: [],
       recommendationdvms: [],
@@ -31,8 +33,7 @@ const store = createStore({
       profile_results: [],
       relays: ["wss://relay.primal.net",
                   "wss://nostr.mom", "wss://nostr.oxtr.dev",
-                   "wss://relay.nostr.net",
-                  //"wss://relay.nostr.bg",
+                  "wss://relay.nostr.net"
                   ],
     }
   },
@@ -126,9 +127,15 @@ const store = createStore({
     },
     set_current_request_id_recommendation(state, requestid){
         state.requestidRecommendation.length = 0
-      state.requestidRecommendation.push.apply(state.requestidRecommendation, requestid)
-       //state.requestidRecommendation = requestid
+        state.requestidRecommendation.push.apply(state.requestidRecommendation, requestid)
     },
+      set_current_request_id_chat(state, requestid){
+        state.requestidChat.length = 0
+        state.requestidChat.push.apply(state.requestidChat, requestid)
+
+    },
+
+
 
     set_search_results(state, results){
       state.results.length = 0
@@ -138,6 +145,12 @@ const store = createStore({
       state.imagedvmreplies.length = 0
       state.imagedvmreplies.push.apply(state.imagedvmreplies, results)
     },
+
+     set_chat_dvm_results(state, results){
+      state.chatdvmreplies.length = 0
+      state.chatdvmreplies.push.apply(state.chatdvmreplies, results)
+    },
+
 
   }
 })
