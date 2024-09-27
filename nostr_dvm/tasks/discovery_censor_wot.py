@@ -82,8 +82,7 @@ class DiscoverReports(DVMTaskInterface):
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         # add nostr band, too.
-        ropts = RelayOptions().ping(False)
-        await cli.add_relay_with_opts("wss://nostr.band", ropts)
+        await cli.add_relay("wss://nostr.band")
 
         await cli.connect()
 

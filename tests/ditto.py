@@ -21,8 +21,7 @@ async def main():
     signer = NostrSigner.keys(keys)
     cli = Client.with_opts(signer, opts)
 
-    ropts = RelayOptions().ping(False)
-    await cli.add_relay_with_opts(options["relay"], ropts)
+    await cli.add_relay(options["relay"])
     await cli.connect()
 
     ltags = ["#e", "pub.ditto.trends"]
