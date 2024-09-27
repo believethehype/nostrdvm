@@ -394,7 +394,7 @@ const submitHandler = async () => {
     <h1 class="text-7xl font-black tracking-wide">DVM</h1>
     <h1 class="text-7xl font-black tracking-wide">Text Generation</h1>
     <h2 class="text-base-200-content text-center tracking-wide text-2xl font-thin ">
-    Ask AIs living on the Nostr</h2>
+    Ask AI Agents living on the Nostr</h2>
     <h3>
      <br>
      <input class="c-Input" autofocus placeholder="What is Nostr?" v-model="message" @keyup.enter="generate_chat(message)" @keydown.enter="nextInput">

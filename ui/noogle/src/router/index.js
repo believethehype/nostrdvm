@@ -9,7 +9,7 @@ const routes = [
   { path: "/nip89", component: () => import("@/components/Nip89view.vue") },
   { path: "/image", component: () => import("@/components/Image.vue") },
   { path: "/filter", component: () => import("@/components/FilterGeneration.vue") },
-  { path: "/ask", component: () => import("@/components/ChatGeneration.vue") },
+  { path: "/ai", component: () => import("@/components/ChatGeneration.vue") },
 
   { path: "/discover", component: () => import("@/components/RecommendationGeneration.vue") },
   { path: "/article/:id", component: () => import("@/components/Home.vue") },

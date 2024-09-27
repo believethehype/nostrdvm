@@ -15,7 +15,7 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
     <router-link class="menu" to="/discover">Discover</router-link>
       <router-link class="menu" to="/filter">Filter</router-link>
     <router-link class="menu" to="/image">Create</router-link>
-      <router-link class="menu" to="/ask">Ask</router-link>
+      <router-link class="menu" to="/ai">AI</router-link>
     <router-link class="menu" to="/nip89">DVMs</router-link>
     </div>
 
