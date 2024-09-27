@@ -141,8 +141,7 @@ async def nostr_client_test_inactive_filter(user):
     client = Client(signer)
     for relay in relay_list:
         await client.add_relay(relay)
-    ropts = RelayOptions().ping(False)
-    await client.add_relay_with_opts("wss://nostr.band", ropts)
+    await client.add_relay("wss://nostr.band")
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -196,7 +195,7 @@ async def nostr_client_test_discovery(user, ptag):
     for relay in relay_list:
         await client.add_relay(relay)
     ropts = RelayOptions().ping(False)
-    await client.add_relay_with_opts("wss://nostr.band", ropts)
+    await client.add_relay("wss://nostr.band")
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)

@@ -43,7 +43,8 @@ def playground(announce=False):
     nip89config.CONTENT = json.dumps(nip89info)
 
     options = {
-        "input": "How do you call a noisy ostrich?",
+        "system_prompt": "You are a funny purple ostrich. Reply in a funny way.",
+        "input": "",
     }
 
     dvm = GenericDVM(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -55,8 +56,7 @@ def playground(announce=False):
         from duck_chat import DuckChat
         options = dvm.set_options(request_form)
         async with DuckChat(model=ModelType.GPT4o) as chat:
-            system_prompt=  "You are a Bitcoiner.."
-            query = ("{System}: " + system_prompt +" {User}: "+  options["input"])
+            query = ("{role: system, content: " + options["system_prompt"] + "}" +" {role: user: content:" +  options["input"]+ "}")
             result = await chat.ask_question(query)
             print(result)
         return result
