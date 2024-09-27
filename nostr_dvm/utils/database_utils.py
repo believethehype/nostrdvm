@@ -7,11 +7,11 @@ from dataclasses import dataclass
 from datetime import timedelta
 from logging import Filter
 
-from coincurve import PrivateKey
+
 from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Kind
 
 from nostr_dvm.utils.definitions import relay_timeout
-from nostr_dvm.utils.dvmconfig import DVMConfig
+
 from nostr_dvm.utils.nostr_utils import send_event, send_nip04_dm
 
 
