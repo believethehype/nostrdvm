@@ -48,6 +48,8 @@ class GenericDVM(DVMTaskInterface):
             elif tag.as_vec()[0] == 'param':
                 if tag.as_vec()[1] == 'user':
                     user = tag.as_vec()[2]
+                else:
+                    self.options[tag.as_vec()[1]] = tag.as_vec()[2]
 
         request_form = {"jobID": event.id().to_hex()}
 
