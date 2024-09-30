@@ -28,11 +28,14 @@ async def nostr_client_generic_test(ptag):
     relaysTag = Tag.parse(["relays"] + relay_list)
     # The alt tag is optional, and just describes what the event does.
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task"])
+
+    #We know our DVM has an option some_option. We can also overwrite it by setting the parameter.
+    paramTag = Tag.parse(["param", "some_option", "#RUNDVM - The client puts the option."])
     # The ptag tags the DVM we want to address. Make sure to set it down in the main function.
     pTag = Tag.parse(["p", PublicKey.parse(ptag).to_hex()])
 
     # These are out tags
-    tags = [relaysTag, alttag, pTag]
+    tags = [relaysTag, alttag, pTag, paramTag]
 
     # We now send a 5050 Request (for Text Generation) with our tags. The content is optional.
     event = EventBuilder(Kind(5050), "This is a test",
