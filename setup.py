@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.9.3'
+VERSION = '0.9.4'
 DESCRIPTION = 'A framework to build and run Nostr NIP90 Data Vending Machines'
 LONG_DESCRIPTION = ('A framework to build and run Nostr NIP90 Data Vending Machines. See the github repository for more information')
 
@@ -14,7 +14,7 @@ setup(
     long_description=LONG_DESCRIPTION,
     packages=find_packages(include=['nostr_dvm', 'nostr_dvm.*']),
 
-    install_requires=["nostr-sdk==0.35.0",
+    install_requires=["nostr-sdk==0.35.1",
                       "bech32==1.2.0",
                       "pycryptodome==3.20.0",
                       "yt-dlp==2024.5.27",
