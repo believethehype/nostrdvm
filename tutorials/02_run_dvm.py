@@ -20,7 +20,7 @@ from nostr_dvm.utils.zap_utils import change_ln_address
 
 
 def run_dvm(identifier):
-    # You have seen this one before, we did this in tutorial 2. This function will either create or load. the parameters of our DVMConfig.
+    # This function will either create or load the parameters of our DVMConfig.
     # Make sure you replace the identifier down in the main function with the one you generated in tutorial 2, or we will create a new one here.
     dvm_config = build_default_config(identifier)
     # As we will use a GenericDVM we need to give it a kind. Here we use kind 5050 (Text Generation) as we want to reply with some simple text.
