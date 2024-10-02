@@ -7,11 +7,7 @@ services:
       dockerfile: Dockerfile  
     ports:  
       - "80:80"  
-    environment:  
-      - LNBITS_ADMIN_KEY = ${LNBITS_ADMIN_KEY}
-      - LNBITS_ADMIN_ID = ${LNBITS_WALLET_ID}
-      - LNBITS_HOST = ${LNBITS_HOST}
-      - NOSTDRESS_DOMAIN = ${NOSTDRESS_DOMAIN}
-      - NOSTR_BUILD_ACCOUNT_PK = ${NOSTR_BUILD_ACCOUNT_PK}
+    env_file:
+      - .env
     volumes:
       - .:/app  
