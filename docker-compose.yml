@@ -1,0 +1,17 @@
+version: '3.8'  
+
+services: 
+  nostrdvm:  # Name of the service
+    build:  
+      context: .  
+      dockerfile: Dockerfile  
+    ports:  
+      - "80:80"  
+    environment:  
+      - LNBITS_ADMIN_KEY = ${LNBITS_ADMIN_KEY}
+      - LNBITS_ADMIN_ID = ${LNBITS_WALLET_ID}
+      - LNBITS_HOST = ${LNBITS_HOST}
+      - NOSTDRESS_DOMAIN = ${NOSTDRESS_DOMAIN}
+      - NOSTR_BUILD_ACCOUNT_PK = ${NOSTR_BUILD_ACCOUNT_PK}
+    volumes:
+      - .:/app  
