@@ -271,34 +271,34 @@ async function  listen() {
 
                    for (const el of store.state.nip89dvms) {
                          let status = "unknown"
-                    let jsonentry = {
-                      id: event.author.toHex(),
-                      kind: "",
-                      status: status,
-                      result: "",
-                      name: "Not announced" + event.author.toBech32(),
-                      about: "",
-                      image: "",
-                      amount: 0,
-                      bolt11: "",
-                      nip90params: {},
+                          let jsonentry = {
+                            id: event.author.toHex(),
+                            kind: "",
+                            status: status,
+                            result: "",
+                            name: "Not announced" + event.author.toBech32(),
+                            about: "",
+                            image: "",
+                            amount: 0,
+                            bolt11: "",
+                            nip90params: {},
 
-                    }
-                      if (JSON.parse(el.event).pubkey === event.author.toHex().toString() && el.kind === "5100" ) {
-                        jsonentry.name = el.name
-                        jsonentry.about = el.about
-                        jsonentry.image = el.image
-                        jsonentry.nip90Params = el.nip90Params
-                        jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id), store.state.followings)
-                        jsonentry.event = Event.fromJson(el.event)
+                          }
+                        if (JSON.parse(el.event).pubkey === event.author.toHex().toString() && el.kind === "5100" ) {
+                          jsonentry.name = el.name
+                          jsonentry.about = el.about
+                          jsonentry.image = el.image
+                          jsonentry.nip90Params = el.nip90Params
+                          jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id), store.state.followings)
+                          jsonentry.event = Event.fromJson(el.event)
 
 
-                      }
-                    }
+                        }
+
                   if (dvms.filter(i => i.id === jsonentry.id).length === 0) {
                        dvms.push(jsonentry)
                   }
-
+                }
                   //miniToastr.showMessage("DVM: " + dvmname, "Received Results", VueNotifications.types.success)
                   dvms.find(i => i.id === event.author.toHex()).result = event.content
                   dvms.find(i => i.id === event.author.toHex()).status = "finished"
