@@ -13,4 +13,4 @@ COPY . .
 RUN python setup.py install
 
 # Specify the command to run your application
-CMD ["python3", "main.py"]
+CMD ["python3", "-u", "main.py"]
