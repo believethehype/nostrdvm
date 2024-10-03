@@ -56,7 +56,7 @@ def playground(announce=False):
         from duck_chat import DuckChat
         options = dvm.set_options(request_form)
         async with DuckChat(model=ModelType.GPT4o) as chat:
-            query = ("{role: system, content: " + options["system_prompt"] + "}" +" {role: user: content:" +  options["input"]+ "}")
+            query = ("{role: system, content: " + options["system_prompt"] + "}" +" {role: user, content:" +  options["input"]+ "}")
             result = await chat.ask_question(query)
             print(result)
         return result
