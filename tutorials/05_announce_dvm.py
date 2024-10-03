@@ -22,8 +22,8 @@ from nostr_dvm.utils.zap_utils import change_ln_address
 # We keep the main code structure almost the same as in tutorial02.
 def run_dvm(identifier, announce):
     dvm_config = build_default_config(identifier)
-    kind = 5050
-    dvm_config.KIND = Kind(kind)
+    kind = Kind(5050)
+    dvm_config.KIND = kind
     options = {
         "some_option": "#RunDVM",
     }
