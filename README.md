@@ -5,8 +5,7 @@ This framework provides a way to easily build and/or run `Nostr NIP90 DVMs in Py
 This project is currently under development and additional tasks and features are added along the way. 
 This means the project is in alpha status, interfaces might still change/break at this stage.
 
-
-## To get started:
+## Getting started 
 
 Create a new venv by running `"python -m venv venv"`
   - Place .env file (based on .env_example) in main folder.
@@ -25,3 +24,50 @@ so your DVMs can be controled via any regular social client as well.
 If LNBits is not used, make sure your DVM's nostr accounts have a valid lightning address.
 
 A tutorial on how to add additional tasks, as well as the larger server backend will be added at a later stage. 
+
+## Getting started with Docker
+
+Create `.env` from the example provided by us `.env_example`
+
+```bash
+cp .env_example .env
+```
+
+and set the necessary environmental variables:
+
+```bash
+LNBITS_ADMIN_KEY = ""
+LNBITS_WALLET_ID = ""
+LNBITS_HOST = "https://demo.lnbits.com/"
+NOSTDRESS_DOMAIN = "nostrdvm.com"
+```
+
+To get the Docker container up and running:
+
+```sh
+# in foreground
+docker compose up --build
+
+# in background
+docker compose up --build -d
+```
+
+To update your container, do:
+
+```sh
+git pull
+
+docker compose build --no-cache
+
+# in foreground
+docker compose up
+
+# in background
+docker compose up -d
+```
+
+This will build the Docker image and start the `nostrdvm` service as defined in the `docker-compose.yml` file. 
+
+## License
+
+This project is licensed under the MIT License.
