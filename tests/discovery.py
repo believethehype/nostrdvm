@@ -38,7 +38,7 @@ update_profile = False
 
 global_update_rate = 180     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
-log_level = LogLevel.INFO
+log_level = LogLevel.ERROR
 
 
 RECONCILE_DB_RELAY_LIST = [ "wss://relay.damus.io", "wss://relay.primal.net", "wss://nostr.oxtr.dev"]
@@ -841,6 +841,42 @@ def playground():
                                            database=DATABASE)
     discovery_asknostr.run()
 
+    # Popular Garden&Plants
+    admin_config_mining = AdminConfig()
+    admin_config_mining.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_mining.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_mining.UPDATE_PROFILE = update_profile
+    # admin_config_plants.DELETE_NIP89 = True
+    # admin_config_plants.PRIVKEY = ""
+    # admin_config_plants.EVENTID = "ff28be59708ee597c7010fd43a7e649e1ab51da491266ca82a84177e0007e4d6"
+    # admin_config_plants.POW = True
+    options_mining = {
+        "search_list": ["bitaxe", "homeminer", "S9", "homemining"],
+        "avoid_list": ["nsfw"],
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 12 * 60 * 60,  # 12h since gmt
+        "personalized": False,
+        "logger": False}
+
+    image = "https://i.nostr.build/M6w0qSpRTGHwjYwf.jpg"
+    description = "I show recent notes about Bitcoin home mining."
+    custom_processing_msg = ["Finding the best notes for you.. #homeminer"]
+    update_db = False
+    cost = 0
+    discovery_mining = build_example_topic("Home mining", "discovery_content_mining",
+                                           admin_config_mining, options_mining,
+                                           image=image,
+                                           description=description,
+                                           update_rate=global_update_rate,
+                                           cost=cost,
+                                           processing_msg=custom_processing_msg,
+                                           update_db=update_db,
+                                           database=DATABASE)
+    discovery_mining.run()
+
+
+
+
     # Popular Animals (Fluffy frens)
     admin_config_animals = AdminConfig()
     admin_config_animals.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -850,6 +886,7 @@ def playground():
     #admin_config_animals.PRIVKEY = ""
     #admin_config_animals.EVENTID = "79c613b5f0e71718628bd0c782a5b6b495dac491f36c326ccf416ada80fd8fdc"
     #admin_config_animals.POW = True
+
 
     options_animal = {
         "search_list": ["catstr", "pawstr", "dogstr", "pugstr", " cat ", " cats ", "doggo", " deer ", " dog ", " dogs ",
