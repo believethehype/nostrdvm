@@ -539,9 +539,10 @@ class Bot:
                                                                                                  self.dvm_config)
 
                 etag = ""
-                for tag in zapped_event.tags():
-                    if tag.as_vec()[0] == "e":
-                        etag = tag.as_vec()[1]
+                if zapped_event is not None:
+                    for tag in zapped_event.tags():
+                        if tag.as_vec()[0] == "e":
+                            etag = tag.as_vec()[1]
 
                 user = await get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
 
