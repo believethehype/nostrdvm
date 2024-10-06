@@ -12,31 +12,21 @@ from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
 
 
-async def get_event_by_id(event_id: str, client: Client, config=None) -> Event | None:
-    split = event_id.split(":")
+async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Event | None:
+    split = event_id_str.split(":")
     if len(split) == 3:
         pk = PublicKey.from_hex(split[1])
         id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
         events = await client.get_events_of([id_filter], relay_timeout)
     else:
-        if str(event_id).startswith('note'):
-            event_id = EventId.from_bech32(event_id)
-        elif str(event_id).startswith("nevent"):
-            event_id = Nip19Event.from_bech32(event_id).event_id()
-        elif str(event_id).startswith('nostr:note'):
-            event_id = EventId.from_nostr_uri(event_id)
-        elif str(event_id).startswith("nostr:nevent"):
-            event_id = Nip19Event.from_nostr_uri(event_id).event_id()
-
-        else:
-            event_id = EventId.from_hex(event_id)
+        event_id = EventId.parse(event_id_str)
 
         id_filter = Filter().id(event_id).limit(1)
+
         events = await client.get_events_of([id_filter], relay_timeout)
 
 
     if len(events) > 0:
-
         return events[0]
     else:
         print("Event not found")

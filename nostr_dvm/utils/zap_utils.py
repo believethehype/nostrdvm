@@ -39,7 +39,8 @@ async def parse_zap_event_tags(zap_event, keys, name, client, config):
             invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
         elif tag.as_vec()[0] == 'e':
             zapped_event = await get_event_by_id(tag.as_vec()[1], client=client, config=config)
-            zapped_event = check_and_decrypt_own_tags(zapped_event, config)
+            if zapped_event is not None:
+                zapped_event = check_and_decrypt_own_tags(zapped_event, config)
         elif tag.as_vec()[0] == 'p':
             p_tag = tag.as_vec()[1]
         elif tag.as_vec()[0] == 'description':
