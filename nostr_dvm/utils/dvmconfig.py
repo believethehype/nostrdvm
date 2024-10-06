@@ -60,6 +60,9 @@ class DVMConfig:
     LOGLEVEL = LogLevel.DEBUG
     KIND = None
 
+    DVM_KEY = None
+    CHATBOT = None
+
     # Make sure you have the cashu library installed and built correctly on your system, before enableing nutzaps for a DVM
     # this is not installed by default
     # pip install cashu. You might run into trouble with building secp256k1

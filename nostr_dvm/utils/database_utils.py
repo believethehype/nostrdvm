@@ -200,7 +200,7 @@ async def update_user_balance(db, npub, additional_sats, client, config, giftwra
             else:
                 #await client.send_direct_msg(PublicKey.parse(npub), message, None)
                 #await client.send_private_msg(PublicKey.parse(npub), message, None)
-                await send_nip04_dm(client, message, npub, config)
+                await send_nip04_dm(client, message, PublicKey.parse(npub), config)
 
 
 def update_user_subscription(npub, subscribed_until, client, dvm_config):

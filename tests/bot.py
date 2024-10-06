@@ -25,7 +25,7 @@ def playground():
     identifier = "bot_test"
     bot_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     npub = Keys.parse(bot_config.PRIVATE_KEY).public_key().to_bech32()
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     bot_config.LN_ADDRESS = lnaddress
     bot_config.LNBITS_INVOICE_KEY = invoice_key
     bot_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back

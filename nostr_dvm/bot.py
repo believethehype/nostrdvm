@@ -49,7 +49,7 @@ class Bot:
         wait_for_send = True
         skip_disconnected_relays = True
         opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-                .skip_disconnected_relays(skip_disconnected_relays))
+                .skip_disconnected_relays(skip_disconnected_relays).gossip(True))
         signer = NostrSigner.keys(self.keys)
         self.client = Client.with_opts(signer, opts)
         self.invoice_list = []
@@ -69,6 +69,10 @@ class Bot:
 
         for relay in self.dvm_config.RELAY_LIST:
             await self.client.add_relay(relay)
+
+        await self.client.add_read_relay("wss://relay.nostr.band")
+        await self.client.add_read_relay("wss://relay.damus.io")
+
         await self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
@@ -535,8 +539,6 @@ class Bot:
                                                                                                  self.dvm_config)
 
                 etag = ""
-                print(zap_event.tags())
-                print(zapped_event.tags())
                 for tag in zapped_event.tags():
                     if tag.as_vec()[0] == "e":
                         etag = tag.as_vec()[1]
