@@ -251,7 +251,7 @@ class Bot:
                             else:
                                 #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
                                 #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
-                                await send_nip04_dm(self.client, message, sender, self.dvm_config)
+                                await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
 
 
 
@@ -270,7 +270,7 @@ class Bot:
                             if giftwrap:
                                 await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                             else:
-                                await send_nip04_dm(self.client, message, sender, self.dvm_config)
+                                await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
                                 #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
                                 #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         elif decrypted_text.startswith("cashuA"):
@@ -289,19 +289,14 @@ class Bot:
                                 if giftwrap:
                                     await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                                 else:
-                                   #await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
-                                   #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
-                                   #await send_nip04_dm(self.client, message, sender, self.keys)
-                                   await send_nip04_dm(self.client, message, sender, self.dvm_config)
+                                   await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
                         elif decrypted_text.lower().startswith("what's the second best"):
                             await asyncio.sleep(2.0)
                             message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
                             if giftwrap:
                                 await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                             else:
-                                #await self.client.send_direct_msg(PublicKey.parse(sender), message,  nostr_event.id())
-                                #await self.client.send_private_msg(PublicKey.parse(sender), message, None)
-                                await send_nip04_dm(self.client, message, sender, self.dvm_config)
+                                await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
                         else:
 
                             # Build an overview of known DVMs and send it to the user
@@ -565,7 +560,7 @@ class Bot:
                             invoice_amount) + " Sats from " + str(
                             user.name))
                         await update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
-                                                  config=self.dvm_config)
+                                                  config=self.dvm_config, giftwrap=True)
 
                         # a regular note
                 elif not anon:
