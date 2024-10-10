@@ -1,6 +1,6 @@
 # ADMINISTRARIVE DB MANAGEMENT
 
-from nostr_sdk import Keys, PublicKey, Client
+from nostr_sdk import Keys, PublicKey, Client, EventId
 
 from nostr_dvm.utils.database_utils import get_from_sql_table, list_db, delete_from_sql_table, update_sql_table, \
     get_or_add_user, clean_db
@@ -47,8 +47,7 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
     if not isinstance(adminconfig, AdminConfig):
         return
 
-    if ((
-            adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
+    if ((adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
             and adminconfig.USERNPUBS == []):
         return
 
@@ -61,10 +60,7 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
     db = dvmconfig.DB
 
     for npub in adminconfig.USERNPUBS:
-        if str(npub).startswith("npub"):
-            publickey = PublicKey.from_bech32(npub).to_hex()
-        else:
-            publickey = npub
+        publickey = PublicKey.parse(npub).to_hex()
 
         if adminconfig.WHITELISTUSER:
             user = await get_or_add_user(db, publickey, client=client, config=dvmconfig)
@@ -114,19 +110,19 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         check_and_set_tiereventid_nip88(dvmconfig.IDENTIFIER, adminconfig.INDEX, annotier_id.to_hex())
 
     if adminconfig.DELETE_NIP89:
-        event_id = adminconfig.EVENTID
+        event_id = EventId.parse(adminconfig.EVENTID).to_hex()
         keys = Keys.parse(
             adminconfig.PRIVKEY)  # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
         await fetch_nip89_parameters_for_deletion(keys, event_id, client, dvmconfig, adminconfig.POW)
 
     if adminconfig.DELETE_NIP88:
-        event_id = adminconfig.EVENTID
+        event_id = EventId.parse(adminconfig.EVENTID).to_hex()
         keys = Keys.parse(
             adminconfig.PRIVKEY)  # Private key from sender of Event (e.g. the key of an nip89 announcement you want to delete)
         await fetch_nip88_parameters_for_deletion(keys, event_id, client, dvmconfig)
 
     if adminconfig.FETCH_NIP88:
-        event_id = adminconfig.EVENTID
+        event_id = EventId.parse(adminconfig.EVENTID).to_hex()
         keys = Keys.parse(
             adminconfig.PRIVKEY)
         await fetch_nip88_event(keys, event_id, client, dvmconfig)
