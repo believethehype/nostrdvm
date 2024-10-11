@@ -4,8 +4,7 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, Event
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -13,7 +12,7 @@ from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout_long, re
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.output_utils import post_process_list_to_users, post_process_list_to_events
+from nostr_dvm.utils.output_utils import post_process_list_to_events
 
 """
 This File contains a Module to find inactive follows for a user on nostr
@@ -83,8 +82,8 @@ class Discoverlatestperfollower(DVMTaskInterface):
         cli = Client.with_opts(signer, opts)
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
-        #ropts = RelayOptions().ping(False)
-        #await cli.add_relay_with_opts("wss://nostr.band", ropts)
+        # ropts = RelayOptions().ping(False)
+        # await cli.add_relay_with_opts("wss://nostr.band", ropts)
 
         await cli.connect()
 
@@ -171,13 +170,13 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
             result = {v for (k, v) in ns.dic.items() if v is not None}
 
-            #print(result)
-            #result = sorted(result, key=lambda x: x.created_at().as_secs(), reverse=True)
+            # print(result)
+            # result = sorted(result, key=lambda x: x.created_at().as_secs(), reverse=True)
             new_list = sorted(result, key=lambda evt: evt.created_at().as_secs(), reverse=True)
             new_res = new_list[:int(options["max_results"])]
-            #result = {v.id().to_hex() for (k, v) in finallist_sorted if v is not None}
+            # result = {v.id().to_hex() for (k, v) in finallist_sorted if v is not None}
 
-            #[: int(options["max_results"])]
+            # [: int(options["max_results"])]
             print("events found: " + str(len(new_res)))
             for v in new_res:
                 e_tag = Tag.parse(["e", v.id().to_hex()])
