@@ -3,11 +3,10 @@ import json
 import math
 import os
 import signal
-import time
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, nip44_decrypt, Kind)
+                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId)
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -19,7 +18,7 @@ from nostr_dvm.utils.nwc_tools import nwc_zap
 from nostr_dvm.utils.subscription_utils import create_subscription_sql_table, add_to_subscription_sql_table, \
     get_from_subscription_sql_table, update_subscription_sql_table, get_all_subscriptions_from_sql_table, \
     delete_from_subscription_sql_table
-from nostr_dvm.utils.zap_utils import create_bolt11_lud16, zaprequest
+from nostr_dvm.utils.zap_utils import zaprequest
 
 
 class Subscription:
@@ -78,6 +77,7 @@ class Subscription:
         await self.client.subscribe([zap_filter, dvm_filter, cancel_subscription_filter], None)
 
         create_subscription_sql_table(dvm_config.DB)
+
         class NotificationHandler(HandleNotification):
             client = self.client
             dvm_config = self.dvm_config
@@ -383,8 +383,6 @@ class Subscription:
         async def handle_subscription_renewal(subscription):
             zaps = json.loads(subscription.zaps)
 
-
-
             success = await pay_zap_split(subscription.nwc, subscription.amount, zaps, subscription.tier,
                                           subscription.unit)
             if success:
@@ -414,9 +412,8 @@ class Subscription:
                     "Renewed Subscription to DVM " + subscription.tier + ". Next renewal: " + str(
                 Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
                                                                                        " ")))
-            #await self.client.send_direct_msg(PublicKey.parse(subscription.subscriber), message, None)
+            # await self.client.send_direct_msg(PublicKey.parse(subscription.subscriber), message, None)
             await self.client.send_private_msg(PublicKey.parse(subscription.subscriber), message, None)
-
 
         async def check_subscriptions():
             try:
@@ -424,10 +421,8 @@ class Subscription:
 
                 for subscription in subscriptions:
 
-
                     if subscription.nwc == "":
                         delete_from_subscription_sql_table(dvm_config.DB, subscription.id)
-
 
                     if subscription.active:
                         if subscription.end < Timestamp.now().as_secs():

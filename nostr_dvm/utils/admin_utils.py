@@ -47,7 +47,8 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
     if not isinstance(adminconfig, AdminConfig):
         return
 
-    if ((adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
+    if ((
+            adminconfig.WHITELISTUSER is True or adminconfig.UNWHITELISTUSER is True or adminconfig.BLACKLISTUSER is True or adminconfig.DELETEUSER is True)
             and adminconfig.USERNPUBS == []):
         return
 
@@ -82,8 +83,6 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         if adminconfig.DELETEUSER:
             delete_from_sql_table(db, publickey)
 
-
-
     if adminconfig.ClEANDB:
         clean_db(db)
 
@@ -96,7 +95,8 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
         lud16 = adminconfig.LUD16
         npub = keys.public_key().to_hex()
-        await nutzap_wallet.melt_cashu(nut_wallet, DVMConfig.NUZAP_MINTS[0], nut_wallet.balance, client, keys, lud16, npub)
+        await nutzap_wallet.melt_cashu(nut_wallet, DVMConfig.NUZAP_MINTS[0], nut_wallet.balance, client, keys, lud16,
+                                       npub)
         await nutzap_wallet.get_nut_wallet(client, keys)
 
     if adminconfig.REBROADCAST_NIP89:
