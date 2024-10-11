@@ -4,9 +4,10 @@ import json
 import os
 import time
 import zipfile
+
+import PIL.Image as Image
 import pandas as pd
 import requests
-import PIL.Image as Image
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
@@ -23,6 +24,7 @@ Function to send a request_form to the server, containing all the information we
 in the module that is calling the server
 
 """
+
 
 def send_request_to_server(request_form, address):
     print("Sending job to Server")
@@ -45,6 +47,7 @@ def send_file_to_server(filepath, address):
         print(response.content.decode('utf-8'))
 
     return result
+
 
 """
 check_n_server_status(request_form, address)
@@ -76,7 +79,6 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
         # WAITING = 0, RUNNING = 1, FINISHED = 2, ERROR = 3
         time.sleep(1.0)
 
-
     if status == 2:
         try:
             url_fetch = 'http://' + address + '/fetch_result'
@@ -93,7 +95,7 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
                 return result
             elif content_type == 'video/mp4':
                 with open('./outputs/video.mp4', 'wb') as f:
-                   f.write(response.content)
+                    f.write(response.content)
                 f.close()
                 clip = VideoFileClip("./outputs/video.mp4")
                 clip.write_videofile("./outputs/video2.mp4")

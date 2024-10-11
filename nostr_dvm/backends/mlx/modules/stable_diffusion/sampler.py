@@ -1,8 +1,8 @@
 # Copyright © 2023 Apple Inc.
 
-from .config import DiffusionConfig
-
 import mlx.core as mx
+
+from .config import DiffusionConfig
 
 
 def _linspace(a, b, num):
@@ -37,7 +37,7 @@ class SimpleEulerSampler:
             )
         elif config.beta_schedule == "scaled_linear":
             betas = _linspace(
-                config.beta_start**0.5, config.beta_end**0.5, config.num_train_steps
+                config.beta_start ** 0.5, config.beta_end ** 0.5, config.num_train_steps
             ).square()
         else:
             raise NotImplementedError(f"{config.beta_schedule} is not implemented.")
@@ -52,7 +52,7 @@ class SimpleEulerSampler:
     def sample_prior(self, shape, dtype=mx.float32, key=None):
         noise = mx.random.normal(shape, key=key)
         return (
-            noise * self._sigmas[-1] * (self._sigmas[-1].square() + 1).rsqrt()
+                noise * self._sigmas[-1] * (self._sigmas[-1].square() + 1).rsqrt()
         ).astype(dtype)
 
     def sigmas(self, t):

@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<trainer ssi-v="5">
+    <info trained="true" seed="1234"/>
+    <meta backend="nova-server" category="VideoGeneration" description="Generates Video from Image/prompt"
+          is_iterable="False">
+        <io type="input" id="input_image" data="Image" default_value=""/>
+        <io type="output" id="output_video" data="stream:Video" default_value="sd_generated.mp4"/>
+    </meta>
+    <model create="StableVideoDiffusion" script="stablevideodiffusion.py"
+           optstr="{model:LIST:stabilityai/stable-video-diffusion-img2vid-xt,stabilityai/stable-video-diffusion-img2vid};{fps:STRING:7};{seed:STRING: }"/>
+</trainer>
