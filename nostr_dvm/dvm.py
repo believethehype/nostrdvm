@@ -5,24 +5,24 @@ from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    init_logger, LogLevel, Options, nip04_encrypt, NostrSigner, Kind, RelayLimits
+    LogLevel, Options, nip04_encrypt, NostrSigner, Kind, RelayLimits
 
-from nostr_dvm.utils.definitions import EventDefinitions, RequiredJobToWatch, JobToWatch
-from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
 from nostr_dvm.utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
-from nostr_dvm.utils.database_utils import create_sql_table, get_or_add_user, update_user_balance, update_sql_table, \
+from nostr_dvm.utils.cashu_utils import redeem_cashu
+from nostr_dvm.utils.database_utils import create_sql_table, get_or_add_user, update_sql_table, \
     update_user_subscription
+from nostr_dvm.utils.definitions import EventDefinitions, RequiredJobToWatch, JobToWatch
+from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nip88_utils import nip88_has_active_subscription
-from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, send_event, check_and_decrypt_tags, \
+from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, check_and_decrypt_tags, \
     send_event_outbox
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 from nostr_dvm.utils.output_utils import build_status_reaction
+from nostr_dvm.utils.print_utils import bcolors
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
     parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
-from nostr_dvm.utils.cashu_utils import redeem_cashu
-from nostr_dvm.utils.print_utils import bcolors
 
 
 class DVM:
@@ -62,7 +62,8 @@ class DVM:
             await self.client.add_relay(relay)
         await self.client.connect()
 
-        zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP, EventDefinitions.KIND_NIP61_NUT_ZAP]).since(Timestamp.now())
+        zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP, EventDefinitions.KIND_NIP61_NUT_ZAP]).since(
+            Timestamp.now())
         kinds = [EventDefinitions.KIND_NIP90_GENERIC]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
@@ -139,7 +140,8 @@ class DVM:
                     return
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
                     print(
-                        bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + " (" + PublicKey.parse(user.npub).to_bech32() + ")" + bcolors.ENDC)
+                        bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + " (" + PublicKey.parse(
+                            user.npub).to_bech32() + ")" + bcolors.ENDC)
                 duration = await input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
@@ -204,7 +206,8 @@ class DVM:
                                                            self.dvm_config)
 
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
-                    if (dvm.TASK == task or dvm.TASK == "generic") and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:
+                    if (
+                            dvm.TASK == task or dvm.TASK == "generic") and dvm.FIX_COST == 0 and dvm.PER_UNIT_COST == 0 and dvm_config.NIP88 is None:
                         task_is_free = True
 
                 cashu_redeemed = False
@@ -339,7 +342,6 @@ class DVM:
                                 elif tag.as_vec()[0] == 'status':
                                     status = tag.as_vec()[1]
 
-
                                 # if a reaction by us got zapped
                             print(status)
 
@@ -347,7 +349,7 @@ class DVM:
                                                                                  config=self.dvm_config)
                             if job_event is not None and task_supported:
                                 print("NutZap received for NIP90 task: " + str(received_amount) + " Sats from " + str(
-                                    user.name + " (" + user.npub + ")" ))
+                                    user.name + " (" + user.npub + ")"))
                                 if amount <= received_amount:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     await send_job_status_reaction(job_event, "processing", client=self.client,
@@ -436,7 +438,7 @@ class DVM:
                                                                                  config=self.dvm_config)
                             if job_event is not None and task_supported:
                                 print("Zap received for NIP90 task: " + str(invoice_amount) + " Sats from " + str(
-                                    user.name + " (" + user.npub + ")" ))
+                                    user.name + " (" + user.npub + ")"))
                                 if amount <= invoice_amount:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     await send_job_status_reaction(job_event, "processing", client=self.client,
@@ -473,7 +475,7 @@ class DVM:
                                                                  "Someone zapped the result of an exisiting Task. Nice")
                     elif not anon:
                         print("[" + self.dvm_config.NIP89.NAME + "] Note Zap received for DVM balance: " +
-                              str(invoice_amount) + " Sats from " + str(user.name + " (" + user.npub + ")" ))
+                              str(invoice_amount) + " Sats from " + str(user.name + " (" + user.npub + ")"))
                     #    update_user_balance(self.dvm_config.DB, sender, invoice_amount, client=self.client,
                     #                        config=self.dvm_config)
 
