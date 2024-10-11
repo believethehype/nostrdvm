@@ -1,22 +1,16 @@
 import asyncio
-import os
-from itertools import islice
-
-import nostr_sdk
-
-
-import networkx as nx
-
+import datetime
 # General
 import json
-import datetime
-import time
-import numpy as np
 import random
-from scipy.sparse import lil_matrix, csr_matrix, isspmatrix_csr
+import time
+from itertools import islice
 
-
-from nostr_sdk import Options, Keys, NostrSigner, NostrDatabase, ClientBuilder, SecretKey, Kind, PublicKey, Filter
+import networkx as nx
+import nostr_sdk
+import numpy as np
+from nostr_sdk import Options, Keys, NostrSigner, ClientBuilder, Kind, PublicKey, Filter
+from scipy.sparse import lil_matrix, isspmatrix_csr
 
 from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -162,7 +156,6 @@ async def _build_network_from(index_map, network_graph, visited_pk=None, depth=2
         # extend the network graph
         network_graph.update(following)
 
-
     if depth == 1:
         return index_map, network_graph
 
@@ -204,7 +197,7 @@ def save_network(index_map, network_graph, name=None):
     if name == None:
         # adding unix time to file name to avoid replacing an existing file
         name = str(round(time.time()))
-    #filename = os.path.join('/cache/', 'index_map_' + name + '.json')
+    # filename = os.path.join('/cache/', 'index_map_' + name + '.json')
     filename = 'index_map_' + name + '.json'
     # saving the index_map as a json file
     with open(filename, 'w') as f:
@@ -214,7 +207,7 @@ def save_network(index_map, network_graph, name=None):
     data = nx.node_link_data(network_graph)
 
     # saving the network_graph as a json file
-    #filename = os.path.join('/cache/', 'network_graph_' + name + '.json')
+    # filename = os.path.join('/cache/', 'network_graph_' + name + '.json')
     filename = 'network_graph_' + name + '.json'
     with open(filename, 'w') as f:
         json.dump(data, f)
@@ -580,6 +573,8 @@ def _perform_walks(S_nodes, S, walks_to_do, alpha):
                 visited_count[current_node] += 1
 
     return visited_count
+
+
 async def get_metadata(npub):
     name = ""
     nip05 = ""
@@ -618,10 +613,11 @@ async def get_metadata(npub):
 async def print_results(graph, index_map, show_results_num, getmetadata=True):
     for item in islice(graph, show_results_num):
         key = next((PublicKey.parse(pubkey).to_bech32() for pubkey, id in index_map.items() if id == item), None)
-        name= ""
+        name = ""
         if getmetadata:
             name, nip05, lud16 = await get_metadata(key)
         print(name + "(" + key + ") " + str(graph[item]))
+
 
 async def convert_index_to_hex(graph, index_map, show_results_num):
     result = {}
