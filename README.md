@@ -9,7 +9,7 @@ This means the project is in alpha status, interfaces might still change/break a
 
 Create a new venv by running `"python -m venv venv"`
   - Place .env file (based on .env_example) in main folder.
-  - Create a `LNbits` account on an accessible instance of your choice, enter one account's id and admin key (this account will create other accounts for the dvms)
+  - If you want the framework to manage wallets and lnaddresses automatically for you, create a `LNbits` account on an accessible instance of your choice, enter one account's id and admin key (this account will create other accounts for the dvms). Otherwise leave the lnbits .env vatiables empty and update each of your DVM's profile with a lightning address of your choice or alternativly, make sure the DVM is free.
   - the framework will then automatically create keys, nip89 tags and zapable NIP57 `lightning addresses` for your dvms in this file.
   - Activate the venv by typing `".venv\Scripts\activate"` on Windows or `"source venv/bin/activate"` otherwise
   - pip install nostr-dvm
