@@ -2,21 +2,20 @@ import asyncio
 import json
 import os
 import subprocess
-import time
-from subprocess import run
 import sys
+from subprocess import run
 from sys import platform
 from threading import Thread
 from venv import create
+
 from nostr_sdk import Keys, Kind, LogLevel
+
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
-from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.output_utils import post_process_result
-
 
 
 class DVMTaskInterface:
@@ -73,7 +72,7 @@ class DVMTaskInterface:
         self.admin_config = admin_config
 
         asyncio.run(self.init_dvm(name, dvm_config, nip89config, nip88config,
-                                          admin_config, options))
+                                  admin_config, options))
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -109,8 +108,6 @@ class DVMTaskInterface:
         pass
 
     def run(self, join=False):
-        #dvm = DVM(self.dvm_config, self.admin_config)
-        #asyncio.run(dvm.run_dvm(self.dvm_config, self.admin_config))
         nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config], daemon=False)
         nostr_dvm_thread.start()
         if join:
@@ -167,7 +164,7 @@ class DVMTaskInterface:
 
     @staticmethod
     def write_output(result, output):
-        with open(os.path.abspath(output), 'w',  encoding="utf8") as f:
+        with open(os.path.abspath(output), 'w', encoding="utf8") as f:
             f.write(result)
         # f.close()
 
@@ -181,4 +178,3 @@ def process_venv(identifier):
         DVMTaskInterface.write_output(result, args.output)
     except Exception as e:
         DVMTaskInterface.write_output("Error: " + str(e), args.output)
-
