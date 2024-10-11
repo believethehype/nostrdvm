@@ -14,7 +14,7 @@ This modules provides image generation based on prompts
     - `1-1` ,`4-3`, `16-9`, `16-10`, `3-4`,`9-16`,`10-16`
 
 - `high_noise_frac`: Denoising factor
- 
+
 - `n_steps`: how many iterations should be performed
 
 ## Example payload

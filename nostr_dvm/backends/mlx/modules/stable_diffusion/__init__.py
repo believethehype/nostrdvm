@@ -42,14 +42,14 @@ class StableDiffusion:
         self.tokenizer = load_tokenizer(model)
 
     def generate_latents(
-        self,
-        text: str,
-        n_images: int = 1,
-        num_steps: int = 50,
-        cfg_weight: float = 7.5,
-        negative_text: str = "",
-        latent_size: Tuple[int] = (64, 64),
-        seed=None,
+            self,
+            text: str,
+            n_images: int = 1,
+            num_steps: int = 50,
+            cfg_weight: float = 7.5,
+            negative_text: str = "",
+            latent_size: Tuple[int] = (64, 64),
+            seed=None,
     ):
         # Set the PRNG state
         seed = seed or int(time.time())

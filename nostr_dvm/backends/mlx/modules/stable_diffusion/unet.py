@@ -34,11 +34,11 @@ class TimestepEmbedding(nn.Module):
 
 class TransformerBlock(nn.Module):
     def __init__(
-        self,
-        model_dims: int,
-        num_heads: int,
-        hidden_dims: Optional[int] = None,
-        memory_dims: Optional[int] = None,
+            self,
+            model_dims: int,
+            num_heads: int,
+            hidden_dims: Optional[int] = None,
+            memory_dims: Optional[int] = None,
     ):
         super().__init__()
 
@@ -85,13 +85,13 @@ class Transformer2D(nn.Module):
     """A transformer model for inputs with 2 spatial dimensions."""
 
     def __init__(
-        self,
-        in_channels: int,
-        model_dims: int,
-        encoder_dims: int,
-        num_heads: int,
-        num_layers: int = 1,
-        norm_num_groups: int = 32,
+            self,
+            in_channels: int,
+            model_dims: int,
+            encoder_dims: int,
+            num_heads: int,
+            num_layers: int = 1,
+            norm_num_groups: int = 32,
     ):
         super().__init__()
 
@@ -125,11 +125,11 @@ class Transformer2D(nn.Module):
 
 class ResnetBlock2D(nn.Module):
     def __init__(
-        self,
-        in_channels: int,
-        out_channels: Optional[int] = None,
-        groups: int = 32,
-        temb_channels: Optional[int] = None,
+            self,
+            in_channels: int,
+            out_channels: Optional[int] = None,
+            groups: int = 32,
+            temb_channels: Optional[int] = None,
     ):
         super().__init__()
 
@@ -169,19 +169,19 @@ class ResnetBlock2D(nn.Module):
 
 class UNetBlock2D(nn.Module):
     def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        temb_channels: int,
-        prev_out_channels: Optional[int] = None,
-        num_layers: int = 1,
-        transformer_layers_per_block: int = 1,
-        num_attention_heads: int = 8,
-        cross_attention_dim=1280,
-        resnet_groups: int = 32,
-        add_downsample=True,
-        add_upsample=True,
-        add_cross_attention=True,
+            self,
+            in_channels: int,
+            out_channels: int,
+            temb_channels: int,
+            prev_out_channels: Optional[int] = None,
+            num_layers: int = 1,
+            transformer_layers_per_block: int = 1,
+            num_attention_heads: int = 8,
+            cross_attention_dim=1280,
+            resnet_groups: int = 32,
+            add_downsample=True,
+            add_upsample=True,
+            add_cross_attention=True,
     ):
         super().__init__()
 
@@ -232,13 +232,13 @@ class UNetBlock2D(nn.Module):
             )
 
     def __call__(
-        self,
-        x,
-        encoder_x=None,
-        temb=None,
-        attn_mask=None,
-        encoder_attn_mask=None,
-        residual_hidden_states=None,
+            self,
+            x,
+            encoder_x=None,
+            temb=None,
+            attn_mask=None,
+            encoder_attn_mask=None,
+            residual_hidden_states=None,
     ):
         output_states = []
 
@@ -340,9 +340,9 @@ class UNetModel(nn.Module):
 
         # Make the upsampling blocks
         block_channels = (
-            [config.block_out_channels[0]]
-            + list(config.block_out_channels)
-            + [config.block_out_channels[-1]]
+                [config.block_out_channels[0]]
+                + list(config.block_out_channels)
+                + [config.block_out_channels[-1]]
         )
         self.up_blocks = [
             UNetBlock2D(

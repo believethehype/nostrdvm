@@ -44,13 +44,13 @@ class Attention(nn.Module):
 
 class EncoderDecoderBlock2D(nn.Module):
     def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        num_layers: int = 1,
-        resnet_groups: int = 32,
-        add_downsample=True,
-        add_upsample=True,
+            self,
+            in_channels: int,
+            out_channels: int,
+            num_layers: int = 1,
+            resnet_groups: int = 32,
+            add_downsample=True,
+            add_upsample=True,
     ):
         super().__init__()
 
@@ -93,12 +93,12 @@ class Encoder(nn.Module):
     """Implements the encoder side of the Autoencoder."""
 
     def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        block_out_channels: List[int] = [64],
-        layers_per_block: int = 2,
-        resnet_groups: int = 32,
+            self,
+            in_channels: int,
+            out_channels: int,
+            block_out_channels: List[int] = [64],
+            layers_per_block: int = 2,
+            resnet_groups: int = 32,
     ):
         super().__init__()
 
@@ -159,12 +159,12 @@ class Decoder(nn.Module):
     """Implements the decoder side of the Autoencoder."""
 
     def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        block_out_channels: List[int] = [64],
-        layers_per_block: int = 2,
-        resnet_groups: int = 32,
+            self,
+            in_channels: int,
+            out_channels: int,
+            block_out_channels: List[int] = [64],
+            layers_per_block: int = 2,
+            resnet_groups: int = 32,
     ):
         super().__init__()
 

@@ -1,0 +1,68 @@
+<?xml version="1.0" ?>
+<trainer ssi-v="5">
+    <info trained="true" seed="1234"/>
+    <meta backend="nova-server" category="ImageGeneration" description="Generates Image from prompt"
+          is_iterable="False">
+        <io type="input" id="input_prompt" data="prompt" default_value=""/>
+        <io type="input" id="negative_prompt" data="prompt" default_value=""/>
+        <io type="output" id="output_image" data="image" default_value="sd.jpg"/>
+
+        <uri id="juggernaut" url="https://civitai.com/api/download/models/198530"
+             hash='1FE6C7EC54C786040CDABC7B4E89720069D97096922E20D01F13E7764412B47F'/>
+        <uri id="dynavision" url="https://civitai.com/api/download/models/198962"
+             hash='FD9CDC26C3B6D1F30BACBC435E455E925E35622E4873CCFC55FD1C88E980585E'/>
+        <uri id="colossus" url="https://civitai.com/api/download/models/213982"
+             hash='5A7E9DD581B3A9EDF2ED0D9FB2036C389325CD7BA13A754CE19BEEDBB69CEB73'/>
+        <uri id="newreality" url="https://civitai.com/api/download/models/232565"
+             hash='06A85616411135F8CAF161F71CB0948F79E85750E4AF36A885C75485A9B68E2F'/>
+        <uri id="unstable" url="https://civitai.com/api/download/models/209647"
+             hash='05C9E2274A74AE6957B986C92E5699FDFACFFD7EE24CED0D33CB696DE1A6C98B'/>
+        <uri id="fantastic" url="https://civitai.com/api/download/models/143722"
+             hash='B0C590726969EF93BC4136C167D339A277946787223BFAD7B1DC9A68A4F183FC'/>
+        <uri id="mohawk" url="https://civitai.com/api/download/models/207419"
+             hash='0248CA08AA5D5B342355173677C77ADD42E41ECEC3B6B6E52E9C9C471C30C508'/>
+        <uri id="dreamshaper" url="https://civitai.com/api/download/models/126688"
+             hash='0F1B80CFE81B9C3BDE7FDCBF6898897B2811B27BE1DF684583C3D85CBC9B1FA4'/>
+        <uri id="timeless" url="https://civitai.com/api/download/models/198246"
+             hash='A771B2B5E8D2A3C23A3A65F9A51E675F253F101C34BE7DC06FD18D534579D8F8'/>
+        <uri id="crystalclear" url="https://civitai.com/api/download/models/133832"
+             hash='0B76532E03A1BAC388CBF559AF00384ABCBD2B5B3F8834158AE4B1B9146A3843'/>
+        <uri id="chroma" url="https://civitai.com/api/download/models/169740"
+             hash='D2B9E5240C4BC74BB98063CEE16671FDC08D5B7BF197074A0C896E5DBB25BD24'/>
+        <uri id="bluepencil" url="https://civitai.com/api/download/models/212090"
+             hash='C4D7E01814F0EED57A7120629D3017AC018AD7CDECB48F7FBE6B12F9C9C4D6B9'/>
+
+        <uri id="voxel" url="https://civitai.com/api/download/models/128609"
+             hash='7D9A5F11E1B38D97F75D2B84BFB5BB3BF95CD0E5F2500B002D13374EB4F88B5C'/>
+        <uri id="inkpunk" url="https://civitai.com/api/download/models/201552"
+             hash='6BD1A90A93AE288D959B6A90738EB2DB79EC26936F460750D8379C78554A8D53'/>
+        <uri id="3drenderstyle" url="https://civitai.com/api/download/models/218206"
+             hash='C4AD16F1B116F10BBB4070D3ABD0249F799B609DAD8BC8CF92A0AC94A8DE8133'/>
+        <uri id="psychedelicnoir" url="https://civitai.com/api/download/models/140194"
+             hash='896B6B4B6DDC4A28C1CB69359944F04AEBF5954B7A5909FD9629E5549FFC2BDF'/>
+        <uri id="dreamarts" url="https://civitai.com/api/download/models/137124"
+             hash='6A8A5968FB31FB6D83E8E0FE390CF2F3693A35FC4CF247A794B0B261E166B19B'/>
+        <uri id="wojak" url="https://civitai.com/api/download/models/140160"
+             hash='0BD68F0199197CD9D8377A30E9F288479721D1838228A4484272EFF09A479209'/>
+        <uri id="kru3ger" url="https://civitai.com/api/download/models/142129"
+             hash='AE92E349446A74D44ABDB1441AF648B2078E4FBB8F46C7158AD18120553DDC3D'/>
+        <uri id="timburton" url="https://civitai.com/api/download/models/207862"
+             hash='62C229B13622B19928B2D5B9FA5988E612C6DC3060D3AACFE720F43D034D9870'/>
+        <uri id="pixelart" url="https://civitai.com/api/download/models/135931"
+             hash='BBF3D8DEFBFB3FB71331545225C0CF50C74A748D2525F7C19EBB8F74445DE274'/>
+        <uri id="pepe" url="https://civitai.com/api/download/models/181917"
+             hash='CBE1E1C746301801613CB331F2051AD16FF724DDA764A54135AA89D909067B97'/>
+        <uri id="bettertext" url="https://civitai.com/api/download/models/163224"
+             hash='AB1EE501387633DFBFD05970D7BBC0921D23CA804FFC0E717828A8796E8D63CF'/>
+        <uri id="mspaint" url="https://civitai.com/api/download/models/205793"
+             hash='C9503F84E12F2B016FFB8BA689220BA38BBC511573C64AC9BD0ADC853780DA5D'/>
+        <uri id="woodfigure" url="https://civitai.com/api/download/models/207919"
+             hash='9E8D768E0D707867717EBF0CB93EBF65431CC5A105982FA5FFD162D78E20B8C1'/>
+        <uri id="fireelement" url="https://civitai.com/api/download/models/175257"
+             hash='CB04B04F2D90B0A168AFFB26CC7C6F76834FEB8C2F0F30ABE35784084D1FFFBE'/>
+
+
+    </meta>
+    <model create="StableDiffusionXL" script="stablediffusionxl.py"
+           optstr="{model:LIST:stabilityai/stable-diffusion-xl-base-1.0,juggernaut,dynavision,colossus,newreality,unstable,fantastic,mohawk,dreamshaper,timeless,crystalclear,chroma,bluepencil};{lora:LIST:None,voxel,inkpunk,3drenderstyle,psychedelicnoir,dreamarts,kru3ger,wojak,timburton,pixelart,pepe,bettertext,mspaint,woodfigure,fireelement};{width:STRING:1024};{height:STRING:1024};{high_noise_frac:STRING:0.8};{n_steps:STRING:35}"/>
+</trainer>

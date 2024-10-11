@@ -1,18 +1,17 @@
 """StableDiffusionXL Module
 """
-import gc
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-
 
 from nova_utils.interfaces.server_module import Processor
 
 # Setting defaults
-_default_options = {"kind": "prompt", "mode": "fast" }
+_default_options = {"kind": "prompt", "mode": "fast"}
 
-# TODO: add log infos, 
+
+# TODO: add log infos,
 class ImageInterrogator(Processor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -20,7 +19,6 @@ class ImageInterrogator(Processor):
         self.device = None
         self.ds_iter = None
         self.current_session = None
-       
 
         # IO shortcuts
         self.input = [x for x in self.model_io if x.io_type == "input"]
@@ -36,17 +34,16 @@ class ImageInterrogator(Processor):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.ds_iter = ds_iter
         current_session_name = self.ds_iter.session_names[0]
-        self.current_session = self.ds_iter.sessions[current_session_name]['manager']      
-        #os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
-        kind =  self.options['kind'] #"prompt" #"analysis" #prompt
+        self.current_session = self.ds_iter.sessions[current_session_name]['manager']
+        # os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+        kind = self.options['kind']  # "prompt" #"analysis" #prompt
         mode = self.options['mode']
-        #url = self.current_session.input_data['input_image_url'].data[0]
-        #print(url)
+        # url = self.current_session.input_data['input_image_url'].data[0]
+        # print(url)
         input_image = self.current_session.input_data['input_image'].data
-        init_image =  PILImage.fromarray(input_image)
+        init_image = PILImage.fromarray(input_image)
         mwidth = 256
         mheight = 256
-
 
         w = mwidth
         h = mheight
@@ -68,10 +65,8 @@ class ImageInterrogator(Processor):
 
         config = Config(clip_model_name="ViT-L-14/openai", device="cuda")
 
-
         if kind == "analysis":
             ci = Interrogator(config)
-
 
             image_features = ci.image_to_features(init_image)
 
@@ -81,15 +76,20 @@ class ImageInterrogator(Processor):
             top_trendings = ci.trendings.rank(image_features, 5)
             top_flavors = ci.flavors.rank(image_features, 5)
 
-            medium_ranks = {medium: sim for medium, sim in zip(top_mediums, ci.similarities(image_features, top_mediums))}
-            artist_ranks = {artist: sim for artist, sim in zip(top_artists, ci.similarities(image_features, top_artists))}
+            medium_ranks = {medium: sim for medium, sim in
+                            zip(top_mediums, ci.similarities(image_features, top_mediums))}
+            artist_ranks = {artist: sim for artist, sim in
+                            zip(top_artists, ci.similarities(image_features, top_artists))}
             movement_ranks = {movement: sim for movement, sim in
-                            zip(top_movements, ci.similarities(image_features, top_movements))}
+                              zip(top_movements, ci.similarities(image_features, top_movements))}
             trending_ranks = {trending: sim for trending, sim in
-                            zip(top_trendings, ci.similarities(image_features, top_trendings))}
-            flavor_ranks = {flavor: sim for flavor, sim in zip(top_flavors, ci.similarities(image_features, top_flavors))}
+                              zip(top_trendings, ci.similarities(image_features, top_trendings))}
+            flavor_ranks = {flavor: sim for flavor, sim in
+                            zip(top_flavors, ci.similarities(image_features, top_flavors))}
 
-            result = "Medium Ranks:\n" + str(medium_ranks) + "\nArtist Ranks: " + str(artist_ranks) +  "\nMovement Ranks:\n" + str(movement_ranks) + "\nTrending Ranks:\n" + str(trending_ranks) +  "\nFlavor Ranks:\n" + str(flavor_ranks)
+            result = "Medium Ranks:\n" + str(medium_ranks) + "\nArtist Ranks: " + str(
+                artist_ranks) + "\nMovement Ranks:\n" + str(movement_ranks) + "\nTrending Ranks:\n" + str(
+                trending_ranks) + "\nFlavor Ranks:\n" + str(flavor_ranks)
 
             print(result)
             return result
@@ -100,8 +100,8 @@ class ImageInterrogator(Processor):
             ci.config.chunk_size = 2024
             ci.config.clip_offload = True
             ci.config.apply_low_vram_defaults()
-            #MODELS = ['ViT-L (best for Stable Diffusion 1.*)']
-            ci.config.flavor_intermediate_count = 2024 #if clip_model_name == MODELS[0] else 1024
+            # MODELS = ['ViT-L (best for Stable Diffusion 1.*)']
+            ci.config.flavor_intermediate_count = 2024  # if clip_model_name == MODELS[0] else 1024
 
             image = init_image
             if mode == 'best':
@@ -113,16 +113,14 @@ class ImageInterrogator(Processor):
             elif mode == 'negative':
                 prompt = ci.interrogate_negative(image)
 
-            #print(str(prompt))
+            # print(str(prompt))
             return prompt
-
 
     # config = Config(clip_model_name=os.environ['TRANSFORMERS_CACHE'] + "ViT-L-14/openai", device="cuda")git
     # ci = Interrogator(config)
-        # "ViT-L-14/openai"))
-        # "ViT-g-14/laion2B-s34B-b88K"))
+    # "ViT-L-14/openai"))
+    # "ViT-g-14/laion2B-s34B-b88K"))
 
-    
     def to_output(self, data: dict):
         import numpy as np
         self.current_session.output_data_templates['output'].data = np.array([data])

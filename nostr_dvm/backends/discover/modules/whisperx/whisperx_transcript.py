@@ -1,10 +1,13 @@
 """WhisperX Module
 """
-from nova_utils.interfaces.server_module import Processor
 import sys
 
+from nova_utils.interfaces.server_module import Processor
+
 # Setting defaults
-_default_options = {"model": "tiny", "alignment_mode": "segment", "batch_size": "16", 'language': None, 'compute_type': 'float16'}
+_default_options = {"model": "tiny", "alignment_mode": "segment", "batch_size": "16", 'language': None,
+                    'compute_type': 'float16'}
+
 
 # supported language codes, cf. whisperx/alignment.py
 # DEFAULT_ALIGN_MODELS_TORCH.keys() | DEFAULT_ALIGN_MODELS_HF.keys() | {None}
@@ -45,11 +48,14 @@ class WhisperX(Processor):
             sys.stdout.flush()
             model = whisperx.load_model(self.options["model"], self.device, compute_type='float32',
                                         language=self.options['language'])
-            
+
         result = model.transcribe(audio, batch_size=int(self.options["batch_size"]))
 
         # delete model if low on GPU resources
-        import gc; gc.collect(); torch.cuda.empty_cache(); del model
+        import gc;
+        gc.collect();
+        torch.cuda.empty_cache();
+        del model
 
         if not self.options["alignment_mode"] == "raw":
             # load alignment model and metadata
@@ -64,7 +70,10 @@ class WhisperX(Processor):
             result = result_aligned
 
             # delete model if low on GPU resources
-            import gc; gc.collect(); torch.cuda.empty_cache(); del model_a
+            import gc;
+            gc.collect();
+            torch.cuda.empty_cache();
+            del model_a
 
         return result
 
@@ -83,26 +92,26 @@ class WhisperX(Processor):
                     if "end" in w.keys():
                         last_end = w["end"]
                     else:
-                        #TODO: rethink lower bound for confidence; place word centred instead of left aligned
+                        # TODO: rethink lower bound for confidence; place word centred instead of left aligned
                         w["start"] = last_end
                         last_end += 0.065
                         w["end"] = last_end
-                        #w["score"] = 0.000
+                        # w["score"] = 0.000
                         w['score'] = _hmean([x['score'] for x in s['words'] if len(x) == 4])
-        
+
         def _hmean(scores):
             if len(scores) > 0:
                 prod = scores[0]
                 for s in scores[1:]:
                     prod *= s
-                prod = prod**(1/len(scores))
+                prod = prod ** (1 / len(scores))
             else:
                 prod = 0
             return prod
-        
+
         if (
-            self.options["alignment_mode"] == "word"
-            or self.options["alignment_mode"] == "segment"
+                self.options["alignment_mode"] == "word"
+                or self.options["alignment_mode"] == "segment"
         ):
             _fix_missing_timestamps(data)
 
@@ -113,12 +122,13 @@ class WhisperX(Processor):
             ]
         else:
             anno_data = [
-                #(w["start"], w["end"], w["text"], _hmean([x['score'] for x in w['words']])) for w in data["segments"]
-                (w["start"], w["end"], w["text"], 1) for w in data["segments"]  # alignment 'raw' no longer contains a score(?)
+                # (w["start"], w["end"], w["text"], _hmean([x['score'] for x in w['words']])) for w in data["segments"]
+                (w["start"], w["end"], w["text"], 1) for w in data["segments"]
+                # alignment 'raw' no longer contains a score(?)
             ]
 
         # convert to milliseconds
-        anno_data = [(x[0]*1000, x[1]*1000, x[2], x[3]) for x in anno_data]
+        anno_data = [(x[0] * 1000, x[1] * 1000, x[2], x[3]) for x in anno_data]
         out = self.session_manager.output_data_templates[self.output.io_id]
         out.data = anno_data
         return self.session_manager.output_data_templates

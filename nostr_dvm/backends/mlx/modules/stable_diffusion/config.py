@@ -1,7 +1,7 @@
 # Copyright © 2023 Apple Inc.
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Tuple
 
 
 @dataclass

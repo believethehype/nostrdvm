@@ -1,21 +1,18 @@
 # Copyright © 2023 Apple Inc.
 
 import json
-from functools import partial
-
-import numpy as np
-from huggingface_hub import hf_hub_download
-from safetensors import safe_open as safetensor_open
 
 import mlx.core as mx
+import numpy as np
+from huggingface_hub import hf_hub_download
 from mlx.utils import tree_unflatten
+from safetensors import safe_open as safetensor_open
 
 from .clip import CLIPTextModel
 from .config import UNetConfig, CLIPTextModelConfig, AutoencoderConfig, DiffusionConfig
 from .tokenizer import Tokenizer
 from .unet import UNetModel
 from .vae import Autoencoder
-
 
 _DEFAULT_MODEL = "stabilityai/stable-diffusion-2-1-base"
 _MODELS = {
@@ -285,7 +282,7 @@ def load_tokenizer(key: str = _DEFAULT_MODEL):
 
     merges_file = hf_hub_download(key, _MODELS[key]["tokenizer_merges"])
     with open(merges_file, encoding="utf-8") as f:
-        bpe_merges = f.read().strip().split("\n")[1 : 49152 - 256 - 2 + 1]
+        bpe_merges = f.read().strip().split("\n")[1: 49152 - 256 - 2 + 1]
     bpe_merges = [tuple(m.split()) for m in bpe_merges]
     bpe_ranks = dict(map(reversed, enumerate(bpe_merges)))
 

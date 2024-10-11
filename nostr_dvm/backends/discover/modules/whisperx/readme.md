@@ -21,9 +21,10 @@ speaker diarization.
     - `word` Improved segmentation using separate alignment model. Equivalent to word alignment.
 
 - `language`: language code for transcription and alignment models. Supported languages:
-    - `ar`, `cs`, `da`, `de`, `el`, `en`, `es`, `fa`, `fi`, `fr`, `he`, `hu`, `it`, `ja`, `ko`, `nl`, `pl`, `pt`, `ru`, `te`, `tr`, `uk`, `ur`, `vi`, `zh`
+    - `ar`, `cs`, `da`, `de`, `el`, `en`, `es`, `fa`, `fi`, `fr`, `he`, `hu`, `it`, `ja`, `ko`, `nl`, `pl`, `pt`, `ru`,
+      `te`, `tr`, `uk`, `ur`, `vi`, `zh`
     - `None`: auto-detect language from first 30 seconds of audio
- 
+
 - `batch_size`: how many samples to process at once, increases speed but also (V)RAM consumption
 
 ## Examples
