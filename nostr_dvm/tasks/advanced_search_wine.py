@@ -1,9 +1,8 @@
 import json
 import os
-from datetime import timedelta
 
 import requests
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Event, Kind
+from nostr_sdk import Timestamp, PublicKey, Tag, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -85,7 +84,6 @@ class AdvancedSearchWine(DVMTaskInterface):
         return request_form
 
     async def process(self, request_form):
-        from nostr_sdk import Filter
         options = self.set_options(request_form)
         userkeys = []
         for user in options["users"]:
