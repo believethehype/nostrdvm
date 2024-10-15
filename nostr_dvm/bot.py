@@ -424,7 +424,7 @@ class Bot:
                                     await asyncio.sleep(2.0)
                                     message = "Current balance: " + str(user.balance) + " Sats. Balance of " + str(
                                         amount) + " Sats required. Please zap me with at least " + str(
-                                        int(amount - user.balance)) + " Sats, then try again.",
+                                        int(amount - user.balance)) + " Sats, then try again."
 
                                     if entry["giftwrap"]:
                                         await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message,
