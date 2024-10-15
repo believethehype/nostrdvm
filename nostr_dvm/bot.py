@@ -442,9 +442,11 @@ class Bot:
                                                                  npub=nostr_event.author().to_hex(),
                                                                  client=self.client, config=self.dvm_config)
                                     print("Paying: " + user.name)
-                                    bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, self.keys,
-                                                        self.dvm_config,
+                                    bolt11 = zaprequest(user.lud16, amount, "Zap", nostr_event, None,
+                                                        self.keys,
+                                                        self.dvm_config.RELAY_LIST,
                                                         "private")
+
                                     if bolt11 is None:
                                         print("Receiver has no Lightning address")
                                         return
