@@ -1,9 +1,10 @@
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions, RelayLimits
+
+from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind, \
+    RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -13,7 +14,6 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
-
 
 """
 This File contains a Module to discover popular notes
@@ -113,7 +113,7 @@ class DicoverContentLatestWiki(DVMTaskInterface):
         signer = NostrSigner.keys(keys)
 
         database = NostrDatabase.lmdb(self.db_name)
-        #print(self.db_name)
+        # print(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
         await cli.connect()
 
@@ -130,8 +130,8 @@ class DicoverContentLatestWiki(DVMTaskInterface):
         index = options["max_results"]
         for event in events:
             if event.created_at().as_secs() > timestamp_hour_ago:
-                    ns.finallist[event.id().to_hex()] = index
-                    index = index-1
+                ns.finallist[event.id().to_hex()] = index
+                index = index - 1
         if len(ns.finallist) == 0:
             await cli.shutdown()
             return self.result
@@ -202,9 +202,11 @@ class DicoverContentLatestWiki(DVMTaskInterface):
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
-                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                        self.db_since) + " seconds..")
         except Exception as e:
             print(e)
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
@@ -254,7 +256,7 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
     # admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentLatestWiki(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                  admin_config=admin_config, options=options)
+                                    admin_config=admin_config, options=options)
 
 
 def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None,
@@ -317,8 +319,8 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentLatestWiki(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                  nip88config=nip88config, options=options,
-                                                  admin_config=admin_config)
+                                    nip88config=nip88config, options=options,
+                                    admin_config=admin_config)
 
 
 if __name__ == '__main__':
