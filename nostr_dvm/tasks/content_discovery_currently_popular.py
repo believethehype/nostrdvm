@@ -1,10 +1,10 @@
-import asyncio
+import json
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions
+
+from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -14,7 +14,6 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
-
 
 """
 This File contains a Module to discover popular notes
@@ -144,7 +143,6 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         # await cli.shutdown()
         return json.dumps(result_list)
 
-
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
         for tag in event.tags():
@@ -186,8 +184,9 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                                      definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds(
+                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
+                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -200,9 +199,11 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
-                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                        self.db_since) + " seconds..")
         except Exception as e:
             print(e)
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the

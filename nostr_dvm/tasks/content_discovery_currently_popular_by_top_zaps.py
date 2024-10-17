@@ -1,10 +1,8 @@
-import asyncio
 import json
-import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions
+
+from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -14,7 +12,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
-from nostr_dvm.utils.zap_utils import parse_zap_event_tags, parse_amount_from_bolt11_invoice
+from nostr_dvm.utils.zap_utils import parse_amount_from_bolt11_invoice
 
 """
 This File contains a Module to discover popular notes by amount of zaps
@@ -39,7 +37,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
     logger = False
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
-                           admin_config: AdminConfig = None, options=None):
+                       admin_config: AdminConfig = None, options=None):
 
         self.request_form = {"jobID": "generic"}
         opts = {
@@ -110,15 +108,15 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
         options = self.set_options(request_form)
 
-        #opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        #sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        #keys = Keys.parse(sk.to_hex())
-        #signer = NostrSigner.keys(keys)
+        # opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
+        # sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        # keys = Keys.parse(sk.to_hex())
+        # signer = NostrSigner.keys(keys)
 
         database = NostrDatabase.lmdb(self.db_name)
-        #cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        # cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        #await cli.connect()
+        # await cli.connect()
 
         # Negentropy reconciliation
         # Query events from database
@@ -143,7 +141,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                     overall_amount = 0
                     for zap in zaps:
                         if event_author == zap.author().to_hex():
-                            continue #Skip self zaps..
+                            continue  # Skip self zaps..
                         invoice_amount = 0
                         for tag in zap.tags():
 
@@ -165,7 +163,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                                         if has_amount:
                                             overall_amount += invoice_amount
                                             break
-                            #elif tag.as_vec()[0] == 'description':
+                            # elif tag.as_vec()[0] == 'description':
                             #    try:
                             #        event = Event.from_json(tag.as_vec()[1])
                             #        for tag in event.tags():
@@ -194,7 +192,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
 
-        #await cli.shutdown()
+        # await cli.shutdown()
 
         return json.dumps(result_list)
 
@@ -241,8 +239,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                                      definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds(
+                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
+                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -255,9 +254,11 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
-                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                        self.db_since) + " seconds..")
         except Exception as e:
             print(e)
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the

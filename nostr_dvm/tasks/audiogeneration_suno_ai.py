@@ -1,11 +1,8 @@
 import asyncio
 import json
 import os
-import time
-from io import BytesIO
+
 import requests
-import urllib.request
-from PIL import Image
 from nostr_sdk import Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
@@ -14,7 +11,6 @@ from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.zap_utils import get_price_per_sat
 
 """
@@ -139,7 +135,7 @@ class AudioGenerationSonoAI(DVMTaskInterface):
 
                 response2 = self.get_clip(data[1]['id'])
                 print(response2['video_url'])
-                #print(response2['prompt']) #same as 1
+                # print(response2['prompt']) #same as 1
 
                 return response1['video_url'] + "\n" + response2['video_url'] + "\n" + response1['prompt']
 
