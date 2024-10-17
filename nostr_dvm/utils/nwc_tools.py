@@ -1,10 +1,8 @@
 import json
 import os
-from datetime import timedelta
 
 import requests
-from nostr_sdk import Keys, PublicKey, Client, nip04_encrypt, EventBuilder, Tag, NostrSigner, Filter, Timestamp, \
-    NostrWalletConnectUri, Nwc
+from nostr_sdk import Keys, PublicKey, NostrWalletConnectUri, Nwc
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key

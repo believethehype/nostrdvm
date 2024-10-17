@@ -1,19 +1,19 @@
-import json
 import datetime as datetime
+import json
 import os
 import random
 from types import NoneType
 
 import emoji
+import pandas
 import requests
-from nostr_sdk import Tag, PublicKey, EventId, Keys, nip04_encrypt, EventBuilder, LogLevel
+from nostr_sdk import Tag, PublicKey, EventId, Keys, EventBuilder, LogLevel
 from pyupload.uploader import CatboxUploader
 
-import pandas
-from nostr_dvm.utils.print_utils import bcolors
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nip98_utils import generate_nip98_header
 from nostr_dvm.utils.nostr_utils import send_event_outbox
+from nostr_dvm.utils.print_utils import bcolors
 
 '''
 Post process results to either given output format or a Nostr readable plain text.
@@ -293,11 +293,9 @@ def build_status_reaction(status, task, amount, content, dvm_config):
     return alt_description, reaction
 
 
-
 async def send_job_status_reaction(original_event_id_hex, original_event_author_hex, client, dvm_config,
                                    content=None,
                                    status="processing", user=None):
-
     alt_description, reaction = build_status_reaction(status, "generic", 0, content, dvm_config)
 
     e_tag = Tag.parse(["e", original_event_id_hex])

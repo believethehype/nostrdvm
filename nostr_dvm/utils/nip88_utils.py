@@ -1,10 +1,9 @@
 import os
-from datetime import timedelta
 from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Filter, Tag, Keys, EventBuilder, Client, EventId, PublicKey, Event, Timestamp, SingleLetterTag, \
+from nostr_sdk import Filter, Tag, Keys, EventBuilder, Client, EventId, PublicKey, Timestamp, SingleLetterTag, \
     Alphabet, Kind
 
 from nostr_dvm.utils import definitions
@@ -88,7 +87,8 @@ async def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     await send_event(event, client, config)
 
 
-async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, receiver_public_key_hex, checkCanceled = True):
+async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: Client, receiver_public_key_hex,
+                                        checkCanceled=True):
     subscription_status = {
         "isActive": False,
         "validUntil": 0,
@@ -140,9 +140,11 @@ async def nip88_announce_tier(dvm_config, client):
     # 5% go to NostrSDK developers
     # 10% optionally go to clients that support this subscription DVM
     zaptag1 = Tag.parse(["zap", dvm_config.PUBLIC_KEY, "wss://damus.io", "16"])
-    zaptag2 = Tag.parse(["zap", "npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8", "wss://damus.io", "1"]) # NostrDVM
-    zaptag3 = Tag.parse(["zap", "npub1drvpzev3syqt0kjrls50050uzf25gehpz9vgdw08hvex7e0vgfeq0eseet", "wss://damus.io", "1"]) # NostrSDK
-    zaptag4 = Tag.parse(["zap", "", "wss://damus.io", "2"]) # Client might use this for splits
+    zaptag2 = Tag.parse(
+        ["zap", "npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8", "wss://damus.io", "1"])  # NostrDVM
+    zaptag3 = Tag.parse(
+        ["zap", "npub1drvpzev3syqt0kjrls50050uzf25gehpz9vgdw08hvex7e0vgfeq0eseet", "wss://damus.io", "1"])  # NostrSDK
+    zaptag4 = Tag.parse(["zap", "", "wss://damus.io", "2"])  # Client might use this for splits
     p_tag = Tag.parse(["p", dvm_config.NIP88.PAYMENT_VERIFIER_PUBKEY])
 
     tags = [title_tag, image_tag, zaptag1, zaptag2, zaptag3, zaptag4, d_tag, p_tag]
@@ -181,7 +183,6 @@ async def nip88_announce_tier(dvm_config, client):
         print("[" + dvm_config.NIP89.NAME + "] Announced NIP 88 Tier")
     else:
         print("[" + dvm_config.identifier + "] Announced NIP 88 Tier")
-
 
     return annotier_id
 
