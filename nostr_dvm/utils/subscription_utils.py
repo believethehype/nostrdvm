@@ -57,12 +57,15 @@ def create_subscription_sql_table(db):
         print(e)
 
 
-def add_to_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps,
+def add_to_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag,
+                                  zaps,
                                   recipe, active, lastupdate, tier):
     try:
         con = sqlite3.connect(db)
         cur = con.cursor()
-        data = (id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate, tier)
+        data = (
+        id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate,
+        tier)
         print(id)
         print(recipient)
         print(subscriber)
@@ -118,7 +121,9 @@ def get_all_subscriptions_from_sql_table(db):
         records = cursor.fetchall()
         subscriptions = []
         for row in records:
-            subscriptions.append(Subscription(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12], row[13], row[14]))
+            subscriptions.append(
+                Subscription(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10],
+                             row[11], row[12], row[13], row[14]))
         cursor.close()
         return subscriptions
 
@@ -127,7 +132,8 @@ def get_all_subscriptions_from_sql_table(db):
     finally:
         if con:
             con.close()
-            #print("The SQLite connection is closed")
+            # print("The SQLite connection is closed")
+
 
 def delete_from_subscription_sql_table(db, id):
     try:
@@ -139,12 +145,16 @@ def delete_from_subscription_sql_table(db, id):
     except Error as e:
         print(e)
 
-def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps,
+
+def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag,
+                                  zaps,
                                   recipe, active, lastupdate, tier):
     try:
         con = sqlite3.connect(db)
         cur = con.cursor()
-        data = (recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate, tier, id)
+        data = (
+        recipient, subscriber, nwc, cadence, amount, unit, begin, end, tier_dtag, zaps, recipe, active, lastupdate,
+        tier, id)
 
         cur.execute(""" UPDATE subscriptions
                   SET recipient = ? ,
@@ -167,7 +177,3 @@ def update_subscription_sql_table(db, id, recipient, subscriber, nwc, cadence, a
         con.close()
     except Error as e:
         print("Error Updating DB: " + str(e))
-
-
-
-

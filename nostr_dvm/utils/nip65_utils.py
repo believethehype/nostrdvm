@@ -5,9 +5,6 @@ from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.print_utils import bcolors
 
 
-
-
-
 async def announce_dm_relays(dvm_config, client):
     tags = []
 
@@ -30,7 +27,7 @@ async def announce_dm_relays(dvm_config, client):
 
 
 async def nip65_announce_relays(dvm_config, client):
-   # todo we might want to call the dm relays seperately but for now we do it together with the inbox relays
+    # todo we might want to call the dm relays seperately but for now we do it together with the inbox relays
     await announce_dm_relays(dvm_config, client)
 
     tags = []
@@ -51,4 +48,3 @@ async def nip65_announce_relays(dvm_config, client):
     else:
         print(
             bcolors.RED + "[" + dvm_config.NIP89.NAME + "] Could not announce NIP 65 for " + dvm_config.NIP89.NAME + bcolors.ENDC)
-

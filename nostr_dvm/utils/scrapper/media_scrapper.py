@@ -1,21 +1,17 @@
-
+import json
+import os
+import re
+import sys
 from typing import Any
 from urllib.request import urlopen, Request
 
-import requests
-import json
-import yt_dlp
-import sys
-import os
-import re
-
-import requests
 import bs4
-
+import requests
+import yt_dlp
 from tqdm import tqdm
-from pathlib import Path
 
-browser = "chrome" #"firefox"
+browser = "chrome"  # "firefox"
+
 
 def download_xvideo(url, target_location) -> None:
     response = requests.get(url, stream=True)
@@ -119,7 +115,6 @@ def TiktokDownloadAll(linkList, path) -> str:
 
 
 def YTDownload(link, path, audio_only=True):
-
     if audio_only:
         return get_audio([link])
     else:
@@ -139,6 +134,7 @@ def get_media_duration(url):
             return float(json.dumps(ydl.sanitize_info(info)["duration"]))
     except:
         return None
+
 
 def get_media_info(url):
     try:
@@ -185,7 +181,6 @@ def get_video(URLS):
             # "outtmpl": '/%(uploader)s_%(title)s.%(ext)s',
             "outtmpl": 'outputs/video.mp4',
         }
-
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download(URLS)

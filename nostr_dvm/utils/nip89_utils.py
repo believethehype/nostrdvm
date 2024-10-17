@@ -1,5 +1,4 @@
 import os
-from datetime import timedelta
 from hashlib import sha256
 from pathlib import Path
 
@@ -33,8 +32,8 @@ async def nip89_announce_tasks(dvm_config, client):
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
 
-    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME +" (" + eventid.id.to_hex() +")" + bcolors.ENDC)
-
+    print(
+        bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME + " (" + eventid.id.to_hex() + ")" + bcolors.ENDC)
 
 
 async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):
@@ -69,6 +68,7 @@ async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config)
+
 
 async def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client: Client, config):
     e_tag = Tag.parse(["e", eid])
