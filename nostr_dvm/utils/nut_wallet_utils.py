@@ -5,14 +5,15 @@ from collections import namedtuple
 from datetime import timedelta
 
 import requests
+from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
+    EventId, nip04_decrypt, nip04_encrypt, Options, NostrSigner, PublicKey, Metadata
+
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.zap_utils import pay_bolt11_ln_bits, zaprequest
-from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
-    EventId, nip04_decrypt, nip04_encrypt, Options, NostrSigner, PublicKey, init_logger, LogLevel, Metadata
 from nostr_dvm.utils.print_utils import bcolors
+from nostr_dvm.utils.zap_utils import pay_bolt11_ln_bits, zaprequest
 
 
 class NutWallet(object):
@@ -29,7 +30,7 @@ class NutWallet(object):
         self.a: str = ""
         self.legacy_encryption: bool = False  # Use Nip04 instead of Nip44, for reasons, turn to False ASAP.
         self.trust_unknown_mints: bool = False
-        self.missing_balance_strategy: str = "mint"  #none to do nothing until manually minted, mint to mint from lightning or swap to use existing tokens from other mints (fees!) (not working yet!)
+        self.missing_balance_strategy: str = "mint"  # none to do nothing until manually minted, mint to mint from lightning or swap to use existing tokens from other mints (fees!) (not working yet!)
 
 
 class NutMint(object):
@@ -120,7 +121,7 @@ class NutZapWallet:
         nut_wallet = None
 
         wallet_filter = Filter().kind(EventDefinitions.KIND_NUT_WALLET).author(keys.public_key())
-        #relay_timeout = EventSource.relays(timedelta(seconds=10))
+        # relay_timeout = EventSource.relays(timedelta(seconds=10))
         wallets = await client.get_events_of([wallet_filter], relay_timeout_long)
 
         if len(wallets) > 0:
@@ -195,7 +196,7 @@ class NutZapWallet:
 
             # Now all proof events
             proof_filter = Filter().kind(Kind(7375)).author(keys.public_key())
-            #relay_timeout = EventSource.relays(timedelta(seconds=5))
+            # relay_timeout = EventSource.relays(timedelta(seconds=5))
             proof_events = await client.get_events_of([proof_filter], relay_timeout)
 
             latest_proof_sec = 0
@@ -449,7 +450,7 @@ class NutZapWallet:
 
     async def fetch_mint_info_event(self, pubkey, client):
         mint_info_filter = Filter().kind(Kind(10019)).author(PublicKey.parse(pubkey))
-        #relay_timeout = EventSource.relays(timedelta(seconds=5))
+        # relay_timeout = EventSource.relays(timedelta(seconds=5))
         preferences = await client.get_events_of([mint_info_filter], relay_timeout)
         mints = []
         relays = []
@@ -778,11 +779,10 @@ class NutZapWallet:
               + bcolors.ENDC)
 
     async def swap(self, amountinsats, incoming_mint_url, outgoing_mint_url, nut_wallet):
-        #TODO this doesn't seem to work yet.
+        # TODO this doesn't seem to work yet.
         from cashu.wallet.cli.cli_helpers import print_mint_balances
         from cashu.wallet.wallet import Wallet
         from cashu.core.crypto.keys import PrivateKey
-
 
         outgoing_mint = self.get_mint(nut_wallet, outgoing_mint_url)
 
@@ -797,7 +797,6 @@ class NutZapWallet:
 
         print(outgoing_wallet.available_balance)
 
-
         incoming_mint = self.get_mint(nut_wallet, incoming_mint_url)
         incoming_wallet = await Wallet.with_db(
             url=incoming_mint_url,
@@ -807,8 +806,6 @@ class NutZapWallet:
         incoming_wallet.private_key = PrivateKey(bytes.fromhex(nut_wallet.privkey), raw=True)
         await incoming_wallet.load_mint()
         incoming_wallet.proofs = incoming_mint.proofs
-
-
 
         if incoming_wallet.url == outgoing_wallet.url:
             raise Exception("mints for swap have to be different")

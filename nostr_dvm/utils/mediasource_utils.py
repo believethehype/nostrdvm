@@ -2,9 +2,10 @@ import os
 import urllib
 from datetime import time
 from urllib.parse import urlparse
-import ffmpegio
 
+import ffmpegio
 import requests
+
 from nostr_dvm.utils.nostr_utils import get_event_by_id
 from nostr_dvm.utils.scrapper.media_scrapper import YTDownload, get_media_duration
 
