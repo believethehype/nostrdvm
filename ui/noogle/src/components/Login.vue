@@ -141,29 +141,29 @@
         <div className="card-body">
           <h3 className="card-title">Login</h3>
           <p>Use a Browser Nip07 Extension like getalby, nos2x or nsec.app, a nsec or ncryptsec or use Amber on Android to sign-in</p>
-         <button className="btn" @click="sign_in_nip07()">Browser Extension</button>
+<!--         <button className="btn" @click="sign_in_nip07()">Browser Extension</button>-->
          <button className="btn" @click="sign_in_nostr_login()">Nostr Login</button>
 
-         <template v-if="supports_android_signer">
-          <button className="btn" @click="sign_in_amber()">Amber Sign in</button>
-        </template>
-           <button className="btn" onclick="nsecmodal.showModal()">NSec/NCryptSec</button>
-      <dialog id="nsecmodal" class="modal">
-      <div class="modal-box">
-        <h3 class="font-bold text-lg">Login with key</h3>
-        <p class="py-4">Login with nsec or ncryptsec. Your keys will be stored in your Browser. This is the least recommended sign-in method</p>
-        <input class="u-Input" style="margin-left: 10px" type="search" name="user" autofocus  placeholder="nsec.../ncryptsec..." v-model="this.ncryptsec">
-        <input v-if="ncryptsec.startsWith('ncryptsec')" class="u-Input" style="margin-left: 10px" type="password" name="user" autofocus  placeholder="password..." v-model="this.pw">
+<!--         <template v-if="supports_android_signer">-->
+<!--          <button className="btn" @click="sign_in_amber()">Amber Sign in</button>-->
+<!--        </template>-->
+<!--           <button className="btn" onclick="nsecmodal.showModal()">NSec/NCryptSec</button>-->
+<!--      <dialog id="nsecmodal" class="modal">-->
+<!--      <div class="modal-box">-->
+<!--        <h3 class="font-bold text-lg">Login with key</h3>-->
+<!--        <p class="py-4">Login with nsec or ncryptsec. Your keys will be stored in your Browser. This is the least recommended sign-in method</p>-->
+<!--        <input class="u-Input" style="margin-left: 10px" type="search" name="user" autofocus  placeholder="nsec.../ncryptsec..." v-model="this.ncryptsec">-->
+<!--        <input v-if="ncryptsec.startsWith('ncryptsec')" class="u-Input" style="margin-left: 10px" type="password" name="user" autofocus  placeholder="password..." v-model="this.pw">-->
 
-        <div class="modal-action">
-          <form method="dialog">
-            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
-            <!-- if there is a button in form, it will close the modal -->
-            <button class="btn" @click="sign_in_key()">Login</button>
-          </form>
-        </div>
-      </div>
-</dialog>
+<!--        <div class="modal-action">-->
+<!--          <form method="dialog">-->
+<!--            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>-->
+<!--            &lt;!&ndash; if there is a button in form, it will close the modal &ndash;&gt;-->
+<!--            <button class="btn" @click="sign_in_key()">Login</button>-->
+<!--          </form>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--</dialog>-->
         </div>
       </div>
     </div>
@@ -343,7 +343,7 @@ export default {
 
       // launch signup screen
       if (launch){
-        await initNostrLogin({bunkers: 'nsec.app,highlighter.com', iife: true})
+        await initNostrLogin({bunkers: 'nsec.app,highlighter.com', iife: true, noBanner: true})
           if (!localStorage.getItem('__nostrlogin_nip46')){
            await new launchNostrLoginDialog({
         bunkers: 'nsec.app,highlighter.com'
