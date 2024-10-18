@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -63,7 +62,6 @@ class EventDefinitions:
     KIND_NIP88_TIER_EVENT = Kind(37001)
     KIND_NUT_WALLET = Kind(37375)
 
-
     ANY_RESULT = [KIND_NIP90_RESULT_EXTRACT_TEXT,
                   KIND_NIP90_RESULT_SUMMARIZE_TEXT,
                   KIND_NIP90_RESULT_TRANSLATE_TEXT,
@@ -96,6 +94,7 @@ class JobToWatch:
 class RequiredJobToWatch:
     event: Event
     timestamp: int
+
 
 @dataclass
 class InvoiceToWatch:

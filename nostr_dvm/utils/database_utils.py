@@ -1,18 +1,14 @@
 # DATABASE LOGIC
 import json
 import sqlite3
-
-from sqlite3 import Error
 from dataclasses import dataclass
-from datetime import timedelta
 from logging import Filter
+from sqlite3 import Error
 
-
-from nostr_sdk import Timestamp, Keys, PublicKey, EventBuilder, Filter, Kind
+from nostr_sdk import Timestamp, Keys, PublicKey, Filter, Kind
 
 from nostr_dvm.utils.definitions import relay_timeout
-
-from nostr_dvm.utils.nostr_utils import send_event, send_nip04_dm
+from nostr_dvm.utils.nostr_utils import send_nip04_dm
 
 
 @dataclass
@@ -190,17 +186,15 @@ async def update_user_balance(db, npub, additional_sats, client, config, giftwra
 
         if config is not None:
             keys = Keys.parse(config.PRIVATE_KEY)
-            # time.sleep(1.0)
 
             message = ("Added " + str(additional_sats) + " Sats to balance. New balance is " + str(
                 new_balance) + " Sats.")
 
-            if giftwrap:
-                await client.send_private_msg(PublicKey.parse(npub), message, None)
-            else:
-                #await client.send_direct_msg(PublicKey.parse(npub), message, None)
-                #await client.send_private_msg(PublicKey.parse(npub), message, None)
-                await send_nip04_dm(client, message, PublicKey.parse(npub), config)
+            # always send giftwrapped. sorry not sorry.
+            #if giftwrap:
+            await client.send_private_msg(PublicKey.parse(npub), message, None)
+            #else:
+            #    await send_nip04_dm(client, message, PublicKey.parse(npub), config)
 
 
 def update_user_subscription(npub, subscribed_until, client, dvm_config):

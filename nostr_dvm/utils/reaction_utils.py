@@ -19,8 +19,6 @@ async def create_reaction(keys, title, dtag):
     emoji_tag1 = Tag.parse(["emoji", name, url])
     emoji_tags.append(emoji_tag1)
 
-
-
     keys = Keys.parse(keys)
     content = ""
     event = EventBuilder(Kind(30030), content, [d_tag, title_tag] + emoji_tags).to_event(keys)
@@ -65,4 +63,4 @@ keys = check_and_set_private_key("test_client")
 eventid = "da05cefc512ad43363f84131343f5d2a80303ea3b9368b9ad7f010e07db37d90"
 
 asyncio.run(create_reaction(keys=keys, title="ThugAmy", dtag="ThugAmy"))
-#asyncio.run(delete_reaction(keys=keys, eid=eventid,  dtag="ThugAmy"))
+# asyncio.run(delete_reaction(keys=keys, eid=eventid,  dtag="ThugAmy"))
