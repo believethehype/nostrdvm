@@ -72,8 +72,8 @@ async def get_task(event, client, dvm_config):
                         [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                          EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
                          EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT],
-                                                         client=client,
-                                                         dvm_config=dvm_config)
+                                                               client=client,
+                                                               dvm_config=dvm_config)
                         if evt is not None:
                             file_type = check_url_is_readable(evt.content())
                             if file_type == "image":
@@ -111,7 +111,7 @@ def is_input_supported_generic(tags, client, dvm_config) -> bool:
                 else:
                     input_value = tag.as_vec()[1]
                     input_type = tag.as_vec()[2]
-                    #if input_type == "event":
+                    # if input_type == "event":
                     #    evt = get_event_by_id(input_value, client=client, config=dvm_config)
                     #    if evt is None:
                     #        print("Event not found")
@@ -135,8 +135,8 @@ async def check_task_is_supported(event: Event, client, config=None):
 
         # See if current dvm supports the task
         task = await get_task(event, client=client, dvm_config=dvm_config)
-       # if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS) and not task == "generic":
-       #     return False, task
+        # if task not in (x.TASK for x in dvm_config.SUPPORTED_DVMS) and not task == "generic":
+        #     return False, task
         # See if current dvm can handle input for given task
         for dvm in dvm_config.SUPPORTED_DVMS:
             if dvm.TASK == task:
@@ -161,16 +161,16 @@ def check_url_is_readable(url):
         content_type = req.headers['content-type']
         if content_type == 'audio/x-wav' or str(url).endswith(".wav") or content_type == 'audio/mpeg' or str(
                 url).endswith(
-                ".mp3") or content_type == 'audio/ogg' or str(url).endswith(".ogg"):
+            ".mp3") or content_type == 'audio/ogg' or str(url).endswith(".ogg"):
             return "audio"
         elif (content_type == 'image/png' or str(url).endswith(".png") or content_type == 'image/jpg' or str(
                 url).endswith(
-                ".jpg") or content_type == 'image/jpeg' or str(url).endswith(".jpeg") or content_type == 'image/png' or
+            ".jpg") or content_type == 'image/jpeg' or str(url).endswith(".jpeg") or content_type == 'image/png' or
               str(url).endswith(".png")):
             return "image"
         elif content_type == 'video/mp4' or str(url).endswith(".mp4") or content_type == 'video/avi' or str(
                 url).endswith(
-                ".avi") or content_type == 'video/mov' or str(url).endswith(".mov"):
+            ".avi") or content_type == 'video/mov' or str(url).endswith(".mov"):
             return "video"
         elif (str(url)).endswith(".pdf"):
             return "pdf"
@@ -184,7 +184,7 @@ def check_url_is_readable(url):
 def get_amount_per_task(task, dvm_config, duration=1):
     #  duration is either static 1 (for images etc) or in seconds by default (e.g. audio/video)
     for dvm in dvm_config.SUPPORTED_DVMS:  # this is currently just one
-        if dvm.TASK == task or dvm.TASK  == "generic":
+        if dvm.TASK == task or dvm.TASK == "generic":
             amount = dvm.FIX_COST + (dvm.PER_UNIT_COST * duration)
             return amount
     else:

@@ -1,14 +1,12 @@
 import base64
 import json
 
-
 import requests
 
 from nostr_dvm.utils.database_utils import get_or_add_user
 from nostr_dvm.utils.zap_utils import create_bolt11_ln_bits, create_bolt11_lud16
 
 BASE_URL = "https://mint.minibits.cash/Bitcoin"
-
 
 
 def parse_cashu(cashu_token: str):
