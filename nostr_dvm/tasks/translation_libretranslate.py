@@ -1,5 +1,6 @@
 import json
 import os
+
 import requests
 from nostr_sdk import Kind
 
@@ -57,10 +58,10 @@ class TranslationLibre(DVMTaskInterface):
                     text = tag.as_vec()[1]
                 elif input_type == "job":
                     evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
-                                                     kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
-                                                     dvm_config=dvm_config)
+                                                           kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
+                                                           dvm_config=dvm_config)
                     text = evt.content()
 
             elif tag.as_vec()[0] == 'param':
@@ -145,7 +146,6 @@ def build_example(name, identifier, admin_config):
 
     return TranslationLibre(name=name, dvm_config=dvm_config, nip89config=nip89config,
                             admin_config=admin_config, options=options)
-
 
 
 if __name__ == '__main__':

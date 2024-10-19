@@ -8,11 +8,11 @@ from nostr_sdk import Kind
 from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server, send_file_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.definitions import EventDefinitions
 
 """
 This File contains a Module to transform A media file input on n-server and receive results back. 
@@ -105,7 +105,7 @@ class SpeechToTextWhisperX(DVMTaskInterface):
                                     end_time = float(tag.as_vec()[3])
 
         filepath = await  organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True,
-                                             media_format)
+                                                    media_format)
         path_on_server = send_file_to_server(os.path.realpath(filepath), self.options['server'])
 
         io_input = {

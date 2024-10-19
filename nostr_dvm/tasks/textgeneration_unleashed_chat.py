@@ -42,7 +42,7 @@ class TextGenerationUnleashedChat(DVMTaskInterface):
     async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
         prompt = ""
-        nostr_mode= True
+        nostr_mode = True
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -111,7 +111,6 @@ def build_example(name, identifier, admin_config):
     dvm_config.SEND_FEEDBACK_EVENTS = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-
     nip89info = {
         "name": name,
         "image": "https://unleashed.chat/_app/immutable/assets/hero.pehsu4x_.jpeg",
@@ -125,7 +124,8 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return TextGenerationUnleashedChat(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config, )
+    return TextGenerationUnleashedChat(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                       admin_config=admin_config, )
 
 
 if __name__ == '__main__':

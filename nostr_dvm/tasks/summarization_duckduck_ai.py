@@ -3,6 +3,7 @@ import os
 import re
 
 from nostr_sdk import Tag, Kind
+
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -58,11 +59,11 @@ class SummarizationDuckDuck(DVMTaskInterface):
                     # prompt += evt.content() + "\n"
                 elif input_type == "job":
                     evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
-                                                     kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY],
-                                                     dvm_config=dvm_config)
+                                                           kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY],
+                                                           dvm_config=dvm_config)
                     if evt is None:
                         print("Event not found")
                         raise Exception
@@ -109,7 +110,6 @@ class SummarizationDuckDuck(DVMTaskInterface):
             raise Exception(e)
 
 
-
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
@@ -134,7 +134,7 @@ def build_example(name, identifier, admin_config):
     admin_config2.REBROADCAST_NIP89 = False
 
     return SummarizationDuckDuck(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                      admin_config=admin_config2)
+                                 admin_config=admin_config2)
 
 
 if __name__ == '__main__':

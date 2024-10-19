@@ -7,10 +7,10 @@ from nostr_sdk import Kind
 from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.definitions import EventDefinitions
 
 """
 This File contains a Module to extract a prompt from an image from an url.

@@ -1,6 +1,6 @@
 # NostrAI Data Vending Machine Tasks
 
-Here Tasks can be defined. Tasks need to follow the DVMTaskInterface as defined in interfaces. 
+Here Tasks can be defined. Tasks need to follow the DVMTaskInterface as defined in interfaces.
 Tasks can either happen locally (especially if they are fast) or they can call an alternative backend.
 Reusable backend functions can be defined in backends (e.g. API calls)
 
@@ -42,4 +42,5 @@ Current List of Tasks:
 | **Subscriptions**          | 5906 | Manage Subscriptions for other DVMS                  | local            |
 
 Kinds with (inoff) are suggestions and not merged yet and might change in the future.
-Backends might require to add an API key to the .env file or run an external server/framework the dvm will communicate with.
+Backends might require to add an API key to the .env file or run an external server/framework the dvm will communicate
+with.

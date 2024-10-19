@@ -1,15 +1,13 @@
 import json
 import os
-from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions
+
+from nostr_sdk import Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.output_utils import post_process_list_to_events
 
 """
 This File contains a Generic DVM that can be overwritten by the user
@@ -71,8 +69,7 @@ class GenericDVM(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config,  announce = False):
-
+def build_example(name, identifier, admin_config, announce=False):
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = announce
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce

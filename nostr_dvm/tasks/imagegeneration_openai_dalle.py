@@ -1,6 +1,5 @@
 import json
 import os
-import time
 from io import BytesIO
 
 import requests
@@ -119,6 +118,7 @@ class ImageGenerationDALLE(DVMTaskInterface):
             if str(e).startswith("Error code: 400"):
                 raise Exception('Your request was rejected as a result of OpenAI´s safety system. Your prompt may '
                                 'contain text that is not allowed by their safety system.')
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
