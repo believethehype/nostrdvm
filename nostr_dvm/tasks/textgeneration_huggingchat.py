@@ -68,7 +68,6 @@ class TextGenerationHuggingChat(DVMTaskInterface):
             cookies = sign.login()
             sign.saveCookiesToDir(cookie_path_dir)
 
-
         options = self.set_options(request_form)
 
         try:

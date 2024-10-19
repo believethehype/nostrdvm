@@ -7,10 +7,10 @@ from nostr_sdk import Kind
 from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.definitions import EventDefinitions
 
 """
 This File contains a module to transform an Image to a short Video Clip on n-server and receive results back. 
@@ -45,8 +45,7 @@ class VideoGenerationSVD(DVMTaskInterface):
 
         url = ""
         frames = 7  # 25
-        model = "stabilityai/stable-video-diffusion-img2vid-xt" #,stabilityai/stable-video-diffusion-img2vid
-
+        model = "stabilityai/stable-video-diffusion-img2vid-xt"  # ,stabilityai/stable-video-diffusion-img2vid
 
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
@@ -120,7 +119,7 @@ def build_example(name, identifier, admin_config, server_address):
     nip89config.CONTENT = json.dumps(nip89info)
 
     return VideoGenerationSVD(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                               admin_config=admin_config, options=options)
+                              admin_config=admin_config, options=options)
 
 
 if __name__ == '__main__':

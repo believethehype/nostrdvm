@@ -4,7 +4,6 @@ import os
 import ffmpegio
 from nostr_sdk import Kind
 
-from nostr_dvm.utils.mediasource_utils import organize_input_media_data
 from nostr_dvm.utils.nip88_utils import NIP88Config
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
@@ -18,7 +17,6 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id
-
 
 """
 This File contains a Module to generate Audio based on an input and a voice
@@ -48,11 +46,11 @@ class TextToSpeech(DVMTaskInterface):
                 input_type = tag.as_vec()[2]
                 if input_type != "event" and input_type != "job" and input_type != "text":
                     return False
-                #if input_type == "text" and len(input_value) > 250:
+                # if input_type == "text" and len(input_value) > 250:
                 #    return False
                 if input_type == "event":
                     evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
-                    #if len(evt.content()) > 250:
+                    # if len(evt.content()) > 250:
                     #    return False
             elif tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
@@ -90,10 +88,10 @@ class TextToSpeech(DVMTaskInterface):
                 elif input_type == "job":
 
                     evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
-                                                     kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
-                                                     dvm_config=dvm_config)
+                                                           kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
+                                                           dvm_config=dvm_config)
                     prompt = evt.content()
                 if input_type == "url":
                     input_file = tag.as_vec()[1]
@@ -125,7 +123,7 @@ class TextToSpeech(DVMTaskInterface):
 
         options = self.set_options(request_form)
         device = "cuda" if torch.cuda.is_available() else "cpu"
-            #else "mps" if torch.backends.mps.is_available()
+        # else "mps" if torch.backends.mps.is_available()
         print(device)
 
         print(TTS().list_models().list_tts_models())

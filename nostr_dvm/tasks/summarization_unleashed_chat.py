@@ -1,7 +1,9 @@
 import json
 import os
 import re
+
 from nostr_sdk import Tag, Kind
+
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -57,11 +59,11 @@ class SummarizationUnleashedChat(DVMTaskInterface):
                     # prompt += evt.content() + "\n"
                 elif input_type == "job":
                     evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
-                                                     kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY],
-                                                     dvm_config=dvm_config)
+                                                           kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY],
+                                                           dvm_config=dvm_config)
                     if evt is None:
                         print("Event not found")
                         raise Exception

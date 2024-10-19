@@ -1,4 +1,3 @@
-import asyncio
 import csv
 import json
 import os
@@ -6,21 +5,35 @@ import time
 from datetime import timedelta
 
 import networkx as nx
-import pandas as pd
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions
+from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
-from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
-from nostr_dvm.utils.output_utils import post_process_list_to_events, post_process_list_to_users
-from nostr_dvm.utils.wot_utils import build_wot_network, save_network, load_network, print_results, \
-    convert_index_to_hex
+from nostr_dvm.utils.output_utils import post_process_list_to_users
+from nostr_dvm.utils.wot_utils import build_wot_network, save_network, load_network, convert_index_to_hex
+import csv
+import json
+import os
+import time
+from datetime import timedelta
+
+import networkx as nx
+from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
+
+from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
+from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
+from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
+from nostr_dvm.utils.output_utils import post_process_list_to_users
+from nostr_dvm.utils.wot_utils import build_wot_network, save_network, load_network, convert_index_to_hex
 
 """
 This File contains a Module to discover users followed by users you follow, based on WOT
@@ -123,7 +136,6 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         else:
             return self.result
 
-
     async def calculate_result(self, request_form):
         from types import SimpleNamespace
         ns = SimpleNamespace()
@@ -137,11 +149,11 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
             print("Creating new file")
         # sync the database, this might take a while if it's empty or hasn't been updated in a long time
 
-
-        #hop1
+        # hop1
         user_id = PublicKey.parse(options["user"]).to_hex()
 
-        index_map, G = await build_wot_network(options["user"], depth=int(options["hops"]), max_batch=500, max_time_request=10)
+        index_map, G = await build_wot_network(options["user"], depth=int(options["hops"]), max_batch=500,
+                                               max_time_request=10)
         if use_files:
             save_network(index_map, G, options["user"])
 
@@ -161,17 +173,13 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
 
         pr = nx.pagerank(G, tol=1e-12)
 
-        #await print_results(pr, index_map, int(options["max_results"]), getmetadata=False)
+        # await print_results(pr, index_map, int(options["max_results"]), getmetadata=False)
         result = await convert_index_to_hex(pr, index_map, int(options["max_results"]))
         print(result)
         toc = time.time()
         print(f'finished in {toc - tic} seconds')
 
-
-
-
-
-        #sorted_nodes = sorted([(node, pagerank) for node, pagerank in result.items()],
+        # sorted_nodes = sorted([(node, pagerank) for node, pagerank in result.items()],
         #                      key=lambda x: pr[x[1]],
         #                      reverse=True)[:int(options["max_results"])]
         for node in result.items():
@@ -270,7 +278,8 @@ async def analyse_users(user_ids=None, dunbar=100000000):
                             frens.append(tag.as_vec()[1])
                     allfriends.append(Friend(follower.author().to_hex(), frens))
                 else:
-                    print("Skipping friend: " + follower.author().to_hex() + "Following: " + str(len(follower.tags())) + " npubs")
+                    print("Skipping friend: " + follower.author().to_hex() + "Following: " + str(
+                        len(follower.tags())) + " npubs")
 
             return allfriends
         else:
@@ -343,7 +352,7 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
     # admin_config.REBROADCAST_NIP89 = False
 
     return DiscoverPeopleWOT(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                          admin_config=admin_config, options=options)
+                             admin_config=admin_config, options=options)
 
 
 def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None,
@@ -406,8 +415,8 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DiscoverPeopleMyWOT(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                             nip88config=nip88config, options=options,
-                             admin_config=admin_config)
+                               nip88config=nip88config, options=options,
+                               admin_config=admin_config)
 
 
 if __name__ == '__main__':

@@ -2,6 +2,8 @@ import json
 import os
 import re
 
+from nostr_sdk import Tag, Kind
+
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -9,7 +11,6 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import get_referenced_event_by_id, get_event_by_id, get_events_by_ids
-from nostr_sdk import Tag, Kind
 
 """
 This File contains a Module to summarize Text, based on a prompt using a the HuggingChat LLM on Huggingface
@@ -25,7 +26,6 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
     FIX_COST: float = 0
     dependencies = [("nostr-dvm", "nostr-dvm"),
                     ("hugchat", "hugchat")]
-
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -57,11 +57,11 @@ class TextSummarizationHuggingChat(DVMTaskInterface):
                     # prompt += evt.content() + "\n"
                 elif input_type == "job":
                     evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
-                                                     kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
-                                                            EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY],
-                                                     dvm_config=dvm_config)
+                                                           kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
+                                                                  EventDefinitions.KIND_NIP90_RESULT_CONTENT_DISCOVERY],
+                                                           dvm_config=dvm_config)
                     if evt is None:
                         print("Event not found")
                         raise Exception
