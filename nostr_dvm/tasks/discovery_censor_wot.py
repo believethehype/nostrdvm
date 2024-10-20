@@ -1,10 +1,8 @@
 import json
 import os
 from datetime import timedelta
-from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, Event
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -96,7 +94,7 @@ class DiscoverReports(DVMTaskInterface):
         # if we don't add users, e.g. by a wot, we check all our followers.
         if len(pubkeys) == 0:
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
-            followers = await cli.get_events_of([followers_filter],relay_timeout)
+            followers = await cli.get_events_of([followers_filter], relay_timeout)
 
             if len(followers) > 0:
                 result_list = []

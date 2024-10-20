@@ -1,9 +1,10 @@
-import asyncio
+import json
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind
+
+from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -38,7 +39,6 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
     personalized = False
     result = ""
     database = None
-
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -159,8 +159,6 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(word)
             filters.append(filter)
 
-
-
         events = await self.database.query(filters)
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
@@ -168,7 +166,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         for event in events:
             if all(ele in event.content().lower() for ele in self.must_list):
-                #if any(ele in event.content().lower() for ele in self.search_list):
+                # if any(ele in event.content().lower() for ele in self.search_list):
                 if not any(ele in event.content().lower() for ele in self.avoid_list):
                     filt = Filter().kinds(
                         [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
@@ -187,7 +185,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
-        #await cli.shutdown()
+        # await cli.shutdown()
         return json.dumps(result_list)
 
     async def schedule(self, dvm_config):
@@ -219,8 +217,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                                      definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds(
+                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
+                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -232,10 +231,12 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-                print("[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+                print("[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                    self.db_since) + " seconds..")
 
         except Exception as e:
             print(e)
+
 
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the

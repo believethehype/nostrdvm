@@ -1,5 +1,6 @@
 import json
 import os
+
 from nostr_sdk import Tag, Kind, init_logger, LogLevel
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
@@ -81,7 +82,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
                     i += 1
                     if i < int(options["max_results"]):
                         e_tag = Tag.parse(["e", note["id"]])
-                        #print(e_tag.as_vec())
+                        # print(e_tag.as_vec())
                         result_list.append(e_tag.as_vec())
                     else:
                         break
