@@ -1,10 +1,10 @@
-import asyncio
+import json
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions
+
+from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -106,7 +106,6 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         from nostr_sdk import Filter
         from types import SimpleNamespace
 
-
         ns = SimpleNamespace()
         options = self.set_options(request_form)
 
@@ -116,7 +115,6 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-
         database = NostrDatabase.lmdb(self.db_name)
         try:
             await database.delete(Filter().until(Timestamp.from_secs(
@@ -124,7 +122,6 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         except Exception as e:
             print(e)
         cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
-
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -161,7 +158,6 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
                 len(result_list)) + " fitting events.")
         # await cli.shutdown()
         return json.dumps(result_list)
-
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
@@ -220,10 +216,10 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            #dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-            #await cli.reconcile(filter1, dbopts)
-            #await cli.reconcile(filter2, dbopts)
-            #await cli.reconcile(filter3, dbopts)
+            # dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
+            # await cli.reconcile(filter1, dbopts)
+            # await cli.reconcile(filter2, dbopts)
+            # await cli.reconcile(filter3, dbopts)
 
             # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
             try:

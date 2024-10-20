@@ -1,9 +1,10 @@
-import asyncio
+import json
 import json
 import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
+
+from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind, \
     RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
@@ -167,7 +168,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
-            #print(best_entry.as_json())
+            # print(best_entry.as_json())
             followings = []
             for tag in best_entry.tags():
                 if tag.as_vec()[0] == "p":
@@ -211,7 +212,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
-        #await cli.shutdown()
+        # await cli.shutdown()
         return json.dumps(result_list)
 
     async def schedule(self, dvm_config):
@@ -241,8 +242,9 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                                      definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds(
+                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
+                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -255,7 +257,8 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
-                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(self.db_since) + " seconds..")
+                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                        self.db_since) + " seconds..")
         except Exception as e:
             print(e)
 
@@ -302,7 +305,7 @@ def build_example(name, identifier, admin_config, options, image, description, u
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentCurrentlyPopularNonFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                 admin_config=admin_config, options=options)
+                                                      admin_config=admin_config, options=options)
 
 
 def build_example_subscription(name, identifier, admin_config, options, image, description, processing_msg=None,
@@ -359,9 +362,9 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentCurrentlyPopularNonFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                 nip88config=nip88config,
-                                                 admin_config=admin_config,
-                                                 options=options)
+                                                      nip88config=nip88config,
+                                                      admin_config=admin_config,
+                                                      options=options)
 
 
 if __name__ == '__main__':

@@ -1,10 +1,9 @@
-import asyncio
 import json
-import os
 from datetime import timedelta
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, EventId, Kind, \
-    RelayOptions, RelayLimits
+
+from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, Kind, \
+    RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -14,7 +13,6 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
-
 
 """
 This File contains a Module to discover popular notes
@@ -69,7 +67,6 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         user = event.author().to_hex()
         max_results = 100
 
-
         for tag in event.tags():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
@@ -79,8 +76,6 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     max_results = int(tag.as_vec()[2])
                 elif param == "user":  # check for param type
                     user = tag.as_vec()[2]
-
-
 
         options = {
             "max_results": max_results,
@@ -96,31 +91,32 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         options = self.set_options(request_form)
         relaylimits = RelayLimits.disable()
-        opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)).relay_limits(relaylimits))
+        opts = (
+            Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)).relay_limits(
+                relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         signer = NostrSigner.keys(keys)
 
-        database =  NostrDatabase.lmdb(self.db_name)
+        database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
             await cli.add_relay(relay)
 
-        #ropts = RelayOptions().ping(False)
-        #cli.add_relay_with_opts("wss://nostr.band", ropts)
+        # ropts = RelayOptions().ping(False)
+        # cli.add_relay_with_opts("wss://nostr.band", ropts)
 
         await cli.connect()
 
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
         followers = await cli.get_events_of([followers_filter], relay_timeout)
-        #print(followers)
+        # print(followers)
 
         # Negentropy reconciliation
         # Query events from database
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
-
 
         result_list = []
 
@@ -132,7 +128,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
-            #print(best_entry.as_json())
+            # print(best_entry.as_json())
             followings = []
             for tag in best_entry.tags():
                 if tag.as_vec()[0] == "p":
@@ -146,22 +142,22 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
             ns.finallist = {}
             for event in events:
-                #if event.created_at().as_secs() > timestamp_since:
+                # if event.created_at().as_secs() > timestamp_since:
                 filt = Filter().kinds(
-                    [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION, definitions.EventDefinitions.KIND_REPOST,
+                    [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                     definitions.EventDefinitions.KIND_REPOST,
                      definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = await cli.database().query([filt])
                 if len(reactions) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions)
 
-
-
-            finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
+            finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[
+                               :int(options["max_results"])]
             for entry in finallist_sorted:
                 # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
                 e_tag = Tag.parse(["e", entry[0]])
                 result_list.append(e_tag.as_vec())
-            #await cli.connect()
+            # await cli.connect()
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
@@ -191,7 +187,6 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 return 1
-
 
     async def sync_db(self):
         try:
@@ -233,7 +228,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options,  cost=0, update_rate=300, processing_msg=None, update_db=True):
+def build_example(name, identifier, admin_config, options, cost=0, update_rate=300, processing_msg=None,
+                  update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -274,7 +270,8 @@ def build_example(name, identifier, admin_config, options,  cost=0, update_rate=
     # admin_config.UPDATE_PROFILE = False
     # admin_config.REBROADCAST_NIP89 = False
 
-    return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config, options=options,
+    return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                                   options=options,
                                                    admin_config=admin_config)
 
 
