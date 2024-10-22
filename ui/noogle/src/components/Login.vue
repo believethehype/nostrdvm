@@ -195,8 +195,6 @@ import VueNotifications from "vue-notifications";
 import store from '../store';
 import miniToastr from "mini-toastr";
 import deadnip89s from "@/components/data/deadnip89s.json";
-import amberSignerService from "./android-signer/AndroidSigner";
-import nip49, {decryptwrapper} from "./android-signer/helpers/nip49";
 import { init as initNostrLogin  } from "nostr-login"
 import { NostrLoginInitializer as launchNostrLoginDialog } from "nostr-login"
 import { logout as logoutNostrLogin } from "nostr-login"
@@ -248,14 +246,6 @@ export default {
     try {
 
 
-
-
-      if (amberSignerService.supported) {
-        this.supports_android_signer = true;
-      }
-
-
-
       if (localStorage.getItem('nostr-key-method') === 'nip07') {
         await this.sign_in_nip07()
       }
@@ -265,14 +255,6 @@ export default {
       else if (localStorage.getItem('nostr-key-method') === 'nostr-login'){
         console.log(localStorage.getItem('__nostrlogin_nip46'))
         await this.sign_in_nostr_login()
-      }
-
-      else if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-        let key = ""
-        if (localStorage.getItem('nostr-key') !== "") {
-          key = localStorage.getItem('nostr-key')
-        }
-        await this.sign_in_amber(key)
       }
 
 
@@ -344,7 +326,8 @@ export default {
       // launch signup screen
       if (launch){
         await initNostrLogin({bunkers: 'nsec.app,highlighter.com', iife: true, noBanner: true})
-          if (!localStorage.getItem('__nostrlogin_nip46')){
+        //perms: "sign_event:1,nip04_encrypt,nip04_decrypt,nip44_encrypt,nip44_decrypt"
+        if (!localStorage.getItem('__nostrlogin_nip46')){
            await new launchNostrLoginDialog({
         bunkers: 'nsec.app,highlighter.com'
       })
@@ -654,65 +637,7 @@ export default {
         console.log(error);
       }
     },
-    async sign_in_amber(key="") {
-      try {
 
-        await loadWasmAsync();
-
-        if(logger){
-            try {
-                initLogger(LogLevel.debug());
-            } catch (error) {
-                console.log(error);
-            }
-        }
-
-        if (!amberSignerService.supported) {
-          alert("android signer not supported")
-          return;
-        }
-
-        try{
-        let hexKey = ""
-        if (key === ""){
-            hexKey = await amberSignerService.getPublicKey();
-        }
-        else{
-          hexKey = key
-        }
-        let publicKey = PublicKey.fromHex(hexKey);
-        let keys = Keys.fromPublicKey(publicKey)
-        this.signer = NostrSigner.keys(keys)
-            let limits = RelayLimits.disable()
-        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
-        let client = new ClientBuilder().signer(this.signer).opts(opts).build()
-
-
-
-          for (const relay of store.state.relays){
-          await client.addRelay(relay);
-        }
-        await client.connect();
-        store.commit('set_client', client)
-          store.commit('set_signer', this.signer)
-        store.commit('set_pubkey', publicKey)
-        localStorage.setItem('nostr-key-method', "android-signer")
-        localStorage.setItem('nostr-key', hexKey)
-
-
-           this.reconcile_all_profiles(publicKey)
-           await this.get_user_info(publicKey)
-                }
-        catch (error){
-          alert(error)
-        }
-
-        //miniToastr.showMessage("Login successful!", "Logged in as " + publicKey.toHex(), VueNotifications.types.success)
-
-      } catch (error) {
-        console.log(error);
-      }
-    },
     async getnip89s(){
 
         //let keys = Keys.generate()
@@ -990,11 +915,6 @@ export default {
           let content = ""
             //console.log(store.state.pubkey.toHex())
             //console.log(list.content)
-            if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-              content = await amberSignerService.nip04Decrypt(store.state.pubkey.toHex(), list.content)
-            }
-
-          else{
 
             try{
             content = await this.signer.nip04Decrypt(store.state.pubkey, list.content)
@@ -1004,7 +924,7 @@ export default {
                console.log(error)
             }
 
-          }
+
 
 
             let json = JSON.parse(content)

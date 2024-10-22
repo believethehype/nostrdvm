@@ -21,7 +21,6 @@ import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
-import amberSignerService from "./android-signer/AndroidSigner";
 import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
@@ -79,28 +78,9 @@ async function generate_image(message) {
         let res;
         let requestid;
 
-        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-          let draft = {
-            content: content,
-            kind: kind,
-            pubkey: store.state.pubkey.toHex(),
-            tags: tags,
-            createdAt: Date.now()
-          };
-
-          res = await amberSignerService.signEvent(draft)
-            requestid = res.id
-             requestids.push(requestid)
-             store.commit('set_current_request_id_image', requestids)
-            await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-
-        }
-        else {
-
           let tags_t = []
           for (let tag of tags){
             tags_t.push(Tag.parse(tag))
-          }
 
 
            let evt = new EventBuilder(kind, content, tags_t)

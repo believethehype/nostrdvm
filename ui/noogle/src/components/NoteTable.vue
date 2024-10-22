@@ -141,7 +141,6 @@ import StringUtil from "@/components/helper/string";
 import {copyinvoice, parseandreplacenpubs, } from "@/components/helper/Helper.vue";
 import {requestProvider} from "webln";
 import {Event, EventBuilder, EventId, PublicKey, Tag} from "@rust-nostr/nostr-sdk";
-import amberSignerService from "@/components/android-signer/AndroidSigner";
 import {zap, zap_lud16, createBolt11Lud16, zaprequest} from "@/components/helper/Zap.vue";
 import {ref} from "vue";
 
@@ -172,19 +171,6 @@ async function react(eventid, authorid, evt){
                 if(!objects.reacted ){
 
 
-                   if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-                       let draft = {
-                            content: "🧡",
-                            kind: 7,
-                            pubkey: store.state.pubkey.toHex(),
-                            tags: [["e", eventid]],
-                            createdAt: Date.now()
-                          };
-                        let res = await amberSignerService.signEvent(draft)
-                        await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-                        let requestid = res.id;
-                        }
-                   else {
                         let event = EventBuilder.reaction(evt, "🧡")
                         let requestid = await client.sendEventBuilder(event);
                    }
@@ -192,7 +178,7 @@ async function react(eventid, authorid, evt){
                     objects.reacted = true
                     objects.reactions += 1
                     console.log("reacted")
-                   }
+
 
                 }
 
@@ -208,28 +194,16 @@ async function reply (eventid, authorid, message){
         let objects =  (props.data.find(x=> x.id === eventid))
           if (objects !== undefined){
 
-                   if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-                       let draft = {
-                            content: message,
-                            kind: 1,
-                            pubkey: store.state.pubkey.toHex(),
-                            tags: [["e", eventid]],
-                            createdAt: Date.now()
-                          };
-                        let res = await amberSignerService.signEvent(draft)
-                        await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-                        let requestid = res.id;
-                        }
-                   else {
-                        let tags = [Tag.parse(["e", eventid])]
-                        let event = EventBuilder.textNote(message, tags)
 
-                       let requestid = await client.sendEventBuilder(event);
-                         console.log(requestid.toHex())
-                   }
-                    objects.replied = true
+            let tags = [Tag.parse(["e", eventid])]
+            let event = EventBuilder.textNote(message, tags)
 
-                    console.log("replied")
+           let requestid = await client.sendEventBuilder(event);
+             console.log(requestid.toHex())
+
+          objects.replied = true
+
+          console.log("replied")
                    }
 
 
@@ -255,20 +229,7 @@ async function boost(eventid, authorid, evt){
 
                      }
 
-                   if (localStorage.getItem('nostr-key-method') === 'android-signer') {
 
-                       let draft = {
-                            content: evt.asJson(),
-                            kind: 6,
-                            pubkey: store.state.pubkey.toHex(),
-                            tags: [["e", eventid]],
-                            createdAt: Date.now()
-                          };
-                        let res = await amberSignerService.signEvent(draft)
-                        await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-                        let requestid = res.id;
-                        }
-                   else {
                         let event = EventBuilder.repost(evt)
                         let requestid = await client.sendEventBuilder(event);
                    }
@@ -276,14 +237,10 @@ async function boost(eventid, authorid, evt){
                     objects.boosted = true
                     objects.boosts += 1
 
-
-
-                    //props.data.push.apply(props.data.find(x=> x.id === eventid), objects)
-
                     console.log("boosted")
                    }
 
-                }
+
 
 }
 

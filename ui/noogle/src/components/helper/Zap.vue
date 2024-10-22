@@ -7,7 +7,6 @@ import {EventBuilder, EventId, PublicKey, Tag} from "@rust-nostr/nostr-sdk";
 import {bech32} from "bech32";
 import {webln} from "@getalby/sdk";
 
-import amberSignerService from "@/components/android-signer/AndroidSigner";
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 
@@ -199,21 +198,6 @@ export async function zap_lud16(lud16, eventid, authorid){
         let signer = store.state.signer
         let zap_request = ""
 
-        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-            let draft = {
-              content: content,
-              kind: 9734,
-              pubkey: store.state.pubkey.toHex(),
-              tags: tags,
-              createdAt: Date.now()
-            };
-
-            let res = await amberSignerService.signEvent(draft)
-            zap_request = JSON.stringify(res)
-            //await sleep(3000)
-
-          }
-       else {
             let tags_t = []
             for (let tag of tags){
               tags_t.push(Tag.parse(tag))
@@ -221,7 +205,7 @@ export async function zap_lud16(lud16, eventid, authorid){
             let noteevent =  new EventBuilder(9734, content, tags_t).toUnsignedEvent(store.state.pubkey)
             let signedEvent = await signer.signEvent(noteevent)
             zap_request = signedEvent.asJson()
-       }
+
 
    try{
 
