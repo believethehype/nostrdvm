@@ -22,7 +22,6 @@ import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
 import {post_note, schedule, copyurl, copyinvoice, sleep, nextInput} from "../components/helper/Helper.vue"
-import amberSignerService from "./android-signer/AndroidSigner";
 import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
@@ -73,20 +72,6 @@ let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((
         let res;
         let requestid;
 
-        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-          let draft = {
-            content: content,
-            kind: kind,
-            pubkey: store.state.pubkey.toHex(),
-            tags: tags,
-            createdAt: Date.now()
-          };
-
-          res = await amberSignerService.signEvent(draft)
-          let result = await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = result.toHex()
-        }
-        else {
 
           let tags_t = []
           for (let tag of tags){
@@ -98,7 +83,7 @@ let sortedIds = eventids.sort(function(a,b) {return (a.index > b.index) ? 1 : ((
           console.log(res)
 
 
-        }
+
         requestids.push(requestid)
         store.commit('set_current_request_id_summarization', requestids)
 

@@ -21,7 +21,6 @@ import deadnip89s from "@/components/data/deadnip89s.json";
 import {data} from "autoprefixer";
 import {requestProvider} from "webln";
 import Newnote from "@/components/Newnote.vue";
-import amberSignerService from "./android-signer/AndroidSigner";
 import { ref } from "vue";
 import ModalComponent from "../components/Newnote.vue";
 import VueDatePicker from "@vuepic/vue-datepicker";
@@ -79,23 +78,7 @@ async function generate_chat(message) {
         let res;
         let requestid;
 
-        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-          let draft = {
-            content: content,
-            kind: kind,
-            pubkey: store.state.pubkey.toHex(),
-            tags: tags,
-            createdAt: Date.now()
-          };
 
-          res = await amberSignerService.signEvent(draft)
-            requestid = res.id
-             requestids.push(requestid)
-             store.commit('set_current_request_id_chat', requestids)
-            await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-
-        }
-        else {
 
           let tags_t = []
           for (let tag of tags){
@@ -113,7 +96,7 @@ async function generate_chat(message) {
                await client.sendEvent(signedEvent)
 
 
-        }
+
 
 
 
