@@ -21,6 +21,7 @@ from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import change_ln_address
 
@@ -30,6 +31,7 @@ def run_dvm(identifier, announce):
     dvm_config = build_default_config(identifier)
     kind = Kind(5050)
     dvm_config.KIND = kind
+    dvm_config.FIX_COST = 3
 
     # Once you installed cashu, the rest is pretty staight forward:
 
@@ -38,10 +40,14 @@ def run_dvm(identifier, announce):
     # Define a relay to update your balance
     dvm_config.NUTZAP_RELAYS = ["wss://relay.primal.net"]
     # Define one or more mints you would like to receive on.
-    dvm_config.NUZAP_MINTS = ["https://mint.minibits.cash/Bitcoin", "https://mint.gwoq.com"]
+    dvm_config.NUZAP_MINTS = ["https://mint.gwoq.com"]
     # If you want you can auto_melt cashu token to your lightning address once they pass a certain threshold.
     dvm_config.ENABLE_AUTO_MELT = False
     dvm_config.AUTO_MELT_AMOUNT = 1000
+    # If you update your mints in NUTZAP_MINTS make sure to reannounce these.
+    dvm_config.REANNOUNCE_MINTS = True
+
+
 
 
     options = {
@@ -67,7 +73,7 @@ def run_dvm(identifier, announce):
         return result
 
     dvm.process = process
-    dvm.run()
+    dvm.run(True)
 
 
 
