@@ -24,6 +24,7 @@ from nostr_dvm.utils.print_utils import bcolors
 from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt11_ln_bits, parse_zap_event_tags, \
     parse_amount_from_bolt11_invoice, zaprequest, pay_bolt11_ln_bits, create_bolt11_lud16
 
+#os.environ["RUST_BACKTRACE"] = "full"
 
 class DVM:
     dvm_config: DVMConfig
@@ -83,6 +84,10 @@ class DVM:
                 nut_wallet = await nutzap_wallet.get_nut_wallet(self.client, self.keys)
 
                 await nutzap_wallet.announce_nutzap_info_event(nut_wallet, self.client, self.keys)
+
+            if self.dvm_config.REANNOUNCE_MINTS:
+                nut_wallet.mints = dvm_config.NUZAP_MINTS
+                await nutzap_wallet.announce_nutzap_info_event(nut_wallet,  self.client, self.keys)
 
         class NotificationHandler(HandleNotification):
             client = self.client
