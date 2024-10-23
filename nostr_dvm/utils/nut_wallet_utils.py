@@ -563,9 +563,15 @@ class NutZapWallet:
                 break
         # If that's not the case, lets look or mints we both trust, take the first one.
         if not sufficent_budget:
-            mint_url = next(i for i in nut_wallet.mints if i in mints)
-            mint = self.get_mint(nut_wallet, mint_url)
-            if mint.available_balance() < amount:
+            try:
+                mint_url = next(i for i in nut_wallet.mints if i in mints)
+                if mint_url is not None:
+                    mint = self.get_mint(nut_wallet, mint_url)
+                    if mint.available_balance() < amount:
+                        await self.handle_low_balance_on_mint(nut_wallet, mint_url, mint, amount, client, keys)
+            except StopIteration:
+                mint = self.get_mint(nut_wallet, mints[0])
+                mint_url = mint.mint_url
                 await self.handle_low_balance_on_mint(nut_wallet, mint_url, mint, amount, client, keys)
 
             # If that's not the case, iterate over the recipents mints and try to mint there. This might be a bit dangerous as not all mints might give cashu, so loss of ln is possible
