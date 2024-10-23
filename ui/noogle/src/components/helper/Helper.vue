@@ -1,7 +1,6 @@
 <script>
 import {defineComponent} from 'vue'
 import store from "@/store";
-import amberSignerService from "@/components/android-signer/AndroidSigner";
 import {
   Alphabet,
   Duration,
@@ -29,40 +28,16 @@ export async function post_note(note){
    let client = store.state.client
    let tags = []
 
-   if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-    const draft = {
-      content: note,
-      kind: 1,
-      pubkey: store.state.pubkey.toHex(),
-      tags: tags,
-      createdAt: Date.now()
-    };
-    const eventJson = await amberSignerService.signEvent(draft);
-    await client.sendEvent(Event.fromJson(JSON.stringify(eventJson)));
-   }
-   else
-   {
+
     await client.publishTextNote(note, tags);
-   }
+
 }
 export async function react_to_dvm(dvm, reaction) {
     let client = store.state.client
-     if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-         let draft = {
-              content: reaction,
-              kind: 7,
-              pubkey: store.state.pubkey.toHex(),
-              tags: [["e", dvm.event.id.toHex()]],
-              createdAt: Date.now()
-            };
-          let res = await amberSignerService.signEvent(draft)
-          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          let requestid = res.id;
-          }
-     else {
-         let event = EventBuilder.reaction(dvm.event, reaction)
-         let requestid = await client.sendEventBuilder(event);
-     }
+
+     let event = EventBuilder.reaction(dvm.event, reaction)
+     let requestid = await client.sendEventBuilder(event);
+
 
 
     let users = await get_user_infos([store.state.pubkey])
