@@ -22,7 +22,6 @@ import {createBolt11Lud16, zap, zaprequest} from "../components/helper/Zap.vue"
 import {webln} from "@getalby/sdk";
 
 
-import amberSignerService from "./android-signer/AndroidSigner";
 import StringUtil from "@/components/helper/string.ts";
 
 
@@ -99,33 +98,6 @@ async function generate_feed(id) {
               let signer = store.state.signer
 
 
-              if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-
-                  // let content = await amberSignerService.nip04Encrypt(id, params_as_str)
-
-                   let ttags = []
-                     ttags.push(["p", id])
-                     ttags.push(["encrypted"])
-                     ttags.push(["client", "noogle"])
-                  let draft = {
-                    content: "",
-                    kind: kind,
-                    pubkey: store.state.pubkey.toHex(),
-                    tags: ttags,
-                    createdAt: Date.now()
-                  };
-
-                  res = await amberSignerService.signEvent(draft)
-                  await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-                  requestid = res.id;
-                   requestids.push(requestid)
-                  store.commit('set_current_request_id_filter', requestids)
-                 /* let evtjson = JSON.stringify(res)
-                  let evt = Event.fromJson(evtjson)
-                  await client.sendEvent(evt) */
-
-              }
-              else{
               let pk = PublicKey.parse(id)
               let content = await signer.nip04Encrypt(pk, params_as_str)
 
@@ -151,7 +123,7 @@ async function generate_feed(id) {
                 }
 
 
-              }
+
 
 
 
@@ -161,25 +133,6 @@ async function generate_feed(id) {
 
         else{
            tags.push(["p", id])
-             if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-          let draft = {
-            content: content,
-            kind: kind,
-            pubkey: store.state.pubkey.toHex(),
-            tags: tags,
-            createdAt: Date.now()
-          };
-
-          res = await amberSignerService.signEvent(draft)
-                requestid = res.id;
-               requestids.push(requestid)
-
-                store.commit('set_current_request_id_filter', requestids)
-          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-
-
-        }
-             else {
 
           let tags_t = []
           for (let tag of tags){
@@ -194,11 +147,6 @@ async function generate_feed(id) {
                res = await client.sendEvent(signedEvent)
 
         }
-
-        }
-
-
-
 
 
       } catch (error) {
@@ -370,14 +318,8 @@ async function  listen() {
                     if (is_encrypted){
                       if (ptag === store.state.pubkey.toHex()){
                         let signer = store.state.signer
-                         //content = await signer.nip04Decrypt(event.author, event.content)
-                         if (localStorage.getItem('nostr-key-method') === 'android-signer') {
+                         content = await signer.nip04Decrypt(event.author, event.content)
 
-                              content = await amberSignerService.nip04Decrypt(event.author.toHex(), event.content)
-                            }
-                            else{
-                               content = await signer.nip04Decrypt(event.author, event.content)
-                            }
                       }
                       else {
                         console.log("not addressed to us")
@@ -703,21 +645,6 @@ async function cancelSubscription(kind7001, recipent){
               ["e", kind7001]
             ]
 
-       if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-          let draft = {
-            content: content,
-            kind: kind,
-            pubkey: store.state.pubkey.toHex(),
-            tags: tags,
-            createdAt: Date.now()
-          };
-
-          res = await amberSignerService.signEvent(draft)
-          await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = res.id;
-          console.log(requestid)
-       }
-       else{
           let tags_t = []
           for (let tag of tags){
               tags_t.push(Tag.parse(tag))
@@ -727,7 +654,7 @@ async function cancelSubscription(kind7001, recipent){
           requestid = res.toHex();
           console.log(requestid)
 
-       }
+
 
        dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.hasActiveSubscription = true
        dvms.find(x => x.nip88.eventid === current_subscription_dvm.value.nip88.eventid).nip88.expires = true
@@ -772,21 +699,7 @@ if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subsc
   }
 
   console.log("Creating 7001 event")
-  if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-    let draft = {
-      content: content,
-      kind: kind,
-      pubkey: store.state.pubkey.toHex(),
-      tags: tags,
-      createdAt: Date.now()
-    };
 
-    res = await amberSignerService.signEvent(draft)
-    await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-    requestid = res.id;
-    console.log(requestid)
-
-  } else {
     let tags_t = []
     for (let tag of tags) {
       tags_t.push(Tag.parse(tag))
@@ -795,7 +708,7 @@ if (current_subscription_dvm.value.nip88.subscriptionId === '' || !current_subsc
     res = await client.sendEventBuilder(evt);
     requestid = res.toHex()
     console.log(res)
-  }
+
 
   current_subscription_dvm.value.nip88.subscriptionId = requestid
   console.log(current_subscription_dvm.value.nip88.subscriptionId)

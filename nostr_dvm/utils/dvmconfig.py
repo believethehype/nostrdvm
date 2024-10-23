@@ -72,6 +72,7 @@ class DVMConfig:
     NUZAP_MINTS = ["https://mint.minibits.cash/Bitcoin", "https://mint.gwoq.com"]
     ENABLE_AUTO_MELT = False
     AUTO_MELT_AMOUNT = 1000
+    REANNOUNCE_MINTS = True
 
 
 def build_default_config(identifier):
