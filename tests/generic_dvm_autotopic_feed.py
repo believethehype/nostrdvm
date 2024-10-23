@@ -155,25 +155,28 @@ def playground(announce=False):
         timestamp_since = Timestamp.now().as_secs() -   since
         since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
+        keywords = result.split(",")
+        filters = []
+        for keyword in keywords:
+            print(keyword)
+            filters.append(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(" " + keyword + " "))
 
-        events = await database.query([filter1])
+        events = await database.query(filters)
         if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
-        #search_list = result.split(',')
+        search_list = result.split(',')
 
         for event in events:
             #if all(ele in event.content().lower() for ele in []):
-            if any(ele in event.content().lower() for ele in result):
                     #if not any(ele in event.content().lower() for ele in []):
-                    filt = Filter().kinds(
-                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
-                         definitions.EventDefinitions.KIND_REPOST,
-                         definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                    reactions = await database.query([filt])
-                    if len(reactions) >= 1:
-                        ns.finallist[event.id().to_hex()] = len(reactions)
+            filt = Filter().kinds(
+                [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                 definitions.EventDefinitions.KIND_REPOST,
+                 definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+            reactions = await database.query([filt])
+            if len(reactions) >= 1:
+                ns.finallist[event.id().to_hex()] = len(reactions)
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(200)]
