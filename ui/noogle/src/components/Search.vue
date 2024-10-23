@@ -25,7 +25,6 @@ import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
 import {computed, onMounted, ref} from "vue";
 import deadnip89s from "@/components/data/deadnip89s.json";
-import amberSignerService from "./android-signer/AndroidSigner";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 import {post_note, schedule, copyurl, copyinvoice, sleep, getEvents, get_user_infos, nextInput} from "../components/helper/Helper.vue"
@@ -201,22 +200,7 @@ async function send_search_request(msg) {
         let requestid;
         let requestid2;
         let requestid_profile;
-        if (localStorage.getItem('nostr-key-method') === 'android-signer') {
-          let draft = {
-            content: content,
-            kind: kind,
-            pubkey: store.state.pubkey.toHex(),
-            tags: tags,
-            createdAt: Date.now()
-          };
 
-          res = await amberSignerService.signEvent(draft)
-          let result = await client.sendEvent(Event.fromJson(JSON.stringify(res)))
-          requestid = result.toHex()
-
-        }
-
-        else {
           let tags_t_nb = []
           for (let tag of tags_nb){
             tags_t_nb.push(Tag.parse(tag))
@@ -253,7 +237,7 @@ async function send_search_request(msg) {
           catch(error){
             console.log(error)
           }
-        }
+
 
         store.commit('set_current_request_id_search', requestid)
         store.commit('set_current_request_id_search2', requestid2)
