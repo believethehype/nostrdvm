@@ -147,23 +147,23 @@
 <!--         <template v-if="supports_android_signer">-->
 <!--          <button className="btn" @click="sign_in_amber()">Amber Sign in</button>-->
 <!--        </template>-->
-<!--           <button className="btn" onclick="nsecmodal.showModal()">NSec/NCryptSec</button>-->
-<!--      <dialog id="nsecmodal" class="modal">-->
-<!--      <div class="modal-box">-->
-<!--        <h3 class="font-bold text-lg">Login with key</h3>-->
-<!--        <p class="py-4">Login with nsec or ncryptsec. Your keys will be stored in your Browser. This is the least recommended sign-in method</p>-->
-<!--        <input class="u-Input" style="margin-left: 10px" type="search" name="user" autofocus  placeholder="nsec.../ncryptsec..." v-model="this.ncryptsec">-->
-<!--        <input v-if="ncryptsec.startsWith('ncryptsec')" class="u-Input" style="margin-left: 10px" type="password" name="user" autofocus  placeholder="password..." v-model="this.pw">-->
+           <button className="btn" onclick="nsecmodal.showModal()">NSec/NCryptSec</button>
+      <dialog id="nsecmodal" class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg">Login with key</h3>
+        <p class="py-4">Login with nsec or ncryptsec. Your keys will be stored in your Browser. This is the least recommended sign-in method</p>
+        <input class="u-Input" style="margin-left: 10px" type="search" name="user" autofocus  placeholder="nsec.../ncryptsec..." v-model="this.ncryptsec">
+        <input v-if="ncryptsec.startsWith('ncryptsec')" class="u-Input" style="margin-left: 10px" type="password" name="user" autofocus  placeholder="password..." v-model="this.pw">
 
-<!--        <div class="modal-action">-->
-<!--          <form method="dialog">-->
-<!--            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>-->
-<!--            &lt;!&ndash; if there is a button in form, it will close the modal &ndash;&gt;-->
-<!--            <button class="btn" @click="sign_in_key()">Login</button>-->
-<!--          </form>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--</dialog>-->
+        <div class="modal-action">
+          <form method="dialog">
+            <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+            <!-- if there is a button in form, it will close the modal -->
+            <button class="btn" @click="sign_in_key()">Login</button>
+          </form>
+        </div>
+      </div>
+</dialog>
         </div>
       </div>
     </div>

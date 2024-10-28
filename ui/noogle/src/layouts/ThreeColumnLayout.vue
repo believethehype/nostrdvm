@@ -81,7 +81,7 @@ import {isVisible} from "bootstrap/js/src/util/index.js";
 
     position: fixed;
     bottom:0;
-    background: rgba(0, 0, 0, 0.5);;
+    background: rgba(0, 0, 0, 0);;
     grid-area: footer;
     width: 100vw;
     height: 32px;
