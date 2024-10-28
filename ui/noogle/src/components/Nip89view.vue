@@ -13,7 +13,7 @@
 <br><br>
 
           <div class="card card-compact rounded-box bg-black/30">
-            <div class="card-body !text-base">
+            <div class="card-body">
                 <div class="card-title text-base-100-content font-bold">
                   What is this?
                 </div>
@@ -46,7 +46,7 @@
 
 <br><br>
 
-<div class="grid gap-6 ">
+<div class="grid gap-5">
     <div className="card  bg-base-200 shadow-xl"  style="height: 300px"   v-for="dvm in store.state.nip89dvms"
         :key="dvm.id">
      <!--   -->
@@ -85,7 +85,7 @@
 
 
   <figure style="max-width: 20%; flex:  fit-content; background-size: cover;" >
-    <img v-if="dvm.image"  style=" width: 100%; object-fit: cover;" :src="dvm.image"  :alt="dvm.name" onerror="this.src='https://noogle.lol/favicon.ico'"/>
+    <img v-if="dvm.image"  style=" width: 90%; object-fit: cover;" :src="dvm.image"  :alt="dvm.name" onerror="this.src='https://noogle.lol/favicon.ico'"/>
   </figure>
   <div class="card-body">
       <div style="margin-left: auto; margin-right: 10px;">
@@ -98,9 +98,9 @@
   <path d="M5.52.359A.5.5 0 0 1 6 0h4a.5.5 0 0 1 .474.658L8.694 6H12.5a.5.5 0 0 1 .395.807l-7 9a.5.5 0 0 1-.873-.454L6.823 9.5H3.5a.5.5 0 0 1-.48-.641zM6.374 1 4.168 8.5H7.5a.5.5 0 0 1 .478.647L6.78 13.04 11.478 7H8a.5.5 0 0 1-.474-.658L9.306 1z"/></svg> {{dvm.amount/1000}}</div></p>
   </div>
     <h2 class="card-title">{{ dvm.name }}</h2>
-    <h3 class="fa-cut text-gray" >Kind: {{ dvm.kind }}</h3>
+    <h3 class="text-gray" >Kind: {{ dvm.kind }}</h3>
 
-          <h3  v-if="dvm.about !== null" class="fa-cut" v-html="dvm.about"></h3>
+          <h4  v-if="dvm.about !== null" class="fa-cut" style="max-width: 200px" v-html="dvm.about"></h4>
     <div class="card-actions justify-end">
      <button className="btn" @click="copyDoiToClipboard(dvm.event);">Copy Event Json</button>
     </div>

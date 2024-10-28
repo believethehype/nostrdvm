@@ -22,6 +22,9 @@ import '@vuepic/vue-datepicker/dist/main.css'
 //This is all for notifications
 import VueNotifications from "vue-notifications";
 import miniToastr from 'mini-toastr'
+import { registerSW } from 'virtual:pwa-register'
+
+registerSW({ immediate: true })
 
 miniToastr.init()
 
