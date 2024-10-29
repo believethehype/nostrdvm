@@ -4,7 +4,7 @@ from multiprocessing.pool import ThreadPool
 
 from nostr_sdk import Kind
 
-from nostr_dvm.backends.nova_server.utils import check_server_status, send_request_to_server
+from nostr_dvm.backends.discover.utils import check_server_status, send_request_to_server
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
