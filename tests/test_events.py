@@ -4,13 +4,12 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, EventId, Options, PublicKey, Event, NostrSigner, Nip19Event, SecretKey, Kind
+from nostr_sdk import Keys, Client, Tag, Filter, Timestamp, \
+    EventId, Options, PublicKey, NostrSigner, Nip19Event, Kind
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.gallery_utils import gallery_announce_list
 from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 

@@ -13,9 +13,8 @@ from nostr_dvm.utils.definitions import relay_timeout
 
 warnings.filterwarnings('ignore')
 
-from nostr_sdk import RelayLimits, PublicKey, Options, Client, SecretKey, Keys, NostrSigner, RelayOptions, Filter, \
-    PublicKey, Kind, \
-    NegentropyOptions, NegentropyDirection, ClientBuilder, NostrDatabase, init_logger, LogLevel
+from nostr_sdk import  Options, Keys, NostrSigner, Filter, PublicKey, Kind, \
+    NegentropyOptions, NegentropyDirection, ClientBuilder, NostrDatabase
 
 
 # init_logger(LogLevel.INFO)

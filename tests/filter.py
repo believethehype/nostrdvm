@@ -1,18 +1,9 @@
-import os
-import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Keys
-
-from nostr_dvm.subscription import Subscription
-from nostr_dvm.tasks import content_discovery_currently_popular, discovery_censor_wot, discovery_inactive_follows, \
-    discovery_bot_farms
+from nostr_dvm.tasks import discovery_bot_farms
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
-from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
+
 
 
 def playground():

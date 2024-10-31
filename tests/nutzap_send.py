@@ -2,16 +2,15 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import PublicKey, Timestamp, Event, HandleNotification, Alphabet, Filter, SingleLetterTag, Kind
+from nostr_sdk import PublicKey
 
 
 import asyncio
 import argparse
 
-from nostr_dvm.utils import dvmconfig
+
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
-from nostr_dvm.utils.print_utils import bcolors
 
 
 # Run with params for test functions or set the default here

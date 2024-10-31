@@ -6,16 +6,13 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import Keys, LogLevel, init_logger
 
-from nostr_dvm.tasks import search_users, advanced_search
-from nostr_dvm.tasks.advanced_search import AdvancedSearch
-from nostr_dvm.tasks.advanced_search_wine import AdvancedSearchWine
 from nostr_dvm.tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
-from nostr_dvm.tasks.search_users import SearchUser
+
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys, get_price_per_sat
+
+from nostr_dvm.utils.zap_utils import get_price_per_sat
 
 rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = False

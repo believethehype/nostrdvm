@@ -1,13 +1,10 @@
 import json
-import os
-import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
+from nostr_sdk import init_logger, LogLevel
 
 from nostr_dvm.tasks.people_discovery_mywot import DiscoverPeopleMyWOT
-from nostr_dvm.tasks.people_discovery_wot import DiscoverPeopleWOT
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
