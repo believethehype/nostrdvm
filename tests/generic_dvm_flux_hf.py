@@ -14,7 +14,7 @@ from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
 def playground(announce=False):
 
-    kind = 5100
+    kind = Kind(5100)
     model = "dev" #schnell
 
     admin_config = AdminConfig()
@@ -25,7 +25,7 @@ def playground(announce=False):
     name = "Flux"
     identifier = "flux"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
-    dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
+    dvm_config.KIND = kind  # Manually set the Kind Number (see data-vending-machines.org)
     dvm_config.CUSTOM_PROCESSING_MESSAGE = ["Generating image.."]
     dvm_config.SEND_FEEDBACK_EVENTS = True
     dvm_config.FIX_COST = 20
@@ -42,7 +42,7 @@ def playground(announce=False):
     }
 
     nip89config = NIP89Config()
-    nip89config.KIND = Kind(kind)
+    nip89config.KIND = kind
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
