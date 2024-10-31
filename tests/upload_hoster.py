@@ -1,10 +1,7 @@
 import asyncio
-import os
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Keys
-
 
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
@@ -18,4 +15,3 @@ if __name__ == '__main__':
 
 
     asyncio.run(upload_media_to_hoster("tests/output.wav", "key", True))
-    # asyncio.run(upload_media_to_hoster("tests/test.jpeg", dvm_config))

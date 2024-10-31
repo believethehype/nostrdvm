@@ -1,10 +1,8 @@
 import json
-import os
-import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import init_logger, LogLevel, Keys, NostrLibrary
+from nostr_sdk import init_logger, LogLevel
 
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
 from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverContentLatestWiki

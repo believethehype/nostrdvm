@@ -18,7 +18,7 @@ from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, gene
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags, update_profile_lnaddress
 
-# TODO tor connection to lnbits
+# tor connection to lnbits
 # proxies = {
 #    'http': 'socks5h://127.0.0.1:9050',
 #    'https': 'socks5h://127.0.0.1:9050'

@@ -132,7 +132,6 @@ def get_all_subscriptions_from_sql_table(db):
     finally:
         if con:
             con.close()
-            # print("The SQLite connection is closed")
 
 
 def delete_from_subscription_sql_table(db, id):

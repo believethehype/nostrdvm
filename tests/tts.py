@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 import dotenv
-from nostr_dvm.tasks import texttospeech
 from nostr_dvm.tasks.texttospeech import TextToSpeech
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config

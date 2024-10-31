@@ -2,17 +2,10 @@ import json
 from pathlib import Path
 
 import dotenv
-import torch
-from diffusers import FluxPipeline
-from nostr_sdk import Kind
-
-
-from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.tasks.summarization_duckduck_ai import SummarizationDuckDuck
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
 
 def playground(announce=False):
@@ -57,6 +50,5 @@ if __name__ == '__main__':
         dotenv.load_dotenv(env_path, verbose=True, override=True)
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
-    #pipe = FluxPipeline.from_pretrained("black-forest-labs/FLUX.1-schnell", torch_dtype=torch.bfloat16)
 
     playground(announce=False)

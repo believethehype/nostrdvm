@@ -7,7 +7,7 @@ from nostr_sdk import Keys, PublicKey
 
 from nostr_dvm.utils import dvmconfig
 from nostr_dvm.utils.nwc_tools import nwc_zap
-from nostr_dvm.utils.zap_utils import create_bolt11_lud16, zaprequest
+from nostr_dvm.utils.zap_utils import zaprequest
 
 
 async def playground():

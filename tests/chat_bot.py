@@ -9,17 +9,11 @@ from duck_chat import ModelType
 from nostr_sdk import Keys, Kind
 
 from nostr_dvm.bot import Bot
-from nostr_dvm.tasks import textextraction_pdf, convert_media, discovery_inactive_follows, translation_google
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.backend_utils import keep_alive
-from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
-from nostr_dvm.utils.external_dvm_utils import build_external_dvm
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.output_utils import PostProcessFunctionType
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
+
 
 
 def playground(announce = False):
