@@ -11,7 +11,7 @@ import {
   EventBuilder,
   Tag,
   EventId,
-  Nip19Event, Alphabet, Keys, nip04_decrypt, SecretKey
+  Nip19Event, Alphabet, Keys, nip04_decrypt, SecretKey, Kind
 } from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
@@ -58,18 +58,19 @@ async function generate_image(message) {
         let content = "NIP 90 Image Generation request"
         let kind = 5100
         let tags = [
-              ["i", message, "text"]
+              Tag.parse(["i", message, "text"])
             ]
 
         let r = ["relays"]
         for (let relay of store.state.relays){
               r.push(relay)
             }
-        tags.push(r)
+        console.log(r)
+        tags.push(Tag.parse(r))
 
         hasmultipleinputs = false
         if (urlinput.value !== "" && urlinput.value.startsWith('http')){
-          let imagetag = ["i", urlinput.value, "url"]
+          let imagetag = Tag.parse(["i", urlinput.value, "url"])
           tags.push(imagetag)
           hasmultipleinputs = true
            console.log(urlinput.value)
@@ -78,12 +79,13 @@ async function generate_image(message) {
         let res;
         let requestid;
 
-          let tags_t = []
+          /*let tags_t = []
           for (let tag of tags){
-            tags_t.push(Tag.parse(tag))
+            tag = Tag.parse(tag)
+            console.log(tag.asVec())
+            tags_t.push(tag) */
 
-
-           let evt = new EventBuilder(kind, content, tags_t)
+           let evt = new EventBuilder(kind, content, tags)
                 let unsigned =   evt.toUnsignedEvent(store.state.pubkey)
                let signedEvent = await (await client.signer()).signEvent(unsigned)
                console.log(signedEvent.id.toHex())
@@ -91,10 +93,6 @@ async function generate_image(message) {
                requestids.push(requestid)
                store.commit('set_current_request_id_image', requestids)
                await client.sendEvent(signedEvent)
-
-
-        }
-
 
 
       } catch (error) {
@@ -185,7 +183,8 @@ async function  listen() {
 
                                 console.log(jsonentry.bolt11)
                                 if(jsonentry.bolt11 === ""){
-                                 status = "error"
+                                  console.log("no bolt 11")
+                                 //status = "error"
                                 }
                             }
                               else {

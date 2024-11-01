@@ -67,7 +67,7 @@ async function send_search_request(msg) {
 
 
    if (!store.state.hasEventListener){
-          store.commit('set_hasEventListener', true)
+          //store.commit('set_hasEventListener', true)
           listen()
 
       }
