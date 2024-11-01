@@ -203,7 +203,6 @@ import {loadNWCObject} from "@/components/helper/Zap.vue"
 import {useDark, useEventListener, useToggle} from "@vueuse/core";
 import {ref} from "vue";
 import {webln} from "@getalby/sdk";
-import {contact_new, nip04Decrypt} from "@rust-nostr/nostr-sdk/pkg/nostr_sdk_js_bg.wasm.js";
 import app from "@/App.vue";
 const isDark = useDark();
 
@@ -321,7 +320,7 @@ export default {
   }
     },
     async sign_in_nostr_login(launch=true) {
-
+      await loadWasmAsync();
 
       // launch signup screen
       if (launch){
@@ -332,7 +331,7 @@ export default {
         bunkers: 'nsec.app,highlighter.com'
       })
       }
-             await loadWasmAsync();
+
       }
 
 
