@@ -1,11 +1,12 @@
-<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:moz="http://www.mozilla.org/2006/browser/search/">
-   <ShortName>Noogle</ShortName>
-   <Description>Search the Nostr</Description>
-   <Url type="text/html" method="get" template="https://noogle.lol?search={searchTerms}"/>
-   <Image height="16" width="16" type="image/vnd.microsoft.icon">
-         https://noogle.lol/favicon.ico
-   </Image>
-   <moz:SearchForm>http://my-site/search</moz:SearchForm>
-   <Url type="application/opensearchdescription+xml" rel="self" template="https://noogle.lol/opensearch.xml"/>
+<OpenSearchDescription xmlns:moz="http://www.mozilla.org/2006/browser/search/"
+                       xmlns="http://a9.com/-/spec/opensearch/1.1/">
+    <ShortName>Noogle</ShortName>
+    <Description>Search the Nostr</Description>
+    <Url type="text/html" method="get" template="https://noogle.lol?search={searchTerms}"/>
+    <Image height="16" width="16" type="image/vnd.microsoft.icon">
+        https://noogle.lol/favicon.ico
+    </Image>
+    <moz:SearchForm>http://my-site/search</moz:SearchForm>
+    <Url type="application/opensearchdescription+xml" rel="self" template="https://noogle.lol/opensearch.xml"/>
 </OpenSearchDescription>
 

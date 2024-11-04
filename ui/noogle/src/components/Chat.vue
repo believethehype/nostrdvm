@@ -1,6 +1,5 @@
 <script>
 import ImageGeneration from "@/components/ChatGeneration.vue";
-import Donate from "@/components/Donate.vue";
 
 export default {
   name: "Image",

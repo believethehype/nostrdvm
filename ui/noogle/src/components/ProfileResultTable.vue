@@ -1,17 +1,20 @@
 <template>
-  <EasyDataTable style="margin-top: 450px"
- class="customize-table" header-text-direction="left" hide-rows-per-page=true  rows-per-page=10 v-if="store.state.profile_results.length != 0 && router.currentRoute.value.path == '/'" table-class-name="customize-table"
-    :headers="headers"
-    :items="store.state.profile_results" >
-   <template #item-content="{ author, authorurl, avatar}">
-   <div class="playeauthor-wrapper" >
-     <img class="avatar" v-if="avatar" :src="avatar" alt="Avatar" onerror="this.src='https://noogle.lol/favicon.ico'" />
-     <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
-     <a class="purple" :href="authorurl" target="_blank">{{ author }}</a>
-   </div>
+  <EasyDataTable v-if="store.state.profile_results.length != 0 && router.currentRoute.value.path == '/'"
+                 :headers="headers" :items="store.state.profile_results" class="customize-table" header-text-direction="left"
+                 hide-rows-per-page=true
+                 rows-per-page=10
+                 style="margin-top: 450px"
+                 table-class-name="customize-table">
+    <template #item-content="{ author, authorurl, avatar}">
+      <div class="playeauthor-wrapper">
+        <img v-if="avatar" :src="avatar" alt="Avatar" class="avatar"
+             onerror="this.src='https://noogle.lol/favicon.ico'"/>
+        <img v-else class="avatar" src="@/assets/nostr-purple.svg"/>
+        <a :href="authorurl" class="purple" target="_blank">{{ author }}</a>
+      </div>
 
-   <!--   <p>{{content}}</p> -->
-     </template>
+      <!--   <p>{{content}}</p> -->
+    </template>
     <!--<template #expand="item">
       <div style="padding: 15px; text-align: left;" >
           <a class="menu" :href="item.links.uri" target="_blank">Nostr Client</a>
@@ -22,7 +25,7 @@
     </template> -->
 
 
-      </EasyDataTable>
+  </EasyDataTable>
 
 
 </template>
@@ -30,17 +33,15 @@
 <script lang="ts" setup>
 
 
-import type {Header, Item, SortType} from "vue3-easy-data-table";
+import type {Header} from "vue3-easy-data-table";
 import store from '../store';
 import router from "../router";
 
 
 const headers: Header[] = [
-  { text: "Relevant Profiles:", value: "content", fixed:true},
- // { text: "Time", value: "indicator.time", sortable: true, },
+  {text: "Relevant Profiles:", value: "content", fixed: true},
+  // { text: "Time", value: "indicator.time", sortable: true, },
 ];
-
-
 
 
 </script>
@@ -50,6 +51,7 @@ const headers: Header[] = [
   width: 20px;
   cursor: pointer;
 }
+
 .playeauthor-wrapper {
   padding: 6px;
   display: flex;
@@ -61,10 +63,10 @@ const headers: Header[] = [
   @apply btn text-gray-600 bg-transparent border-transparent tracking-wide;
 
 
-  }
+}
 
-.vue3-easy-data-table__footer.previous-page__click-button{
-  height:100px
+.vue3-easy-data-table__footer.previous-page__click-button {
+  height: 100px
 }
 
 .time {
@@ -74,6 +76,7 @@ const headers: Header[] = [
   align-items: center;
   justify-items: center;
 }
+
 .avatar {
   margin-right: 10px;
   display: inline-block;
@@ -83,8 +86,9 @@ const headers: Header[] = [
   object-fit: cover;
   box-shadow: inset 0 4px 4px 0 rgb(0 0 0 / 10%);
 }
+
 .customize-table {
-  width:auto;
+  width: auto;
   --easy-table-border: 3px solid #000000;
   --easy-table-row-border: 0px;
 
@@ -118,7 +122,7 @@ const headers: Header[] = [
   --easy-table-rows-per-page-selector-option-padding: 10px;
   --easy-table-rows-per-page-selector-z-index: 1;
 
- --easy-table-scrollbar-track-color: bg-base;
+  --easy-table-scrollbar-track-color: bg-base;
   --easy-table-scrollbar-color: bg-base;
   --easy-table-scrollbar-thumb-color: bg-base;
   --easy-table-scrollbar-corner-color: bg-base;

@@ -2,21 +2,21 @@
 export default {
     darkMode: "class",
     content: [
-    "./index.html",
-    "./src/**/*.{vue,js,ts,jsx,tsx}",
+        "./index.html",
+        "./src/**/*.{vue,js,ts,jsx,tsx}",
 
-  ],
-  theme: {
+    ],
+    theme: {
 
-    extend: {
-      colors:{
-          'nostr': '#6d52f1',
-          'nostr2': '#8453f1',
+        extend: {
+            colors: {
+                'nostr': '#6d52f1',
+                'nostr2': '#8453f1',
 
-      }
+            }
 
+        },
     },
-  },
-   plugins: [require("daisyui")],
+    plugins: [require("daisyui")],
 }
 

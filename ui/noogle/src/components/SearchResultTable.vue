@@ -1,31 +1,33 @@
 <template>
-  <EasyDataTable  class="customize-table"  header-text-direction="left"  v-if="store.state.results.length != 0" table-class-name="customize-table"
-    :headers="headers"
-    :items="store.state.results" :sort-by="sortBy"
-     :sort-type="sortType">
-   <template #item-content="{ content, author, authorurl, avatar, indicator, links}">
-   <div class="playeauthor-wrapper">
+  <EasyDataTable v-if="store.state.results.length != 0" :headers="headers" :items="store.state.results"
+                 :sort-by="sortBy"
+                 :sort-type="sortType"
+                 class="customize-table" header-text-direction="left"
+                 table-class-name="customize-table">
+    <template #item-content="{ content, author, authorurl, avatar, indicator, links}">
+      <div class="playeauthor-wrapper">
 
-     <img class="avatar" v-if="avatar" :src="avatar" alt="Avatar" onerror="this.src='https://noogle.lol/favicon.ico'" />
-     <img class="avatar" v-else src="@/assets/nostr-purple.svg" />
+        <img v-if="avatar" :src="avatar" alt="Avatar" class="avatar"
+             onerror="this.src='https://noogle.lol/favicon.ico'"/>
+        <img v-else class="avatar" src="@/assets/nostr-purple.svg"/>
 
-         <a class="purple" :href="authorurl" target="_blank">{{ author }}</a>
-     <div class="time"  :data-tip="indicator.time">
-          {{indicator.time.split("T")[1].split("Z")[0].trim()}}
-          {{indicator.time.split("T")[0].split("-")[2].trim()}}.{{indicator.time.split("T")[0].split("-")[1].trim()}}.{{indicator.time.split("T")[0].split("-")[0].trim().slice(2)}}
+        <a :href="authorurl" class="purple" target="_blank">{{ author }}</a>
+        <div :data-tip="indicator.time" class="time">
+          {{ indicator.time.split("T")[1].split("Z")[0].trim() }}
+          {{ indicator.time.split("T")[0].split("-")[2].trim() }}.{{ indicator.time.split("T")[0].split("-")[1].trim() }}.{{ indicator.time.split("T")[0].split("-")[0].trim().slice(2) }}
         </div>
-   </div>
-
-     <p>{{content.substr(0, 320) + "\u2026"}}</p>
-        <div style="padding: 2px; text-align: left;" >
-          <a class="menusmall" :href="links.uri" target="_blank">Nostr Client</a>
-          <a class="menusmall" :href="links.njump" target="_blank">NJump</a>
-          <a class="menusmall" :href="links.highlighter" target="_blank">Highlighter</a>
-          <a class="menusmall":href="links.nostrudel" target="_blank">Nostrudel</a>
       </div>
-     </template>
 
-      </EasyDataTable>
+      <p>{{ content.substr(0, 320) + "\u2026" }}</p>
+      <div style="padding: 2px; text-align: left;">
+        <a :href="links.uri" class="menusmall" target="_blank">Nostr Client</a>
+        <a :href="links.njump" class="menusmall" target="_blank">NJump</a>
+        <a :href="links.highlighter" class="menusmall" target="_blank">Highlighter</a>
+        <a :href="links.nostrudel" class="menusmall" target="_blank">Nostrudel</a>
+      </div>
+    </template>
+
+  </EasyDataTable>
 
 
 </template>
@@ -33,14 +35,14 @@
 <script lang="ts" setup>
 
 
-import type {Header, Item, SortType} from "vue3-easy-data-table";
+import type {Header, SortType} from "vue3-easy-data-table";
 import store from '../store';
 
 const sortBy = "indicator.time";
 const sortType: SortType = "desc";
 
 const headers: Header[] = [
-  { text: "Results:", value: "content", fixed:true},
+  {text: "Results:", value: "content", fixed: true},
 ];
 
 
@@ -51,6 +53,7 @@ const headers: Header[] = [
   width: 20px;
   cursor: pointer;
 }
+
 .playeauthor-wrapper {
   padding: 6px;
   display: flex;
@@ -62,10 +65,10 @@ const headers: Header[] = [
   @apply btn text-gray-600 bg-transparent border-transparent tracking-wide;
 
 
-  }
+}
 
-.vue3-easy-data-table__footer.previous-page__click-button{
-  height:100px
+.vue3-easy-data-table__footer.previous-page__click-button {
+  height: 100px
 }
 
 .time {
@@ -75,6 +78,7 @@ const headers: Header[] = [
   align-items: center;
   justify-items: center;
 }
+
 .avatar {
   margin-right: 10px;
   display: inline-block;
@@ -84,6 +88,7 @@ const headers: Header[] = [
   object-fit: cover;
   box-shadow: inset 0 4px 4px 0 rgb(0 0 0 / 10%);
 }
+
 .customize-table {
   width: auto;
   --easy-table-border: 2px solid #000000;

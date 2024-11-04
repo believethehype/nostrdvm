@@ -1,8 +1,6 @@
 <script setup>
-import { ref } from "vue";
+import {ref} from "vue";
 import {onClickOutside} from '@vueuse/core'
-import store from "@/store.js";
-import {EventBuilder, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
 
 const props = defineProps({
   isOpen: Boolean,
@@ -11,27 +9,26 @@ const props = defineProps({
 const emit = defineEmits(["modal-close"]);
 
 const target = ref(null)
-onClickOutside(target, ()=>emit('modal-close'))
-
+onClickOutside(target, () => emit('modal-close'))
 
 
 </script>
 
 <template>
-  <div v-if="isOpen" class="modal-mask" >
-    <div class="modal-wrapper"  >
-      <div class="modal-container" ref="target">
+  <div v-if="isOpen" class="modal-mask">
+    <div class="modal-wrapper">
+      <div ref="target" class="modal-container">
         <div class="modal-header">
-          <slot name="header"> default header </slot>
+          <slot name="header"> default header</slot>
         </div>
         <div class="modal-body">
-          <slot name="content"> default content </slot>
+          <slot name="content"> default content</slot>
         </div>
         <div class="modal-footer">
           <slot name="footer">
             <div>
               <button @click.stop="emit('modal-close')"></button>
-             <button @click.stop="schedule(Date.now())"></button>
+              <button @click.stop="schedule(Date.now())"></button>
             </div>
           </slot>
         </div>
@@ -54,6 +51,7 @@ onClickOutside(target, ()=>emit('modal-close'))
 
   background-color: rgba(0, 0, 0, 0.5);
 }
+
 .modal-container {
   @apply bg-base-200;
 
