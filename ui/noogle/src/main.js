@@ -1,5 +1,5 @@
 //import './assets/main.css'
-import { createApp } from 'vue'
+import {createApp} from 'vue'
 
 import App from './App.vue'
 import store from './store';
@@ -13,31 +13,25 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
 
 
-
-
-
-
-
-
 //This is all for notifications
 import VueNotifications from "vue-notifications";
 import miniToastr from 'mini-toastr'
-import { registerSW } from 'virtual:pwa-register'
+import {registerSW} from 'virtual:pwa-register'
 
-registerSW({ immediate: true })
+registerSW({immediate: true})
 
 miniToastr.init()
 
 
-function toast ({title, message, type, timeout, cb}) {
-  return miniToastr[type](message, title, timeout, cb)
+function toast({title, message, type, timeout, cb}) {
+    return miniToastr[type](message, title, timeout, cb)
 }
 
 const options = {
-  success: toast,
-  error: toast,
-  info: toast,
-  warn: toast
+    success: toast,
+    error: toast,
+    info: toast,
+    warn: toast
 }
 //This is all for notifications end
 

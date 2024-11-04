@@ -1,22 +1,18 @@
 <script setup>
 import ThreeColumnLayout from "./layouts/ThreeColumnLayout.vue";
 import ProfileResultsTable from "@/components/ProfileResultTable.vue";
-import router from "@/router/index.js";
-
-
-
 </script>
 
 <template>
-  <link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="Noogle Search" />
+  <link href="/opensearch.xml" rel="search" title="Noogle Search" type="application/opensearchdescription+xml"/>
 
 
   <main>
     <ThreeColumnLayout>
-  <template #aside>
+      <template #aside>
 
-    <ProfileResultsTable style="margin-top: 450px"/>
-    </template>
+        <ProfileResultsTable style="margin-top: 450px"/>
+      </template>
 
     </ThreeColumnLayout>
 
@@ -28,7 +24,6 @@ import router from "@/router/index.js";
 header {
   line-height: 1.5;
 }
-
 
 
 @media (min-width: 768px) {

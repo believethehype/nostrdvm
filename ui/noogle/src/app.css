@@ -3,43 +3,45 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+    color-scheme: light;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #242424;
 }
 
 @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
+    :root {
+        color: #213547;
+        background-color: #ffffff;
+    }
 }
+
 a,
 .green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+    text-decoration: none;
+    color: hsla(160, 100%, 37%, 1);
+    transition: 0.4s;
+    padding: 3px;
 }
 
 .purple {
-  @apply  text-nostr hover:text-orange-400;
-  text-decoration: none;
-  transition: 0.4s;
-  padding: 3px;
+    @apply text-nostr hover:text-orange-400;
+    text-decoration: none;
+    transition: 0.4s;
+    padding: 3px;
 }
 
 .white {
-  @apply  text-white;
-  text-decoration: none;
-  transition: 0.4s;
-  padding: 3px;
+    @apply text-white;
+    text-decoration: none;
+    transition: 0.4s;
+    padding: 3px;
 }
+
 .menu {
-color: white;
+    color: white;
     @apply btn bg-transparent border-transparent tracking-wide;
 
-  }
+}
 
 
 
