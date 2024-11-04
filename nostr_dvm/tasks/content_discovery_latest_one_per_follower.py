@@ -136,9 +136,14 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
                 filters = []
                 for i in range(i, i + st):
-                    filter1 = (Filter().author(PublicKey.from_hex(users[i])).kind(Kind(1))
-                               .limit(1))
-                    filters.append(filter1)
+                    try:
+                        user = PublicKey.parse(users[i])
+                        filter1 = (Filter().author(user).kind(Kind(1))
+                                   .limit(1))
+                        filters.append(filter1)
+                    except Exception as e:
+                        print(e)
+
                 event_from_authors = await cli.get_events_of(filters, relay_timeout_long)
                 for author in event_from_authors:
                     if instance.dic[author.author().to_hex()] is None:
