@@ -148,7 +148,7 @@ def build_user_search(name, identifier):
     dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io"]
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
     dvm_config.RELAY_LIST = RELAY_LIST
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
