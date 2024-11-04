@@ -25,8 +25,9 @@ async def build_client(config):
 
 def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
                        external_post_process=PostProcessFunctionType.NONE):
+    pubkey = PublicKey.from_hex(pubkey).to_hex()
     dvm_config = DVMConfig()
-    dvm_config.PUBLIC_KEY = PublicKey.from_hex(pubkey).to_hex()
+    dvm_config.PUBLIC_KEY = pubkey
     dvm_config.FIX_COST = fix_cost
     dvm_config.PER_UNIT_COST = per_unit_cost
     dvm_config.EXTERNAL_POST_PROCESS_TYPE = external_post_process
