@@ -105,9 +105,12 @@ def post_process_list_to_events(result):
     if len(result_list) == 0:
         return "No results found"
     for tag in result_list:
-        e_tag = Tag.parse(tag)
-        result_str = result_str + "nostr:" + EventId.from_hex(
-            e_tag.as_vec()[1]).to_bech32() + "\n"
+        try:
+            e_tag = Tag.parse(tag)
+            id = EventId.from_hex(e_tag.as_vec()[1]).to_bech32()
+            result_str = result_str + "nostr:" + id + "\n"
+        except Exception as e:
+            print(e)
     return result_str
 
 
@@ -117,9 +120,12 @@ def post_process_list_to_users(result):
     if len(result_list) == 0:
         return "No results found"
     for tag in result_list:
-        p_tag = Tag.parse(tag)
-        result_str = result_str + "nostr:" + PublicKey.parse(
-            p_tag.as_vec()[1]).to_bech32() + "\n"
+        try:
+            p_tag = Tag.parse(tag)
+            key =  PublicKey.parse(p_tag.as_vec()[1]).to_bech32()
+            result_str = result_str + "nostr:" + key + "\n"
+        except Exception as e:
+            print(e)
     return result_str
 
 
