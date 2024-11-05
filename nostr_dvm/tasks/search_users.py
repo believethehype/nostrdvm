@@ -35,7 +35,8 @@ class SearchUser(DVMTaskInterface):
         dvm_config.SCRIPT = os.path.abspath(__file__)
         if self.options.get("relay"):
             self.relay = self.options['relay']
-        await self.sync_db()
+        if self.dvm_config.UPDATE_DATABASE:
+            await self.sync_db()
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -133,7 +134,8 @@ class SearchUser(DVMTaskInterface):
             return 0
         else:
             if Timestamp.now().as_secs() >= self.last_schedule + dvm_config.SCHEDULE_UPDATES_SECONDS:
-                await self.sync_db()
+                if self.dvm_config.UPDATE_DATABASE:
+                    await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 return 1
 
