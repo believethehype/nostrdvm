@@ -141,8 +141,11 @@ class DiscoverReports(DVMTaskInterface):
         print(json.dumps(converted_dict))
         for k, v in converted_dict.items():
             print(k)
-            p_tag = Tag.parse(["p", k, str(v)])
-            bad_actors.append(p_tag.as_vec())
+            try:
+                p_tag = Tag.parse(["p", k, str(v)])
+                bad_actors.append(p_tag.as_vec())
+            except Exception as e:
+                print(e)
 
         print(json.dumps(bad_actors))
         await cli.shutdown()
