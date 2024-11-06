@@ -52,7 +52,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
         max_results = 200
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
             elif tag.as_vec()[0] == 'param':
@@ -95,7 +95,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type

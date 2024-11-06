@@ -48,7 +48,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         user = event.author().to_hex()
         since_days = 90
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "user":  # check for param type
@@ -70,20 +70,15 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-
         # relaylimits = RelayLimits().event_max_num_tags(max_num_tags=10000)
         # relaylimits.event_max_size(None)
         relaylimits = RelayLimits.disable()
 
-        opts = (
-            Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))).relay_limits(
-            relaylimits)
+        opts = (Options().relay_limits(relaylimits))
 
-        cli = Client.with_opts(signer, opts)
+        cli = Client.with_opts(keys, opts)
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
-        ropts = RelayOptions().ping(False)
         await cli.add_relay("wss://nostr.band")
 
         await cli.connect()
@@ -92,27 +87,27 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.get_events_of([followers_filter], relay_timeout)
+        followers = await cli.fetch_events([followers_filter], relay_timeout)
 
-        if len(followers) > 0:
+        if len(followers.to_vec()) > 0:
             result_list = []
             newest = 0
-            best_entry = followers[0]
-            for entry in followers:
-                print(len(best_entry.tags()))
+            best_entry = followers.to_vec()[0]
+            for entry in followers.to_vec():
+                print(len(best_entry.tags().to_vec()))
                 print(best_entry.created_at().as_secs())
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
             print(best_entry.as_json())
-            print(len(best_entry.tags()))
+            print(len(best_entry.tags().to_vec()))
             print(best_entry.created_at().as_secs())
             print(Timestamp.now().as_secs())
             followings = []
             ns.dic = {}
             tagcount = 0
-            for tag in best_entry.tags():
+            for tag in best_entry.tags().to_vec():
                 tagcount += 1
                 if tag.as_vec()[0] == "p":
                     following = tag.as_vec()[1]
@@ -128,10 +123,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 from nostr_sdk import Filter
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
-                opts = Options().wait_for_send(True).send_timeout(
-                    timedelta(seconds=5)).skip_disconnected_relays(True)
-                signer = NostrSigner.keys(keys)
-                cli = Client.with_opts(signer, opts)
+                cli = Client(keys)
                 for relay in self.dvm_config.RELAY_LIST:
                     await cli.add_relay(relay)
                 await cli.connect()
@@ -140,8 +132,8 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 for i in range(i, i + st):
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).since(notactivesince).limit(1)
                     filters.append(filter1)
-                event_from_authors = await cli.get_events_of(filters, relay_timeout_long)
-                for author in event_from_authors:
+                event_from_authors = await cli.fetch_events(filters, relay_timeout_long)
+                for author in event_from_authors.to_vec():
                     instance.dic[author.author().to_hex()] = "True"
                 print(str(i) + "/" + str(len(users)))
                 await cli.shutdown()
@@ -179,7 +171,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type

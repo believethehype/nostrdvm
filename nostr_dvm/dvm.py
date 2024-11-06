@@ -1,11 +1,10 @@
 import asyncio
 import json
 import os
-from datetime import timedelta
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    LogLevel, Options, nip04_encrypt, NostrSigner, Kind, RelayLimits
+    LogLevel, Options, nip04_encrypt, Kind, RelayLimits
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
 from nostr_dvm.utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
@@ -42,15 +41,11 @@ class DVM:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        wait_for_send = False
-        skip_disconnected_relays = True
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-            .skip_disconnected_relays(skip_disconnected_relays).relay_limits(relaylimits))
+            Options().relay_limits(relaylimits))
 
-        signer = NostrSigner.keys(self.keys)
-        self.client = Client.with_opts(signer, opts)
+        self.client = Client.with_opts(self.keys, opts)
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
@@ -119,7 +114,7 @@ class DVM:
             cashu = ""
             p_tag_str = ""
 
-            for tag in nip90_event.tags():
+            for tag in nip90_event.tags().to_vec():
                 if tag.as_vec()[0] == "cashu":
                     cashu = tag.as_vec()[1]
                 elif tag.as_vec()[0] == "p":
@@ -281,7 +276,7 @@ class DVM:
                         #                               dvm_config=self.dvm_config)
                     else:
                         bid = 0
-                        for tag in nip90_event.tags():
+                        for tag in nip90_event.tags().to_vec():
                             if tag.as_vec()[0] == 'bid':
                                 bid = int(tag.as_vec()[1])
 
@@ -321,7 +316,7 @@ class DVM:
                     user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
                                                  config=self.dvm_config)
                     zapped_event = None
-                    for tag in nut_zap_event.tags():
+                    for tag in nut_zap_event.tags().to_vec():
                         if tag.as_vec()[0] == 'e':
                             zapped_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
                                                                  config=self.dvm_config)
@@ -332,7 +327,7 @@ class DVM:
                             job_event = None
                             p_tag_str = ""
                             status = ""
-                            for tag in zapped_event.tags():
+                            for tag in zapped_event.tags().to_vec():
                                 if tag.as_vec()[0] == 'amount':
                                     amount = int(float(tag.as_vec()[1]) / 1000)
                                 elif tag.as_vec()[0] == 'e':
@@ -414,7 +409,7 @@ class DVM:
                         job_event = None
                         p_tag_str = ""
                         status = ""
-                        for tag in zapped_event.tags():
+                        for tag in zapped_event.tags().to_vec():
                             if tag.as_vec()[0] == 'amount':
                                 amount = int(float(tag.as_vec()[1]) / 1000)
                             elif tag.as_vec()[0] == 'e':
@@ -499,7 +494,7 @@ class DVM:
             if not task_supported:
                 return False
 
-            for tag in nevent.tags():
+            for tag in nevent.tags().to_vec():
                 if tag.as_vec()[0] == 'i':
                     if len(tag.as_vec()) < 3:
                         print("Job Event missing/malformed i tag, skipping..")
@@ -587,7 +582,7 @@ class DVM:
             reply_tags = [request_tag, e_tag, p_tag, alt_tag, status_tag]
 
             relay_tag = None
-            for tag in original_event.tags():
+            for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "relays":
                     relay_tag = tag
                 if tag.as_vec()[0] == "client":
@@ -597,13 +592,13 @@ class DVM:
                 reply_tags.append(relay_tag)
 
             encrypted = False
-            for tag in original_event.tags():
+            for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
                     reply_tags.append(encrypted_tag)
 
-            for tag in original_event.tags():
+            for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "i":
                     i_tag = tag
                     if not encrypted:
@@ -614,7 +609,7 @@ class DVM:
                 content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
                                         content)
 
-            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content), reply_tags).to_event(
+            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content), reply_tags).sign_with_keys(
                 self.keys)
 
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
@@ -641,7 +636,7 @@ class DVM:
             reply_tags = [e_tag, alt_tag, status_tag]
 
             relay_tag = None
-            for tag in original_event.tags():
+            for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "relays":
                     relay_tag = tag
                     break
@@ -651,7 +646,7 @@ class DVM:
             encryption_tags = []
 
             encrypted = False
-            for tag in original_event.tags():
+            for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
@@ -730,7 +725,7 @@ class DVM:
                 content = reaction
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).sign_with_keys(keys)
             # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
 

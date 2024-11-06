@@ -19,7 +19,7 @@ async def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     if kind == "text":
         iTag = Tag.parse(["i", input, "text"])
-    elif kind == "event":
+    else:
         iTag = Tag.parse(["i", input, "event"])
     paramTag1 = Tag.parse(["param", "language", lang])
 
@@ -28,13 +28,12 @@ async def nostr_client_test_translation(input, kind, lang, sats, satsmax):
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_TRANSLATE_TEXT, str("Translate the given input."),
-                         [iTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
+                         [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
 
     for relay in relay_list:
         await client.add_relay(relay)
@@ -50,13 +49,12 @@ async def nostr_client_test_search_profile(input):
     iTag = Tag.parse(["i", input, "text"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_USER_SEARCH, str("Search for user"),
-                         [iTag, alttag]).to_event(keys)
+                         [iTag, alttag]).sign_with_keys(keys)
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
 
     for relay in relay_list:
         await client.add_relay(relay)
@@ -77,10 +75,9 @@ async def nostr_client_test_image(prompt):
     relaysTag = Tag.parse(['relays', "wss://relay.primal.net", "wss://nostr.oxtr.dev"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate an Image from a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, str("Generate an Image."),
-                         [iTag, outTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
+                         [iTag, outTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in DVMConfig().RELAY_LIST:
         await client.add_relay(relay)
     await client.connect()
@@ -106,10 +103,9 @@ async def nostr_client_test_censor_filter(users):
         tags.append(iTag)
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me bad actors"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -132,10 +128,9 @@ async def nostr_client_test_inactive_filter(user):
     tags = [relaysTag, alttag, paramTag, paramTag2]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me inactive users"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     await client.add_relay("wss://nostr.band")
@@ -156,13 +151,12 @@ async def nostr_client_test_tts(prompt):
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTSt"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File."),
-                         [iTag, paramTag1, bidTag, relaysTag, alttag]).to_event(keys)
+                         [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org" "wss://dvms.f7z.io",
                   ]
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -185,13 +179,12 @@ async def nostr_client_test_discovery(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
-    ropts = RelayOptions().ping(False)
+
     await client.add_relay("wss://nostr.band")
     await client.connect()
     config = DVMConfig
@@ -223,13 +216,11 @@ async def nostr_client_custom_discovery(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag]# paramTagSearch, paramTagMust, paramTagAvoid]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
-    ropts = RelayOptions().ping(False)
 
     await client.connect()
     config = DVMConfig
@@ -251,13 +242,11 @@ async def nostr_client_generic_test(ptag):
     tags = [relaysTag, alttag, pTag]
 
     event = EventBuilder(Kind(5050), str("Give me content"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
-    ropts = RelayOptions().ping(False)
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -279,13 +268,11 @@ async def nostr_client_duckduck_test(ptag, query):
     tags = [relaysTag, alttag, pTag, iTag]
 
     event = EventBuilder(Kind(5050), str("Give me content"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
-    ropts = RelayOptions().ping(False)
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -305,10 +292,9 @@ async def nostr_client_flux_schnell(ptag, query):
     tags = [relaysTag, alttag, pTag, iTag]
 
     event = EventBuilder(Kind(5100), str("Give me image"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     ropts = RelayOptions().ping(False)
@@ -334,10 +320,9 @@ async def nostr_client_test_discovery_user(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me people"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -360,10 +345,9 @@ async def nostr_client_test_discovery_gallery(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_VISUAL_DISCOVERY, str("Give me visuals"),
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -398,10 +382,9 @@ async def nostr_client_test_image_private(prompt, cashutoken):
 
     encrypted_tag = Tag.parse(['encrypted'])
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params,
-                                [pTag, encrypted_tag]).to_event(keys)
+                                [pTag, encrypted_tag]).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -411,12 +394,11 @@ async def nostr_client_test_image_private(prompt, cashutoken):
 
 
 async def nostr_client():
-    keys = Keys.parse(check_and_set_private_key("test_client"))
+    keys = Keys.parse(check_and_set_private_key("test_client5"))
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
@@ -424,7 +406,7 @@ async def nostr_client():
     await client.connect()
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM,
-                                               EventDefinitions.KIND_ZAP]).since(
+                                               EventDefinitions.KIND_ZAP, EventDefinitions.KIND_NIP61_NUT_ZAP]).since(
         Timestamp.now())  # events to us specific
     kinds = [EventDefinitions.KIND_NIP90_GENERIC]
     #SUPPORTED_KINDS = [Kind(6100), Kind(7000)]
@@ -475,6 +457,16 @@ async def nostr_client():
         nut_wallet.balance = 0
         await nutzap_wallet.update_nut_wallet(nut_wallet, [], client, keys)
         nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+    else:
+        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+        if nut_wallet is None:
+            await nutzap_wallet.create_new_nut_wallet(dvmconfig.NUZAP_MINTS, dvmconfig.NUTZAP_RELAYS, client, keys,
+                                                      "Test", "My Nutsack")
+            nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+            if nut_wallet is not None:
+                await nutzap_wallet.announce_nutzap_info_event(nut_wallet, client, keys)
+            else:
+                print("Couldn't fetch wallet, please restart and see if it is there")
 
 
 
@@ -488,26 +480,12 @@ async def nostr_client():
                 print("[Nostr Client]: " + event.as_json())
                 amount_sats = 0
                 status = ""
-                for tag in event.tags():
+                for tag in event.tags().to_vec():
                     if tag.as_vec()[0] == "amount":
                         amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
                     if tag.as_vec()[0] == "status":
                        status = tag.as_vec()[1]
                 # THIS IS FOR TESTING
-                if event.author().to_hex() == "89669b03bb25232f33192fdda77b8e36e3d3886e9b55b3c74b95091e916c8f98" and status == "payment-required" and event.created_at().as_secs() > self.last_event_time:
-                    self.last_event_time = event.created_at().as_secs()
-                    nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
-                    if nut_wallet is None:
-                        await nutzap_wallet.create_new_nut_wallet(dvmconfig.NUZAP_MINTS, dvmconfig.NUTZAP_RELAYS, client, keys, "Test", "My Nutsack")
-                        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
-                        if nut_wallet is not None:
-                            await nutzap_wallet.announce_nutzap_info_event(nut_wallet, client, keys)
-                        else:
-                            print("Couldn't fetch wallet, please restart and see if it is there")
-
-                    await nutzap_wallet.send_nut_zap(amount_sats, "From my nutsack lol", nut_wallet, event.id().to_hex(),
-                                                     event.author().to_hex(), client,
-                                                     keys)
 
 
             elif 6000 < event.kind().as_u16() < 6999:
@@ -521,6 +499,17 @@ async def nostr_client():
             elif event.kind().as_u16() == 9735:
                 print("[Nostr Client]: " + f"Received new zap:")
                 print(event.as_json())
+            if event.kind().as_u16() == 9321:
+                print(bcolors.YELLOW + "[Client] NutZap 🥜️⚡ received" + event.as_json() + bcolors.ENDC)
+
+                # if event.author().to_hex() == keys.public_key().to_hex():
+                #     #sleep to avoid event not being updated on self zap
+                #     await asyncio.sleep(5)
+
+                nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+                if nut_wallet is not None:
+                    await nutzap_wallet.reedeem_nutzap(event, nut_wallet, client, keys)
+                    # await get_nut_wallet(client, keys)
 
         async def handle_msg(self, relay_url, msg):
             return

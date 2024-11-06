@@ -33,7 +33,7 @@ def post_process_result(anno, original_event):
         has_output_tag = False
         output_format = "text/plain"
 
-        for tag in original_event.tags():
+        for tag in original_event.tags().to_vec():
             if tag.as_vec()[0] == "output":
                 output_format = tag.as_vec()[1]
                 has_output_tag = True
@@ -176,6 +176,7 @@ async def upload_media_to_hoster(filepath: str, key_hex=None, fallback=True):
 
         limitinmb = await request_nostr_build_limit(key_hex)
 
+
         if sizeinmb > limitinmb:
             if fallback:
                 print("Filesize over Nostr.build limit, using paid account")
@@ -223,7 +224,9 @@ async def upload_nostr_build(pkey, files, filepath):
 
 async def request_nostr_build_limit(pkey):
     url = 'https://nostr.build/api/v2/upload/limit'
+
     auth = await generate_nip98_header(pkey, url, "GET")
+
     headers = {'authorization': auth}
     response = requests.get(url, headers=headers)
     json_object = json.loads(response.text)
@@ -315,7 +318,7 @@ async def send_job_status_reaction(original_event_id_hex, original_event_author_
     content = reaction
 
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
-    reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
+    reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).sign_with_keys(keys)
     await send_event_outbox(reaction_event, client=client, dvm_config=dvm_config)
 
     if dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:

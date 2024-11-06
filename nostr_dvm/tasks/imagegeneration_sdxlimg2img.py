@@ -87,7 +87,7 @@ class ImageGenerationSDXLIMG2IMG(DVMTaskInterface):
             guidance_scale = float(self.options['guidance_scale'])
         else:
             guidance_scale = 11.0
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":

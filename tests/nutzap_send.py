@@ -2,7 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import PublicKey
+from nostr_sdk import PublicKey, Keys
 
 
 import asyncio
@@ -10,6 +10,7 @@ import argparse
 
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 
 
@@ -25,7 +26,8 @@ async def test(relays, mints):
 
     nutzap_wallet = NutZapWallet()
     update_wallet_info = False  # leave this on false except when you manually changed relays/mints/keys
-    client, keys = await nutzap_wallet.client_connect(relays)
+    keys = Keys.parse(check_and_set_private_key("TEST_ACCOUNT_PK_TEST"))
+    client = await nutzap_wallet.client_connect(relays, keys)
     set_profile = False  # Attention, this overwrites your current profile if on True, do not set if you use an non-test account
 
     if set_profile:
@@ -41,7 +43,7 @@ async def test(relays, mints):
     send_test = args.zap  # Send a Nutzap
     send_zap_amount = 3
     send_zap_message = "From my nutsack"
-    send_reveiver = "npub139nfkqamy53j7vce9lw6w7uwxm3a8zrwnd2m836tj5y3aytv37vqygz42j" #     keys.public_key().to_bech32()  # This is ourself, for testing purposes,  some other people to nutzap:  #npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8 # dbth  #npub1l2vyh47mk2p0qlsku7hg0vn29faehy9hy34ygaclpn66ukqp3afqutajft # pablof7z
+    send_reveiver = "npub1dvwp6k3l4362ray6z3rk5u2va3ffstlsydqphj7ht6ca7s7kuy4syhug83" #     keys.public_key().to_bech32()  # This is ourself, for testing purposes,  some other people to nutzap:  #npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8 # dbth  #npub1l2vyh47mk2p0qlsku7hg0vn29faehy9hy34ygaclpn66ukqp3afqutajft # pablof7z
     send_zapped_event = None  # None, or zap an event like this: Nip19Event.from_nostr_uri("nostr:nevent1qqsxq59mhz8s6aj9jzltcmqmmv3eutsfcpkeny2x755vdu5dtq44ldqpz3mhxw309ucnydewxqhrqt338g6rsd3e9upzp75cf0tahv5z7plpdeaws7ex52nmnwgtwfr2g3m37r844evqrr6jqvzqqqqqqyqtxyr6").event_id().to_hex()
 
     # Test 3 Config: Melt to ln address

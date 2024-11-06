@@ -6,7 +6,7 @@ from datetime import timedelta
 
 import requests
 from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
-    EventId, nip04_decrypt, nip04_encrypt, Options, NostrSigner, PublicKey, Metadata
+    EventId, nip04_decrypt, nip04_encrypt, PublicKey, Metadata
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
@@ -50,19 +50,13 @@ class NutMint(object):
 
 class NutZapWallet:
 
-    async def client_connect(self, relay_list):
-        keys = Keys.parse(check_and_set_private_key("TEST_ACCOUNT_PK"))
-        wait_for_send = False
-        skip_disconnected_relays = True
-        opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=5))
-                .skip_disconnected_relays(skip_disconnected_relays))
+    async def client_connect(self, relay_list, keys):
 
-        signer = NostrSigner.keys(keys)
-        client = Client.with_opts(signer, opts)
+        client = Client(keys)
         for relay in relay_list:
             await client.add_relay(relay)
         await client.connect()
-        return client, keys
+        return client
 
     async def create_new_nut_wallet(self, mint_urls, relays, client, keys, name, description):
         new_nut_wallet = NutWallet()
@@ -109,7 +103,7 @@ class NutZapWallet:
             relay_tag = Tag.parse(["relay", relay])
             tags.append(relay_tag)
 
-        event = EventBuilder(EventDefinitions.KIND_NUT_WALLET, content, tags).to_event(keys)
+        event = EventBuilder(EventDefinitions.KIND_NUT_WALLET, content, tags).sign_with_keys(keys)
         send_response = await client.send_event(event)
 
         print(
@@ -122,18 +116,18 @@ class NutZapWallet:
 
         wallet_filter = Filter().kind(EventDefinitions.KIND_NUT_WALLET).author(keys.public_key())
         # relay_timeout = EventSource.relays(timedelta(seconds=10))
-        wallets = await client.get_events_of([wallet_filter], relay_timeout_long)
+        wallets = await client.fetch_events([wallet_filter], timedelta(seconds=10))
 
-        if len(wallets) > 0:
+        if len(wallets.to_vec()) > 0:
 
             nut_wallet = NutWallet()
 
             latest = 0
             best_wallet = None
-            for wallet_event in wallets:
+            for wallet_event in wallets.to_vec():
 
                 isdeleted = False
-                for tag in wallet_event.tags():
+                for tag in wallet_event.tags().to_vec():
                     if tag.as_vec()[0] == "deleted":
                         isdeleted = True
                         break
@@ -175,7 +169,7 @@ class NutZapWallet:
                     if tag[1] not in nut_wallet.mints:
                         nut_wallet.mints.append(tag[1])
 
-            for tag in best_wallet.tags():
+            for tag in best_wallet.tags().to_vec():
                 if tag.as_vec()[0] == "d":
                     nut_wallet.d = tag.as_vec()[1]
 
@@ -196,17 +190,16 @@ class NutZapWallet:
 
             # Now all proof events
             proof_filter = Filter().kind(Kind(7375)).author(keys.public_key())
-            # relay_timeout = EventSource.relays(timedelta(seconds=5))
-            proof_events = await client.get_events_of([proof_filter], relay_timeout)
+            proof_events = await client.fetch_events([proof_filter], timedelta(seconds=5))
 
             latest_proof_sec = 0
             latest_proof_event_id = EventId
-            for proof_event in proof_events:
+            for proof_event in proof_events.to_vec():
                 if proof_event.created_at().as_secs() > latest_proof_sec:
                     latest_proof_sec = proof_event.created_at().as_secs()
                     latest_proof_event_id = proof_event.id()
 
-            for proof_event in proof_events:
+            for proof_event in proof_events.to_vec():
                 try:
                     content = nip44_decrypt(keys.secret_key(), keys.public_key(), proof_event.content())
                 except:
@@ -227,7 +220,7 @@ class NutZapWallet:
                 except Exception as e:
                     pass
 
-                for tag in proof_event.tags():
+                for tag in proof_event.tags().to_vec():
                     if tag.as_vec()[0] == "mint":
                         mint_url = tag.as_vec()[1]
                         print("mint: " + mint_url)
@@ -334,7 +327,7 @@ class NutZapWallet:
             p_tag = Tag.parse(["p", sender_hex])
             tags.append(p_tag)
 
-        event = EventBuilder(Kind(7376), content, tags).to_event(keys)
+        event = EventBuilder(Kind(7376), content, tags).sign_with_keys(keys)
         eventid = await client.send_event(event)
 
     async def create_unspent_proof_event(self, nut_wallet: NutWallet, mint_proofs, mint_url, amount, direction, marker,
@@ -358,7 +351,7 @@ class NutZapWallet:
         if mint.previous_event_id is not None:
             print(
                 bcolors.MAGENTA + "[" + nut_wallet.name + "] Deleted previous proofs event.. : (" + mint.previous_event_id.to_hex() + ")" + bcolors.ENDC)
-            evt = EventBuilder.delete([mint.previous_event_id], reason="deleted").to_event(
+            evt = EventBuilder.delete([mint.previous_event_id], reason="deleted").sign_with_keys(
                 keys)  # .to_pow_event(keys, 28)
             response = await client.send_event(evt)
 
@@ -380,7 +373,7 @@ class NutZapWallet:
         else:
             content = nip44_encrypt(keys.secret_key(), keys.public_key(), message, Nip44Version.V2)
 
-        event = EventBuilder(Kind(7375), content, tags).to_event(keys)
+        event = EventBuilder(Kind(7375), content, tags).sign_with_keys(keys)
         eventid = await client.send_event(event)
         await self.create_transaction_history_event(nut_wallet, amount, nut_wallet.unit, old_event_id, eventid.id,
                                                     direction, marker, sender_hex, event_hex, client, keys)
@@ -443,23 +436,22 @@ class NutZapWallet:
         pubkey = Keys.parse(nut_wallet.privkey).public_key().to_hex()
         tags.append(Tag.parse(["pubkey", pubkey]))
 
-        event = EventBuilder(Kind(10019), "", tags).to_event(keys)
+        event = EventBuilder(Kind(10019), "", tags).sign_with_keys(keys)
         eventid = await client.send_event(event)
         print(
             bcolors.CYAN + "[" + nut_wallet.name + "] Announced mint preferences info event (" + eventid.id.to_hex() + ")" + bcolors.ENDC)
 
     async def fetch_mint_info_event(self, pubkey, client):
         mint_info_filter = Filter().kind(Kind(10019)).author(PublicKey.parse(pubkey))
-        # relay_timeout = EventSource.relays(timedelta(seconds=5))
-        preferences = await client.get_events_of([mint_info_filter], relay_timeout)
+        preferences = await client.fetch_events([mint_info_filter], timedelta(seconds=5))
         mints = []
         relays = []
         pubkey = ""
 
-        if len(preferences) > 0:
-            preference = preferences[0]
+        if len(preferences.to_vec()) > 0:
+            preference = preferences.to_vec()[0]
 
-            for tag in preference.tags():
+            for tag in preference.tags().to_vec():
                 if tag.as_vec()[0] == "pubkey":
                     pubkey = tag.as_vec()[1]
                 elif tag.as_vec()[0] == "relay":
@@ -632,7 +624,7 @@ class NutZapWallet:
                 }
                 tags.append(Tag.parse(["proof", json.dumps(nut_proof)]))
 
-            event = EventBuilder(Kind(9321), comment, tags).to_event(keys)
+            event = EventBuilder(Kind(9321), comment, tags).sign_with_keys(keys)
             response = await client.send_event(event)
 
             await self.update_spend_mint_proof_event(nut_wallet, proofs, mint_url, "zapped", keys.public_key().to_hex(),
@@ -667,7 +659,7 @@ class NutZapWallet:
                         unit = "sat"
             sender = ""
             event = ""
-            for tag in transaction.tags():
+            for tag in transaction.tags().to_vec():
                 if tag.as_vec()[0] == "p":
                     sender = tag.as_vec()[1]
                 elif tag.as_vec()[0] == "e":
@@ -707,7 +699,7 @@ class NutZapWallet:
             zapped_event = ""
             sender = event.author().to_hex()
             message = event.content()
-            for tag in event.tags():
+            for tag in event.tags().to_vec():
                 if tag.as_vec()[0] == "proof":
                     proof_json = json.loads(tag.as_vec()[1])
                     proof = Proof().from_dict(proof_json)

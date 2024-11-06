@@ -36,14 +36,14 @@ def nip88_create_d_tag(name, pubkey, image):
 
 async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
-    nip88events = await client.get_events_of([idfilter], relay_timeout)
+    nip88events = await client.fetch_events([idfilter], relay_timeout)
     d_tag = ""
-    if len(nip88events) == 0:
+    if len(nip88events.to_vec()) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip88events:
+    for event in nip88events.to_vec():
         print(event.as_json())
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == "d":
                 d_tag = tag.as_vec()[1]
         if d_tag == "":
@@ -59,14 +59,14 @@ async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
 
 async def fetch_nip88_event(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip88events = await client.get_events_of([idfilter], relay_timeout)
+    nip88events = await client.fetch_events([idfilter], relay_timeout)
     d_tag = ""
-    if len(nip88events) == 0:
+    if len(nip88events.to_vec()) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip88events:
+    for event in nip88events.to_vec():
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == "d":
                 d_tag = tag.as_vec()[1]
         if d_tag == "":
@@ -83,7 +83,7 @@ async def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_NIP88_TIER_EVENT) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).sign_with_keys(keys)
     await send_event(event, client, config)
 
 
@@ -99,11 +99,11 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
         PublicKey.parse(receiver_public_key_hex)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
                                                              [user.to_hex()]).limit(1)
-    evts = await client.get_events_of([subscriptionfilter], relay_timeout)
-    if len(evts) > 0:
-        print(evts[0].as_json())
+    evts = await client.fetch_events([subscriptionfilter], relay_timeout)
+    if len(evts.to_vec()) > 0:
+        print(evts.to_vec()[0].as_json())
         matchesdtag = False
-        for tag in evts[0].tags():
+        for tag in evts.to_vec()[0].tags().to_vec():
             if tag.as_vec()[0] == "valid":
                 subscription_status["validUntil"] = int(tag.as_vec()[2])
             elif tag.as_vec()[0] == "e":
@@ -120,9 +120,9 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
             cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
                 user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
                 EventId.parse(subscription_status["subscriptionId"])).limit(1)
-            cancel_events = await client.get_events_of([cancel_filter], relay_timeout)
-            if len(cancel_events) > 0:
-                if cancel_events[0].created_at().as_secs() > evts[0].created_at().as_secs():
+            cancel_events = await client.fetch_events([cancel_filter], relay_timeout)
+            if len(cancel_events.to_vec()) > 0:
+                if cancel_events.to_vec()[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True
 
     return subscription_status
@@ -176,7 +176,7 @@ async def nip88_announce_tier(dvm_config, client):
 
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP88.CONTENT
-    event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content, tags).to_event(keys)
+    event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content, tags).sign_with_keys(keys)
     annotier_id = await send_event(event, client=client, dvm_config=dvm_config)
 
     if dvm_config.NIP89 is not None:

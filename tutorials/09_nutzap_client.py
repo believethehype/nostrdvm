@@ -31,10 +31,9 @@ async def nostr_client_generic_test(ptag):
     pTag = Tag.parse(["p", PublicKey.parse(ptag).to_hex()])
     tags = [relaysTag, alttag, pTag, paramTag]
     event = EventBuilder(Kind(5050), "This is a test",
-                         tags).to_event(keys)
+                         tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -47,8 +46,7 @@ async def nostr_client(target_dvm_npub):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
@@ -74,7 +72,7 @@ async def nostr_client(target_dvm_npub):
                 print(bcolors.YELLOW + "[Nostr Client]: " + event.content() + bcolors.ENDC)
                 amount_sats = 0
                 status = ""
-                for tag in event.tags():
+                for tag in event.tags().to_vec():
                     if tag.as_vec()[0] == "amount":
                         amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
                     if tag.as_vec()[0] == "status":

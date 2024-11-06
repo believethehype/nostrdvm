@@ -11,11 +11,8 @@ from nostr_dvm.utils.output_utils import PostProcessFunctionType
 
 
 async def build_client(config):
-    opts = (Options().wait_for_send(True).send_timeout(timedelta(seconds=config.RELAY_TIMEOUT))
-            .skip_disconnected_relays(True))
     keys = Keys.parse(config.PRIVATE_KEY)
-    signer = NostrSigner.keys(keys)
-    client = Client.with_opts(signer, opts)
+    client = Client(keys)
 
     for relay in config.RELAY_LIST:
         await client.add_relay(relay)

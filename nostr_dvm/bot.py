@@ -43,12 +43,8 @@ class Bot:
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         self.CHATBOT = False
 
-        wait_for_send = True
-        skip_disconnected_relays = True
-        opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-                .skip_disconnected_relays(skip_disconnected_relays).gossip(True))
-        signer = NostrSigner.keys(self.keys)
-        self.client = Client.with_opts(signer, opts)
+        opts = (Options().gossip(True))
+        self.client = Client.with_opts(self.keys, opts)
         self.invoice_list = []
 
         pk = self.keys.public_key()
@@ -127,11 +123,11 @@ class Bot:
                 if giftwrap:
                     try:
                         # Extract rumor
-                        unwrapped_gift = UnwrappedGift.from_gift_wrap(self.keys, nostr_event)
+
+                        unwrapped_gift = await UnwrappedGift.from_gift_wrap(self.keys, nostr_event)
                         sender = unwrapped_gift.sender().to_hex()
                         rumor: UnsignedEvent = unwrapped_gift.rumor()
 
-                        # client.send_sealed_msg(sender, f"Echo: {msg}", None)
                         if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
                             if rumor.kind().as_enum() == KindEnum.PRIVATE_DIRECT_MESSAGE():
                                 print(f"Received new msg [sealed]: {decrypted_text}")
@@ -198,13 +194,13 @@ class Bot:
                                         #  add the encrypted params to the content
                                         nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
                                                                      encrypted_params, [p_tag, encrypted_tag]).
-                                                        to_event(self.keys))
+                                                        sign_with_keys(self.keys))
                                     else:
                                         tags.append(p_tag)
 
                                         nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
                                                                      "", tags).
-                                                        to_event(self.keys))
+                                                        sign_with_keys(self.keys))
 
                                     # remember in the job_list that we have made an event, if anybody asks for payment,
                                     # we know we actually sent the request
@@ -317,7 +313,7 @@ class Bot:
 
                         nip90request = (EventBuilder(Kind(kind),
                                                      "", tags).
-                                        to_event(self.keys))
+                                        sign_with_keys(self.keys))
 
                         entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
                                  "dvm_key": self.DVM_KEY, "is_paid": False,
@@ -338,7 +334,7 @@ class Bot:
                 etag = ""
                 ptag = ""
                 content = nostr_event.content()
-                for tag in nostr_event.tags():
+                for tag in nostr_event.tags().to_vec():
                     if tag.as_vec()[0] == "status":
                         status = tag.as_vec()[1]
                         if len(tag.as_vec()) > 2:
@@ -362,7 +358,7 @@ class Bot:
                         event_as_json['content'] = ""
                         nostr_event = Event.from_json(json.dumps(event_as_json))
 
-                        for tag in nostr_event.tags():
+                        for tag in nostr_event.tags().to_vec():
                             if tag.as_vec()[0] == "status":
                                 status = tag.as_vec()[1]
                                 if len(tag.as_vec()) > 2:
@@ -390,7 +386,7 @@ class Bot:
                             "[" + self.NAME + "] Received reaction from " + nostr_event.author().to_hex() + " message to orignal sender " + user.name)
 
                 elif status == "payment-required" or status == "partial":
-                    for tag in nostr_event.tags():
+                    for tag in nostr_event.tags().to_vec():
                         if tag.as_vec()[0] == "amount":
                             amount_msats = int(tag.as_vec()[1])
                             amount = int(amount_msats / 1000)
@@ -469,7 +465,7 @@ class Bot:
                 ptag = ""
                 etag = ""
                 is_encrypted = False
-                for tag in nostr_event.tags():
+                for tag in nostr_event.tags().to_vec():
                     if tag.as_vec()[0] == "e":
                         etag = tag.as_vec()[1]
                     elif tag.as_vec()[0] == "p":
@@ -522,7 +518,7 @@ class Bot:
 
                 etag = ""
                 if zapped_event is not None:
-                    for tag in zapped_event.tags():
+                    for tag in zapped_event.tags().to_vec():
                         if tag.as_vec()[0] == "e":
                             etag = tag.as_vec()[1]
 
