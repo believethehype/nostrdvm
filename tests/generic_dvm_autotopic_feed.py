@@ -102,15 +102,11 @@ def playground(announce=False):
         options = dvm.set_options(request_form)
         sk = SecretKey.from_hex(dvm.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-
         relaylimits = RelayLimits.disable()
 
-        opts = (
-            Options().wait_for_send(False).send_timeout(timedelta(seconds=dvm.dvm_config.RELAY_TIMEOUT))).relay_limits(
-            relaylimits)
+        opts = (Options().relay_limits(relaylimits))
 
-        cli = Client.with_opts(signer, opts)
+        cli = Client.with_opts(keys, opts)
         for relay in dvm.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         # ropts = RelayOptions().ping(False)
@@ -122,10 +118,9 @@ def playground(announce=False):
         print(options["request_event_author"])
         filterauth = Filter().kind(definitions.EventDefinitions.KIND_NOTE).author(author).limit(100)
 
-        evts = await cli.get_events_of([filterauth], relay_timeout)
-
+        event_struct = await cli.fetch_events([filterauth], relay_timeout)
         text = ""
-        for event in evts:
+        for event in event_struct.to_vec():
             text = text + event.content() + ";"
 
 

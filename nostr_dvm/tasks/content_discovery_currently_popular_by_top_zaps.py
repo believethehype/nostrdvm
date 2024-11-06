@@ -2,7 +2,7 @@ import json
 from datetime import timedelta
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
+    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -79,7 +79,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         # default values
         max_results = 200
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
             elif tag.as_vec()[0] == 'param':
@@ -107,19 +107,8 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
-
-        # opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
-        # sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        # keys = Keys.parse(sk.to_hex())
-        # signer = NostrSigner.keys(keys)
-
         database = NostrDatabase.lmdb(self.db_name)
-        # cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
 
-        # await cli.connect()
-
-        # Negentropy reconciliation
-        # Query events from database
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_hour_ago)
 
@@ -143,7 +132,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                         if event_author == zap.author().to_hex():
                             continue  # Skip self zaps..
                         invoice_amount = 0
-                        for tag in zap.tags():
+                        for tag in zap.tags().to_vec():
 
                             if tag.as_vec()[0] == 'bolt11':
                                 # print(tag.as_vec()[1])
@@ -166,7 +155,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                             # elif tag.as_vec()[0] == 'description':
                             #    try:
                             #        event = Event.from_json(tag.as_vec()[1])
-                            #        for tag in event.tags():
+                            #        for tag in event.tags().to_vec():
                             #            if tag.as_vec()[0] == "amount":
                             #                invoice_amount = tag.as_vec()[1]
                             #                overall_amount += invoice_amount
@@ -198,7 +187,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
@@ -224,12 +213,10 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
     async def sync_db(self):
         try:
-            opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
-            signer = NostrSigner.keys(keys)
             database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+            cli = ClientBuilder().signer(keys).database(database).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
                 await cli.add_relay(relay)
@@ -247,8 +234,8 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-            await cli.reconcile(filter1, dbopts)
+            dbopts = SyncOptions().direction(SyncDirection.DOWN)
+            await cli.sync(filter1, dbopts)
             await cli.database().delete(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
             await cli.shutdown()

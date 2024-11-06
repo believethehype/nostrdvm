@@ -1,5 +1,5 @@
 from threading import Thread
-from nostr_sdk import Keys, Filter, ClientBuilder, NostrDatabase, NegentropyOptions, init_logger, LogLevel
+from nostr_sdk import Keys, Filter, ClientBuilder, NostrDatabase, SyncOptions, init_logger, LogLevel
 init_logger(LogLevel.INFO)
 keys = Keys.parse("nsec1ufnus6pju578ste3v90xd5m2decpuzpql2295m3sknqcjzyys9ls0qlc85")
 print(keys.public_key().to_bech32())
@@ -22,8 +22,8 @@ async def reconcile_db():
 
     # Negentropy reconciliation
     f = Filter().author(keys.public_key())
-    opts = NegentropyOptions()
-    await client.reconcile(f, opts)
+    opts = SyncOptions()
+    await client.sync(f, opts)
 
     await do_some_work()
 

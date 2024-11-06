@@ -29,7 +29,7 @@ async def nip89_announce_tasks(dvm_config, client):
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
-    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).to_event(keys)
+    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).sign_with_keys(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
 
     print(
@@ -38,14 +38,14 @@ async def nip89_announce_tasks(dvm_config, client):
 
 async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):
     idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
-    nip89events = await client.get_events_of([idfilter], relay_timeout)
+    nip89events = await client.fetch_events([idfilter], relay_timeout)
     d_tag = ""
-    if len(nip89events) == 0:
+    if len(nip89events.to_vec()) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip89events:
+    for event in nip89events.to_vec():
         print(event.as_json())
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == "d":
                 d_tag = tag.as_vec()[1]
         if d_tag == "":
@@ -65,7 +65,7 @@ async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).sign_with_keys(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config)
 
@@ -74,7 +74,7 @@ async def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client:
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).pow(28).to_event(keys)
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).pow(28).sign_with_keys(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config)
 
@@ -85,8 +85,8 @@ async def nip89_fetch_all_dvms(client):
         ktags.append(str(i))
 
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags)
-    events = await client.get_events_of([filter], relay_timeout)
-    for event in events:
+    events = await client.fetch_events([filter], relay_timeout)
+    for event in events.to_vec():
         print(event.as_json())
 
 
@@ -94,10 +94,10 @@ async def nip89_fetch_events_pubkey(client, pubkey, kind):
     ktags = [str(kind.as_u16())]
     nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.parse(pubkey)).
                    custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags))
-    events = await client.get_events_of([nip89filter], relay_timeout)
+    events = await client.fetch_events([nip89filter], relay_timeout)
 
     dvms = {}
-    for event in events:
+    for event in events.to_vec():
         if dvms.get(event.author().to_hex()):
             if dvms.get(event.author().to_hex()).created_at().as_secs() < event.created_at().as_secs():
                 dvms[event.author().to_hex()] = event

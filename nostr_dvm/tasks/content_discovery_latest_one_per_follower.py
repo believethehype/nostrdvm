@@ -48,7 +48,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
         since_days = 30
         max_results = 200
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "user":  # check for param type
@@ -71,15 +71,12 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
 
         relaylimits = RelayLimits.disable()
 
-        opts = (
-            Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))).relay_limits(
-            relaylimits)
+        opts = (Options().relay_limits(relaylimits))
 
-        cli = Client.with_opts(signer, opts)
+        cli = Client.with_opts(keys, opts)
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         # ropts = RelayOptions().ping(False)
@@ -91,14 +88,14 @@ class Discoverlatestperfollower(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.get_events_of([followers_filter], relay_timeout)
+        followers = await cli.fetch_events([followers_filter], relay_timeout)
 
-        if len(followers) > 0:
+        if len(followers.to_vec()) > 0:
             result_list = []
             newest = 0
-            best_entry = followers[0]
-            for entry in followers:
-                print(len(best_entry.tags()))
+            best_entry = followers.to_vec()[0]
+            for entry in followers.to_vec():
+                print(len(best_entry.tags().to_vec()))
                 print(best_entry.created_at().as_secs())
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
@@ -107,7 +104,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
             followings = []
             ns.dic = {}
             tagcount = 0
-            for tag in best_entry.tags():
+            for tag in best_entry.tags().to_vec():
                 tagcount += 1
                 if tag.as_vec()[0] == "p":
                     following = tag.as_vec()[1]
@@ -126,10 +123,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
                 from nostr_sdk import Filter
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
-                opts = Options().wait_for_send(True).send_timeout(
-                    timedelta(seconds=10)).skip_disconnected_relays(True)
-                signer = NostrSigner.keys(keys)
-                cli = Client.with_opts(signer, opts)
+                cli = Client(keys)
                 for relay in self.dvm_config.RELAY_LIST:
                     await cli.add_relay(relay)
                 await cli.connect()
@@ -144,8 +138,8 @@ class Discoverlatestperfollower(DVMTaskInterface):
                     except Exception as e:
                         print(e)
 
-                event_from_authors = await cli.get_events_of(filters, relay_timeout_long)
-                for author in event_from_authors:
+                event_from_authors = await cli.fetch_events(filters, relay_timeout_long)
+                for author in event_from_authors.to_vec():
                     if instance.dic[author.author().to_hex()] is None:
                         instance.dic[author.author().to_hex()] = author
                 print(str(i) + "/" + str(len(users)))
@@ -191,7 +185,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type

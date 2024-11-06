@@ -80,7 +80,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         search = ""
         max_results = 200
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
             elif tag.as_vec()[0] == 'param':
@@ -109,11 +109,8 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         ns = SimpleNamespace()
         options = self.set_options(request_form)
 
-        opts = (
-            Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
 
         database = NostrDatabase.lmdb(self.db_name)
         try:
@@ -121,7 +118,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
                 Timestamp.now().as_secs() - self.db_since)))
         except Exception as e:
             print(e)
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+        cli = ClientBuilder().signer(keys).database(database).build()
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -161,7 +158,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
@@ -185,12 +182,10 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
     async def sync_db(self):
         try:
-            opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
-            signer = NostrSigner.keys(keys)
             database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+            cli = ClientBuilder().signer(keys).database(database).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
                 await cli.add_relay(relay)
@@ -216,14 +211,11 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            # dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-            # await cli.reconcile(filter1, dbopts)
-            # await cli.reconcile(filter2, dbopts)
-            # await cli.reconcile(filter3, dbopts)
+
 
             # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
             try:
-                events = await cli.get_events_of([filter1, filter2, filter3], relay_timeout_long)
+                events = await cli.fetch_events([filter1, filter2, filter3], relay_timeout_long)
             except Exception as e:
                 print(e)
             # Do not delete profiles

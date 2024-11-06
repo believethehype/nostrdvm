@@ -17,16 +17,16 @@ async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Eve
     if len(split) == 3:
         pk = PublicKey.from_hex(split[1])
         id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-        events = await client.get_events_of([id_filter], relay_timeout)
+        events = await client.fetch_events([id_filter], relay_timeout)
     else:
         event_id = EventId.parse(event_id_str)
 
         id_filter = Filter().id(event_id).limit(1)
 
-        events = await client.get_events_of([id_filter], relay_timeout)
+        events = await client.fetch_events([id_filter], relay_timeout)
 
-    if len(events) > 0:
-        return events[0]
+    if len(events.to_vec()) > 0:
+        return events.to_vec()[0]
     else:
         print("Event not found")
         return None
@@ -34,8 +34,8 @@ async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Eve
 
 async def get_events_async(client, filter, timeout):
     source_l = EventSource.relays(timedelta(seconds=timeout))
-    events = await client.get_events_of([filter], source_l)
-    return events
+    events = await client.fetch_events([filter], source_l)
+    return events.to_vec()
 
 
 async def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
@@ -46,7 +46,7 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
         if len(split) == 3:
             pk = PublicKey.from_hex(split[1])
             id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-            events = await client.get_events_of([id_filter], relay_timeout)
+            events = await client.fetch_events([id_filter], relay_timeout)
         else:
             if str(event_id).startswith('note'):
                 event_id = EventId.from_bech32(event_id)
@@ -62,10 +62,10 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
             search_ids.append(event_id)
 
             id_filter = Filter().ids(search_ids)
-            events = await client.get_events_of([id_filter], relay_timeout)
+            events = await client.fetch_events([id_filter], relay_timeout)
 
-    if len(events) > 0:
-        return events
+    if len(events.to_vec()) > 0:
+        return events.to_vec()
     else:
         return None
 
@@ -73,9 +73,9 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
 async def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
     id_filter = Filter().ids(event_ids)
     # events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
-    events = await client.get_events_of([id_filter], relay_timeout)
-    if len(events) > 0:
-        return events
+    events = await client.fetch_events([id_filter], relay_timeout)
+    if len(events.to_vec()) > 0:
+        return events.to_vec()
     else:
         return None
 
@@ -98,29 +98,29 @@ async def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Eve
         job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
     else:
         job_id_filter = Filter().event(event_id).limit(1)
-    events = await client.get_events_of([job_id_filter], relay_timeout)
+    events = await client.fetch_events([job_id_filter], relay_timeout)
 
-    if len(events) > 0:
-        return events[0]
+    if len(events.to_vec()) > 0:
+        return events.to_vec()[0]
     else:
         return None
 
 
 async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
-    for tag in event_to_send.tags():
+    for tag in event_to_send.tags().to_vec():
         if tag.as_vec()[0] == 'p':
             ptag = PublicKey.parse(tag.as_vec()[1])
             ptags.append(ptag)
 
     filter = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
-    events = await client.get_events_of([filter], relay_timeout)
-    if len(events) == 0:
+    events = await client.fetch_events([filter], relay_timeout)
+    if len(events.to_vec()) == 0:
         return []
     else:
-        nip65event = events[0]
+        nip65event = events.to_vec()[0]
         relays = []
-        for tag in nip65event.tags():
+        for tag in nip65event.tags().to_vec():
             if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
                     or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
                 rtag = tag.as_vec()[1]
@@ -132,19 +132,19 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
 
 async def get_dm_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
-    for tag in event_to_send.tags():
+    for tag in event_to_send.tags().to_vec():
         if tag.as_vec()[0] == 'p':
             ptag = PublicKey.parse(tag.as_vec()[1])
             ptags.append(ptag)
 
     filter = Filter().kinds([Kind(10050)]).authors(ptags)
-    events = await client.get_events_of([filter], relay_timeout)
-    if len(events) == 0:
+    events = await client.fetch_events([filter], relay_timeout)
+    if len(events.to_vec()) == 0:
         return []
     else:
-        nip65event = events[0]
+        nip65event = events.to_vec()[0]
         relays = []
-        for tag in nip65event.tags():
+        for tag in nip65event.tags().to_vec():
             if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
                     or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
                 rtag = tag.as_vec()[1]
@@ -156,7 +156,7 @@ async def get_dm_relays(event_to_send: Event, client: Client, dvm_config):
 
 async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
-    for tag in event_to_send.tags():
+    for tag in event_to_send.tags().to_vec():
         if tag.as_vec()[0] == 'p':
             ptag = PublicKey.parse(tag.as_vec()[1])
             ptags.append(ptag)
@@ -167,11 +167,11 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
 
     await client.connect()
     filter = Filter().kinds([EventDefinitions.KIND_FOLLOW_LIST]).authors(ptags)
-    events = await client.get_events_of([filter], relay_timeout)
-    if len(events) == 0:
+    events = await client.fetch_events([filter], relay_timeout)
+    if len(events.to_vec()) == 0:
         return []
     else:
-        followlist = events[0]
+        followlist = events.to_vec()[0]
         try:
             content = json.loads(followlist.content())
             relays = []
@@ -186,7 +186,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     # 1. OK, Let's overcomplicate things.
     # 2. If our event has a relays tag, we just send the event to these relay in the classical way.
     relays = []
-    for tag in event.tags():
+    for tag in event.tags().to_vec():
         if tag.as_vec()[0] == 'relays':
             for index, param in enumerate(tag.as_vec()):
                 if index != 0:
@@ -215,13 +215,11 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
     # connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
     opts = ((
-                Options().wait_for_send(False).send_timeout(timedelta(seconds=5)).relay_limits(
-                    relaylimits)).connection(connection).connection_timeout(timedelta(seconds=30)))
+                Options().relay_limits(relaylimits)).connection(connection).connection_timeout(timedelta(seconds=30)))
 
     sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
-    signer = NostrSigner.keys(keys)
-    outboxclient = Client.with_opts(signer, opts)
+    outboxclient = Client.with_opts(keys, opts)
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays[:5]:
@@ -265,7 +263,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
 async def send_event(event: Event, client: Client, dvm_config):
     try:
         relays = []
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'relays':
                 for index, param in enumerate(tag.as_vec()):
                     if index != 0:
@@ -301,7 +299,7 @@ def check_and_decrypt_tags(event, dvm_config):
 
         is_encrypted = False
         p = ""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'encrypted':
                 is_encrypted = True
             elif tag.as_vec()[0] == 'p':
@@ -333,7 +331,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
     try:
         is_encrypted = False
         p = ""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'encrypted':
                 is_encrypted = True
             elif tag.as_vec()[0] == 'p':
@@ -363,11 +361,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
 
 async def update_profile_lnaddress(private_key, dvm_config, lud16="", ):
     keys = Keys.parse(private_key)
-    opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=5))
-            .skip_disconnected_relays(True))
-
-    signer = NostrSigner.keys(keys)
-    client = Client.with_opts(signer, opts)
+    client = Client(keys)
     for relay in dvm_config.RELAY_LIST:
         await client.add_relay(relay)
     await client.connect()
@@ -409,10 +403,10 @@ async def update_profile(dvm_config, client, lud16=""):
 
 
 async def send_nip04_dm(client: Client, msg, receiver: PublicKey, dvm_config):
-    signer = NostrSigner.keys(Keys.parse(dvm_config.PRIVATE_KEY))
-    content = await signer.nip04_encrypt(receiver, msg)
+    keys = Keys.parse(dvm_config.PRIVATE_KEY)
+    content = await keys.nip04_encrypt(receiver, msg)
     ptag = Tag.parse(["p", receiver.to_hex()])
-    event = EventBuilder(Kind(4), content, [ptag]).to_event(Keys.parse(dvm_config.PRIVATE_KEY))
+    event = EventBuilder(Kind(4), content, [ptag]).sign_with_keys(Keys.parse(dvm_config.PRIVATE_KEY))
     await client.send_event(event)
 
     # relays = await get_dm_relays(event, client, dvm_config)

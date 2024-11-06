@@ -1,9 +1,10 @@
 import json
 import os
+from io import BytesIO
 
+import requests
 from PIL import Image
 from nostr_sdk import Kind
-from tqdm import tqdm
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -15,7 +16,7 @@ from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.zap_utils import get_price_per_sat
 
 """
-This File contains a Module to generate an Image on Macs with M1/M2/M3 chips and receive results back. 
+This File contains a Module to generate an Image on replicate and receive results back. 
 
 Accepted Inputs: Prompt (text)
 Outputs: An url to an Image
@@ -23,21 +24,26 @@ Params:
 """
 
 
-class ImageGenerationMLX(DVMTaskInterface):
+class ImageGenerationReplicate(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_GENERATE_IMAGE
     TASK: str = "text-to-image"
     FIX_COST: float = 120
     dependencies = [("nostr-dvm", "nostr-dvm"),
-                    ("mlx", "mlx"),
-                    ("safetensors", "safetensors"),
-                    ("huggingface-hub", "huggingface-hub"),
-                    ("regex", "regex"),
-                    ("tqdm", "tqdm"),
-                    ]
+                    ("replicate", "replicate")]
+
+    def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
+                 admin_config: AdminConfig = None,
+                 options=None, task=None):
+        super().__init__(name, dvm_config, nip89config, nip88config, admin_config, options, task)
+        if options is not None:
+            self.model = options["model"]
+        else:
+            self.model = None
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
+
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
@@ -60,8 +66,10 @@ class ImageGenerationMLX(DVMTaskInterface):
     async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
         prompt = ""
-        width = "1024"
-        height = "1024"
+        width = "1"
+        height = "1"
+        if self.model is None:
+            self.model =  "stability-ai/stable-diffusion-3",
 
         for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
@@ -76,7 +84,7 @@ class ImageGenerationMLX(DVMTaskInterface):
                         width = (tag.as_vec()[2])
                         height = (tag.as_vec()[3])
                     elif len(tag.as_vec()) == 3:
-                        split = tag.as_vec()[2].split("x")
+                        split = tag.as_vec()[2].split(":")
                         if len(split) > 1:
                             width = split[0]
                             height = split[1]
@@ -87,7 +95,8 @@ class ImageGenerationMLX(DVMTaskInterface):
 
         options = {
             "prompt": prompt,
-            "size": width + "x" + height,
+            "model": self.model,
+            "aspect_ratio": width + ":" + height,
             "number": 1
         }
         request_form['options'] = json.dumps(options)
@@ -96,46 +105,28 @@ class ImageGenerationMLX(DVMTaskInterface):
 
     async def process(self, request_form):
         try:
-            import mlx.core as mx
-            from nostr_dvm.backends.mlx.modules.stable_diffusion import StableDiffusion
             options = self.set_options(request_form)
 
-            sd = StableDiffusion()
-            cfg_weight = 7.5
-            batchsize = 1
-            n_rows = 1
-            steps = 50
-            n_images = options["number"]
-
-            # Generate the latent vectors using diffusion
-            latents = sd.generate_latents(
-                options["prompt"],
-                n_images=n_images,
-                cfg_weight=cfg_weight,
-                num_steps=steps,
-                negative_text="",
+            import replicate
+            #width = int(options["size"].split("x")[0])
+            #height = int(options["size"].split("x")[1])
+            output = replicate.run(
+                options["model"],
+                input={"prompt": options["prompt"],
+                       "cfg": 3.5,
+                        "steps": 28,
+                        "prompt_upsampling": True,
+                        "aspect_ratio": options["aspect_ratio"],
+                        "output_format": "jpg",
+                        "output_quality": 90,
+                        "negative_prompt": "",
+                        "prompt_strength": 0.85,
+                        "safety_tolerance": 5
+                       }
             )
-            for x_t in tqdm(latents, total=steps):
-                mx.simplify(x_t)
-                mx.simplify(x_t)
-                mx.eval(x_t)
-
-            # Decode them into images
-            decoded = []
-            for i in tqdm(range(0, 1, batchsize)):
-                decoded.append(sd.decode(x_t[i: i + batchsize]))
-                mx.eval(decoded[-1])
-
-            # Arrange them on a grid
-            x = mx.concatenate(decoded, axis=0)
-            x = mx.pad(x, [(0, 0), (8, 8), (8, 8), (0, 0)])
-            B, H, W, C = x.shape
-            x = x.reshape(n_rows, B // n_rows, H, W, C).transpose(0, 2, 1, 3, 4)
-            x = x.reshape(n_rows * H, B // n_rows * W, C)
-            x = (x * 255).astype(mx.uint8)
-
-            # Save them to disc
-            image = Image.fromarray(x.__array__())
+            print(output[0])
+            response = requests.get(output[0])
+            image = Image.open(BytesIO(response.content)).convert("RGB")
             image.save("./outputs/image.jpg")
             result = await upload_media_to_hoster("./outputs/image.jpg")
             return result
@@ -157,13 +148,13 @@ def build_example(name, identifier, admin_config):
     nip89info = {
         "name": name,
         "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
-        "about": "I use Replicate to run StableDiffusion XL",
+        "about": "I use Replicate to run StableDiffusion 3",
         "encryptionSupported": True,
         "cashuAccepted": True,
         "nip90Params": {
-            "size": {
+            "ratio": {
                 "required": False,
-                "values": ["1024:1024", "1024x1792", "1792x1024"]
+                "values": ["1:1" , "3:2", "4:5"]
             }
         }
     }
@@ -172,9 +163,9 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    return ImageGenerationMLX(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                              admin_config=admin_config)
+    return ImageGenerationReplicate(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                        admin_config=admin_config)
 
 
 if __name__ == '__main__':
-    process_venv(ImageGenerationMLX)
+    process_venv(ImageGenerationReplicate)
