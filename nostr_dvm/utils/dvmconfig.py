@@ -68,8 +68,8 @@ class DVMConfig:
     # More info see here: https://github.com/cashubtc/nutshell
 
     ENABLE_NUTZAP = False
-    NUTZAP_RELAYS = ["wss://relay.primal.net"]
-    NUZAP_MINTS = ["https://mint.minibits.cash/Bitcoin", "https://mint.gwoq.com"]
+    NUTZAP_RELAYS = ["wss://relay.nostr.net"]
+    NUZAP_MINTS = ["https://mint.gwoq.com"]
     ENABLE_AUTO_MELT = False
     AUTO_MELT_AMOUNT = 1000
     REANNOUNCE_MINTS = True
