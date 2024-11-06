@@ -7,7 +7,7 @@ from datetime import timedelta
 import networkx as nx
 import pandas as pd
 from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Kind
+    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -84,7 +84,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         hops = 2
         dunbar = 1000
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
             elif tag.as_vec()[0] == 'param':
@@ -185,7 +185,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
@@ -207,13 +207,10 @@ class DiscoverPeopleWOT(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+        cli = ClientBuilder().signer(keys).database(database).build()
 
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
             await cli.add_relay(relay)
@@ -229,8 +226,8 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                 self.db_since) + " seconds.. this might take a while..")
-        dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        await cli.reconcile(filter1, dbopts)
+        dbopts = SyncOptions().direction(SyncDirection.DOWN)
+        await cli.sync(filter1, dbopts)
         await cli.database().delete(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
         await cli.shutdown()
@@ -259,14 +256,14 @@ async def analyse_users(user_ids=None, dunbar=100000000):
         if len(followers) > 0:
             for follower in followers:
                 frens = []
-                if len(follower.tags()) < dunbar:
-                    for tag in follower.tags():
+                if len(follower.tags().to_vec()) < dunbar:
+                    for tag in follower.tags().to_vec():
                         if tag.as_vec()[0] == "p":
                             frens.append(tag.as_vec()[1])
                     allfriends.append(Friend(follower.author().to_hex(), frens))
                 else:
                     print("Skipping friend: " + follower.author().to_hex() + "Following: " + str(
-                        len(follower.tags())) + " npubs")
+                        len(follower.tags().to_vec())) + " npubs")
 
             return allfriends
         else:

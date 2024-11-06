@@ -2,7 +2,7 @@ import json
 from datetime import timedelta
 
 from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, init_logger, LogLevel, Event, Kind, \
+    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Event, Kind, \
     RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
@@ -67,7 +67,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         user = event.author().to_hex()
         max_results = 100
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
             elif tag.as_vec()[0] == 'param':
@@ -92,14 +92,13 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         options = self.set_options(request_form)
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().wait_for_send(True).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)).relay_limits(
+            Options().relay_limits(
                 relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
 
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        cli = ClientBuilder().database(database).signer(keys).opts(opts).build()
         for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
             await cli.add_relay(relay)
 
@@ -110,7 +109,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
-        followers = await cli.get_events_of([followers_filter], relay_timeout)
+        followers = await cli.fetch_events([followers_filter], relay_timeout)
         # print(followers)
 
         # Negentropy reconciliation
@@ -120,17 +119,17 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         result_list = []
 
-        if len(followers) > 0:
+        if len(followers.to_vec()) > 0:
             newest = 0
-            best_entry = followers[0]
-            for entry in followers:
+            best_entry = followers.to_vec()[0]
+            for entry in followers.to_vec():
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
             # print(best_entry.as_json())
             followings = []
-            for tag in best_entry.tags():
+            for tag in best_entry.tags().to_vec():
                 if tag.as_vec()[0] == "p":
                     following = PublicKey.parse(tag.as_vec()[1])
                     followings.append(following)
@@ -167,7 +166,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
@@ -190,12 +189,10 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
     async def sync_db(self):
         try:
-            opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_LONG_TIMEOUT)))
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
-            signer = NostrSigner.keys(keys)
             database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+            cli = ClientBuilder().signer(keys).database(database).build()
 
             for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
                 await cli.add_relay(relay)
@@ -213,8 +210,8 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-            await cli.reconcile(filter1, dbopts)
+            dbopts = SyncOptions().direction(SyncDirection.DOWN)
+            await cli.sync(filter1, dbopts)
             await cli.database().delete(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
             await cli.shutdown()

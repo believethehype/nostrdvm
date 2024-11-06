@@ -33,7 +33,7 @@ async def parse_zap_event_tags(zap_event, keys, name, client, config):
     anon = False
     message = ""
     sender = zap_event.author()
-    for tag in zap_event.tags():
+    for tag in zap_event.tags().to_vec():
         if tag.as_vec()[0] == 'bolt11':
             invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
         elif tag.as_vec()[0] == 'e':
@@ -46,7 +46,7 @@ async def parse_zap_event_tags(zap_event, keys, name, client, config):
             zap_request_event = Event.from_json(tag.as_vec()[1])
             sender = check_for_zapplepay(zap_request_event.author().to_hex(),
                                          zap_request_event.content())
-            for z_tag in zap_request_event.tags():
+            for z_tag in zap_request_event.tags().to_vec():
                 if z_tag.as_vec()[0] == 'anon':
                     if len(z_tag.as_vec()) > 1:
                         # print("[" + name + "] Private Zap received.")
@@ -305,7 +305,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             if zapped_event is not None:
                 tags.append(e_tag)
             zap_request = EventBuilder(Kind(9733), content,
-                                       tags).to_event(keys).as_json()
+                                       tags).sign_with_keys(keys).as_json()
             keys = Keys.parse(encryption_key)
             if zapped_event is not None:
                 encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
@@ -317,7 +317,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             content = ""
 
         zap_request = EventBuilder(Kind(9734), content,
-                                   tags).to_event(keys).as_json()
+                                   tags).sign_with_keys(keys).as_json()
 
         response = requests.get(callback + "?amount=" + str(int(amount) * 1000) + "&nostr=" + urllib.parse.quote_plus(
             zap_request) + "&lnurl=" + encoded_lnurl)

@@ -46,7 +46,7 @@ class DiscoverReports(DVMTaskInterface):
         since_days = 90
         # users.append(event.author().to_hex())
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 users.append(tag.as_vec()[1])
             elif tag.as_vec()[0] == 'param':
@@ -70,12 +70,10 @@ class DiscoverReports(DVMTaskInterface):
         ns = SimpleNamespace()
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)).relay_limits(
-                relaylimits))
+            Options().relay_limits(relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        cli = Client.with_opts(signer, opts)
+        cli = Client.with_opts(keys, opts)
         # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
@@ -94,19 +92,19 @@ class DiscoverReports(DVMTaskInterface):
         # if we don't add users, e.g. by a wot, we check all our followers.
         if len(pubkeys) == 0:
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
-            followers = await cli.get_events_of([followers_filter], relay_timeout)
+            followers = await cli.fetch_events([followers_filter], relay_timeout)
 
-            if len(followers) > 0:
+            if len(followers.to_vec()) > 0:
                 result_list = []
                 newest = 0
-                best_entry = followers[0]
-                for entry in followers:
-                    print(len(best_entry.tags()))
+                best_entry = followers.to_vec()[0]
+                for entry in followers.to_vec():
+                    print(len(best_entry.tags().to_vec()))
                     print(best_entry.created_at().as_secs())
                     if entry.created_at().as_secs() > newest:
                         newest = entry.created_at().as_secs()
                         best_entry = entry
-                for tag in best_entry.tags():
+                for tag in best_entry.tags().to_vec():
                     if tag.as_vec()[0] == "p":
                         following = PublicKey.parse(tag.as_vec()[1])
                         pubkeys.append(following)
@@ -115,20 +113,20 @@ class DiscoverReports(DVMTaskInterface):
             options["since_days"])  # TODO make this an option, 180 days for now
         since = Timestamp.from_secs(ago)
         kind1984_filter = Filter().authors(pubkeys).kind(Kind(1984)).since(since)
-        reports = await cli.get_events_of([kind1984_filter], relay_timeout)
+        reports = await cli.fetch_events([kind1984_filter], relay_timeout)
 
         bad_actors = []
         ns.dic = {}
         reasons = ["spam", "illegal", "impersonation"]
         # init
-        for report in reports:
-            for tag in report.tags():
+        for report in reports.to_vec():
+            for tag in report.tags().to_vec():
                 if tag.as_vec()[0] == "p":
                     ns.dic[tag.as_vec()[1]] = 0
 
-        for report in reports:
+        for report in reports.to_vec():
             # print(report.as_json())
-            for tag in report.tags():
+            for tag in report.tags().to_vec():
                 if tag.as_vec()[0] == "p":
                     if len(tag.as_vec()) > 2 and tag.as_vec()[2] in reasons or len(tag.as_vec()) <= 2:
                         ns.dic[tag.as_vec()[1]] += 1
@@ -153,7 +151,7 @@ class DiscoverReports(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type

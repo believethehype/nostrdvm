@@ -16,10 +16,8 @@ async def main():
         "relay": "wss://gleasonator.dev/relay"
     }
 
-    opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=5)))
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    signer = NostrSigner.keys(keys)
-    cli = Client.with_opts(signer, opts)
+    cli = Client(keys)
 
     await cli.add_relay(options["relay"])
     await cli.connect()
@@ -29,14 +27,16 @@ async def main():
     authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
     notes_filter = Filter().authors(authors).custom_tag(SingleLetterTag.lowercase(Alphabet.L), ltags)
 
-    events = await cli.get_events_of([notes_filter], relay_timeout_long)
+    events_struct = await cli.fetch_events([notes_filter], relay_timeout_long)
+    events = events_struct.to_vec()
+
 
     result_list = []
     if len(events) > 0:
         event = events[0]
         print(event)
         result_list = []
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             print(tag.as_vec())
             if tag.as_vec()[0] == "e":
 

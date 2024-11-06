@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, Kind
+    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -57,7 +57,7 @@ class SearchUser(DVMTaskInterface):
         search = ""
         max_results = 100
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":
@@ -78,13 +78,10 @@ class SearchUser(DVMTaskInterface):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        cli = ClientBuilder().database(database).signer(keys).build()
 
         await cli.add_relay(self.relay)
         # cli.add_relay("wss://atl.purplerelay.com")
@@ -120,7 +117,7 @@ class SearchUser(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
@@ -140,12 +137,10 @@ class SearchUser(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+        cli = ClientBuilder().signer(keys).database(database).build()
 
         await cli.add_relay(self.relay)
         await cli.connect()
@@ -154,8 +149,8 @@ class SearchUser(DVMTaskInterface):
 
         # filter = Filter().author(keys.public_key())
         print("Syncing Profile Database.. this might take a while..")
-        dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        await cli.reconcile(filter1, dbopts)
+        dbopts = SyncOptions().direction(SyncDirection.DOWN)
+        await cli.sync(filter1, dbopts)
         print("Done Syncing Profile Database.")
         await cli.shutdown()
 

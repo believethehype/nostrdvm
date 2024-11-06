@@ -38,13 +38,7 @@ class Subscription:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-
-        wait_for_send = False
-        skip_disconnected_relays = True
-        opts = (Options().wait_for_send(wait_for_send).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT))
-                .skip_disconnected_relays(skip_disconnected_relays))
-        signer = NostrSigner.keys(self.keys)
-        self.client = Client.with_opts(signer, opts)
+        self.client = Client(self.keys)
 
         pk = self.keys.public_key()
 
@@ -100,7 +94,7 @@ class Subscription:
             if sender == self.keys.public_key().to_hex():
                 return
 
-            for tag in nostr_event.tags():
+            for tag in nostr_event.tags().to_vec():
                 if tag.as_vec()[0] == "p":
                     recipient = tag.as_vec()[1]
                 elif tag.as_vec()[0] == "e":
@@ -156,7 +150,7 @@ class Subscription:
             reply_tags = encryption_tags
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).to_event(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).sign_with_keys(keys)
             await send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.NAME + "]" + ": Sent Kind " + str(
                 EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + "success" + " " + reaction_event.as_json())
@@ -214,11 +208,10 @@ class Subscription:
             tags = [pTag, PTag, eTag, validTag, tierTag, alttag]
 
             event = EventBuilder(EventDefinitions.KIND_NIP88_PAYMENT_RECIPE,
-                                 message, tags).to_event(self.keys)
+                                 message, tags).sign_with_keys(self.keys)
 
             dvmconfig = DVMConfig()
-            signer = NostrSigner.keys(self.keys)
-            client = Client(signer)
+            client = Client(self.keys)
             for relay in dvmconfig.RELAY_LIST:
                 await client.add_relay(relay)
             await client.connect()
@@ -248,10 +241,10 @@ class Subscription:
 
                     subscriptionfilter = Filter().kind(EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT).author(
                         PublicKey.parse(subscriber)).limit(1)
-                    evts = await self.client.get_events_of([subscriptionfilter], relay_timeout)
-                    if len(evts) > 0:
-                        event7001id = evts[0].id().to_hex()
-                        print(evts[0].as_json())
+                    evts = await self.client.fetch_events([subscriptionfilter], relay_timeout)
+                    if len(evts.to_vec()) > 0:
+                        event7001id = evts.to_vec()[0].id().to_hex()
+                        print(evts.to_vec()[0].as_json())
                         tier_dtag = ""
                         recipient = ""
                         cadence = ""
@@ -260,7 +253,7 @@ class Subscription:
                         tier = "DVM"
                         overall_amount = 0
                         subscription_event_id = ""
-                        for tag in evts[0].tags():
+                        for tag in evts.to_vec()[0].tags().to_vec():
                             if tag.as_vec()[0] == "amount":
                                 overall_amount = int(tag.as_vec()[1])
 
@@ -275,7 +268,7 @@ class Subscription:
                                 jsonevent = json.loads(tag.as_vec()[1])
                                 subscription_event = Event.from_json(jsonevent)
 
-                                for tag in subscription_event.tags():
+                                for tag in subscription_event.tags().to_vec():
                                     if tag.as_vec()[0] == "d":
                                         tier_dtag = tag.as_vec()[1]
                                     elif tag.as_vec()[0] == "zap":
@@ -285,9 +278,9 @@ class Subscription:
 
                         if tier_dtag == "" or len(zaps) == 0:
                             tierfilter = Filter().id(EventId.parse(subscription_event_id))
-                            evts = await self.client.get_events_of([tierfilter], relay_timeout)
-                            if len(evts) > 0:
-                                for tag in evts[0].tags():
+                            evts = await self.client.fetch_events([tierfilter], relay_timeout)
+                            if len(evts.to_vec()) > 0:
+                                for tag in evts[0].tags().to_vec():
                                     if tag.as_vec()[0] == "d":
                                         tier_dtag = tag.as_vec()[0]
 

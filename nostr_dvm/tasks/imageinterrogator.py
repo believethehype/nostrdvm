@@ -51,7 +51,7 @@ class ImageInterrogator(DVMTaskInterface):
         method = "prompt"
         mode = "best"
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "url":

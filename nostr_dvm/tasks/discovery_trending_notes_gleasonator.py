@@ -52,7 +52,7 @@ class TrendingNotesGleasonator(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
         max_results = 200
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
             elif tag.as_vec()[0] == 'param':
@@ -70,11 +70,9 @@ class TrendingNotesGleasonator(DVMTaskInterface):
     async def process(self, request_form):
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        cli = Client.with_opts(signer, opts)
+        cli = Client(keys)
 
         await cli.add_relay(options["relay"])
         await cli.connect()
@@ -84,13 +82,13 @@ class TrendingNotesGleasonator(DVMTaskInterface):
         notes_filter = Filter().authors(authors).kind(Kind(1985)).custom_tag(SingleLetterTag.lowercase(Alphabet.L),
                                                                              ltags)
 
-        events = await cli.get_events_of([notes_filter], relay_timeout_long)
+        events = await cli.fetch_events([notes_filter], relay_timeout_long)
 
         result_list = []
-        if len(events) > 0:
-            event = events[0]
+        if len(events.to_vec()) > 0:
+            event = events.to_vec()[0]
             print(event)
-            for tag in event.tags():
+            for tag in event.tags().to_vec():
                 if tag.as_vec()[0] == "e":
                     e_tag = Tag.parse(["e", tag.as_vec()[1], tag.as_vec()[2]])
                     result_list.append(e_tag.as_vec())
@@ -105,7 +103,7 @@ class TrendingNotesGleasonator(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type

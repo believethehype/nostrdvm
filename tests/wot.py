@@ -14,7 +14,7 @@ from nostr_dvm.utils.definitions import relay_timeout
 warnings.filterwarnings('ignore')
 
 from nostr_sdk import  Options, Keys, NostrSigner, Filter, PublicKey, Kind, \
-    NegentropyOptions, NegentropyDirection, ClientBuilder, NostrDatabase
+    SyncOptions, SyncDirection, ClientBuilder, NostrDatabase
 
 
 # init_logger(LogLevel.INFO)
@@ -26,17 +26,16 @@ async def getmetadata(npub):
         pk = PublicKey.parse(npub)
     except:
         return "", "", ""
-    opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=5)))
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
-    signer = NostrSigner.keys(keys)
-    client = ClientBuilder().signer(signer).opts(opts).build()
+    client = ClientBuilder().signer(keys).build()
     await client.add_relay("wss://relay.damus.io")
     await client.add_relay("wss://relay.primal.net")
     await client.add_relay("wss://purplepag.es")
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    events = await client.get_events_of([profile_filter], relay_timeout)
+    event_struct = await client.fetch_events([profile_filter], relay_timeout)
+    events = event_struct.to_vec()
     if len(events) > 0:
         try:
             profile = json.loads(events[0].content())
@@ -53,11 +52,9 @@ async def getmetadata(npub):
 
 
 async def sync_db():
-    opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=5)))
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
-    signer = NostrSigner.keys(keys)
     database = NostrDatabase.lmdb("db/nostr_followlists.db")
-    cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+    cli = ClientBuilder().signer(keys).database(database).build()
 
     await cli.add_relay("wss://relay.damus.io")  # TODO ADD MORE
     # await cli.add_relay("wss://relay.primal.net")  # TODO ADD MORE
@@ -67,8 +64,8 @@ async def sync_db():
 
     # filter = Filter().author(keys.public_key())
     print("Syncing Profile Database.. this might take a while..")
-    dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-    await cli.reconcile(filter1, dbopts)
+    dbopts = SyncOptions().direction(SyncDirection.DOWN)
+    await cli.sync(filter1, dbopts)
     print("Done Syncing Profile Database.")
     await cli.shutdown()
 
@@ -92,7 +89,7 @@ async def analyse_users(user_ids=None):
         if len(followers) > 0:
             for follower in followers:
                 frens = []
-                for tag in follower.tags():
+                for tag in follower.tags().to_vec():
                     if tag.as_vec()[0] == "p":
                         frens.append(tag.as_vec()[1])
                 allfriends.append(Friend(follower.author().to_hex(), frens))
