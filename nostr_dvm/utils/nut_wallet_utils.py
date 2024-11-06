@@ -6,7 +6,7 @@ from datetime import timedelta
 
 import requests
 from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
-    EventId, nip04_decrypt, nip04_encrypt, Options, NostrSigner, PublicKey, Metadata
+    EventId, nip04_decrypt, nip04_encrypt, PublicKey, Metadata
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
@@ -50,13 +50,13 @@ class NutMint(object):
 
 class NutZapWallet:
 
-    async def client_connect(self, relay_list):
-        keys = Keys.parse(check_and_set_private_key("TEST_ACCOUNT_PK"))
+    async def client_connect(self, relay_list, keys):
+
         client = Client(keys)
         for relay in relay_list:
             await client.add_relay(relay)
         await client.connect()
-        return client, keys
+        return client
 
     async def create_new_nut_wallet(self, mint_urls, relays, client, keys, name, description):
         new_nut_wallet = NutWallet()
@@ -115,16 +115,16 @@ class NutZapWallet:
         nut_wallet = None
 
         wallet_filter = Filter().kind(EventDefinitions.KIND_NUT_WALLET).author(keys.public_key())
-        wallets_struct = await client.fetch_events([wallet_filter], relay_timeout_long)
-        wallets = wallets_struct.to_vec()
+        # relay_timeout = EventSource.relays(timedelta(seconds=10))
+        wallets = await client.fetch_events([wallet_filter], timedelta(seconds=10))
 
-        if len(wallets) > 0:
+        if len(wallets.to_vec()) > 0:
 
             nut_wallet = NutWallet()
 
             latest = 0
             best_wallet = None
-            for wallet_event in wallets:
+            for wallet_event in wallets.to_vec():
 
                 isdeleted = False
                 for tag in wallet_event.tags().to_vec():
@@ -190,18 +190,16 @@ class NutZapWallet:
 
             # Now all proof events
             proof_filter = Filter().kind(Kind(7375)).author(keys.public_key())
-            # relay_timeout = EventSource.relays(timedelta(seconds=5))
-            proof_events_struct = await client.fetch_events([proof_filter], relay_timeout)
-            proof_events = proof_events_struct.to_vec()
+            proof_events = await client.fetch_events([proof_filter], timedelta(seconds=5))
 
             latest_proof_sec = 0
             latest_proof_event_id = EventId
-            for proof_event in proof_events:
+            for proof_event in proof_events.to_vec():
                 if proof_event.created_at().as_secs() > latest_proof_sec:
                     latest_proof_sec = proof_event.created_at().as_secs()
                     latest_proof_event_id = proof_event.id()
 
-            for proof_event in proof_events:
+            for proof_event in proof_events.to_vec():
                 try:
                     content = nip44_decrypt(keys.secret_key(), keys.public_key(), proof_event.content())
                 except:
@@ -445,15 +443,13 @@ class NutZapWallet:
 
     async def fetch_mint_info_event(self, pubkey, client):
         mint_info_filter = Filter().kind(Kind(10019)).author(PublicKey.parse(pubkey))
-        # relay_timeout = EventSource.relays(timedelta(seconds=5))
-        events_struct = await client.fetch_events([mint_info_filter], relay_timeout)
-        preferences = events_struct.to_vec()
+        preferences = await client.fetch_events([mint_info_filter], timedelta(seconds=5))
         mints = []
         relays = []
         pubkey = ""
 
-        if len(preferences) > 0:
-            preference = preferences[0]
+        if len(preferences.to_vec()) > 0:
+            preference = preferences.to_vec()[0]
 
             for tag in preference.tags().to_vec():
                 if tag.as_vec()[0] == "pubkey":
