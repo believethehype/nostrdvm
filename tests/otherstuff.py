@@ -418,9 +418,9 @@ def playground(announce=False):
 
 
 
-    #discovery_bots = build_botfarms("Bot Hunter", "discovery_botfarms", announce)
+    discovery_bots = build_botfarms("Bot Hunter", "discovery_botfarms", announce)
     #bot_config.SUPPORTED_DVMS.append(discovery_bots)
-    #discovery_bots.run()
+    discovery_bots.run()
 
 
     admin_config = AdminConfig()
