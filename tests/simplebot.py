@@ -20,8 +20,7 @@ async def test():
     pk = keys.public_key()
     print(f"Bot public key: {pk.to_bech32()}")
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
 
     await client.add_relay("wss://relay.damus.io")
     await client.add_relay("wss://nostr.mom")

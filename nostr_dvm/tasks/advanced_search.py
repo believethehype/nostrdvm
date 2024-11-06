@@ -54,7 +54,7 @@ class AdvancedSearch(DVMTaskInterface):
         max_results = 100
         relay = "wss://relay.nostr.band"
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":
@@ -88,11 +88,9 @@ class AdvancedSearch(DVMTaskInterface):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        cli = Client.with_opts(signer, opts)
+        cli = Client(keys)
 
         await cli.add_relay(options["relay"])
 
@@ -132,12 +130,12 @@ class AdvancedSearch(DVMTaskInterface):
             notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
                 search_since).until(search_until).limit(options["max_results"])
 
-        events = await cli.get_events_of([notes_filter], relay_timeout)
+        events = await cli.fetch_events([notes_filter], relay_timeout)
 
         result_list = []
-        if len(events) > 0:
+        if len(events.to_vec()) > 0:
 
-            for event in events:
+            for event in events.to_vec():
                 e_tag = Tag.parse(["e", event.id().to_hex()])
                 result_list.append(e_tag.as_vec())
 
@@ -146,7 +144,7 @@ class AdvancedSearch(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type

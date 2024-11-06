@@ -16,7 +16,6 @@ from nostr_dvm.tasks.imagegeneration_openai_dalle import ImageGenerationDALLE
 from nostr_dvm.tasks.imagegeneration_replicate import ImageGenerationReplicate
 from nostr_dvm.tasks.imagegeneration_replicate_fluxpro import ImageGenerationReplicateFluxPro
 from nostr_dvm.tasks.imagegeneration_replicate_recraft import ImageGenerationReplicateRecraft
-from nostr_dvm.tasks.imagegeneration_replicate_sdxl import ImageGenerationReplicateSDXL
 from nostr_dvm.tasks.imagegeneration_sd35_api import ImageGenerationSD35
 from nostr_dvm.tasks.videogeneration_replicate_svd import VideoGenerationReplicateSVD
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -84,7 +83,7 @@ def build_dalle(name, identifier, announce):
     admin_config.REBROADCAST_NIP89 = announce
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
     dvm_config.NEW_USER_BALANCE = 0
-    dvm_config.USE_OWN_VENV = True
+    dvm_config.USE_OWN_VENV = False
     profit_in_sats = 10
     dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
 

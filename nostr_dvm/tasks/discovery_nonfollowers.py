@@ -46,7 +46,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
 
         # default values
         user = event.author().to_hex()
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'param':
                 param = tag.as_vec()[1]
                 if param == "user":  # check for param type
@@ -64,17 +64,15 @@ class DiscoverNonFollowers(DVMTaskInterface):
         ns = SimpleNamespace()
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)).relay_limits(
+            Options().relay_limits(
                 relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
-        cli = Client.with_opts(signer, opts)
+        cli = Client.with_opts(keys, opts)
         # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         # add nostr band, too.
-        ropts = RelayOptions().ping(False)
         await cli.add_relay("wss://nostr.band")
 
         await cli.connect()
@@ -83,13 +81,13 @@ class DiscoverNonFollowers(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
-        followers = await cli.get_events_of([followers_filter], relay_timeout)
+        followers = await cli.fetch_events([followers_filter], relay_timeout)
 
-        if len(followers) > 0:
+        if len(followers.to_vec()) > 0:
             result_list = []
             newest = 0
-            best_entry = followers[0]
-            for entry in followers:
+            best_entry = followers.to_vec()[0]
+            for entry in followers.to_vec():
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
@@ -97,7 +95,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
             print(best_entry.as_json())
             followings = []
             ns.dic = {}
-            for tag in best_entry.tags():
+            for tag in best_entry.tags().to_vec():
                 if tag.as_vec()[0] == "p":
                     following = tag.as_vec()[1]
                     followings.append(following)
@@ -106,12 +104,8 @@ class DiscoverNonFollowers(DVMTaskInterface):
 
             async def scanList(users, instance, i, st):
                 from nostr_sdk import Filter
-
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
-                opts = Options().wait_for_send(True).send_timeout(
-                    timedelta(seconds=5)).skip_disconnected_relays(True)
-                signer = NostrSigner.keys(keys)
-                cli = Client.with_opts(signer, opts)
+                cli = Client(keys)
                 for relay in self.dvm_config.RELAY_LIST:
                     await cli.add_relay(relay)
                 await cli.connect()
@@ -120,19 +114,19 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     filters = []
                     filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(Kind(3))
                     filters.append(filter1)
-                    followers = await cli.get_events_of(filters, relay_timeout)
+                    followers = await cli.fetch_events(filters, relay_timeout)
 
-                    if len(followers) > 0:
+                    if len(followers.to_vec()) > 0:
                         result_list = []
                         newest = 0
-                        best_entry = followers[0]
-                        for entry in followers:
+                        best_entry = followers.to_vec()[0]
+                        for entry in followers.to_vec():
                             if entry.created_at().as_secs() > newest:
                                 newest = entry.created_at().as_secs()
                                 best_entry = entry
 
                         foundfollower = False
-                        for tag in best_entry.tags():
+                        for tag in best_entry.tags().to_vec():
                             if tag.as_vec()[0] == "p":
                                 if len(tag.as_vec()) > 1:
                                     if tag.as_vec()[1] == options["user"]:
@@ -180,7 +174,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type

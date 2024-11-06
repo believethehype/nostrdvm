@@ -37,34 +37,32 @@ async def get_following(pks, max_time_request=10, newer_than_time=None):
 
     # newer_than_time provided? If so, it only fetch events that are newer
     if newer_than_time is None:
-        filter = nostr_sdk.Filter().authors(list_pk).kind(Kind(3))
+        filter = Filter().authors(list_pk).kind(Kind(3))
 
     else:
         newer_than_time = round(newer_than_time)
         ts = nostr_sdk.Timestamp().from_secs(newer_than_time)
-        filter = nostr_sdk.Filter().authors(list_pk).kind(3).since(ts)
+        filter = Filter().authors(list_pk).kind(Kind(3)).since(ts)
 
     # fetching events
-    opts = (Options().wait_for_send(False).send_timeout(datetime.timedelta(seconds=5)))
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    signer = NostrSigner.keys(keys)
-    cli = ClientBuilder().signer(signer).opts(opts).build()
+    cli = ClientBuilder().signer(keys).build()
 
     for relay in DVMConfig.RECONCILE_DB_RELAY_LIST:
         await cli.add_relay(relay)
 
     await cli.connect()
 
-    events = await cli.get_events_of([filter], relay_timeout)
+    events = await cli.fetch_events([filter], relay_timeout)
 
     # initializing the graph structure
     following = nx.DiGraph()
     following.add_nodes_from(pks)
 
-    if events == []:
+    if not events.to_vec():
         return following
 
-    for event in events:
+    for event in events.to_vec():
 
         author = event.author().to_hex()
 
@@ -73,7 +71,7 @@ async def get_following(pks, max_time_request=10, newer_than_time=None):
 
         if event.verify() and author in following.nodes() and 'timestamp' not in following.nodes[author]:
             # updating the nodes and edges
-            nodes = event.public_keys()
+            nodes = event.tags().public_keys() # TODO
 
             # converting to hex and removing self-following
             nodes = [pk.to_hex() for pk in nodes if pk.to_hex() != author]
@@ -194,7 +192,7 @@ def split_set(my_set, max_batch):
 
 
 def save_network(index_map, network_graph, name=None):
-    if name == None:
+    if name is None:
         # adding unix time to file name to avoid replacing an existing file
         name = str(round(time.time()))
     # filename = os.path.join('/cache/', 'index_map_' + name + '.json')
@@ -583,10 +581,8 @@ async def get_metadata(npub):
         pk = PublicKey.parse(npub)
     except:
         return "", "", ""
-    opts = (Options().wait_for_send(False).send_timeout(datetime.timedelta(seconds=5)))
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    signer = NostrSigner.keys(keys)
-    client = ClientBuilder().signer(signer).opts(opts).build()
+    client = ClientBuilder().signer(keys).build()
     await client.add_relay("wss://relay.damus.io")
     await client.add_relay("wss://relay.primal.net")
     await client.add_relay("wss://purplepag.es")
@@ -594,7 +590,8 @@ async def get_metadata(npub):
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
 
-    events = await client.get_events_of([profile_filter], relay_timeout)
+    events_struct = await client.fetch_events([profile_filter], relay_timeout)
+    events = events_struct.to_vec()
     if len(events) > 0:
         try:
             profile = json.loads(events[0].content())

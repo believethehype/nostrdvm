@@ -18,7 +18,7 @@ async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     input_value = ""
     input_type = ""
     count = 0
-    for tag in event.tags():
+    for tag in event.tags().to_vec():
         if tag.as_vec()[0] == 'i':
             input_value = tag.as_vec()[1]
             input_type = tag.as_vec()[2]
@@ -132,7 +132,7 @@ def check_nip94_event_for_media(evt, input_value, input_type):
     input_type = "text"
     input_value = evt.content()
     if evt.kind() == 1063:
-        for tag in evt.tags():
+        for tag in evt.tags().to_vec():
             if tag.as_vec()[0] == 'url':
                 input_type = "url"
                 input_value = tag.as_vec()[1]

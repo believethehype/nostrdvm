@@ -21,10 +21,9 @@ async def create_reaction(keys, title, dtag):
 
     keys = Keys.parse(keys)
     content = ""
-    event = EventBuilder(Kind(30030), content, [d_tag, title_tag] + emoji_tags).to_event(keys)
+    event = EventBuilder(Kind(30030), content, [d_tag, title_tag] + emoji_tags).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().RELAY_LIST:
         await client.add_relay(relay)
@@ -43,10 +42,9 @@ async def delete_reaction(keys, eid: str, dtag: str):
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", "30030:" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).to_event(keys)
+    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).sign_with_keys(keys)
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    client = Client(keys)
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().RELAY_LIST:
         await client.add_relay(relay)

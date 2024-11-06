@@ -58,7 +58,7 @@ class VideoGenerationReplicateSVD(DVMTaskInterface):
         motion_bucket_id = 127  # Increase overall motion in the generated video
         cond_aug = 0.02  # Amount of noise to add to input image
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "url":

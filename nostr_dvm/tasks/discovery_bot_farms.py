@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, NegentropyOptions, NegentropyDirection, Kind
+    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -53,7 +53,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         search = "airdrop;just your average nostr enjoyer"  # ;@nostrich.house;
         max_results = 500
 
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":
@@ -74,13 +74,11 @@ class DiscoveryBotFarms(DVMTaskInterface):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
 
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().database(database).signer(signer).opts(opts).build()
+        cli = ClientBuilder().database(database).signer(keys).build()
 
         await cli.add_relay("wss://relay.damus.io")
         # cli.add_relay("wss://atl.purplerelay.com")
@@ -116,7 +114,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags():
+        for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'output':
                 format = tag.as_vec()[1]
                 if format == "text/plain":  # check for output type
@@ -136,12 +134,10 @@ class DiscoveryBotFarms(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        opts = (Options().wait_for_send(False).send_timeout(timedelta(seconds=self.dvm_config.RELAY_TIMEOUT)))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        signer = NostrSigner.keys(keys)
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().signer(signer).database(database).opts(opts).build()
+        cli = ClientBuilder().signer(keys).database(database).build()
 
         await cli.add_relay("wss://relay.damus.io")
         await cli.add_relay("wss://nostr21.com")
@@ -151,8 +147,8 @@ class DiscoveryBotFarms(DVMTaskInterface):
 
         # filter = Filter().author(keys.public_key())
         print("Syncing Profile Database.. this might take a while..")
-        dbopts = NegentropyOptions().direction(NegentropyDirection.DOWN)
-        await cli.reconcile(filter1, dbopts)
+        dbopts = SyncOptions().direction(SyncDirection.DOWN)
+        await cli.sync(filter1, dbopts)
         print("Done Syncing Profile Database.")
 
 
