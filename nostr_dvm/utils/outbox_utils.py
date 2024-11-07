@@ -38,5 +38,6 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "w
                            "wss://nostr-01.bolt.observer", "wss://nostr1.tunnelsats.com", "wss://relay.nostr.ch",
                            "wss://relay.nostr.io", "wss://nostr.thank.eu", "wss://nostr.bitcoinplebs.de",
                            "wss://adult.18plus.social", "wss://bostr.online", "wss://relay.current.fyi",
-                           "wss://nosdrive.app/relay", "wss://studio314.nostr1.com", "wss://relay.nostrbr.online"
+                           "wss://nosdrive.app/relay", "wss://studio314.nostr1.com", "wss://relay.nostrbr.online",
+                           "wss://relay.0xchat.com"
                            ]
