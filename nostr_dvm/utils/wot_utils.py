@@ -98,7 +98,7 @@ async def build_wot_network(seed_pks, depth=2, max_batch=500, max_time_request=1
     if type(seed_pks) == str:
         seed_pks = [seed_pks]
 
-    print('Step 1: fetching kind 3 events from relays & pre-processing')
+    print('WOT: fetching kind 3 events from relays & pre-processing to build WOT')
 
     tic = time.time()
 
