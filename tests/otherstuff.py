@@ -239,6 +239,7 @@ def build_botfarms(name, identifier, announce):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
+    dvm_config.UPDATE_DATABASE = False
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 seconds
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS

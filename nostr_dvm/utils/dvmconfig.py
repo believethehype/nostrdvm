@@ -56,7 +56,7 @@ class DVMConfig:
     SCHEDULE_UPDATES_SECONDS = 0
     UPDATE_DATABASE = True  # DVMs that use a db manage their db by default. If a dvm should use the same db as another DVM, deactive it for those who do.
     CUSTOM_PROCESSING_MESSAGE = None
-    LOGLEVEL = LogLevel.DEBUG
+    LOGLEVEL = LogLevel.INFO
     KIND = None
 
     DVM_KEY = None

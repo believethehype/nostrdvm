@@ -55,7 +55,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
         use_logger = False
         if use_logger:
-            init_logger(LogLevel.DEBUG)
+            init_logger(self.dvm_config.LOGLEVEL)
 
         if self.dvm_config.UPDATE_DATABASE:
             await self.sync_db()
@@ -150,7 +150,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+        if self.dvm_config.LOGLEVEL.value == LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
         # await cli.shutdown()
@@ -208,7 +208,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
-            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            if self.dvm_config.LOGLEVEL.value == LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
 
@@ -222,7 +222,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             await cli.database().delete(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
             await cli.shutdown()
-            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            if self.dvm_config.LOGLEVEL.value == LogLevel.DEBUG.value:
                 print(
                     "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
                         self.db_since) + " seconds..")
