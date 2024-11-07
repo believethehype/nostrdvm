@@ -17,7 +17,7 @@ setup(
     install_requires=["nostr-sdk==0.36.0",
                       "bech32==1.2.0",
                       "pycryptodome==3.20.0",
-                      "yt-dlp==2024.5.27",
+                      "yt-dlp==2024.11.04",
                       "python-dotenv==1.0.0",
                       "emoji==2.12.1",
                       "ffmpegio==0.9.1",
