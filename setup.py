@@ -26,8 +26,8 @@ setup(
                       "pandas==2.2.2",
                       "requests==2.32.3",
                       "moviepy==2.0.0.dev2",
-                      "zipp==3.17.0",
-                      "urllib3==2.2.1",
+                      "zipp==3.19.1",
+                      "urllib3==2.2.2",
                       "networkx==3.3",
                       "scipy==1.13.1",
                       "beautifulsoup4==4.12.3"
