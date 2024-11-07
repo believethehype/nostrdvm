@@ -230,7 +230,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     #
     await outboxclient.connect()
     try:
-        print("Connected, sending event")
+        #print("Connected, sending event")
         event_id = await outboxclient.send_event(event)
         print(event_id.output)
     except Exception as e:

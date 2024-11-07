@@ -107,7 +107,6 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.FIX_COST = cost
@@ -410,7 +409,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
-    dvm_config.LOGLEVEL = LogLevel.DEBUG
+    dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.DATABASE = database
@@ -535,7 +534,6 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
 
-    dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -575,7 +573,6 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = False
-    dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
