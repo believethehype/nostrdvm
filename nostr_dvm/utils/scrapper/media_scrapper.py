@@ -11,6 +11,7 @@ import yt_dlp
 from tqdm import tqdm
 
 browser = "chrome"  # "firefox"
+usebrowser = False
 
 
 def download_xvideo(url, target_location) -> None:
@@ -124,9 +125,13 @@ def YTDownload(link, path, audio_only=True):
 def get_media_duration(url):
     try:
         # ℹ️ See help(yt_dlp.YoutubeDL) for a list of available options and public functions
-        ydl_opts = {
-            'cookiesfrombrowser': (browser, None, None, None),
-        }
+        if usebrowser:
+            ydl_opts = {
+                'cookiesfrombrowser': (browser, None, None, None),
+            }
+        else:
+            ydl_opts = {}
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
@@ -139,9 +144,12 @@ def get_media_duration(url):
 def get_media_info(url):
     try:
         # ℹ️ See help(yt_dlp.YoutubeDL) for a list of available options and public functions
-        ydl_opts = {
-            'cookiesfrombrowser': (browser, None, None, None),
-        }
+        if usebrowser:
+            ydl_opts = {
+                'cookiesfrombrowser': (browser, None, None, None),
+            }
+        else:
+            ydl_opts = {}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
 
@@ -153,17 +161,29 @@ def get_media_info(url):
 
 def get_audio(URLS):
     try:
-        ydl_opts = {
-            'cookiesfrombrowser': (browser, None, None, None),
-            'format': 'm4a/bestaudio/best',
-            "outtmpl": 'outputs/audio',
-            'overwrites': 'True',
-            # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
-            'postprocessors': [{  # Extract audio using ffmpeg
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'mp3',
-            }]
-        }
+        if usebrowser:
+            ydl_opts = {
+                'cookiesfrombrowser': (browser, None, None, None),
+                'format': 'm4a/bestaudio/best',
+                "outtmpl": 'outputs/audio',
+                'overwrites': 'True',
+                # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
+                'postprocessors': [{  # Extract audio using ffmpeg
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                }]
+            }
+        else:
+            ydl_opts = {
+                'format': 'm4a/bestaudio/best',
+                "outtmpl": 'outputs/audio',
+                'overwrites': 'True',
+                # ℹ️ See help(yt_dlp.postprocessor) for a list of available Postprocessors and their arguments
+                'postprocessors': [{  # Extract audio using ffmpeg
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                }]
+            }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             error_code = ydl.download(URLS)
 
@@ -174,13 +194,21 @@ def get_audio(URLS):
 
 def get_video(URLS):
     try:
-        ydl_opts = {
-            'cookiesfrombrowser': (browser, None, None, None),
-            'format': 'mp4',
-            'overwrites': 'True',
-            # "outtmpl": '/%(uploader)s_%(title)s.%(ext)s',
-            "outtmpl": 'outputs/video.mp4',
-        }
+
+        if usebrowser:
+            ydl_opts = {
+                'cookiesfrombrowser': (browser, None, None, None),
+                'format': 'mp4',
+                'overwrites': 'True',
+                "outtmpl": 'outputs/video.mp4',
+            }
+        else:
+            ydl_opts = {
+                'format': 'mp4',
+                'overwrites': 'True',
+                "outtmpl": 'outputs/video.mp4',
+            }
+
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download(URLS)
