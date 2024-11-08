@@ -1,4 +1,5 @@
-AVOID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine",
+AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
+                           "wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine",
                            "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
                            "wss://brb.io",
                            "wss://relay.lnpay.me", "wss://relay.snort.social", "wss://relay.minds.com/nostr/v1/ws",
@@ -39,5 +40,9 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nostrelay.yeghro.site", "wss://nostr.wine", "w
                            "wss://relay.nostr.io", "wss://nostr.thank.eu", "wss://nostr.bitcoinplebs.de",
                            "wss://adult.18plus.social", "wss://bostr.online", "wss://relay.current.fyi",
                            "wss://nosdrive.app/relay", "wss://studio314.nostr1.com", "wss://relay.nostrbr.online",
-                           "wss://relay.0xchat.com"
+                           "wss://relay.0xchat.com", "wss://lightning.benchodroff.com/nostrclient/api/v1/relay",
+                           "wss://relay.nostreggs.io", "wss://relay.blackbyte.nl", "ws://localhost:8080", "wss://127.0.0.1:4869", "wss://sendit.nosflare.io",
+                           "wss://astral.ninja", "wss://nostr.libertasprimordium.com", "wss://relay.shitforce.one", "wss://nostr.cro.social",
+                           "wss://relay.nostreggs.io"
+
                            ]
