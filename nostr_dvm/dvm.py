@@ -43,7 +43,7 @@ class DVM:
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().relay_limits(relaylimits))
+            Options().relay_limits(relaylimits)) #.difficulty(28)
 
         self.client = Client.with_opts(self.keys, opts)
         self.job_list = []
