@@ -43,6 +43,6 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://relay.0xchat.com", "wss://lightning.benchodroff.com/nostrclient/api/v1/relay",
                            "wss://relay.nostreggs.io", "wss://relay.blackbyte.nl", "ws://localhost:8080", "wss://127.0.0.1:4869", "wss://sendit.nosflare.io",
                            "wss://astral.ninja", "wss://nostr.libertasprimordium.com", "wss://relay.shitforce.one", "wss://nostr.cro.social",
-                           "wss://relay.nostreggs.io"
+                           "wss://relay.nostreggs.io", "wss://nostr.rocks", "wss://groups.0xchat.com"
 
                            ]
