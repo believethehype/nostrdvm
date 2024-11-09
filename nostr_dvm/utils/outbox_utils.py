@@ -45,6 +45,7 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://astral.ninja", "wss://nostr.libertasprimordium.com", "wss://relay.shitforce.one", "wss://nostr.cro.social",
                            "wss://relay.nostreggs.io", "wss://nostr.rocks", "wss://groups.0xchat.com", "wss://bostr.lecturify.net", "wss://dave.st.germa.in/nostr",
                            "wss://dvms.f7z.io", "wss://nostr.social", "wss://i.nostr.build", "wss://teemie1-relay.duckdns.org",
-                           "wss://nostrs.build", "wss://relay.hllo.live", "wss://relay-pub.deschooling.us"
+                           "wss://nostrs.build", "wss://relay.hllo.live", "wss://relay-pub.deschooling.us", "wss://nostr.sandwich.farm", "wss://nostr.lol", "wss://nostr.developer.li",
+                           "wss://paid.spore.ws"
 
                            ]
