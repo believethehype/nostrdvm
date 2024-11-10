@@ -49,7 +49,7 @@ class SearchUser(DVMTaskInterface):
 
     async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         self.dvm_config = dvm_config
-        print(self.dvm_config.PRIVATE_KEY)
+        #print(self.dvm_config.PRIVATE_KEY)
 
         request_form = {"jobID": event.id().to_hex()}
 
@@ -104,7 +104,7 @@ class SearchUser(DVMTaskInterface):
                     try:
                         if options["search"].lower() in event.content().lower():
                             p_tag = Tag.parse(["p", event.author().to_hex()])
-                            print(event.as_json())
+                            #print(event.as_json())
                             result_list.append(p_tag.as_vec())
                             index += 1
                     except Exception as exp:
@@ -149,9 +149,12 @@ class SearchUser(DVMTaskInterface):
 
         # filter = Filter().author(keys.public_key())
         print("Syncing Profile Database.. this might take a while..")
-        dbopts = SyncOptions().direction(SyncDirection.DOWN)
-        await cli.sync(filter1, dbopts)
-        print("Done Syncing Profile Database.")
+        try:
+            dbopts = SyncOptions().direction(SyncDirection.DOWN)
+            await cli.sync(filter1, dbopts)
+            print("Done Syncing Profile Database.")
+        except Exception as exp:
+            print(str(exp))
         await cli.shutdown()
 
 
