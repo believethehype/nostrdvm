@@ -221,7 +221,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             # Do not delete profiles
             await cli.database().delete(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-            await cli.shutdown()
+            #await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
                     "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
