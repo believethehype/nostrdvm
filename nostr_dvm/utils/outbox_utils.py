@@ -1,3 +1,7 @@
+# Manual List of known relays we can not write to. It's optional, but this way we avoid
+# even trying to send to them, avoiding potential errors or delays on the way.
+
+
 AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine",
                            "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
@@ -47,6 +51,7 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://dvms.f7z.io", "wss://nostr.social", "wss://i.nostr.build", "wss://teemie1-relay.duckdns.org",
                            "wss://nostrs.build", "wss://relay.hllo.live", "wss://relay-pub.deschooling.us", "wss://nostr.sandwich.farm", "wss://nostr.lol", "wss://nostr.developer.li",
                            "wss://paid.spore.ws", "'ws://ofotwjuiv7t6q4azt2fjx3qo7esglmxdeqmh2qvdsdnxw5eqgza24iyd.onion", "wss://r.kojira.io", "wss://nostr-relay.h3z.jp", "wss://relay.yozora.world",
-                           "wss://nostr.0xtr.dev", "wss://purplepeg.es", "wss://nostr.mutinywallet.com", "wss://nostr.zebedee.cloud", "wss://relay.wikifreedia.xyz", "wss://relay.exit.pub"
+                           "wss://nostr.0xtr.dev", "wss://purplepeg.es", "wss://nostr.mutinywallet.com", "wss://nostr.zebedee.cloud", "wss://relay.wikifreedia.xyz", "wss://relay.exit.pub",
+                           "wss://njump.mecheck", "wss://relay.nostr.band"
 
                            ]
