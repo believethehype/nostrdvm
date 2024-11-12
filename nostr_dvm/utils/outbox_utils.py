@@ -52,6 +52,7 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://nostrs.build", "wss://relay.hllo.live", "wss://relay-pub.deschooling.us", "wss://nostr.sandwich.farm", "wss://nostr.lol", "wss://nostr.developer.li",
                            "wss://paid.spore.ws", "'ws://ofotwjuiv7t6q4azt2fjx3qo7esglmxdeqmh2qvdsdnxw5eqgza24iyd.onion", "wss://r.kojira.io", "wss://nostr-relay.h3z.jp", "wss://relay.yozora.world",
                            "wss://nostr.0xtr.dev", "wss://purplepeg.es", "wss://nostr.mutinywallet.com", "wss://nostr.zebedee.cloud", "wss://relay.wikifreedia.xyz", "wss://relay.exit.pub",
-                           "wss://njump.mecheck", "wss://relay.nostr.band"
+                           "wss://njump.mecheck", "wss://relay.nostr.band", "wss://nostr.kollider.xyz", "wss://fog.dedyn.io", "wss://relay.current.fyi",
+                           "wss://momostr.pink", "wss://nostr.bitcoinlighthouse.de", "wss://140.f7z.io"
 
                            ]
