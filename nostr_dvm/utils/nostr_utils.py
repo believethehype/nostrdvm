@@ -237,14 +237,14 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         event_id = None
         print(e)
 
+    for relay in relays:
+        try:
+            await outboxclient.force_remove_relay(relay)
+        except:
+            print("Error removing relay: " + relay)
+
     # 5. Fallback, if we couldn't send the event to any relay, we try to send to generic relays instead.
     if event_id is None:
-        for relay in relays:
-            try:
-                await outboxclient.remove_relay(relay)
-            except:
-                print("Error removing relay: " + relay)
-
         relays = await get_main_relays(event, client, dvm_config)
         for relay in relays:
             await outboxclient.add_relay(relay)
