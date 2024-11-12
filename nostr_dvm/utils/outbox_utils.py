@@ -64,6 +64,6 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://fog.dedyn.io", "wss://relay.current.fyi",
                            "wss://momostr.pink", "wss://nostr.bitcoinlighthouse.de", "wss://140.f7z.io",
                            "wss://relay.nostrcheck.me", "wss://relay.mostr.pub", "wss://purplepag.es",
-                           "wss://nostr.bitcoiner.social"
+                           "wss://nostr.bitcoiner.social", "wss://relay.galtsgulch.cc"
 
                            ]
