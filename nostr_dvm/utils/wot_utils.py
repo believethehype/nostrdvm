@@ -17,7 +17,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 
 
-async def get_following(pks, max_time_request=10, newer_than_time=None):
+async def get_following(pks, max_time_request=10, newer_than_time=None, dvm_config=DVMConfig()):
     '''
         OUTPUT: following; a networkx graph
         > each node has associated the timestamp of the latest retrivable kind3 event
@@ -48,13 +48,17 @@ async def get_following(pks, max_time_request=10, newer_than_time=None):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     cli = ClientBuilder().signer(keys).build()
 
-    for relay in DVMConfig.RECONCILE_DB_RELAY_LIST:
+    for relay in dvm_config.SYNC_DB_RELAY_LIST:
         await cli.add_relay(relay)
 
     await cli.connect()
 
     events = await cli.fetch_events([filter], relay_timeout)
 
+    for relay in dvm_config.SYNC_DB_RELAY_LIST:
+        await cli.force_remove_relay(relay)
+
+    await cli.shutdown()
     # initializing the graph structure
     following = nx.DiGraph()
     following.add_nodes_from(pks)
@@ -85,7 +89,7 @@ async def get_following(pks, max_time_request=10, newer_than_time=None):
     return following
 
 
-async def build_wot_network(seed_pks, depth=2, max_batch=500, max_time_request=10):
+async def build_wot_network(seed_pks, depth=2, max_batch=500, max_time_request=10, dvm_config=DVMConfig()):
     if not seed_pks:
         print('Error: seed_pks cannot be empty')
         return
@@ -111,7 +115,7 @@ async def build_wot_network(seed_pks, depth=2, max_batch=500, max_time_request=1
 
     # build the network internal function
     index_map, network_graph = await _build_network_from(index_map, seed_graph, set(), depth, max_batch,
-                                                         max_time_request)
+                                                         max_time_request, dvm_config=dvm_config)
 
     toc = time.time()
 
@@ -120,7 +124,7 @@ async def build_wot_network(seed_pks, depth=2, max_batch=500, max_time_request=1
     return index_map, network_graph
 
 
-async def _build_network_from(index_map, network_graph, visited_pk=None, depth=2, max_batch=500, max_time_request=10):
+async def _build_network_from(index_map, network_graph, visited_pk=None, depth=2, max_batch=500, max_time_request=10, dvm_config=DVMConfig()):
     '''
         OUTPUTS:
 
@@ -140,7 +144,7 @@ async def _build_network_from(index_map, network_graph, visited_pk=None, depth=2
 
     for pks in to_visit_pk:
         # getting the followings as a graph
-        following = await get_following(pks, max_time_request)
+        following = await get_following(pks, max_time_request, None, dvm_config)
 
         # update the visited_pk
         visited_pk.update(pks)
@@ -161,7 +165,7 @@ async def _build_network_from(index_map, network_graph, visited_pk=None, depth=2
 
         # recursive call
         index_map, network_graph = await _build_network_from(index_map, network_graph, visited_pk, depth - 1, max_batch,
-                                                             max_time_request)
+                                                             max_time_request, dvm_config=dvm_config)
 
     print('current network: ' + str(len(network_graph.nodes())) + ' npubs', end='\r')
 
@@ -584,7 +588,6 @@ async def get_metadata(npub):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     client = ClientBuilder().signer(keys).build()
     await client.add_relay("wss://relay.damus.io")
-    await client.add_relay("wss://relay.primal.net")
     await client.add_relay("wss://purplepag.es")
     await client.connect()
 
@@ -628,5 +631,6 @@ async def convert_index_to_hex(graph, index_map, show_results_num):
 def test():
     # WARNING, DEPENDING ON DEPTH THIS TAKES LONG
     user = '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d'
-    index_map, network_graph = asyncio.run(build_wot_network(user, depth=2, max_batch=500, max_time_request=10))
+    dvm_config = DVMConfig()
+    index_map, network_graph = asyncio.run(build_wot_network(user, depth=2, max_batch=500, max_time_request=10, dvm_config=dvm_config))
     save_network(index_map, network_graph, user)
