@@ -108,18 +108,12 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
         ns = SimpleNamespace()
         options = self.set_options(request_form)
-
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-
         database = NostrDatabase.lmdb(self.db_name)
         try:
             await database.delete(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))
         except Exception as e:
             print(e)
-        cli = ClientBuilder().signer(keys).database(database).build()
-
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
