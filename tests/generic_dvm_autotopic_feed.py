@@ -151,6 +151,10 @@ def playground(announce=False):
         since = Timestamp.from_secs(timestamp_since)
 
         keywords = result.split(",")
+        if len(keywords) == 0:
+            return json.dumps([])
+            #raise Exception("No Notes were found")
+
         filters = []
         for keyword in keywords:
             print(keyword)
@@ -160,7 +164,7 @@ def playground(announce=False):
         if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
         ns.finallist = {}
-        search_list = result.split(',')
+        #search_list = result.split(',')
 
         for event in events:
             #if all(ele in event.content().lower() for ele in []):
