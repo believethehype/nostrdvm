@@ -104,7 +104,7 @@ def playground(announce=False):
         keys = Keys.parse(sk.to_hex())
         relaylimits = RelayLimits.disable()
 
-        opts = (Options().relay_limits(relaylimits))
+        opts = Options().relay_limits(relaylimits)
 
         cli = Client.with_opts(keys, opts)
         for relay in dvm.dvm_config.RELAY_LIST:

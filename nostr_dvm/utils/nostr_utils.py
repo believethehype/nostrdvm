@@ -251,6 +251,11 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         try:
             await outboxclient.connect()
             event_id = await outboxclient.send_event(event)
+            for relay in relays:
+                try:
+                    await outboxclient.force_remove_relay(relay)
+                except:
+                    print("Error removing relay: " + relay)
         except Exception as e:
             # Love yourself then.
             event_id = None
