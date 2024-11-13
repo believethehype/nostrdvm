@@ -134,7 +134,7 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         user_id = PublicKey.parse(options["user"]).to_hex()
 
         index_map, G = await build_wot_network(options["user"], depth=int(options["hops"]), max_batch=500,
-                                               max_time_request=10)
+                                               max_time_request=10, dvm_config=self.dvm_config)
         if use_files:
             save_network(index_map, G, options["user"])
 
@@ -207,7 +207,7 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().signer(keys).database(database).build()
 
-        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(relay)
 
         await cli.connect()

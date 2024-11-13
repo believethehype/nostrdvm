@@ -145,7 +145,7 @@ def build_advanced_search_wine(name, identifier):
 
 def build_user_search(name, identifier):
     dvm_config = build_default_config(identifier)
-    dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io"]
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.damus.io"]
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
     dvm_config.RELAY_LIST = RELAY_LIST
     invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)

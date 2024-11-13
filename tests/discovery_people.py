@@ -19,7 +19,7 @@ global_update_rate = 1200     # set this high on first sync so db can fully sync
 use_logger = True
 
 
-#RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io"]  # , "wss://relay.snort.social"]
+#SYNC_DB_RELAY_LIST = ["wss://relay.damus.io"]  # , "wss://relay.snort.social"]
 
 
 if use_logger:
@@ -36,7 +36,7 @@ def build_example_wot(name, identifier, admin_config, options, image, cost=0, up
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    #dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    #dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg

@@ -2,10 +2,10 @@ import os
 
 from nostr_sdk import Keys, LogLevel
 
+from nostr_dvm.utils import outbox_utils
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
-from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
@@ -21,8 +21,10 @@ class DVMConfig:
                   "wss://relay.nostr.net"
                   ]
 
-    RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
-                               "wss://relay.nostr.net", "wss://relay.primal.net"]
+    SYNC_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
+                               "wss://relay.nostr.net",
+                               "wss://relay.primal.net"
+                              ]
 
     # Straight Censorship (reply guy spam)
     WOT_FILTERING = False
@@ -32,7 +34,7 @@ class DVMConfig:
                           ]
     WOT_DEPTH = 2
 
-    AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    AVOID_OUTBOX_RELAY_LIST = outbox_utils.AVOID_OUTBOX_RELAY_LIST
     # If a DVM has a paid subscription, overwrite list without the paid one.
 
     RELAY_TIMEOUT = 5

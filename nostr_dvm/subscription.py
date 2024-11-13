@@ -176,7 +176,7 @@ class Subscription:
                 # TODO add details about DVM in message
 
                 invoice = zaprequest(lud16, splitted_amount, tier, None,
-                                     PublicKey.parse(zap[1]), self.keys, DVMConfig.RELAY_LIST)
+                                     PublicKey.parse(zap[1]), self.keys, self.dvm_config.RELAY_LIST)
                 print(invoice)
                 if invoice is not None:
                     nwc_event_id = await nwc_zap(nwc, invoice, self.keys, zap[2])

@@ -95,7 +95,7 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
         lud16 = adminconfig.LUD16
         npub = keys.public_key().to_hex()
-        await nutzap_wallet.melt_cashu(nut_wallet, DVMConfig.NUZAP_MINTS[0], nut_wallet.balance, client, keys, lud16,
+        await nutzap_wallet.melt_cashu(nut_wallet, dvmconfig.NUZAP_MINTS[0], nut_wallet.balance, client, keys, lud16,
                                        npub)
         await nutzap_wallet.get_nut_wallet(client, keys)
 

@@ -17,7 +17,7 @@ update_profile = False
 global_update_rate = 60  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 # these do not support nengentropy
-#RECONCILE_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]  # , "wss://relay.snort.social"]
+#SYNC_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]  # , "wss://relay.snort.social"]
 
 if use_logger:
     init_logger(LogLevel.ERROR)

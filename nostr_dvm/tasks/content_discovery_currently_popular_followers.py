@@ -99,7 +99,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().database(database).signer(keys).opts(opts).build()
-        for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(relay)
 
         # ropts = RelayOptions().ping(False)
@@ -194,7 +194,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
             database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(keys).database(database).build()
 
-            for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(relay)
 
             await cli.connect()

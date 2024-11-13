@@ -57,7 +57,7 @@ def run_dvm(identifier, announce):
     # but if they do, you can select which ones should be used to sync to your local database.
     # This example doesn't use reconciliation, but you might want to take a look at tasks/content_discovery_currently.popular.py for example.
 
-    dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
                                "wss://relay.nostr.net", "wss://relay.primal.net"]
 
     # related to that  dvm_config.UPDATE_DATABASE can be used to signal if the dvm should update it's own database at all.
@@ -84,7 +84,7 @@ def run_dvm(identifier, announce):
     # The reason is, some relays might be paid, or use auth, and we might not able to write there, so we just avoid doing it.
     # In utils/output_utils.py is a list of relays that won't work, but there might be others, or you might want to define your own list,
     # so you can overwrite it here. Otherwise, defaults will be used.
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
 
     # Finally some DVMs might support Web of Trust filtering.
     # You find an example in tasks/content_discovery_update_db_only.py
