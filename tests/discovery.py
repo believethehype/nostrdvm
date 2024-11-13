@@ -42,10 +42,10 @@ max_sync_duration_in_h = 6
 
 
 SYNC_DB_RELAY_LIST = [ "wss://relay.damus.io",
-                            #"wss://relay.primal.net",
+                            "wss://relay.primal.net",
                             "wss://nostr.oxtr.dev"]
 
-RELAY_LIST = [#"wss://relay.primal.net",
+RELAY_LIST = ["wss://relay.primal.net",
               "wss://nostr.mom",
               "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
@@ -536,7 +536,8 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    #dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]
 
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
