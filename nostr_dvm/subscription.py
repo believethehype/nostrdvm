@@ -6,7 +6,7 @@ import signal
 from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId)
+                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, uniffi_set_event_loop)
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -27,6 +27,7 @@ class Subscription:
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
     def __init__(self, dvm_config, admin_config=None):
         asyncio.run(self.run_subscription(dvm_config, admin_config))
+        uniffi_set_event_loop(asyncio.get_running_loop())
 
     async def run_subscription(self, dvm_config, admin_config):
 

@@ -4,7 +4,7 @@ import os
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    LogLevel, Options, nip04_encrypt, Kind, RelayLimits
+    LogLevel, Options, nip04_encrypt, Kind, RelayLimits, uniffi_set_event_loop
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
 from nostr_dvm.utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
@@ -25,6 +25,7 @@ from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt1
 
 #os.environ["RUST_BACKTRACE"] = "full"
 
+
 class DVM:
     dvm_config: DVMConfig
     admin_config: AdminConfig
@@ -35,6 +36,7 @@ class DVM:
 
     def __init__(self, dvm_config, admin_config=None):
         asyncio.run(self.run_dvm(dvm_config, admin_config))
+        uniffi_set_event_loop(asyncio.get_running_loop())
 
     async def run_dvm(self, dvm_config, admin_config):
 
@@ -855,6 +857,9 @@ class DVM:
                         return
 
         asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
+
+
+
 
         while True:
             for dvm in self.dvm_config.SUPPORTED_DVMS:

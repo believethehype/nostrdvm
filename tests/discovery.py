@@ -38,7 +38,7 @@ update_profile = False
 global_update_rate = 180     # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 log_level = LogLevel.ERROR
-max_sync_duration_in_h = 6
+max_sync_duration_in_h = 48
 
 
 SYNC_DB_RELAY_LIST = [ "wss://relay.damus.io",
@@ -536,8 +536,8 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    #dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
-    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    #dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.mostr.pub/"]
 
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
@@ -803,16 +803,17 @@ def playground():
     }
     cost = 0
     image = "https://i.nostr.build/mtkNd3J8m0mqj9nq.jpg"
-    discovery_mostr = build_example_mostr("Trending on Mostr",
-                                          "discovery_mostr",
-                                          admin_config=admin_config_mostr,
-                                          options=options_mostr,
-                                          image=image,
-                                          cost=cost,
-                                          update_rate=180,
-                                          processing_msg=custom_processing_msg,
-                                          update_db=True)
-    discovery_mostr.run()
+    #discovery_mostr = build_example_mostr("Trending on Mostr",
+    #                                      "discovery_mostr",
+    #
+    #                                      admin_config=admin_config_mostr,
+    #                                      options=options_mostr,
+    #                                      image=image,
+    #                                      cost=cost,
+    #                                      update_rate=180,
+    #                                      processing_msg=custom_processing_msg,
+    #                                      update_db=True)
+    #discovery_mostr.run()
 
     # Popular Garden&Plants
     admin_config_asknostr = AdminConfig()
@@ -1065,7 +1066,7 @@ def playground():
     update_db = True
 
     options_opf = {
-        "db_name": "db/nostr_mostr.db",
+        "db_name": "db/nostr_recent_notes.db",
         "db_since": 60 * 60 * 2,  # 1h since gmt,
     }
     cost = 0

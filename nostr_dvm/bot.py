@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
                        Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, Kind, KindEnum,
-                       UnsignedEvent, UnwrappedGift)
+                       UnsignedEvent, UnwrappedGift, uniffi_set_event_loop)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.cashu_utils import redeem_cashu
@@ -29,6 +29,7 @@ class Bot:
 
     def __init__(self, dvm_config, admin_config=None):
         asyncio.run(self.run_bot(dvm_config, admin_config))
+        uniffi_set_event_loop(asyncio.get_running_loop())
 
         # add_sql_table_column(dvm_config.DB)
 
