@@ -124,7 +124,7 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
             if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
                     or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
                 rtag = tag.as_vec()[1]
-                if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                if rtag.rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                     if rtag.startswith("ws") and " " not in rtag:
                         relays.append(rtag)
         return relays
@@ -148,7 +148,7 @@ async def get_dm_relays(event_to_send: Event, client: Client, dvm_config):
             if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
                     or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
                 rtag = tag.as_vec()[1]
-                if rtag.rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                if rtag.rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                     if rtag.startswith("ws") and " " not in rtag:
                         relays.append(rtag)
         return relays
@@ -190,7 +190,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         if tag.as_vec()[0] == 'relays':
             for index, param in enumerate(tag.as_vec()):
                 if index != 0:
-                    if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                    if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                         try:
                             relays.append(tag.as_vec()[index])
                         except:
@@ -214,9 +214,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     relaylimits = RelayLimits.disable()
     connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
     # connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
-    opts = ((
-                Options().relay_limits(relaylimits)).connection(connection).connection_timeout(timedelta(seconds=30)))
-
+    opts = Options().relay_limits(relaylimits).connection(connection).connection_timeout(timedelta(seconds=30))
     sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
     outboxclient = Client.with_opts(keys, opts)
@@ -261,6 +259,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
             event_id = None
             print(e)
 
+    await outboxclient.disconnect()
     await outboxclient.shutdown()
     return event_id
 
@@ -272,13 +271,16 @@ async def send_event(event: Event, client: Client, dvm_config):
             if tag.as_vec()[0] == 'relays':
                 for index, param in enumerate(tag.as_vec()):
                     if index != 0:
-                        if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST:
+                        if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                             try:
                                 relays.append(tag.as_vec()[index])
                             except:
                                 print("[" + dvm_config.NIP89.NAME + "] " + tag.as_vec()[
                                     index] + " couldn't be added to outbox relays")
                 break
+
+        if len(relays) == 0:
+            relays = dvm_config.RELAY_LIST
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
@@ -292,8 +294,7 @@ async def send_event(event: Event, client: Client, dvm_config):
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
-                if relay not in dvm_config.RELAY_LIST:
-                    await client.remove_relay(relay)
+                await client.force_remove_relay(relay)
         return event_id
     except Exception as e:
         print(e)

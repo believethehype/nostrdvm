@@ -139,7 +139,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
 
             cli = ClientBuilder().signer(keys).database(self.database).opts(opts).build()
 
-            for relay in self.dvm_config.RECONCILE_DB_RELAY_LIST:
+            for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(relay)
 
             await cli.connect()
@@ -149,7 +149,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 filtering = cli.filtering()
                 index_map, G = await build_wot_network(self.dvm_config.WOT_BASED_ON_NPUBS,
                                                        depth=self.dvm_config.WOT_DEPTH, max_batch=500,
-                                                       max_time_request=10)
+                                                       max_time_request=10, dvm_config=self.dvm_config)
 
                 # Do we actually need pagerank here?
                 # print('computing global pagerank...')

@@ -43,7 +43,7 @@ if use_logger:
 
 
 
-RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
+SYNC_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
 RELAY_LIST = ["wss://relay.primal.net",
               "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
@@ -59,7 +59,7 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.LOGLEVEL = LogLevel.INFO
-    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
 
     # Activate these to use a subscription based model instead
@@ -106,7 +106,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.LOGLEVEL = LogLevel.DEBUG
-    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
@@ -144,7 +144,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config: DVMConfig = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.CUSTOM_PROCESSING_MESSAGE = custom_processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -175,8 +175,8 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
-    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     # Activate these to use a subscription based model instead
@@ -227,8 +227,8 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
-    dvm_config.RECONCILE_DB_RELAY_LIST = RECONCILE_DB_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     # Activate these to use a subscription based model instead
@@ -282,7 +282,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.FIX_COST = cost
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -324,7 +324,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -365,7 +365,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -410,7 +410,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     # Activate these to use a subscription based model instead
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.SUBSCRIPTION_REQUIRED = True
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -477,7 +477,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
@@ -522,7 +522,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.RELAY_LIST = RELAY_LIST
-    dvm_config.RECONCILE_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
 
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost

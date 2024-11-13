@@ -17,13 +17,13 @@ update_profile = True
 global_update_rate = 60  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 # these do not support nengentropy
-#RECONCILE_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]  # , "wss://relay.snort.social"]
+#SYNC_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]  # , "wss://relay.snort.social"]
 
 if use_logger:
     init_logger(LogLevel.ERROR)
 
 
-RECONCILE_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
+SYNC_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://relay.damus.io", "wss://nostr.oxtr.dev"]
 RELAY_LIST = ["wss://relay.primal.net",
               "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
@@ -39,7 +39,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.FIX_COST = cost
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
-    dvm_config.AVOID_PAID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 

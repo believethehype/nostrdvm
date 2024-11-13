@@ -29,7 +29,7 @@ async def getmetadata(npub):
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
     client = ClientBuilder().signer(keys).build()
     await client.add_relay("wss://relay.damus.io")
-    await client.add_relay("wss://relay.primal.net")
+    #await client.add_relay("wss://relay.primal.net")
     await client.add_relay("wss://purplepag.es")
     await client.connect()
 
