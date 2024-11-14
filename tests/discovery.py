@@ -7,20 +7,19 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import init_logger, LogLevel, Keys, NostrDatabase
 
+# os.environ["RUST_BACKTRACE"] = "full"
+from nostr_dvm.subscription import Subscription
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
 from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverContentLatestWiki
-from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
-from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
-from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
-from nostr_dvm.tasks.content_discovery_latest_one_per_follower import Discoverlatestperfollower
-from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
-
-#os.environ["RUST_BACKTRACE"] = "full"
-from nostr_dvm.subscription import Subscription
 from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCurrentlyPopular
 from nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps import DicoverContentCurrentlyPopularZaps
 from nostr_dvm.tasks.content_discovery_currently_popular_followers import DicoverContentCurrentlyPopularFollowers
+from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
+from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
+from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
 from nostr_dvm.tasks.content_discovery_currently_popular_topic import DicoverContentCurrentlyPopularbyTopic
+from nostr_dvm.tasks.content_discovery_latest_one_per_follower import Discoverlatestperfollower
+from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
@@ -30,23 +29,21 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
-
-rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know what you're doing.
+rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
 update_profile = False
 
-global_update_rate = 180     # set this high on first sync so db can fully sync before another process trys to.
+global_update_rate = 180  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 log_level = LogLevel.ERROR
 max_sync_duration_in_h = 48
 
+SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
+                      #"wss://relay.primal.net",
+                      "wss://nostr.oxtr.dev"]
 
-SYNC_DB_RELAY_LIST = [ "wss://relay.damus.io",
-                            "wss://relay.primal.net",
-                            "wss://nostr.oxtr.dev"]
-
-RELAY_LIST = ["wss://relay.primal.net",
-              "wss://nostr.mom",
+RELAY_LIST = ["wss://nostr.mom",
+              #"wss://relay.primal.net",
               "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
               ]
@@ -56,7 +53,7 @@ if use_logger:
 
 
 def build_db_scheduler(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
-                  processing_msg=None, update_db=True, database=None):
+                       processing_msg=None, update_db=True, database=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -104,7 +101,7 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
 
 
 def build_example_gallery(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
-                      update_db=True):
+                          update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.LOGLEVEL = LogLevel.INFO
@@ -144,7 +141,6 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
                                                  admin_config=admin_config, options=options)
 
 
-
 def build_example_nostrband(name, identifier, admin_config, image, about, custom_processing_msg):
     dvm_config: DVMConfig = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
@@ -175,7 +171,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
 
 
 def build_longform(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
-                  update_db=True):
+                   update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -227,7 +223,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
 
 
 def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
-                  update_db=True):
+               update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -275,7 +271,7 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     # admin_config.REBROADCAST_NIP89 = False
 
     return DicoverContentLatestWiki(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                        admin_config=admin_config, options=options)
+                                    admin_config=admin_config, options=options)
 
 
 def build_example_topic(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
@@ -406,10 +402,9 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
                                                    options=options,
                                                    admin_config=admin_config)
 
+
 def build_example_popular_non_followers(name, identifier, admin_config, options, image, cost=0, update_rate=300,
-                                    processing_msg=None, update_db=True, database=None):
-
-
+                                        processing_msg=None, update_db=True, database=None):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -426,7 +421,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.SUBSCRIPTION_REQUIRED = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP88 = False
-    #admin_config.REBROADCAST_NIP89 = True
+    # admin_config.REBROADCAST_NIP89 = True
     admin_config.UPDATE_PROFILE = False
 
     # Add NIP89
@@ -466,12 +461,12 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
-    #admin_config.FETCH_NIP88 = True
-    #admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
+    # admin_config.FETCH_NIP88 = True
+    # admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
     admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
     return DicoverContentCurrentlyPopularNonFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                      #nip88config=nip88config,
+                                                      # nip88config=nip88config,
                                                       admin_config=admin_config,
                                                       options=options)
 
@@ -482,7 +477,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
-    #dvm_config.ENABLE_NUTZAP = True
+    # dvm_config.ENABLE_NUTZAP = True
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
@@ -526,8 +521,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
 
 
 def build_example_mostr(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
-                      update_db=True):
-
+                        update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.LOGLEVEL = LogLevel.INFO
@@ -537,7 +531,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
-    #dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.mostr.pub/"]
+    # dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.mostr.pub/"]
 
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
@@ -567,11 +561,12 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopularMostr(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                 admin_config=admin_config, options=options)
+                                               admin_config=admin_config, options=options)
 
 
-def build_example_oneperfollow(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
-                      update_db=True):
+def build_example_oneperfollow(name, identifier, admin_config, options, image, cost=0, update_rate=180,
+                               processing_msg=None,
+                               update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.LOGLEVEL = LogLevel.INFO
@@ -609,18 +604,18 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
     return Discoverlatestperfollower(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                 admin_config=admin_config, options=options)
+                                     admin_config=admin_config, options=options)
 
 
 async def init_db(database):
     return NostrDatabase.lmdb(database)
 
-def playground():
 
+def playground():
     main_db = "db/nostr_recent_notes.db"
     DATABASE = asyncio.run(init_db(main_db))
-    #DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
-    admin_config_db_scheduler= AdminConfig()
+    # DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
+    admin_config_db_scheduler = AdminConfig()
     options_animal = {
         "db_name": main_db,
         "db_since": max_sync_duration_in_h * 60 * 60,  # 48h since gmt,
@@ -629,17 +624,15 @@ def playground():
     image = ""
     about = "I just update the Database based on my schedule"
     db_scheduler = build_db_scheduler("DB Scheduler",
-                                            "db_scheduler",
-                                            admin_config_db_scheduler, options_animal,
-                                            image=image,
-                                            description=about,
-                                            update_rate=global_update_rate,
-                                            cost=0,
-                                            update_db=True,
-                                            database=DATABASE)
+                                      "db_scheduler",
+                                      admin_config_db_scheduler, options_animal,
+                                      image=image,
+                                      description=about,
+                                      update_rate=global_update_rate,
+                                      cost=0,
+                                      update_db=True,
+                                      database=DATABASE)
     db_scheduler.run()
-
-
 
     admin_config_gallery = AdminConfig()
     admin_config_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -672,7 +665,6 @@ def playground():
     # discover_gallery.run()
     #
 
-
     # Latest Longform
     admin_config_longform = AdminConfig()
     admin_config_longform.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -691,17 +683,15 @@ def playground():
     }
     cost = 0
     latest_longform = build_longform("Latest Longform Notes",
-                                                 "discovery_content_longform",
-                                                 admin_config=admin_config_longform,
-                                                 options=options_longform,
-                                                 cost=cost,
-                                                 update_rate=global_update_rate,
-                                                 processing_msg=custom_processing_msg,
-                                                 update_db=update_db)
+                                     "discovery_content_longform",
+                                     admin_config=admin_config_longform,
+                                     options=options_longform,
+                                     cost=cost,
+                                     update_rate=global_update_rate,
+                                     processing_msg=custom_processing_msg,
+                                     update_db=update_db)
 
     latest_longform.run()
-
-
 
     # Latest Wiki
     admin_config_wiki = AdminConfig()
@@ -720,18 +710,16 @@ def playground():
         "db_since": 60 * 60 * 24 * 21,  # 3 Weeks since gmt,
     }
     cost = 0
-    latest_wiki= build_wiki("Latest Wikifreedia Notes",
-                                                 "discovery_content_wiki",
-                                                 admin_config=admin_config_wiki,
-                                                 options=options_longform,
-                                                 cost=cost,
-                                                 update_rate=global_update_rate,
-                                                 processing_msg=custom_processing_msg,
-                                                 update_db=update_db)
+    latest_wiki = build_wiki("Latest Wikifreedia Notes",
+                             "discovery_content_wiki",
+                             admin_config=admin_config_wiki,
+                             options=options_longform,
+                             cost=cost,
+                             update_rate=global_update_rate,
+                             processing_msg=custom_processing_msg,
+                             update_db=update_db)
 
     latest_wiki.run()
-
-
 
     # Popular top zapped
     admin_config_top_zaps = AdminConfig()
@@ -751,7 +739,7 @@ def playground():
         "db_since": 60 * 60 * 2,  # 8h since gmt,
     }
     cost = 0
-    #image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
+    # image = "https://image.nostr.build/c6879f458252641d04d0aa65fd7f1e005a4f7362fd407467306edc2f4acdb113.jpg"
     image = "https://i.nostr.build/U5AO3vUMy47NWSQG.png"
     discovery_topzaps = build_example_top_zapped("Top Zapped notes",
                                                  "discovery_content_top_zaps",
@@ -766,16 +754,15 @@ def playground():
 
     discovery_topzaps.run()
 
-
     # Popular NOSTR.band
     admin_config_trending_nostr_band = AdminConfig()
     admin_config_trending_nostr_band.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config_trending_nostr_band.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_trending_nostr_band.UPDATE_PROFILE = update_profile
-    #admin_config_trending_nostr_band.DELETE_NIP89 = True
-    #admin_config_trending_nostr_band.PRIVKEY = ""
-    #admin_config_trending_nostr_band.EVENTID = "e7a7aaa7113f17af94ccbfe86c06e04c27ffce3d2f654d613ce249b68414bdae"
-    #admin_config_trending_nostr_band.POW = True
+    # admin_config_trending_nostr_band.DELETE_NIP89 = True
+    # admin_config_trending_nostr_band.PRIVKEY = ""
+    # admin_config_trending_nostr_band.EVENTID = "e7a7aaa7113f17af94ccbfe86c06e04c27ffce3d2f654d613ce249b68414bdae"
+    # admin_config_trending_nostr_band.POW = True
     custom_processing_msg = "Looking for trending notes on nostr.band.."
     image = "https://nostr.band/android-chrome-192x192.png"
     about = "I show trending notes from nostr.band"
@@ -791,10 +778,10 @@ def playground():
     admin_config_mostr.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config_mostr.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_mostr.UPDATE_PROFILE = update_profile
-    #admin_config_mostr.DELETE_NIP89 = True
-    #admin_config_mostr.PRIVKEY = ""
-    #admin_config_mostr.EVENTID = "59d0ebe2966426ac359dcb8da214efe34fb735c69099361eae87a426bacf4de2"
-    #admin_config_mostr.POW = True
+    # admin_config_mostr.DELETE_NIP89 = True
+    # admin_config_mostr.PRIVKEY = ""
+    # admin_config_mostr.EVENTID = "59d0ebe2966426ac359dcb8da214efe34fb735c69099361eae87a426bacf4de2"
+    # admin_config_mostr.POW = True
     custom_processing_msg = ["Looking for popular Content on Mostr"]
 
     options_mostr = {
@@ -803,7 +790,7 @@ def playground():
     }
     cost = 0
     image = "https://i.nostr.build/mtkNd3J8m0mqj9nq.jpg"
-    #discovery_mostr = build_example_mostr("Trending on Mostr",
+    # discovery_mostr = build_example_mostr("Trending on Mostr",
     #                                      "discovery_mostr",
     #
     #                                      admin_config=admin_config_mostr,
@@ -813,11 +800,11 @@ def playground():
     #                                      update_rate=180,
     #                                      processing_msg=custom_processing_msg,
     #                                      update_db=True)
-    #discovery_mostr.run()
+    # discovery_mostr.run()
 
     # Popular Garden&Plants
     admin_config_asknostr = AdminConfig()
-    admin_config_asknostr.REBROADCAST_NIP89 =rebroadcast_NIP89
+    admin_config_asknostr.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config_asknostr.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_asknostr.UPDATE_PROFILE = update_profile
     options_plants = {
@@ -834,14 +821,14 @@ def playground():
     update_db = False
     cost = 0
     discovery_asknostr = build_example_topic("Popular on #asknostr", "discovery_content_asknostr",
-                                           admin_config_asknostr, options_plants,
-                                           image=image,
-                                           description=description,
-                                           update_rate=global_update_rate,
-                                           cost=cost,
-                                           processing_msg=custom_processing_msg,
-                                           update_db=update_db,
-                                           database=DATABASE)
+                                             admin_config_asknostr, options_plants,
+                                             image=image,
+                                             description=description,
+                                             update_rate=global_update_rate,
+                                             cost=cost,
+                                             processing_msg=custom_processing_msg,
+                                             update_db=update_db,
+                                             database=DATABASE)
     discovery_asknostr.run()
 
     # Popular Garden&Plants
@@ -877,19 +864,15 @@ def playground():
                                            database=DATABASE)
     discovery_mining.run()
 
-
-
-
     # Popular Animals (Fluffy frens)
     admin_config_animals = AdminConfig()
     admin_config_animals.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config_animals.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_animals.UPDATE_PROFILE = update_profile
-    #admin_config_animals.DELETE_NIP89 = True
-    #admin_config_animals.PRIVKEY = ""
-    #admin_config_animals.EVENTID = "79c613b5f0e71718628bd0c782a5b6b495dac491f36c326ccf416ada80fd8fdc"
-    #admin_config_animals.POW = True
-
+    # admin_config_animals.DELETE_NIP89 = True
+    # admin_config_animals.PRIVKEY = ""
+    # admin_config_animals.EVENTID = "79c613b5f0e71718628bd0c782a5b6b495dac491f36c326ccf416ada80fd8fdc"
+    # admin_config_animals.POW = True
 
     options_animal = {
         "search_list": ["catstr", "pawstr", "dogstr", "pugstr", " cat ", " cats ", "doggo", " deer ", " dog ", " dogs ",
@@ -936,7 +919,7 @@ def playground():
                                             cost=cost,
                                             processing_msg=custom_processing_msg,
                                             update_db=update_db,
-                                            database = DATABASE)
+                                            database=DATABASE)
 
     discovery_animals.run()
 
@@ -978,14 +961,14 @@ def playground():
     update_db = False
     cost = 0
     discovery_garden = build_example_topic("Garden & Growth", "discovery_content_garden",
-                                             admin_config_plants, options_plants,
-                                             image=image,
-                                             description=description,
-                                             update_rate=global_update_rate,
-                                             cost=cost,
-                                             processing_msg=custom_processing_msg,
-                                             update_db=update_db,
-                                             database=DATABASE)
+                                           admin_config_plants, options_plants,
+                                           image=image,
+                                           description=description,
+                                           update_rate=global_update_rate,
+                                           cost=cost,
+                                           processing_msg=custom_processing_msg,
+                                           update_db=update_db,
+                                           database=DATABASE)
     discovery_garden.run()
 
     # Popular Followers
@@ -1007,7 +990,7 @@ def playground():
     }
 
     cost = 0
-    #image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
+    # image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
     image = "https://i.nostr.build/ZJqko0W9ApEVZAPt.png"
     discovery_followers = build_example_popular_followers(
         "Popular from npubs you follow",
@@ -1070,7 +1053,7 @@ def playground():
         "db_since": 60 * 60 * 2,  # 1h since gmt,
     }
     cost = 0
-    #image = "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg"
+    # image = "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg"
     image = "https://i.nostr.build/fsGWicUhyRrfy85d.jpg"
     discovery_one_per_follow = build_example_oneperfollow("One per follow",
                                                           "discovery_latest_per_follow",
@@ -1101,7 +1084,7 @@ def playground():
         "db_since": 60 * 60 * 1,  # 1h since gmt,
     }
     cost = 0
-    #image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg"
+    # image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg"
     image = "https://i.nostr.build/AnBKrfAIRMhWm0h3.jpg"
     discovery_global = build_example_popular("Currently Popular Notes DVM",
                                              "discovery_content_test",
@@ -1118,25 +1101,24 @@ def playground():
     # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
     # discovery_test_sub.run()
 
-
     admin_config_nostriga = AdminConfig()
-    admin_config_nostriga.REBROADCAST_NIP89 = False #rebroadcast_NIP89
-    admin_config_nostriga.REBROADCAST_NIP65_RELAY_LIST =  False #rebroadcast_NIP65_Relay_List
+    admin_config_nostriga.REBROADCAST_NIP89 = False  # rebroadcast_NIP89
+    admin_config_nostriga.REBROADCAST_NIP65_RELAY_LIST = False  # rebroadcast_NIP65_Relay_List
     admin_config_nostriga.UPDATE_PROFILE = update_profile
     admin_config_nostriga.DELETE_NIP89 = True
-    #admin_config_nostriga.PRIVKEY = "6221e31813df07037dd90a608fc4cf29222c59da130f76c7f8d0d19c3a876d8e"
-    #admin_config_nostriga.EVENTID = "24ac21fb32993744232356bafcabd821e4afed4b18aac8d7e670d1071f6ad77a"
-    #admin_config_nostriga.POW = True
+    # admin_config_nostriga.PRIVKEY = "6221e31813df07037dd90a608fc4cf29222c59da130f76c7f8d0d19c3a876d8e"
+    # admin_config_nostriga.EVENTID = "24ac21fb32993744232356bafcabd821e4afed4b18aac8d7e670d1071f6ad77a"
+    # admin_config_nostriga.POW = True
     options_nostriga = {
-        "search_list": ["nostriga", "#nostriga", "#noobday" ],
+        "search_list": ["nostriga", "#nostriga", "#noobday"],
         "avoid_list": ["porn", "smoke", "nsfw",
                        "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
                        "moderna", "pfizer", "corona", "socialism", "critical theory", "murder", "tax", "engagement",
                        "gdp", "global markets",
                        "presidency", "dollar", "asset", "microsoft", "amazon", "billionaire", "ceo", "industry",
-                       "white house",  "summary", "wealth", "beef", "cunt", "nigger", "business",
+                       "white house", "summary", "wealth", "beef", "cunt", "nigger", "business",
                        "retail", "bakery", "synth", "slaughterhouse", "hamas", "dog days", "ww3", "socialmedia",
-                       "nintendo",  "deepfake", "congressman", "cypherpunk", "minister", "dissentwatch",
+                       "nintendo", "deepfake", "congressman", "cypherpunk", "minister", "dissentwatch",
                        "inkblot", "covid", "robot", "pandemic", "bethesda", "zap farming", " defi ", " minister ",
                        "nostr-hotter-site", "palestine", "https://boards.4chan", "https://techcrunch.com",
                        "https://screenrant.com"],
@@ -1151,7 +1133,7 @@ def playground():
     update_db = False
     cost = 0
 
-    #discovery_nostriga = build_example_topic("Nostriga", "discovery_content_nostriga",
+    # discovery_nostriga = build_example_topic("Nostriga", "discovery_content_nostriga",
     #                                       admin_config_nostriga, options_nostriga,
     #                                       image=image,
     #                                       description=description,
@@ -1159,10 +1141,7 @@ def playground():
     #                                       cost=cost,
     #                                       processing_msg=custom_processing_msg,
     #                                       update_db=update_db)
-    #discovery_nostriga.run()
-
-
-
+    # discovery_nostriga.run()
 
     # Subscription Manager DVM
     subscription_config = DVMConfig()
@@ -1175,15 +1154,14 @@ def playground():
     subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
     sub_admin_config = AdminConfig()
-    #sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
+    # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
 
     x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
     x.start()
-    #make sure the last thing joins, either here by calling x.join() or in a call a dvm with .run(True)
+    # make sure the last thing joins, either here by calling x.join() or in a call a dvm with .run(True)
     x.join()
 
-     # keep_alive()
-
+    # keep_alive()
 
 
 if __name__ == '__main__':
