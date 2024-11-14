@@ -176,7 +176,8 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
             content = json.loads(followlist.content())
             relays = []
             for relay in content:
-                relays.append(relay)
+                if relay not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
+                    relays.append(relay)
             return relays
         except:
             return []
