@@ -236,7 +236,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         event_id = None
         print(e)
 
-    for relay in relays:
+    for relay in relays[:5]:
         try:
             await outboxclient.force_remove_relay(relay)
         except:
