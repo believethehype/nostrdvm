@@ -22,6 +22,7 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
+from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import get_price_per_sat, check_and_set_ln_bits_keys
 
 
@@ -30,6 +31,16 @@ from nostr_dvm.utils.zap_utils import get_price_per_sat, check_and_set_ln_bits_k
 use_logger = True
 log_level = LogLevel.ERROR
 
+
+SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
+                      #"wss://relay.primal.net",
+                      "wss://nostr.oxtr.dev"]
+
+RELAY_LIST = ["wss://nostr.mom",
+              #"wss://relay.primal.net",
+              "wss://nostr.oxtr.dev",
+              "wss://relay.nostr.net"
+              ]
 
 if use_logger:
     init_logger(log_level)
@@ -40,6 +51,9 @@ def build_sd35(name, identifier, announce):
     dvm_config.NEW_USER_BALANCE = 0
     dvm_config.USE_OWN_VENV = False
     dvm_config.ENABLE_NUTZAP = False
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     profit_in_sats = 10
     dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
     nip89info = {
@@ -84,6 +98,9 @@ def build_dalle(name, identifier, announce):
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
     dvm_config.NEW_USER_BALANCE = 0
     dvm_config.USE_OWN_VENV = False
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     profit_in_sats = 10
     dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
 
@@ -113,6 +130,9 @@ def build_dalle(name, identifier, announce):
 def build_svd(name, identifier, announce):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP89 = announce
@@ -141,6 +161,9 @@ def build_svd(name, identifier, announce):
 
 def build_media_converter(name, identifier, announce):
     dvm_config = build_default_config(identifier)
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP89 = announce
@@ -168,6 +191,9 @@ def build_media_converter(name, identifier, announce):
 
 def build_inactive_follows_finder(name, identifier, announce):
     dvm_config = build_default_config(identifier)
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP89 = announce
@@ -207,6 +233,9 @@ def build_inactive_follows_finder(name, identifier, announce):
 
 def build_1984(name, identifier, announce):
     dvm_config = build_default_config(identifier)
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.USE_OWN_VENV = False
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -237,8 +266,10 @@ def build_1984(name, identifier, announce):
 
 def build_botfarms(name, identifier, announce):
     dvm_config = build_default_config(identifier)
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.USE_OWN_VENV = False
-    dvm_config.SHOWLOG = True
     dvm_config.UPDATE_DATABASE = False
     dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 seconds
     admin_config = AdminConfig()
@@ -273,6 +304,9 @@ def build_botfarms(name, identifier, announce):
 
 def build_replicate(name, identifier, model,  announce):
     dvm_config = build_default_config(identifier)
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP89 = announce
@@ -307,6 +341,9 @@ def build_replicate(name, identifier, model,  announce):
 
 def build_replicate_recraft(name, identifier,  announce):
     dvm_config = build_default_config(identifier)
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP89 = announce
@@ -339,6 +376,9 @@ def build_replicate_recraft(name, identifier,  announce):
 
 def build_replicate_fluxpro(name, identifier, announce):
     dvm_config = build_default_config(identifier)
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     admin_config = AdminConfig()
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP89 = announce
