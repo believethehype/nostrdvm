@@ -259,7 +259,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
             # Love yourself then.
             event_id = None
             print(e)
-
+    await outboxclient.remove_all_relays()
     await outboxclient.disconnect()
     await outboxclient.shutdown()
     return event_id

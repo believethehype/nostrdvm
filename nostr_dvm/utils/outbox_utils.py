@@ -69,6 +69,9 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://relay.f7z.io", "wss://nostr-relay.h3z.jp", "wss://nfrelay.app",
                            "wss://r.kojira.io", "wss://jp-relay-nostr.invr.chat",
                            "wss://nostream-production-5895.up.railway.app",
-                           "ws://127.0.0.1:4869", "wss://sign.siamstr.com", "wss://relay.hash.stream"
+                           "ws://127.0.0.1:4869", "wss://sign.siamstr.com", "wss://relay.hash.stream",
+                           "wss://pablof7z.nostr1.com", "wss://nostr.beckmeyer.us", "wss://pow.hzrd149.com",
+                           "wss://relay.nostrss.re", "wss://relay.nostr.bg"
+
 
                            ]

@@ -120,6 +120,12 @@ def playground(announce=False):
 
         event_struct = await cli.fetch_events([filterauth], relay_timeout)
         text = ""
+
+        if len(event_struct.to_vec()) == 0:
+            #raise Exception("No Notes found")
+            print("No Notes found")
+            return json.dumps([])
+
         for event in event_struct.to_vec():
             text = text + event.content() + ";"
 
@@ -153,7 +159,6 @@ def playground(announce=False):
         keywords = result.split(",")
         if len(keywords) == 0:
             return json.dumps([])
-            #raise Exception("No Notes were found")
 
         filters = []
         for keyword in keywords:

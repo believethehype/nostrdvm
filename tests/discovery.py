@@ -841,7 +841,7 @@ def playground():
     # admin_config_plants.EVENTID = "ff28be59708ee597c7010fd43a7e649e1ab51da491266ca82a84177e0007e4d6"
     # admin_config_plants.POW = True
     options_mining = {
-        "search_list": ["bitaxe", "homeminer", "S9", "homemining"],
+        "search_list": ["bitaxe", "homeminer", " S9 ", "homemining"],
         "avoid_list": ["nsfw"],
         "db_name": "db/nostr_recent_notes.db",
         "db_since": 12 * 60 * 60,  # 12h since gmt
