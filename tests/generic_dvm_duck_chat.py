@@ -9,6 +9,18 @@ from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
+from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
+
+RELAY_LIST = ["wss://nostr.mom",
+              #"wss://relay.primal.net",
+              "wss://nostr.oxtr.dev",
+              #"wss://relay.nostr.net"
+              ]
+
+SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
+                      #"wss://relay.primal.net",
+                      "wss://nostr.oxtr.dev"]
+
 
 
 def playground(announce=False):
@@ -24,6 +36,10 @@ def playground(announce=False):
     dvm_config = build_default_config(identifier)
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
     dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+
 
     # Add NIP89
     nip89info = {

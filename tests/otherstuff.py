@@ -39,7 +39,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
 RELAY_LIST = ["wss://nostr.mom",
               #"wss://relay.primal.net",
               "wss://nostr.oxtr.dev",
-              "wss://relay.nostr.net"
+              #"wss://relay.nostr.net"
               ]
 
 if use_logger:
@@ -413,6 +413,9 @@ def build_replicate_fluxpro(name, identifier, announce):
 def playground(announce=False):
     #bot_config = DVMConfig()
     bot_config = build_default_config("bot")
+    bot_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    bot_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+    bot_config.RELAY_LIST = RELAY_LIST
     #bot_config.PRIVATE_KEY = check_and_set_private_key("bot")
     #npub = Keys.parse(bot_config.PRIVATE_KEY).public_key().to_bech32()
     #invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys("bot",npub)

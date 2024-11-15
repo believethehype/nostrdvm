@@ -16,6 +16,18 @@ from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import send_job_status_reaction
+from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
+
+RELAY_LIST = ["wss://nostr.mom",
+              #"wss://relay.primal.net",
+              "wss://nostr.oxtr.dev",
+              #"wss://relay.nostr.net"
+              ]
+
+SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
+                      #"wss://relay.primal.net",
+                      "wss://nostr.oxtr.dev"]
+
 
 
 def playground(announce=False):
@@ -52,6 +64,10 @@ def playground(announce=False):
     dvm_config.KIND = Kind(kind)  # Manually set the Kind Number (see data-vending-machines.org)
     dvm_config.CUSTOM_PROCESSING_MESSAGE = "Creating a personalized feed based on the topics you write about. This might take a moment."
     dvm_config.FIX_COST = 0
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
+
 
 
     #admin_config.DELETE_NIP89 = True
