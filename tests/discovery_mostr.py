@@ -10,6 +10,8 @@ from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverCon
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
+from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
+
 
 rebroadcast_NIP89 = False  # Announce NIP89 on startup
 rebroadcast_NIP65_Relay_List = False
@@ -24,6 +26,12 @@ if use_logger:
     init_logger(LogLevel.DEBUG)
 
 
+RELAY_LIST = ["wss://nostr.mom",
+              #"wss://relay.primal.net",
+              "wss://nostr.oxtr.dev",
+              #"wss://relay.nostr.net"
+              ]
+
 def build_example_mostr(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
                       update_db=True):
     dvm_config = build_default_config(identifier)
@@ -33,6 +41,8 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg

@@ -13,6 +13,7 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
+from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 rebroadcast_NIP89 = False   # Announce NIP89 on startup Only do this if you know what you're doing.
@@ -27,19 +28,28 @@ if use_logger:
     init_logger(log_level)
 
 
-RELAY_LIST = ["wss://relay.primal.net",
-              "wss://nostr.mom", "wss://nostr.oxtr.dev", "wss://relay.nostr.bg",
-              "wss://relay.nostr.net"
+RELAY_LIST = ["wss://nostr.mom",
+              #"wss://relay.primal.net",
+              "wss://nostr.oxtr.dev",
+              #"wss://relay.nostr.net"
               ]
+
+SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
+                      #"wss://relay.primal.net",
+                      "wss://nostr.oxtr.dev"]
+
+
 
 def build_advanced_search(name, identifier):
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
-    dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config = build_default_config(identifier)
     #    dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    dvm_config.FIX_COST = 5
+    dvm_config.FIX_COST = 0
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
 
 
     admin_config = AdminConfig()
@@ -95,6 +105,9 @@ def build_advanced_search_wine(name, identifier):
     dvm_config.LNBITS_INVOICE_KEY = invoice_key
     dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
@@ -146,6 +159,8 @@ def build_advanced_search_wine(name, identifier):
 def build_user_search(name, identifier):
     dvm_config = build_default_config(identifier)
     dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.damus.io"]
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.RELAY_LIST = RELAY_LIST
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
     dvm_config.RELAY_LIST = RELAY_LIST
     invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
@@ -193,11 +208,9 @@ def playground():
     advanced_search_wine = build_advanced_search_wine("Nostr.wine Search", "discovery_content_searchwine")
     advanced_search_wine.run()
 
-    profile_search = build_user_search("Profile Searcher", "profile_search")
-    profile_search.run()
+    #profile_search = build_user_search("Profile Searcher", "profile_search")
+    #profile_search.run()
 
-
-    #keep_alive()
 
 
 if __name__ == '__main__':
