@@ -16,15 +16,14 @@ class DVMConfig:
     FIX_COST: float = None
     PER_UNIT_COST: float = None
 
-    RELAY_LIST = ["wss://relay.primal.net",
-                  "wss://nostr.mom", "wss://nostr.oxtr.dev",
-                  "wss://relay.nostr.net"
+    RELAY_LIST = [
+                  "wss://nostr.mom",
+                  "wss://nostr.oxtr.dev",
                   ]
 
-    SYNC_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
-                               "wss://relay.nostr.net",
-                               "wss://relay.primal.net"
-                              ]
+    SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
+                          "wss://nostr.oxtr.dev",
+                         ]
 
     # Straight Censorship (reply guy spam)
     WOT_FILTERING = False
