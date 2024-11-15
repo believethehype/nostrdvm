@@ -2,7 +2,7 @@
 # even trying to send to them, avoiding potential errors or delays on the way.
 
 
-AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
+AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol", "wss://relay.primal.net",
                            "wss://nostrelay.yeghro.site", "wss://nostr.wine", "wss://filter.nostr.wine",
                            "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
                            "wss://brb.io",
@@ -13,7 +13,7 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol",
                            "wss://yabu.me", "wss://relay.yozora.world", "wss://filter.nostr.wine/?global=all",
                            "wss://eden.nostr.land",
                            "wss://relay.orangepill.ovh", "wss://nostr.jcloud.es", "wss://af.purplerelay.com",
-                           "wss://za.purplerelay.com",
+                           "wss://za.purplerelay.com", "ws://192.168.18.7:7777",
                            "wss://relay.nostrich.land", "wss://relay.nostrplebs.com", "wss://relay.nostrich.land",
                            "ws://elitedesk.local:4848",
                            "wss://rss.nos.social", "wss://atlas.nostr.land", "wss://puravida.nostr.land",
