@@ -123,10 +123,10 @@ class DicoverContentLatestLongForm(DVMTaskInterface):
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_LONGFORM).since(since)
         events = await cli.database().query([filter1])
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
         index = options["max_results"]
-        for event in events:
+        for event in events.to_vec():
             if event.created_at().as_secs() > timestamp_hour_ago:
                 ns.finallist[event.id().to_hex()] = index
                 index = index - 1

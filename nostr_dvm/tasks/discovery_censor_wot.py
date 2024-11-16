@@ -2,7 +2,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits, ClientBuilder
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -73,7 +73,7 @@ class DiscoverReports(DVMTaskInterface):
             Options().relay_limits(relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = Client.with_opts(keys, opts)
+        cli = ClientBuilder().signer(keys).opts(opts).build()
         # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)

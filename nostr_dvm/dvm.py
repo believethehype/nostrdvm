@@ -4,7 +4,7 @@ import os
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    LogLevel, Options, nip04_encrypt, Kind, RelayLimits, uniffi_set_event_loop
+    LogLevel, Options, nip04_encrypt, Kind, RelayLimits, uniffi_set_event_loop, ClientBuilder
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
 from nostr_dvm.utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
@@ -47,7 +47,8 @@ class DVM:
         opts = (
             Options().relay_limits(relaylimits)) #.difficulty(28)
 
-        self.client = Client.with_opts(self.keys, opts)
+        #self.client = Client(self.keys)
+        self.client = ClientBuilder().signer(self.keys).opts(opts).build()
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
@@ -611,7 +612,7 @@ class DVM:
                 content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
                                         content)
 
-            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content), reply_tags).sign_with_keys(
+            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content)).tags(reply_tags).sign_with_keys(
                 self.keys)
 
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
@@ -727,7 +728,7 @@ class DVM:
                 content = reaction
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).sign_with_keys(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
             # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
 

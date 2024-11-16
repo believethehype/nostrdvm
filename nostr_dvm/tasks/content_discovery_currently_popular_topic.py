@@ -161,10 +161,10 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         events = await self.database.query(filters)
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
 
-        for event in events:
+        for event in events.to_vec():
             if all(ele in event.content().lower() for ele in self.must_list):
                 # if any(ele in event.content().lower() for ele in self.search_list):
                 if not any(ele in event.content().lower() for ele in self.avoid_list):
@@ -173,8 +173,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                          definitions.EventDefinitions.KIND_REPOST,
                          definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                     reactions = await self.database.query([filt])
-                    if len(reactions) >= self.min_reactions:
-                        ns.finallist[event.id().to_hex()] = len(reactions)
+                    if len(reactions.to_vec()) >= self.min_reactions:
+                        ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]

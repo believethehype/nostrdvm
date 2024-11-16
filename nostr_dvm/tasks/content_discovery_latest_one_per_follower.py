@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits, ClientBuilder
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -76,7 +76,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
         opts = (Options().relay_limits(relaylimits))
 
-        cli = Client.with_opts(keys, opts)
+        cli = ClientBuilder().signer(keys).opts(opts).build()
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         # ropts = RelayOptions().ping(False)

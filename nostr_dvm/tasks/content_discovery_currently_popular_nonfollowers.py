@@ -185,10 +185,10 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
 
         events = await self.database.query([filter1])
 
-        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
 
-        for event in events:
+        for event in events.to_vec():
             if event.author().to_hex() in followings:
                 continue
 
@@ -197,8 +197,8 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
                  definitions.EventDefinitions.KIND_REPOST,
                  definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
             reactions = await self.database.query([filt])
-            if len(reactions) >= self.min_reactions:
-                ns.finallist[event.id().to_hex()] = len(reactions)
+            if len(reactions.to_vec()) >= self.min_reactions:
+                ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 
         print(len(ns.finallist))
         result_list = []

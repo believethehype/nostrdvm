@@ -7,7 +7,7 @@ from nostr_dvm.utils.print_utils import bcolors
 async def gallery_announce_list(tags, dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = ""
-    event = EventBuilder(Kind(10011), content, tags).sign_with_keys(keys)
+    event = EventBuilder(Kind(10011), content).tags(tags).sign_with_keys(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
 
     print(

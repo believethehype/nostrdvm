@@ -137,18 +137,18 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
             filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
             events = await cli.database().query([filter1])
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-                print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+                print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
 
             ns.finallist = {}
-            for event in events:
+            for event in events.to_vec():
                 # if event.created_at().as_secs() > timestamp_since:
                 filt = Filter().kinds(
                     [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                      definitions.EventDefinitions.KIND_REPOST,
                      definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = await cli.database().query([filt])
-                if len(reactions) >= self.min_reactions:
-                    ns.finallist[event.id().to_hex()] = len(reactions)
+                if len(reactions.to_vec()) >= self.min_reactions:
+                    ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 
             finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[
                                :int(options["max_results"])]

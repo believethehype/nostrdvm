@@ -318,7 +318,7 @@ async def send_job_status_reaction(original_event_id_hex, original_event_author_
     content = reaction
 
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
-    reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).sign_with_keys(keys)
+    reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
     await send_event_outbox(reaction_event, client=client, dvm_config=dvm_config)
 
     if dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
