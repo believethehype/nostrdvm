@@ -45,7 +45,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
 RELAY_LIST = ["wss://nostr.mom",
               #"wss://relay.primal.net",
               "wss://nostr.oxtr.dev",
-              "wss://relay.nostr.net"
+              #"wss://relay.nostr.net"
               ]
 
 if use_logger:
@@ -110,6 +110,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -149,6 +150,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
 
@@ -180,6 +182,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     dvm_config.LOGLEVEL = LogLevel.INFO
     # Activate these to use a subscription based model instead
     # dvm_config.SUBSCRIPTION_REQUIRED = True
@@ -238,6 +241,7 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     image = "https://i.nostr.build/ctfc5o47ICm56TOv.jpg"
@@ -288,6 +292,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -330,6 +335,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -373,6 +379,8 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     admin_config.LUD16 = dvm_config.LN_ADDRESS
+
+
 
     # Add NIP89
     nip89info = {
@@ -487,6 +495,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -531,6 +540,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     # dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.mostr.pub/"]
 
     dvm_config.FIX_COST = cost
