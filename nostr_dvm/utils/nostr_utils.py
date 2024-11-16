@@ -6,8 +6,8 @@ from typing import List
 
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
-    Nip19Event, SingleLetterTag, RelayLimits, SecretKey, NostrSigner, Connection, ConnectionTarget, \
-    EventSource, EventBuilder, Kind
+    Nip19Event, SingleLetterTag, RelayLimits, SecretKey, Connection, ConnectionTarget, \
+    EventBuilder, Kind, ClientBuilder, SendEventOutput
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 
@@ -33,8 +33,7 @@ async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Eve
 
 
 async def get_events_async(client, filter, timeout):
-    source_l = EventSource.relays(timedelta(seconds=timeout))
-    events = await client.fetch_events([filter], source_l)
+    events = await client.fetch_events([filter], timedelta(seconds=timeout))
     return events.to_vec()
 
 
@@ -183,7 +182,7 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
             return []
 
 
-async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
+async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput | None:
     # 1. OK, Let's overcomplicate things.
     # 2. If our event has a relays tag, we just send the event to these relay in the classical way.
     relays = []
@@ -208,6 +207,9 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         print("[" + dvm_config.NIP89.NAME + "] No Inbox found, replying to generic relays")
         relays = await get_main_relays(event, client, dvm_config)
 
+
+    if len(relays) == 0:
+        return
         # eventid = await send_event(event, client, dvm_config)
         # return eventid
 
@@ -215,10 +217,10 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
     relaylimits = RelayLimits.disable()
     connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
     # connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
-    opts = Options().relay_limits(relaylimits).connection(connection).connection_timeout(timedelta(seconds=30))
+    opts = Options().relay_limits(relaylimits).connection(connection).timeout(timedelta(seconds=5))
     sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
-    outboxclient = Client.with_opts(keys, opts)
+    outboxclient = ClientBuilder().signer(keys).opts(opts).build()
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays[:5]:
@@ -236,32 +238,23 @@ async def send_event_outbox(event: Event, client, dvm_config) -> EventId:
         event_id = None
         print(e)
 
-    for relay in relays[:5]:
-        try:
-            await outboxclient.force_remove_relay(relay)
-        except:
-            print("Error removing relay: " + relay)
-
     # 5. Fallback, if we couldn't send the event to any relay, we try to send to generic relays instead.
     if event_id is None:
         relays = await get_main_relays(event, client, dvm_config)
+        if len(relays) == 0:
+            return None
         for relay in relays:
             await outboxclient.add_relay(relay)
         try:
             await outboxclient.connect()
             event_id = await outboxclient.send_event(event)
-            for relay in relays:
-                try:
-                    await outboxclient.force_remove_relay(relay)
-                except:
-                    print("Error removing relay: " + relay)
         except Exception as e:
             # Love yourself then.
             event_id = None
             print(e)
-    await outboxclient.remove_all_relays()
-    await outboxclient.disconnect()
+
     await outboxclient.shutdown()
+
     return event_id
 
 
@@ -413,7 +406,7 @@ async def send_nip04_dm(client: Client, msg, receiver: PublicKey, dvm_config):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
     content = await keys.nip04_encrypt(receiver, msg)
     ptag = Tag.parse(["p", receiver.to_hex()])
-    event = EventBuilder(Kind(4), content, [ptag]).sign_with_keys(Keys.parse(dvm_config.PRIVATE_KEY))
+    event = EventBuilder(Kind(4), content).tags([ptag]).sign_with_keys(Keys.parse(dvm_config.PRIVATE_KEY))
     await client.send_event(event)
 
     # relays = await get_dm_relays(event, client, dvm_config)

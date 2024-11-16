@@ -5,7 +5,7 @@ from datetime import timedelta
 from threading import Thread
 
 from nostr_sdk import Client, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits
+    RelayLimits, ClientBuilder
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -68,7 +68,8 @@ class DiscoverNonFollowers(DVMTaskInterface):
                 relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = Client.with_opts(keys, opts)
+        cli= ClientBuilder().signer(keys).opts(opts).build()
+
         # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)

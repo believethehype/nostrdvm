@@ -121,16 +121,16 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
         ge_events = await databasegallery.query([filter1])
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events)) + " Events")
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events.to_vec())) + " Events")
         ns.finallist = {}
 
         ids = []
         relays = []
 
-        if len(ge_events) == 0:
+        if len(ge_events.to_vec()) == 0:
             return []
 
-        for ge_event in ge_events:
+        for ge_event in ge_events.to_vec():
 
             id = None
             for tag in ge_event.tags().to_vec():
@@ -176,7 +176,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
             if event.created_at().as_secs() > timestamp_since:
                 filt1 = Filter().kinds([definitions.EventDefinitions.KIND_DELETION]).event(event.id()).limit(1)
                 deletions = await databasegallery.query([filt1])
-                if len(deletions) > 0:
+                if len(deletions.to_vec()) > 0:
                     print("Deleted event, skipping")
                     continue
 
@@ -185,13 +185,13 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = await databasegallery.query([filt])
 
-                if len(reactions) >= self.min_reactions:
+                if len(reactions.to_vec()) >= self.min_reactions:
                     found = False
-                    for ge_event in ge_events:
+                    for ge_event in ge_events.to_vec():
                         for tag in ge_event.tags().to_vec():
                             if tag.as_vec()[0] == "e":
                                 if event.id().to_hex() == tag.as_vec()[1]:
-                                    ns.finallist[ge_event.id().to_hex()] = len(reactions)
+                                    ns.finallist[ge_event.id().to_hex()] = len(reactions.to_vec())
                                     found = True
                                     break
                         if found:

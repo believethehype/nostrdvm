@@ -248,8 +248,8 @@ async def analyse_users(user_ids=None, dunbar=100000000):
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query([followers_filter])
         allfriends = []
-        if len(followers) > 0:
-            for follower in followers:
+        if len(followers.to_vec()) > 0:
+            for follower in followers.to_vec():
                 frens = []
                 if len(follower.tags().to_vec()) < dunbar:
                     for tag in follower.tags().to_vec():

@@ -29,7 +29,7 @@ async def nip89_announce_tasks(dvm_config, client):
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
-    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content, [k_tag, d_tag]).sign_with_keys(keys)
+    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags([k_tag, d_tag]).sign_with_keys(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
 
     print(
@@ -65,7 +65,7 @@ async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).sign_with_keys(keys)
+    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).sign_with_keys(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config)
 
@@ -74,7 +74,7 @@ async def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client:
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).pow(28).sign_with_keys(keys)
+    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).pow(28).sign_with_keys(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config)
 

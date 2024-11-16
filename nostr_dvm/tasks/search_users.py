@@ -95,11 +95,11 @@ class SearchUser(DVMTaskInterface):
         events = await cli.database().query([filter1])
 
         result_list = []
-        print("Events: " + str(len(events)))
+        print("Events: " + str(len(events.to_vec())))
         index = 0
-        if len(events) > 0:
+        if len(events.to_vec()) > 0:
 
-            for event in events:
+            for event in events.to_vec():
                 if index < options["max_results"]:
                     try:
                         if options["search"].lower() in event.content().lower():

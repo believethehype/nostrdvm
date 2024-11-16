@@ -121,10 +121,10 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
         events = await database.query([filter1])
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
 
-        for event in events:
+        for event in events.to_vec():
 
             if event.created_at().as_secs() > timestamp_since:
                 filt = Filter().kinds(
@@ -133,8 +133,8 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
                      EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = await database.query([filt])
 
-                if len(reactions) >= self.min_reactions:
-                    ns.finallist[event.id().to_hex()] = len(reactions)
+                if len(reactions.to_vec()) >= self.min_reactions:
+                    ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
         if len(ns.finallist) == 0:
             return self.result
 

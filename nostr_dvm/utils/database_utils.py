@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from logging import Filter
 from sqlite3 import Error
 
-from nostr_sdk import Timestamp, Keys, PublicKey, Filter, Kind
+from nostr_sdk import Timestamp, Keys, PublicKey, Filter, Kind, make_private_msg
 
 from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.nostr_utils import send_nip04_dm
@@ -192,7 +192,9 @@ async def update_user_balance(db, npub, additional_sats, client, config, giftwra
 
             # always send giftwrapped. sorry not sorry.
             #if giftwrap:
-            await client.send_private_msg(PublicKey.parse(npub), message, None)
+            event = await make_private_msg(keys, PublicKey.parse(npub), message,
+                                           None)
+            await client.send_event(event)
             #else:
             #    await send_nip04_dm(client, message, PublicKey.parse(npub), config)
 
