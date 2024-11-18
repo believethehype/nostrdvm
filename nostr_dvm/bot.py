@@ -28,6 +28,10 @@ class Bot:
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
 
     def __init__(self, dvm_config, admin_config=None):
+        self.dvm_config = None
+        self.keys = None
+        self.admin_config = None
+        self.client = None
         asyncio.run(self.run_bot(dvm_config, admin_config))
         uniffi_set_event_loop(asyncio.get_running_loop())
 
