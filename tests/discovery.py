@@ -887,10 +887,10 @@ def playground():
     options_animal = {
         "search_list": ["catstr", "pawstr", "dogstr", "pugstr", " cat ", " cats ", "doggo", " deer ", " dog ", " dogs ",
                         " fluffy ",
-                        "animal",
+                        " animal",
                         " duck", " lion ", " lions ", " fox ", " foxes ", " koala ", " koalas ", "capybara", "squirrel",
-                        " monkey", "panda", "alpaca", " otter"],
-        "avoid_list": ["porn", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
+                        " monkey", " panda", "alpaca", " otter"],
+        "avoid_list": ["porn", "broth", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
                        "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
                        "moderna", "pfizer", " meat ", "pc mouse", "shotgun", "vagina", "rune", "testicle", "victim",
                        "sexualize", "murder", "tax", "engagement", "hodlers", "hodl", "gdp", "global markets", "crypto",
@@ -909,7 +909,7 @@ def playground():
 
         "must_list": ["http"],
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 12 * 60 * 60,  # 48h since gmt,
+        "db_since": 24 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
 
