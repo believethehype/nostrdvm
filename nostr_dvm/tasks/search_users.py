@@ -81,7 +81,7 @@ class SearchUser(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().database(database).signer(keys).build()
+        cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
 
         await cli.add_relay(self.relay)
         # cli.add_relay("wss://atl.purplerelay.com")
@@ -140,7 +140,7 @@ class SearchUser(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().signer(keys).database(database).build()
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
         await cli.add_relay(self.relay)
         await cli.connect()

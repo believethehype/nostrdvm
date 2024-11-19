@@ -76,7 +76,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
         opts = (Options().relay_limits(relaylimits))
 
-        cli = ClientBuilder().signer(keys).opts(opts).build()
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         await cli.add_relay("wss://nostr.band")

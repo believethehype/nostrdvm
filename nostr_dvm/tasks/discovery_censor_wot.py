@@ -73,7 +73,7 @@ class DiscoverReports(DVMTaskInterface):
             Options().relay_limits(relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = ClientBuilder().signer(keys).opts(opts).build()
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
         # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)

@@ -78,7 +78,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
 
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().database(database).signer(keys).build()
+        cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
 
         await cli.add_relay("wss://relay.damus.io")
         # cli.add_relay("wss://atl.purplerelay.com")
@@ -137,7 +137,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().signer(keys).database(database).build()
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
         await cli.add_relay("wss://relay.damus.io")
         await cli.add_relay("wss://nostr21.com")

@@ -5,7 +5,7 @@ import signal
 from multiprocessing.connection import Connection
 
 from nostr_sdk import (Keys, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, EventId, Nip19Event, Kind, KindEnum,
+                       Options, Tag, Event, nip04_encrypt, EventId, Nip19Event, Kind, KindEnum, NostrSigner,
                        UnsignedEvent, UnwrappedGift, uniffi_set_event_loop, ClientBuilder, make_private_msg)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
@@ -49,7 +49,7 @@ class Bot:
         self.CHATBOT = False
 
         opts = Options().gossip(True)
-        self.client = ClientBuilder().signer(self.keys).opts(opts).build()
+        self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
         self.invoice_list = []
 
         pk = self.keys.public_key()

@@ -27,7 +27,7 @@ async def getmetadata(npub):
     except:
         return "", "", ""
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
-    client = ClientBuilder().signer(keys).build()
+    client = ClientBuilder().signer(NostrSigner.keys(keys)).build()
     await client.add_relay("wss://relay.damus.io")
     #await client.add_relay("wss://relay.primal.net")
     await client.add_relay("wss://purplepag.es")
@@ -54,7 +54,7 @@ async def getmetadata(npub):
 async def sync_db():
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
     database = NostrDatabase.lmdb("db/nostr_followlists.db")
-    cli = ClientBuilder().signer(keys).database(database).build()
+    cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
     await cli.add_relay("wss://relay.damus.io")  # TODO ADD MORE
     # await cli.add_relay("wss://relay.primal.net")  # TODO ADD MORE

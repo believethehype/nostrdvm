@@ -7,7 +7,7 @@ from typing import List
 import dotenv
 from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
     Nip19Event, SingleLetterTag, RelayLimits, SecretKey, Connection, ConnectionTarget, \
-    EventBuilder, Kind, ClientBuilder, SendEventOutput
+    EventBuilder, Kind, ClientBuilder, SendEventOutput, NostrSigner
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 
@@ -220,7 +220,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
     opts = Options().relay_limits(relaylimits).connection(connection).timeout(timedelta(seconds=5))
     sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
-    outboxclient = ClientBuilder().signer(keys).opts(opts).build()
+    outboxclient = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
     print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays[:5]:
