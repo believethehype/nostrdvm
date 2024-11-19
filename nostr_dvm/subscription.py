@@ -39,7 +39,7 @@ class Subscription:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        self.client = Client(self.keys)
+        self.client = Client(NostrSigner.keys(self.keys))
 
         pk = self.keys.public_key()
 

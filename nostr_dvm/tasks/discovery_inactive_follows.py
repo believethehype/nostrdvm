@@ -123,7 +123,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 from nostr_sdk import Filter
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
-                cli = Client(keys)
+                cli = Client(NostrSigner.keys(keys))
                 for relay in self.dvm_config.RELAY_LIST:
                     await cli.add_relay(relay)
                 await cli.connect()

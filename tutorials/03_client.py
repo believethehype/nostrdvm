@@ -36,10 +36,10 @@ async def nostr_client_generic_test(ptag):
 
     # We now send a 5050 Request (for Text Generation) with our tags. The content is optional.
     event = EventBuilder(Kind(5050), "This is a test",
-                         tags).sign_with_keys(keys)
+                         ).tags(tags).sign_with_keys(keys)
 
     # We create a signer with some random keys
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in relay_list:
         await client.add_relay(relay)
@@ -57,7 +57,7 @@ async def nostr_client(target_dvm_npub):
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:

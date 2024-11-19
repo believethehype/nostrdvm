@@ -12,7 +12,7 @@ from nostr_dvm.utils.output_utils import PostProcessFunctionType
 
 async def build_client(config):
     keys = Keys.parse(config.PRIVATE_KEY)
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     for relay in config.RELAY_LIST:
         await client.add_relay(relay)
