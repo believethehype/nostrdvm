@@ -42,6 +42,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     personalized = False
     result = ""
     database = None
+    wot_counter = 0
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -144,7 +145,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
 
             await cli.connect()
 
-            if self.dvm_config.WOT_FILTERING:
+            if self.dvm_config.WOT_FILTERING and self.wot_counter == 0:
                 print("Calculating WOT for " + str(self.dvm_config.WOT_BASED_ON_NPUBS))
                 filtering = cli.filtering()
                 index_map, G = await build_wot_network(self.dvm_config.WOT_BASED_ON_NPUBS,
@@ -166,7 +167,11 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 # toc = time.time()
                 # print(f'finished in {toc - tic} seconds')
                 await filtering.add_public_keys(wot_keys)
-
+                self.wot_calculated = True
+            self.wot_counter += 1
+            # only calculate wot every 10th call
+            if self.wot_counter >= 10:
+                self.wot_counter = 0
             # Mute public key
             # await cli. (self.dvm_config.MUTE)
 
