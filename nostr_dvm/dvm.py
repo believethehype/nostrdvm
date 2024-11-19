@@ -4,7 +4,7 @@ import os
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    LogLevel, Options, nip04_encrypt, Kind, RelayLimits, uniffi_set_event_loop, ClientBuilder
+    LogLevel, Options, nip04_encrypt, Kind, RelayLimits, uniffi_set_event_loop, ClientBuilder, NostrSigner
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
 from nostr_dvm.utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
@@ -48,7 +48,7 @@ class DVM:
             Options().relay_limits(relaylimits)) #.difficulty(28)
 
         #self.client = Client(self.keys)
-        self.client = ClientBuilder().signer(self.keys).opts(opts).build()
+        self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()

@@ -112,7 +112,7 @@ class DicoverContentLatestLongForm(DVMTaskInterface):
 
         database = NostrDatabase.lmdb(self.db_name)
         # print(self.db_name)
-        cli = ClientBuilder().database(database).signer(keys).build()
+        cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
         await cli.connect()
 
         # Negentropy reconciliation
@@ -175,7 +175,7 @@ class DicoverContentLatestLongForm(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(keys).database(database).opts(opts).build()
+            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).opts(opts).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(relay)

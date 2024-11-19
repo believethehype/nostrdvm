@@ -147,7 +147,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         if self.database is None:
             self.database = NostrDatabase.lmdb(self.db_name)
 
-        cli = ClientBuilder().database(self.database).signer(keys).opts(opts).build()
+        cli = ClientBuilder().database(self.database).signer(NostrSigner.keys(keys)).opts(opts).build()
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(relay)
 
@@ -228,7 +228,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(keys).database(database).build()
+            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(relay)

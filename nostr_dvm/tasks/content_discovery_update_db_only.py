@@ -137,7 +137,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             if self.database is None:
                 self.database = NostrDatabase.lmdb(self.db_name)
 
-            cli = ClientBuilder().signer(keys).database(self.database).opts(opts).build()
+            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(self.database).opts(opts).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(relay)
