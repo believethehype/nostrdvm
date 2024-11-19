@@ -36,7 +36,7 @@ update_profile = False
 global_update_rate = 180  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 log_level = LogLevel.ERROR
-max_sync_duration_in_h = 48
+max_sync_duration_in_h = 24
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                       #"wss://relay.primal.net",
