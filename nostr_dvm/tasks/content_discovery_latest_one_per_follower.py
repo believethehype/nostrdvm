@@ -74,9 +74,9 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
         relaylimits = RelayLimits.disable()
 
-        opts = (Options().relay_limits(relaylimits))
+        opts = Options().relay_limits(relaylimits)
 
-        cli = ClientBuilder().signer(NostrSigner(NostrSigner.keys(keys))).opts(opts).build()
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         # ropts = RelayOptions().ping(False)
