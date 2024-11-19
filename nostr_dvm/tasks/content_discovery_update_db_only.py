@@ -177,7 +177,6 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
                  definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
-            # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
