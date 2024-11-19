@@ -72,7 +72,7 @@ class TrendingNotesGleasonator(DVMTaskInterface):
 
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = Client(keys)
+        cli = Client(NostrSigner.keys(keys))
 
         await cli.add_relay(options["relay"])
         await cli.connect()

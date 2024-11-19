@@ -6,7 +6,7 @@ from datetime import timedelta
 
 import requests
 from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
-    EventId, nip04_decrypt, nip04_encrypt, PublicKey, Metadata
+    EventId, nip04_decrypt, nip04_encrypt, PublicKey, Metadata, NostrSigner
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -52,7 +52,7 @@ class NutZapWallet:
 
     async def client_connect(self, relay_list, keys):
 
-        client = Client(keys)
+        client = Client(NostrSigner.keys(keys))
         for relay in relay_list:
             await client.add_relay(relay)
         await client.connect()

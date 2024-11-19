@@ -24,14 +24,14 @@ async def nostr_client_test_tts(prompt):
     relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTS"])
-    event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File."),
+    event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File.")).tags(
                          [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
 
     relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
 
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -44,7 +44,7 @@ async def nostr_client():
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Test Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:

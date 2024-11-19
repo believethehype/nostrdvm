@@ -361,7 +361,7 @@ def check_and_decrypt_own_tags(event, dvm_config):
 
 async def update_profile_lnaddress(private_key, dvm_config, lud16="", ):
     keys = Keys.parse(private_key)
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
     for relay in dvm_config.RELAY_LIST:
         await client.add_relay(relay)
     await client.connect()
