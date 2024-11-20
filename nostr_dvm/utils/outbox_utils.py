@@ -77,6 +77,12 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol", "wss://nostr.fmt.wiz.biz", "wss://no
                            "wss://nostream-production-5895.up.railway.app",
                            "ws://127.0.0.1:4869", "wss://sign.siamstr.com", "wss://relay.hash.stream",
                            "wss://pablof7z.nostr1.com", "wss://nostr.beckmeyer.us", "wss://pow.hzrd149.com",
-                           "wss://relay.nostrss.re", "wss://relay.nostr.bg", "ws://bugman.mguy.net:4848"
+                           "wss://relay.nostrss.re", "wss://relay.nostr.bg", "ws://bugman.mguy.net:4848",
+                           "wss://nostr-2.zebedee.cloud", "wss://nostr.lorentz.is", "wss://zap.nostr1.com",
+                           "wss://onchain.pub", "wss://relay.nostr.info", "wss://relay.chicagoplebs.com",
+                           "wss://relay.current.fyi", "wss://relay.stemstr.app", "wss://nostr.zenon.info",
+                           "ws://localhost:7777"
+
+
 
                            ]
