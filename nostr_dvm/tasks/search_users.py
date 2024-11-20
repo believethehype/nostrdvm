@@ -1,9 +1,10 @@
 import json
 import os
 from datetime import timedelta
+from itertools import islice
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind
+    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind, PublicKey, RelayFilteringMode, RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -12,6 +13,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_users
+from nostr_dvm.utils.wot_utils import build_wot_network
 
 """
 This File contains a Module to search for notes
@@ -28,6 +30,7 @@ class SearchUser(DVMTaskInterface):
     dvm_config: DVMConfig
     last_schedule: int = 0
     db_name = "db/nostr_profiles.db"
+    wot_counter = 0
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -139,10 +142,42 @@ class SearchUser(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+        relaylimits = RelayLimits.disable()
+        opts = (Options().relay_limits(relaylimits))
+        if self.dvm_config.WOT_FILTERING:
+            opts = opts.filtering_mode(RelayFilteringMode.WHITELIST)
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).opts(opts).build()
 
-        await cli.add_relay(self.relay)
+        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
+            await cli.add_relay(relay)
         await cli.connect()
+        if self.dvm_config.WOT_FILTERING and self.wot_counter == 0:
+            print("Calculating WOT for " + str(self.dvm_config.WOT_BASED_ON_NPUBS))
+            filtering = cli.filtering()
+            index_map, G = await build_wot_network(self.dvm_config.WOT_BASED_ON_NPUBS,
+                                                   depth=self.dvm_config.WOT_DEPTH, max_batch=500,
+                                                   max_time_request=10, dvm_config=self.dvm_config)
+
+            # Do we actually need pagerank here?
+            # print('computing global pagerank...')
+            # tic = time.time()
+            # p_G = nx.pagerank(G, tol=1e-12)
+            # print("network after pagerank: " + str(len(p_G)))
+
+            wot_keys = []
+            for item in islice(G, len(G)):
+                key = next((PublicKey.parse(pubkey) for pubkey, id in index_map.items() if id == item),
+                           None)
+                wot_keys.append(key)
+
+            # toc = time.time()
+            # print(f'finished in {toc - tic} seconds')
+            await filtering.add_public_keys(wot_keys)
+
+        self.wot_counter += 1
+        # only calculate wot every 10th call
+        if self.wot_counter >= 10:
+            self.wot_counter = 0
 
         filter1 = Filter().kind(Kind(0))
 

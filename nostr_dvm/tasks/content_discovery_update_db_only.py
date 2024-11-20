@@ -167,7 +167,6 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 # toc = time.time()
                 # print(f'finished in {toc - tic} seconds')
                 await filtering.add_public_keys(wot_keys)
-                self.wot_calculated = True
             self.wot_counter += 1
             # only calculate wot every 10th call
             if self.wot_counter >= 10:
