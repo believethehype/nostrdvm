@@ -28,13 +28,11 @@ class SearchUser(DVMTaskInterface):
     dvm_config: DVMConfig
     last_schedule: int = 0
     db_name = "db/nostr_profiles.db"
-    relay = "wss://profiles.nostr1.com"
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
         dvm_config.SCRIPT = os.path.abspath(__file__)
-        if self.options.get("relay"):
-            self.relay = self.options['relay']
+
         if self.dvm_config.UPDATE_DATABASE:
             await self.sync_db()
 
@@ -83,7 +81,8 @@ class SearchUser(DVMTaskInterface):
         database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
 
-        await cli.add_relay(self.relay)
+        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
+            await cli.add_relay(relay)
         # cli.add_relay("wss://atl.purplerelay.com")
         await cli.connect()
 
