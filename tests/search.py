@@ -158,11 +158,11 @@ def build_advanced_search_wine(name, identifier):
 
 def build_user_search(name, identifier):
     dvm_config = build_default_config(identifier)
-    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.damus.io"]
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.WOT_FILTERING = True
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
-    dvm_config.RELAY_LIST = RELAY_LIST
     invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -189,11 +189,9 @@ def build_user_search(name, identifier):
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
-    options = {"relay": "wss://profiles.nostr1.com"}
-
 
     return SearchUser(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                      admin_config=admin_config, options=options)
+                      admin_config=admin_config)
 
 
 
@@ -208,8 +206,8 @@ def playground():
     advanced_search_wine = build_advanced_search_wine("Nostr.wine Search", "discovery_content_searchwine")
     advanced_search_wine.run()
 
-    #profile_search = build_user_search("Profile Searcher", "profile_search")
-    #profile_search.run()
+    profile_search = build_user_search("Profile Searcher", "profile_search")
+    profile_search.run()
 
 
 
