@@ -421,7 +421,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.DATABASE = database
     # Activate these to use a subscription based model instead
-    dvm_config.FIX_COST = 10
+    dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
@@ -443,6 +443,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
         "cashuAccepted": True,
         "subscription": False,
         "personalized": True,
+        "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
                 "required": False,
@@ -1031,7 +1032,7 @@ def playground():
         "db_name": "db/nostr_recent_notes.db",
         "db_since": 2 * 60 * 60,  # 2h since gmt,
     }
-    cost = 0
+    cost = 10
     image = "https://i.nostr.build/l11EczDmpZBaxlRm.jpg"
 
     discovery_non_followers = build_example_popular_non_followers(
