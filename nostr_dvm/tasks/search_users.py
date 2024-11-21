@@ -104,6 +104,7 @@ class SearchUser(DVMTaskInterface):
             for event in events.to_vec():
                 if index < options["max_results"]:
                     try:
+                        searchterm = " " + options["search"].lower() + " "
                         if options["search"].lower() in event.content().lower():
                             p_tag = Tag.parse(["p", event.author().to_hex()])
                             #print(event.as_json())
@@ -235,10 +236,8 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": "wss://profiles.nostr1.com"}
-
     return SearchUser(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                      admin_config=admin_config, options=options)
+                      admin_config=admin_config)
 
 
 if __name__ == '__main__':
