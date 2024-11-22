@@ -353,8 +353,7 @@ class Subscription:
                                 Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
                                                                                                        " ") + " GMT"))
 
-                            event = await make_private_msg(self.keys, PublicKey.parse(subscriber), message,
-                                                           None)
+                            event = await make_private_msg(NostrSigner.keys(self.keys), PublicKey.parse(subscriber), message)
                             await self.client.send_event(event)
 
 
@@ -414,8 +413,7 @@ class Subscription:
                 Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
                                                                                        " ")))
             # await self.client.send_direct_msg(PublicKey.parse(subscription.subscriber), message, None)
-            event = await make_private_msg(self.keys, PublicKey.parse(subscription.subscriber), message,
-                                           None)
+            event = await make_private_msg(NostrSigner.keys(self.keys), PublicKey.parse(subscription.subscriber), message)
             await self.client.send_event(event)
 
         async def check_subscriptions():
