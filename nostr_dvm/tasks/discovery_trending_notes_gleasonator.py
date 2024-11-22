@@ -128,8 +128,8 @@ def build_example(name, identifier, admin_config, custom_processing_msg):
         "picture": "https://image.nostr.build/0c760b3ecdbc993ba47b785d0adecf00c760b3ecdbc993ba47b785d0adecf0ec71fd9c59808e27d0665b9f77a32d8de.png",
         "about": "I show trending notes from Soapbox Ditto",
         "amount": "Free",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {}
     }
     nip89config = NIP89Config()

@@ -1,7 +1,17 @@
 <script setup>
 
 
-import {Event, EventBuilder, EventId, Filter, Nip19Event, PublicKey, Tag, Timestamp} from "@rust-nostr/nostr-sdk";
+import {
+  Event,
+  EventBuilder,
+  EventId,
+  Filter,
+  Nip19Event,
+  NIP44Version,
+  PublicKey,
+  Tag,
+  Timestamp
+} from "@rust-nostr/nostr-sdk";
 import store from '../store';
 import miniToastr from "mini-toastr";
 import VueNotifications from "vue-notifications";
@@ -143,10 +153,10 @@ async function send_search_request(msg) {
     let winesearch = "4897ca2ad3e081f7e98dff6fc8f11b5dfa2909b33dbea6fa59b8d8665686181d"
     let profilesearch = "d378e056a3a4d01c785d24f9b352f1e9cfbec02450a6d6babf5baeda54d4a6de"
 
-    let contentnb = await signer.nip04Encrypt(PublicKey.parse(nostrbadnsearch), tags_as_str)
+    let contentnb = await signer.nip44Encrypt(PublicKey.parse(nostrbadnsearch), tags_as_str, NIP44Version.V2)
     console.log(contentnb)
-    let contentwine = await signer.nip04Encrypt(PublicKey.parse(winesearch), tags_as_str)
-    let contentprofile = await signer.nip04Encrypt(PublicKey.parse(profilesearch), tags_profile_as_str)
+    let contentwine = await signer.nip44Encrypt(PublicKey.parse(winesearch), tags_as_str, NIP44Version.V2)
+    let contentprofile = await signer.nip44Encrypt(PublicKey.parse(profilesearch), tags_profile_as_str, NIP44Version.V2)
 
 
     let tags_nb = [
@@ -232,7 +242,7 @@ async function listen() {
       /* if (store.state.hasEventListener === false){
          return true
        }*/
-      console.log("Received new event from", relayUrl);
+      //console.log("Received new event from", relayUrl);
       let resonsetorequest = false
 
       sleep(500).then(async () => {
@@ -292,7 +302,8 @@ async function listen() {
               if (is_encrypted) {
                 let signer = store.state.signer
                 if (ptag === store.state.pubkey.toHex()) {
-                  let tags_str = await signer.nip04Decrypt(event.author, event.content)
+                  let tags_str = await signer.nip44Decrypt(event.author, event.content)
+                  console.log(tags_str)
                   let params = JSON.parse(tags_str)
                   params.push(Tag.parse(["p", ptag]).asVec())
                   params.push(Tag.parse(["encrypted"]).asVec())
@@ -350,7 +361,7 @@ async function listen() {
                 if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
                   jsonentry.name = el.name
                   jsonentry.about = content
-                  jsonentry.image = el.image
+                  jsonentry.picture = el.picture
                   console.log(jsonentry)
 
                 }
@@ -380,7 +391,7 @@ async function listen() {
             if (is_encrypted) {
               let signer = store.state.signer
               if (ptag === store.state.pubkey.toHex()) {
-                content = await signer.nip04Decrypt(event.author, event.content)
+                content = await signer.nip44Decrypt(event.author, event.content)
               }
             }
 
@@ -451,7 +462,7 @@ async function listen() {
             if (is_encrypted) {
               let signer = store.state.signer
               if (ptag === store.state.pubkey.toHex()) {
-                content = await signer.nip04Decrypt(event.author, event.content)
+                content = await signer.nip44Decrypt(event.author, event.content)
               }
             }
 
@@ -616,7 +627,7 @@ defineProps({
 
             <div className="col-end-1">
               <h2 className="card-title">{{ dvm.name }}</h2>
-              <figure v-if="dvm.image!==''" className="w-40"><img :src="dvm.image" alt="DVM Picture" className="h-30"/>
+              <figure v-if="dvm.picture!==''" className="w-40"><img :src="dvm.picture" alt="DVM Picture" className="h-30"/>
               </figure>
             </div>
 

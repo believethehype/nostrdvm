@@ -206,8 +206,8 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "picture": "https://image.nostr.build/a99ab925084029d9468fef8330ff3d9be2cf67da473b024f2a6d48b5cd77197f.jpg",
         "about": "I search users.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "users": {
                 "required": False,

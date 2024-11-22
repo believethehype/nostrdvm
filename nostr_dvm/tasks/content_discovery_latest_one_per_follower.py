@@ -208,8 +208,8 @@ def build_example(name, identifier, admin_config):
         "picture": "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg",
         "about": "I discover users you follow, but that have been inactive on Nostr",
         "action": "unfollow",  # follow, mute, unmute
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "user": {
                 "required": False,

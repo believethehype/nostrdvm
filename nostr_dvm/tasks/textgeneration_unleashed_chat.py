@@ -115,8 +115,8 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "picture": "https://unleashed.chat/_app/immutable/assets/hero.pehsu4x_.jpeg",
         "about": "I generate Text with Unleashed.chat",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {}
     }
 

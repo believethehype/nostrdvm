@@ -52,18 +52,18 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
             about = nip89content.get("about")
         if nip89content.get("nip90Params"):
             nip90params = nip89content["nip90Params"]
-        if nip89content.get("encryptionSupported"):
-            encryption_supported = nip89content["encryptionSupported"]
-        if nip89content.get("cashuAccepted"):
-            cashu_accepted = nip89content["cashuAccepted"]
+        if nip89content.get("supportsEncryption"):
+            encryption_supported = nip89content["supportsEncryption"]
+        if nip89content.get("acceptsNutZaps"):
+            cashu_accepted = nip89content["acceptsNutZaps"]
     else:
         print("No NIP89 set for " + name)
     nip89info = {
         "name": name,
         "picture": image,
         "about": about,
-        "encryptionSupported": encryption_supported,
-        "cashuAccepted": cashu_accepted,
+        "supportsEncryption": encryption_supported,
+        "acceptsNutZaps": cashu_accepted,
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()

@@ -46,8 +46,8 @@ def playground(announce=False):
         "name": name,
         "picture": "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
         "about": "I'm briding DuckDuckAI'",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
         }
     }

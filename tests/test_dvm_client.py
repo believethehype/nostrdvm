@@ -7,7 +7,7 @@ from nostr_dvm.utils.print_utils import bcolors
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip04_encrypt, NostrSigner, Event, Kind, RelayOptions
+    nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, RelayOptions
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -377,8 +377,8 @@ async def nostr_client_test_image_private(prompt, cashutoken):
     encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), bid_tag.as_vec(),
                                           relays_tag.as_vec(), alt_tag.as_vec(), cashu_tag.as_vec()])
 
-    encrypted_params = nip04_encrypt(keys.secret_key(), receiver_keys.public_key(),
-                                     encrypted_params_string)
+    encrypted_params = nip44_encrypt(keys.secret_key(), receiver_keys.public_key(),
+                                     encrypted_params_string, Nip44Version.V2)
 
     encrypted_tag = Tag.parse(['encrypted'])
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params).tags(

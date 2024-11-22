@@ -170,7 +170,7 @@ async function listen() {
                 if (JSON.parse(el.event).pubkey === event.author.toHex().toString()) {
                   jsonentry.name = el.name
                   jsonentry.about = el.about
-                  jsonentry.image = el.image
+                  jsonentry.picture = el.picture
 
                   console.log(jsonentry)
 

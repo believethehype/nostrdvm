@@ -246,8 +246,8 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=3
         "picture": image,
         "about": "I show notes that are currently popular from people you follow",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -289,8 +289,8 @@ def build_example_subscription(name, identifier, admin_config, options, processi
         "picture": image,
         "about": "I show notes that are currently popular, just like the free DVM, I'm also used for testing subscriptions. (beta)",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "subscription": True,
         "nip90Params": {

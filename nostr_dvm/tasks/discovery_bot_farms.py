@@ -165,8 +165,8 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "picture": "https://image.nostr.build/981b560820bc283c58de7989b7abc6664996b487a531d852e4ef7322586a2122.jpg",
         "about": "I hunt down bot farms.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "action": "mute",  # follow, unfollow, mute, unmute
         "nip90Params": {
             "max_results": {

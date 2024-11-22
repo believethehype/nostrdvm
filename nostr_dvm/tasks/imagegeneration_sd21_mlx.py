@@ -158,8 +158,8 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "picture": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I use Replicate to run StableDiffusion XL",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "size": {
                 "required": False,
