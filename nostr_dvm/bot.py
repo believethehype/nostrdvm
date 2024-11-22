@@ -265,7 +265,7 @@ class Bot:
                                                                                         "100 sats (or any other amount) "
                                                                                         "to top up your balance")
                             if giftwrap:
-                                event = await make_private_msg(NostrSigner.keys(self.keys), PublicKey.parse(sender), message)
+                                event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
                                 await self.client.send_event(event)
                             else:
                                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
