@@ -106,7 +106,7 @@ def run_dvm(identifier, announce):
     # We now create or Nip89Config object
     nip89config = NIP89Config()
     nip89config.KIND = kind
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
 

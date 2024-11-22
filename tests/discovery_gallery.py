@@ -37,7 +37,6 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show popular gallery entries",
         "lud16": dvm_config.LN_ADDRESS,
@@ -55,7 +54,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopularGallery(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                  admin_config=admin_config, options=options)

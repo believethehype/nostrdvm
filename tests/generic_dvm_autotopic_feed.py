@@ -79,7 +79,7 @@ def playground(announce=False):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/I8fJo0n355cbNEbS.png", # "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
+        "picture": "https://i.nostr.build/I8fJo0n355cbNEbS.png", # "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
         "about": "I create a personalized feed based on topics you were writing about recently",
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -89,7 +89,7 @@ def playground(announce=False):
 
     nip89config = NIP89Config()
     nip89config.KIND = Kind(kind)
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     options = {

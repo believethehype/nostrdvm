@@ -117,7 +117,6 @@ def build_example(name, identifier, admin_config, custom_processing_msg):
 
     nip89info = {
         "name": name,
-        "image": "https://nostr.band/android-chrome-192x192.png",
         "picture": "https://nostr.band/android-chrome-192x192.png",
         "about": "I show trending notes from nostr.band",
         "amount": "Free",
@@ -126,7 +125,7 @@ def build_example(name, identifier, admin_config, custom_processing_msg):
         "nip90Params": {}
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return TrendingNotesNostrBand(name=name, dvm_config=dvm_config, nip89config=nip89config,

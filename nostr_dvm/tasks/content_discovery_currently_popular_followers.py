@@ -243,7 +243,6 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=3
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular from people you follow",
         "lud16": dvm_config.LN_ADDRESS,
@@ -261,7 +260,7 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=3
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -287,7 +286,6 @@ def build_example_subscription(name, identifier, admin_config, options, processi
     image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular, just like the free DVM, I'm also used for testing subscriptions. (beta)",
         "lud16": dvm_config.LN_ADDRESS,
@@ -305,14 +303,14 @@ def build_example_subscription(name, identifier, admin_config, options, processi
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     nip88config = NIP88Config()
-    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
     nip89config.NAME = name
-    nip88config.IMAGE = nip89info["image"]
+    nip88config.IMAGE = nip89info["picture"]
     nip88config.TITLE = name
     nip88config.AMOUNT_DAILY = 100
     nip88config.AMOUNT_MONTHLY = 2000

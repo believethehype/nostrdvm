@@ -33,7 +33,7 @@ def build_sd35(name, identifier):
     dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/NOXcCIPmOZrDTK35.jpg",
+        "picture": "https://i.nostr.build/NOXcCIPmOZrDTK35.jpg",
         "about": "I draw images using Stable diffusion ultra",
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -50,7 +50,7 @@ def build_sd35(name, identifier):
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     aconfig = AdminConfig()
     aconfig.REBROADCAST_NIP89 = False  # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89

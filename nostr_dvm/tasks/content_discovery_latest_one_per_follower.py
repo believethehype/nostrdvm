@@ -205,7 +205,7 @@ def build_example(name, identifier, admin_config):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg",
+        "picture": "https://i.nostr.build/H6SMmCl7eRDvkbAn.jpg",
         "about": "I discover users you follow, but that have been inactive on Nostr",
         "action": "unfollow",  # follow, mute, unmute
         "encryptionSupported": True,
@@ -224,7 +224,7 @@ def build_example(name, identifier, admin_config):
         }
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return Discoverlatestperfollower(name=name, dvm_config=dvm_config, nip89config=nip89config,

@@ -741,7 +741,9 @@ class Bot:
 
                 if nip89content.get("name"):
                     info += "Name: " + nip89content.get("name") + "\n"
-                if nip89content.get("image"):
+                if nip89content.get("picture"):
+                    info += nip89content.get("picture") + "\n"
+                elif nip89content.get("image"):
                     info += nip89content.get("image") + "\n"
                 if nip89content.get("about"):
                     info += "About:\n" + nip89content.get("about") + "\n\n"

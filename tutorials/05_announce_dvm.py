@@ -72,7 +72,7 @@ def run_dvm(identifier, announce):
     # We set a d tag. We need the dtag so if we want to update or delete the announcement, relays know which event is meant
     # You can choose a dtag you like. Here we build a hash from identiier, name, key and image and store it in the .env file.
     # So even if you change the name or image, it will now use the dtag from the env file until you delete it.
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     # We dump the nip89info struct from above to the content
     nip89config.CONTENT = json.dumps(nip89info)
 

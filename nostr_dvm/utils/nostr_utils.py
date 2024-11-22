@@ -379,7 +379,7 @@ async def update_profile(dvm_config, client, lud16=""):
         nip89content = json.loads(dvm_config.NIP89.CONTENT)
         name = nip89content.get("name")
         about = nip89content.get("about")
-        image = nip89content.get("image")
+        image = nip89content.get("picture")
 
         # Set metadata
         metadata = Metadata() \
