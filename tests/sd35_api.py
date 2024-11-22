@@ -35,8 +35,8 @@ def build_sd35(name, identifier):
         "name": name,
         "picture": "https://i.nostr.build/NOXcCIPmOZrDTK35.jpg",
         "about": "I draw images using Stable diffusion ultra",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "negative_prompt": {
                 "required": False,

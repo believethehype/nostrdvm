@@ -119,7 +119,7 @@ def run_dvm(identifier, announce):
         "name": name,
         "picture": "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
         "about": "I'm a very simply DVM that always responds with the same message.",
-        "encryptionSupported": True,
+        "supportsEncryption": True,
         "nip90Params": {
             "some_option": {
                 "required": False,

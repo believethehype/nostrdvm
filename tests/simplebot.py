@@ -50,7 +50,7 @@ async def test():
                 print("Decrypting NIP59 event")
                 try:
                     # Extract rumor
-                    unwrapped_gift = UnwrappedGift.from_gift_wrap(keys, event)
+                    unwrapped_gift = UnwrappedGift.from_gift_wrap(NostrSigner(keys), event)
                     sender = unwrapped_gift.sender()
                     rumor: UnsignedEvent = unwrapped_gift.rumor()
 

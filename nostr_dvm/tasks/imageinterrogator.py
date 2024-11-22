@@ -116,8 +116,8 @@ def build_example(name, identifier, admin_config, server_address):
         "name": name,
         "picture": "https://image.nostr.build/229c14e440895da30de77b3ca145d66d4b04efb4027ba3c44ca147eecde891f1.jpg",
         "about": "I analyse Images an return a prompt or a prompt analysis",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "method": {
                 "required": False,

@@ -43,8 +43,8 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
         "picture": image,
         "about": "I show the single latest note of people you follow",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {

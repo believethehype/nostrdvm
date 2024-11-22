@@ -282,8 +282,8 @@ def build_example(name, identifier, admin_config, options, image, description, u
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -321,8 +321,8 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "subscription": True,
         "personalized": False,
         "nip90Params": {

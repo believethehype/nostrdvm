@@ -92,8 +92,8 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "picture": "https://image.nostr.build/720eadc9af89084bb09de659af43ad17fec1f4b0887084e83ac0ae708dfa83a6.png",
         "about": "I use a LLM connected via Huggingchat",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {}
     }
 

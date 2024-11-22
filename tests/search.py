@@ -52,6 +52,7 @@ def build_advanced_search(name, identifier):
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
 
 
+
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
@@ -63,8 +64,8 @@ def build_advanced_search(name, identifier):
         "name": name,
         "picture": "https://nostr.band/android-chrome-192x192.png",
         "about": "I search notes on nostr.band",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "users": {
                 "required": False,
@@ -119,8 +120,8 @@ def build_advanced_search_wine(name, identifier):
         "name": name,
         "picture": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
         "about": "I search notes on nostr.wine using the nostr-wine API",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "users": {
                 "required": False,
@@ -175,8 +176,8 @@ def build_user_search(name, identifier):
         "name": name,
         "picture": "https://image.nostr.build/bd0181a3089181f1d92a5da1ef85cffbe37ba80fbcc695b9d85648dc2fa92583.jpg",
         "about": "I search users based on their profile info.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "max_results": {
                 "required": False,
@@ -206,8 +207,8 @@ def playground():
     advanced_search_wine = build_advanced_search_wine("Nostr.wine Search", "discovery_content_searchwine")
     advanced_search_wine.run()
 
-    profile_search = build_user_search("Profile Searcher", "profile_search")
-    profile_search.run()
+    #profile_search = build_user_search("Profile Searcher", "profile_search")
+    #profile_search.run()
 
 
 

@@ -24,8 +24,8 @@ def main():
         "name": name,
         "picture": "https://unleashed.chat/_app/immutable/assets/hero.pehsu4x_.jpeg",
         "about": "I generate Text with Unleashed.chat",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {}
     }
 

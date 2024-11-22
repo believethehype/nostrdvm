@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 
 import dotenv
-from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, Metadata, Options, \
+from nostr_sdk import Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, nip44_decrypt,  Metadata, Options, \
     Nip19Event, SingleLetterTag, RelayLimits, SecretKey, Connection, ConnectionTarget, \
     EventBuilder, Kind, ClientBuilder, SendEventOutput, NostrSigner
 
@@ -295,9 +295,10 @@ async def send_event(event: Event, client: Client, dvm_config):
 
 
 def check_and_decrypt_tags(event, dvm_config):
-    try:
+    is_encrypted = False
+    use_legacy_encryption = False
 
-        is_encrypted = False
+    try:
         p = ""
         for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'encrypted':
@@ -309,11 +310,21 @@ def check_and_decrypt_tags(event, dvm_config):
             if p != dvm_config.PUBLIC_KEY:
                 print("[" + dvm_config.NIP89.NAME + "] Task encrypted and not addressed to this DVM, "
                                                     "skipping..")
-                return None
+                return None, False
 
             elif p == dvm_config.PUBLIC_KEY:
-                tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
-                                         event.author(), event.content())
+                try:
+                    tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
+                                             event.author(), event.content())
+                except:
+                    try:
+                        tags_str = nip44_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
+                                                 event.author(), event.content())
+                    except:
+                        print("Wrong Nip44 Format")
+                        return None, False
+                    use_legacy_encryption = True
+
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
                 params.append(Tag.parse(["encrypted"]).as_vec())
@@ -324,7 +335,7 @@ def check_and_decrypt_tags(event, dvm_config):
     except Exception as e:
         print(e)
 
-    return event
+    return event, use_legacy_encryption
 
 
 def check_and_decrypt_own_tags(event, dvm_config):
@@ -344,8 +355,12 @@ def check_and_decrypt_own_tags(event, dvm_config):
                 return None
 
             elif event.author().to_hex() == dvm_config.PUBLIC_KEY:
-                tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
-                                         PublicKey.from_hex(p), event.content())
+                try:
+                    tags_str = nip44_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
+                                             PublicKey.from_hex(p), event.content())
+                except:
+                    tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
+                                             PublicKey.from_hex(p), event.content())
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
                 params.append(Tag.parse(["encrypted"]).as_vec())

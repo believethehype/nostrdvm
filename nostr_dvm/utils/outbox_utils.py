@@ -82,7 +82,10 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol", "wss://nostr.fmt.wiz.biz", "wss://no
                            "wss://onchain.pub", "wss://relay.nostr.info", "wss://relay.chicagoplebs.com",
                            "wss://relay.current.fyi", "wss://relay.stemstr.app", "wss://nostr.zenon.info",
                            "ws://localhost:7777", "wss://nostr.fmt.wiz.biz", "wss://nostrich.friendship.tw",
-                           "wss://public.relaying.io", "wss://relay.me3d.app",
+                           "wss://public.relaying.io", "wss://relay.me3d.app", "wss://dreamofthe90s.nostr1.com",
+                           "wss://lnbits.eldamar.icu/nostrrelay/relay", "wss://nostr.olwe.link",
+                           "wss://nostr.cheeserobot.org", 
+
 
 
 

@@ -120,8 +120,8 @@ def build_example(name, identifier, admin_config, custom_processing_msg):
         "picture": "https://nostr.band/android-chrome-192x192.png",
         "about": "I show trending notes from nostr.band",
         "amount": "Free",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {}
     }
     nip89config = NIP89Config()

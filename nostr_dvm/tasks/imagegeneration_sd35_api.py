@@ -266,9 +266,9 @@ def build_example(name, identifier, admin_config, server_address, default_model=
         "name": name,
         "picture": "https://i.nostr.build/NOXcCIPmOZrDTK35.jpg",
         "about": "I draw images using Stable diffusion ultra",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
-        "nip90Params": {
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
+        "nip90Params":{
             "negative_prompt": {
                 "required": False,
                 "values": []

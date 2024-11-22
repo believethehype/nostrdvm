@@ -119,8 +119,8 @@ def build_example(name, identifier, admin_config):
         "picture": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I translate text from given text/event/job using LibreTranslate Services to translate "
                  "input into the language defined in params.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "language": {
                 "required": False,

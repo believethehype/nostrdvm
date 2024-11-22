@@ -48,8 +48,8 @@ def build_example_wot(name, identifier, admin_config, options, image, cost=0, up
         "picture": image,
         "about": "I show people to follow from your WOT",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "amount": create_amount_tag(cost),
         "nip90Params": {

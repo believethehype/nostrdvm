@@ -37,8 +37,8 @@ def build_dalle(name, identifier):
         "name": name,
         "picture": "https://image.nostr.build/22f2267ca9d4ee9d5e8a0c7818a9fa325bbbcdac5573a60a2d163e699bb69923.jpg",
         "about": "I create Images bridging OpenAI's DALL·E 3",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "size": {
                 "required": False,

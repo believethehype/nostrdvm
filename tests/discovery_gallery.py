@@ -40,8 +40,8 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
         "picture": image,
         "about": "I show popular gallery entries",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "amount": create_amount_tag(cost),
         "nip90Params": {

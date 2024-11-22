@@ -164,8 +164,8 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "picture": "https://nostr.band/android-chrome-192x192.png",
         "about": "I search notes on Nostr.band.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "users": {
                 "required": False,

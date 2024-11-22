@@ -230,8 +230,8 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
         "picture": image,
         "about": "I show the latest longform notes.",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -275,8 +275,8 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
         "picture": image,
         "about": "I show the latest longform notes",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "subscription": True,
         "personalized": False,
         "nip90Params": {

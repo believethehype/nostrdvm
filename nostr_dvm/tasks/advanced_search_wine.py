@@ -149,8 +149,8 @@ def build_example(name, identifier, admin_config):
         "name": name,
         "picture": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
         "about": "I search notes on nostr.wine using the nostr-wine API",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "users": {
                 "required": False,
