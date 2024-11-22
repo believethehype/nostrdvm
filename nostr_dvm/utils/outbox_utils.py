@@ -81,7 +81,9 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol", "wss://nostr.fmt.wiz.biz", "wss://no
                            "wss://nostr-2.zebedee.cloud", "wss://nostr.lorentz.is", "wss://zap.nostr1.com",
                            "wss://onchain.pub", "wss://relay.nostr.info", "wss://relay.chicagoplebs.com",
                            "wss://relay.current.fyi", "wss://relay.stemstr.app", "wss://nostr.zenon.info",
-                           "ws://localhost:7777"
+                           "ws://localhost:7777", "wss://nostr.fmt.wiz.biz", "wss://nostrich.friendship.tw",
+                           "wss://public.relaying.io", "wss://relay.me3d.app",
+
 
 
 
