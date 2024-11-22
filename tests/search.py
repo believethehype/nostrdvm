@@ -61,7 +61,7 @@ def build_advanced_search(name, identifier):
 
     nip89info = {
         "name": name,
-        "image": "https://nostr.band/android-chrome-192x192.png",
+        "picture": "https://nostr.band/android-chrome-192x192.png",
         "about": "I search notes on nostr.band",
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -90,7 +90,7 @@ def build_advanced_search(name, identifier):
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return AdvancedSearch(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -117,7 +117,7 @@ def build_advanced_search_wine(name, identifier):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
+        "picture": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
         "about": "I search notes on nostr.wine using the nostr-wine API",
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -147,7 +147,7 @@ def build_advanced_search_wine(name, identifier):
 
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
 
     nip89config.CONTENT = json.dumps(nip89info)
 
@@ -173,7 +173,7 @@ def build_user_search(name, identifier):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/bd0181a3089181f1d92a5da1ef85cffbe37ba80fbcc695b9d85648dc2fa92583.jpg",
+        "picture": "https://image.nostr.build/bd0181a3089181f1d92a5da1ef85cffbe37ba80fbcc695b9d85648dc2fa92583.jpg",
         "about": "I search users based on their profile info.",
         "encryptionSupported": True,
         "cashuAccepted": True,
@@ -187,7 +187,7 @@ def build_user_search(name, identifier):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return SearchUser(name=name, dvm_config=dvm_config, nip89config=nip89config,

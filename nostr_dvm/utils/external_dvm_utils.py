@@ -44,7 +44,9 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
         nip89content = json.loads(nip89content_str)
         if nip89content.get("name"):
             name = nip89content.get("name")
-        if nip89content.get("image"):
+        if nip89content.get("picture"):
+            image = nip89content.get("picture")
+        elif nip89content.get("image"):
             image = nip89content.get("image")
         if nip89content.get("about"):
             about = nip89content.get("about")
@@ -58,7 +60,7 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
         print("No NIP89 set for " + name)
     nip89info = {
         "name": name,
-        "image": image,
+        "picture": image,
         "about": about,
         "encryptionSupported": encryption_supported,
         "cashuAccepted": cashu_accepted,

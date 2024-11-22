@@ -72,7 +72,6 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
@@ -90,7 +89,7 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentDBUpdateScheduler(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -115,7 +114,6 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show popular gallery entries",
         "lud16": dvm_config.LN_ADDRESS,
@@ -133,7 +131,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopularGallery(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                  admin_config=admin_config, options=options)
@@ -152,7 +150,6 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
 
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": about,
         "amount": "Free",
@@ -161,7 +158,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
         "nip90Params": {}
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return TrendingNotesNostrBand(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -191,7 +188,6 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show the latest longform notes.",
         "lud16": dvm_config.LN_ADDRESS,
@@ -209,7 +205,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -243,7 +239,6 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show the latest wikifreedia entries.",
         "lud16": dvm_config.LN_ADDRESS,
@@ -261,7 +256,7 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -289,7 +284,6 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
@@ -307,7 +301,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentCurrentlyPopularbyTopic(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -331,7 +325,6 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular",
         "lud16": dvm_config.LN_ADDRESS,
@@ -349,7 +342,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                           admin_config=admin_config, options=options)
@@ -372,7 +365,6 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular from people you follow",
         "lud16": dvm_config.LN_ADDRESS,
@@ -390,7 +382,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -421,7 +413,6 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular from people you do not follow",
         "lud16": dvm_config.LN_ADDRESS,
@@ -439,14 +430,14 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     nip88config = NIP88Config()
-    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
     nip89config.NAME = name
-    nip88config.IMAGE = nip89info["image"]
+    nip88config.IMAGE = nip89info["picture"]
     nip88config.TITLE = name
     nip88config.AMOUNT_DAILY = 100
     nip88config.AMOUNT_MONTHLY = 2000
@@ -484,7 +475,6 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently zapped the most.",
         "lud16": dvm_config.LN_ADDRESS,
@@ -502,7 +492,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -532,7 +522,6 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes from Mostr.pub and Momostr.pink that are currently popular on Nostr",
         "lud16": dvm_config.LN_ADDRESS,
@@ -550,7 +539,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopularMostr(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                  admin_config=admin_config, options=options)
@@ -573,7 +562,6 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show the single latest note of people you follow",
         "lud16": dvm_config.LN_ADDRESS,
@@ -591,7 +579,7 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return Discoverlatestperfollower(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                  admin_config=admin_config, options=options)

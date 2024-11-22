@@ -130,7 +130,7 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
 
 async def nip88_announce_tier(dvm_config, client):
     title_tag = Tag.parse(["title", str(dvm_config.NIP88.TITLE)])
-    image_tag = Tag.parse(["image", str(dvm_config.NIP88.IMAGE)])
+    image_tag = Tag.parse(["picture", str(dvm_config.NIP88.IMAGE)])
     d_tag = Tag.parse(["d", dvm_config.NIP88.DTAG])
 
     # zap splits. Feel free to change this for your DVM
