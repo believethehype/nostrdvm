@@ -635,7 +635,7 @@ class DVM:
 
             reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content)).tags(reply_tags).sign_with_keys(
                 self.keys)
-            print(reply_event)
+            #print(reply_event)
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
