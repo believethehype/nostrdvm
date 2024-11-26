@@ -9,6 +9,7 @@ from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, Nos
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
@@ -171,6 +172,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         try:
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
+
             database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 

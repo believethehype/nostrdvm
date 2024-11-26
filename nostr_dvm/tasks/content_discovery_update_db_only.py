@@ -11,6 +11,7 @@ from nostr_sdk import Timestamp, PublicKey, Keys, Options, SecretKey, NostrSigne
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
@@ -43,6 +44,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     result = ""
     database = None
     wot_counter = 0
+    max_db_size = 280
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -63,6 +65,8 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             self.db_name = self.options.get("db_name")
         if self.options.get("db_since"):
             self.db_since = int(self.options.get("db_since"))
+        if self.options.get("max_db_size"):
+            self.max_db_size = int(self.options.get("max_db_size"))
 
         use_logger = False
         if use_logger:
@@ -136,7 +140,8 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             if self.database is None:
-                self.database = NostrDatabase.lmdb(self.db_name)
+                self.database = await init_db(self.db_name, True, self.max_db_size)
+                #self.database = NostrDatabase.lmdb(self.db_name)
 
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(self.database).opts(opts).build()
 

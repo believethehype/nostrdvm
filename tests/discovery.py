@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import shutil
 import threading
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from nostr_dvm.tasks.content_discovery_latest_one_per_follower import Discoverla
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
@@ -606,25 +608,24 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
                                      admin_config=admin_config, options=options)
 
 
-async def init_db(database):
-    return NostrDatabase.lmdb(database)
-
-
 def playground():
     main_db = "db/nostr_recent_notes.db"
-    DATABASE = asyncio.run(init_db(main_db))
+    main_db_limit = 1024 # in mb
+
+    DATABASE = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
     # DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler = AdminConfig()
-    options_animal = {
+    options_db = {
         "db_name": main_db,
         "db_since": max_sync_duration_in_h * 60 * 60,  # 48h since gmt,
         "personalized": False,
+        "max_db_size" : main_db_limit,
         "logger": False}
     image = ""
     about = "I just update the Database based on my schedule"
     db_scheduler = build_db_scheduler("DB Scheduler",
                                       "db_scheduler",
-                                      admin_config_db_scheduler, options_animal,
+                                      admin_config_db_scheduler, options_db,
                                       image=image,
                                       description=about,
                                       update_rate=global_update_rate,
