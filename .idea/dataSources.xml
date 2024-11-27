@@ -9,7 +9,7 @@
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
     <data-source source="LOCAL" name="bot" uuid="35aa282b-8394-415f-9bbb-b649db25cd4d">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>038acd88-11f0-4c07-ae7d-36e6f74bad7c</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/bot.db</jdbc-url>
@@ -21,7 +21,7 @@
       </libraries>
     </data-source>
     <data-source source="LOCAL" name="subscriptions" uuid="7914fe2c-114f-4e86-8ddb-7883b17e9302">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>038acd88-11f0-4c07-ae7d-36e6f74bad7c</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/subscriptions.db</jdbc-url>
@@ -33,7 +33,7 @@
       </libraries>
     </data-source>
     <data-source source="LOCAL" name="Translator" uuid="7e65ee79-fe23-4823-bae3-244dbefdd7f2">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>038acd88-11f0-4c07-ae7d-36e6f74bad7c</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/Translator.db</jdbc-url>
@@ -45,7 +45,7 @@
       </libraries>
     </data-source>
     <data-source source="LOCAL" name="Unstable Diffusion" uuid="ef14cba4-1991-4706-8760-77dba3d8e8e4">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>038acd88-11f0-4c07-ae7d-36e6f74bad7c</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/Unstable Diffusion.db</jdbc-url>
@@ -57,7 +57,7 @@
       </libraries>
     </data-source>
     <data-source source="LOCAL" name="Bot" uuid="80b7a7dc-a233-4d7b-bd0e-e1d0bc7226e8">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>038acd88-11f0-4c07-ae7d-36e6f74bad7c</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/nostr_mostr.db</jdbc-url>
@@ -69,7 +69,7 @@
       </libraries>
     </data-source>
     <data-source source="LOCAL" name="Profiles" uuid="77eda71f-1c66-4b3d-bc34-dfe34fb45fc2">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>038acd88-11f0-4c07-ae7d-36e6f74bad7c</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/nostr_profiles.db</jdbc-url>
@@ -102,7 +102,7 @@
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
     <data-source source="LOCAL" name="subscriptions" uuid="ccd96349-b12f-47d5-8caf-c0c8c359d831">
-      <driver-ref>sqlite.xerial</driver-ref>
+      <driver-ref>038acd88-11f0-4c07-ae7d-36e6f74bad7c</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/db/subscriptions</jdbc-url>
