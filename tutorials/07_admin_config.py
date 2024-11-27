@@ -7,8 +7,6 @@ import os
 from pathlib import Path
 
 import dotenv
-from sympy import false
-
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
