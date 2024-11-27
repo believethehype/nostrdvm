@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 from duck_chat import ModelType
-from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, Options, Client, Tag, \
+from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, Options, ClientBuilder, Tag, \
     LogLevel, Timestamp, NostrDatabase
 
 
@@ -121,8 +121,8 @@ def playground(announce=False):
         relaylimits = RelayLimits.disable()
 
         opts = Options().relay_limits(relaylimits)
-
-        cli = Client.with_opts(keys, opts)
+        signer = NostrSigner.keys(keys)
+        cli = ClientBuilder().signer(signer).opts(opts).build()
         for relay in dvm.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
         # ropts = RelayOptions().ping(False)
