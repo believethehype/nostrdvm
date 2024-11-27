@@ -44,7 +44,6 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     #dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
