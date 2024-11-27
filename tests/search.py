@@ -207,8 +207,8 @@ def playground():
     advanced_search_wine = build_advanced_search_wine("Nostr.wine Search", "discovery_content_searchwine")
     advanced_search_wine.run()
 
-    profile_search = build_user_search("Profile Searcher", "profile_search")
-    profile_search.run()
+    #profile_search = build_user_search("Profile Searcher", "profile_search")
+    #profile_search.run()
 
 
 

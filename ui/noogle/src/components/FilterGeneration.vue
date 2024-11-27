@@ -947,7 +947,6 @@ async function unfollow_all(results) {
   let relayopts = new Options().relayLimits(limits);
   let dbclient = new ClientBuilder().signer(signer).opts(relayopts).build()
   await dbclient.addRelay("wss://relay.damus.io");
-  await dbclient.addRelay("wss://purplepag.es");
   await dbclient.connect()
   let found = false
   let element
@@ -1027,7 +1026,6 @@ async function unfollow(result) {
   let relayopts = new Options().relayLimits(limits);
   let dbclient = new ClientBuilder().signer(signer).opts(relayopts).build()
   await dbclient.addRelay("wss://relay.damus.io");
-  await dbclient.addRelay("wss://purplepag.es");
   await dbclient.connect()
   console.log(result.authorid)
   let found = false
