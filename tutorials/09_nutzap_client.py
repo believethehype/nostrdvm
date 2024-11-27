@@ -12,7 +12,6 @@ from nostr_sdk import PublicKey, Client, NostrSigner, EventBuilder, Kind, Tag, K
     Filter, Event
 
 import asyncio
-
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key

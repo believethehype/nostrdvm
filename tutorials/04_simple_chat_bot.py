@@ -2,24 +2,14 @@
 # In tutorial 3 we have written a client that requests a response from the DVM and gets the reply back.
 # In this tutorial we build a simple bot that bridges the communication between the user and the Kind 5050
 # (Text generation) DVM.
-
-
-
-import asyncio
-import os
 import threading
 from pathlib import Path
 
 import dotenv
 
 from nostr_dvm.bot import Bot
-from nostr_dvm.tasks.generic_dvm import GenericDVM
-from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
-from nostr_dvm.utils.nip89_utils import NIP89Config
-from nostr_dvm.utils.zap_utils import change_ln_address
-
+from nostr_dvm.utils.dvmconfig import build_default_config
 
 def run_dvm(identifier):
 
