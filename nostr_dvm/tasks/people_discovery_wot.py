@@ -210,7 +210,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().signer(keys).database(database).build()
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(relay)
@@ -253,8 +253,8 @@ async def analyse_users(user_ids=None, dunbar=100000000):
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query([followers_filter])
         allfriends = []
-        if len(followers) > 0:
-            for follower in followers:
+        if len(followers.to_vec()) > 0:
+            for follower in followers.to_vec():
                 frens = []
                 if len(follower.tags().to_vec()) < dunbar:
                     for tag in follower.tags().to_vec():
@@ -311,12 +311,11 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -329,7 +328,7 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -356,12 +355,11 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular all over Nostr. I'm also used for testing subscriptions.",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "subscription": True,
         "personalized": False,
         "nip90Params": {
@@ -374,14 +372,14 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     nip88config = NIP88Config()
-    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
     nip89config.NAME = name
-    nip88config.IMAGE = nip89info["image"]
+    nip88config.IMAGE = nip89info["picture"]
     nip88config.TITLE = name
     nip88config.AMOUNT_DAILY = 100
     nip88config.AMOUNT_MONTHLY = 2000

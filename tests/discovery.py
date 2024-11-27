@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import shutil
 import threading
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from nostr_dvm.tasks.content_discovery_latest_one_per_follower import Discoverla
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
@@ -36,7 +38,7 @@ update_profile = False
 global_update_rate = 180  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 log_level = LogLevel.ERROR
-max_sync_duration_in_h = 48
+max_sync_duration_in_h = 24
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                       #"wss://relay.primal.net",
@@ -75,12 +77,11 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -93,7 +94,7 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentDBUpdateScheduler(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -118,12 +119,11 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show popular gallery entries",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -136,7 +136,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopularGallery(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                  admin_config=admin_config, options=options)
@@ -156,16 +156,15 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
 
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": about,
         "amount": "Free",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {}
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return TrendingNotesNostrBand(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -196,12 +195,11 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show the latest longform notes.",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -214,7 +212,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -249,12 +247,11 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show the latest wikifreedia entries.",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -267,7 +264,7 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -298,12 +295,11 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -316,7 +312,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentCurrentlyPopularbyTopic(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -341,12 +337,11 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -359,7 +354,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopular(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                           admin_config=admin_config, options=options)
@@ -385,12 +380,11 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular from people you follow",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -403,7 +397,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentCurrentlyPopularFollowers(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -421,7 +415,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.DATABASE = database
     # Activate these to use a subscription based model instead
-    dvm_config.FIX_COST = 10
+    dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
@@ -435,14 +429,14 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular from people you do not follow",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "subscription": False,
         "personalized": True,
+        "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
                 "required": False,
@@ -453,14 +447,14 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     nip88config = NIP88Config()
-    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
     nip89config.NAME = name
-    nip88config.IMAGE = nip89info["image"]
+    nip88config.IMAGE = nip89info["picture"]
     nip88config.TITLE = name
     nip88config.AMOUNT_DAILY = 100
     nip88config.AMOUNT_MONTHLY = 2000
@@ -501,12 +495,11 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently zapped the most.",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -519,7 +512,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -550,12 +543,11 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes from Mostr.pub and Momostr.pink that are currently popular on Nostr",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -568,7 +560,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return DicoverContentCurrentlyPopularMostr(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                admin_config=admin_config, options=options)
@@ -593,12 +585,11 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show the single latest note of people you follow",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -611,31 +602,30 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return Discoverlatestperfollower(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                      admin_config=admin_config, options=options)
 
 
-async def init_db(database):
-    return NostrDatabase.lmdb(database)
-
-
 def playground():
     main_db = "db/nostr_recent_notes.db"
-    DATABASE = asyncio.run(init_db(main_db))
+    main_db_limit = 1024 # in mb
+
+    DATABASE = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
     # DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler = AdminConfig()
-    options_animal = {
+    options_db = {
         "db_name": main_db,
         "db_since": max_sync_duration_in_h * 60 * 60,  # 48h since gmt,
         "personalized": False,
+        "max_db_size" : main_db_limit,
         "logger": False}
     image = ""
     about = "I just update the Database based on my schedule"
     db_scheduler = build_db_scheduler("DB Scheduler",
                                       "db_scheduler",
-                                      admin_config_db_scheduler, options_animal,
+                                      admin_config_db_scheduler, options_db,
                                       image=image,
                                       description=about,
                                       update_rate=global_update_rate,
@@ -887,10 +877,10 @@ def playground():
     options_animal = {
         "search_list": ["catstr", "pawstr", "dogstr", "pugstr", " cat ", " cats ", "doggo", " deer ", " dog ", " dogs ",
                         " fluffy ",
-                        "animal",
+                        " animal",
                         " duck", " lion ", " lions ", " fox ", " foxes ", " koala ", " koalas ", "capybara", "squirrel",
-                        " monkey", "panda", "alpaca", " otter"],
-        "avoid_list": ["porn", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
+                        " monkey", " panda", "alpaca", " otter"],
+        "avoid_list": ["porn", "broth", "smoke", "nsfw", "bitcoin", "bolt12", "bolt11", "github", "currency", "utxo",
                        "encryption", "government", "airpod", "ipad", "iphone", "android", "warren",
                        "moderna", "pfizer", " meat ", "pc mouse", "shotgun", "vagina", "rune", "testicle", "victim",
                        "sexualize", "murder", "tax", "engagement", "hodlers", "hodl", "gdp", "global markets", "crypto",
@@ -909,7 +899,7 @@ def playground():
 
         "must_list": ["http"],
         "db_name": "db/nostr_recent_notes.db",
-        "db_since": 12 * 60 * 60,  # 48h since gmt,
+        "db_since": 24 * 60 * 60,  # 48h since gmt,
         "personalized": False,
         "logger": False}
 
@@ -1031,7 +1021,7 @@ def playground():
         "db_name": "db/nostr_recent_notes.db",
         "db_since": 2 * 60 * 60,  # 2h since gmt,
     }
-    cost = 0
+    cost = 10
     image = "https://i.nostr.build/l11EczDmpZBaxlRm.jpg"
 
     discovery_non_followers = build_example_popular_non_followers(

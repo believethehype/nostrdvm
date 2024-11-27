@@ -17,7 +17,7 @@ async def main():
     }
 
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    cli = Client(keys)
+    cli = Client(NostrSigner.keys(keys))
 
     await cli.add_relay(options["relay"])
     await cli.connect()

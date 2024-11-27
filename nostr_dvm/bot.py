@@ -2,11 +2,11 @@ import asyncio
 import json
 import os
 import signal
-from datetime import timedelta
+from multiprocessing.connection import Connection
 
-from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, Nip19Event, Kind, KindEnum,
-                       UnsignedEvent, UnwrappedGift, uniffi_set_event_loop)
+from nostr_sdk import (Keys, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
+                       Options, Tag, Event, EventId, Nip19Event, Kind, KindEnum, NostrSigner, nip44_encrypt,
+                       UnsignedEvent, UnwrappedGift, uniffi_set_event_loop, ClientBuilder, make_private_msg)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.cashu_utils import redeem_cashu
@@ -28,6 +28,12 @@ class Bot:
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
 
     def __init__(self, dvm_config, admin_config=None):
+        self.signer = None
+        self.dvm_config = None
+        self.keys = None
+        self.admin_config = None
+
+        self.client = None
         asyncio.run(self.run_bot(dvm_config, admin_config))
         uniffi_set_event_loop(asyncio.get_running_loop())
 
@@ -42,10 +48,11 @@ class Bot:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+        self.signer = NostrSigner.keys(self.keys)
         self.CHATBOT = False
 
-        opts = (Options().gossip(True))
-        self.client = Client.with_opts(self.keys, opts)
+        opts = Options().gossip(True)
+        self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
         self.invoice_list = []
 
         pk = self.keys.public_key()
@@ -62,9 +69,6 @@ class Bot:
 
         for relay in self.dvm_config.RELAY_LIST:
             await self.client.add_relay(relay)
-
-        await self.client.add_read_relay("wss://relay.nostr.band")
-        await self.client.add_read_relay("wss://relay.damus.io")
 
         await self.client.connect()
 
@@ -124,8 +128,7 @@ class Bot:
                 if giftwrap:
                     try:
                         # Extract rumor
-
-                        unwrapped_gift = await UnwrappedGift.from_gift_wrap(self.keys, nostr_event)
+                        unwrapped_gift = await UnwrappedGift.from_gift_wrap(NostrSigner.keys(self.keys), nostr_event)
                         sender = unwrapped_gift.sender().to_hex()
                         rumor: UnsignedEvent = unwrapped_gift.rumor()
 
@@ -185,7 +188,7 @@ class Bot:
                                         params_as_str = json.dumps(tags_str)
                                         print(params_as_str)
                                         #  and encrypt them
-                                        encrypted_params = nip04_encrypt(self.keys.secret_key(),
+                                        encrypted_params = nip44_encrypt(self.keys.secret_key(),
                                                                          PublicKey.from_hex(
                                                                              self.dvm_config.SUPPORTED_DVMS[
                                                                                  index].PUBLIC_KEY),
@@ -194,13 +197,13 @@ class Bot:
                                         encrypted_tag = Tag.parse(['encrypted'])
                                         #  add the encrypted params to the content
                                         nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
-                                                                     encrypted_params, [p_tag, encrypted_tag]).
+                                                                     encrypted_params).tags([p_tag, encrypted_tag]).
                                                         sign_with_keys(self.keys))
                                     else:
                                         tags.append(p_tag)
 
                                         nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
-                                                                     "", tags).
+                                                                     "").tags(tags).
                                                         sign_with_keys(self.keys))
 
                                     # remember in the job_list that we have made an event, if anybody asks for payment,
@@ -240,7 +243,10 @@ class Bot:
                             else:
                                 message = invoice
                             if giftwrap:
-                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                event = await make_private_msg(self.signer, PublicKey.parse(sender), message,
+                                                               None)
+                                await self.client.send_event(event)
+
                             else:
                                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
 
@@ -259,11 +265,10 @@ class Bot:
                                                                                         "100 sats (or any other amount) "
                                                                                         "to top up your balance")
                             if giftwrap:
-                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                                await self.client.send_event(event)
                             else:
                                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
-                                # await self.client.send_direct_msg(PublicKey.parse(sender), message, None)
-                                # await self.client.send_private_msg(PublicKey.parse(sender), message, None)
                         elif decrypted_text.startswith("cashuA"):
                             print("Received Cashu token:" + decrypted_text)
                             cashu_redeemed, cashu_message, total_amount, fees = await redeem_cashu(decrypted_text,
@@ -278,14 +283,16 @@ class Bot:
                                 message = "Error: " + cashu_message + ". Token has not been redeemed."
 
                                 if giftwrap:
-                                    await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                    event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                                    await self.client.send_event(event)
                                 else:
                                     await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
                         elif decrypted_text.lower().startswith("what's the second best"):
                             await asyncio.sleep(2.0)
                             message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
                             if giftwrap:
-                                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                                event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                                await self.client.send_event(event)
                             else:
                                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
                         else:
@@ -313,7 +320,7 @@ class Bot:
                         tags.append(p_tag)
 
                         nip90request = (EventBuilder(Kind(kind),
-                                                     "", tags).
+                                                     "").tags(tags).
                                         sign_with_keys(self.keys))
 
                         entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
@@ -349,8 +356,13 @@ class Bot:
 
                 if is_encrypted:
                     if ptag == self.keys.public_key().to_hex():
-                        tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
-                                                 nostr_event.author(), nostr_event.content())
+                        try:
+                            tags_str = nip44_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
+                                                     nostr_event.author(), nostr_event.content())
+                        except:
+                            tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
+                                                     nostr_event.author(), nostr_event.content())
+
                         params = json.loads(tags_str)
                         params.append(Tag.parse(["p", ptag]).as_vec())
                         params.append(Tag.parse(["encrypted"]).as_vec())
@@ -379,7 +391,8 @@ class Bot:
                                                      client=self.client, config=self.dvm_config)
                         await asyncio.sleep(2.0)
                         if entry["giftwrap"]:
-                            await self.client.send_private_msg(PublicKey.parse(entry["npub"]), content, None)
+                            event = await make_private_msg(self.signer, PublicKey.parse(PublicKey.parse(entry["npub"])), content)
+                            await self.client.send_event(event)
                         else:
                             await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']), self.dvm_config)
                         print(status + ": " + content)
@@ -408,8 +421,8 @@ class Bot:
                                         amount) + " Sats from balance to DVM. New balance is " + str(
                                         balance) + " Sats.\n"
                                     if entry["giftwrap"]:
-                                        await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message,
-                                                                           None)
+                                        event = await make_private_msg(self.signer, PublicKey.parse(PublicKey.parse(entry["npub"])), message)
+                                        await self.client.send_event(event)
                                     else:
                                         await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']),
                                                             self.dvm_config)
@@ -424,8 +437,8 @@ class Bot:
                                         int(amount - user.balance)) + " Sats, then try again."
 
                                     if entry["giftwrap"]:
-                                        await self.client.send_private_msg(PublicKey.parse(entry["npub"]), message,
-                                                                           None)
+                                        event = await make_private_msg(self.signer, PublicKey.parse(PublicKey.parse((entry["npub"]))), message)
+                                        await self.client.send_event(event)
                                     else:
                                         await send_nip04_dm(self.client, message, PublicKey.parse(entry['npub']),
                                                             self.dvm_config)
@@ -485,7 +498,10 @@ class Bot:
                     content = nostr_event.content()
                     if is_encrypted:
                         if ptag == self.keys.public_key().to_hex():
-                            content = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), content)
+                            try:
+                                content = nip44_decrypt(self.keys.secret_key(), nostr_event.author(), content)
+                            except:
+                                content = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), content)
                         else:
                             return
 
@@ -502,7 +518,9 @@ class Bot:
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     await asyncio.sleep(2.0)
                     if entry["giftwrap"]:
-                        await self.client.send_private_msg(PublicKey.parse(user.npub), content, None)
+                        event = await make_private_msg(self.signer, PublicKey.parse(user.npub), content)
+
+                        await self.client.send_event(event)
                     else:
                         await send_nip04_dm(self.client, content, PublicKey.parse(user.npub), self.dvm_config)
 
@@ -568,14 +586,16 @@ class Bot:
 
             text = message + "\nSelect an Index and provide an input (e.g. \"2 A purple ostrich\")\nType \"index info\" to learn more about each DVM. (e.g. \"2 info\")\n\n Type \"balance\" to see your current balance"
             if giftwrap:
-                await self.client.send_private_msg(PublicKey.parse(sender), text, nostr_event.id())
+                event = await make_private_msg(self.signer, PublicKey.parse(sender), text)
+                await self.client.send_event(event)
             else:
                 await send_nip04_dm(self.client, text, PublicKey.parse(sender), self.dvm_config)
 
         async def answer_blacklisted(nostr_event, giftwrap, sender):
             message = "Your are currently blocked from this service."
             if giftwrap:
-                await self.client.send_private_msg(PublicKey.parse(sender), message, None)
+                event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                await self.client.send_event(event)
             else:
                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
 
@@ -586,7 +606,8 @@ class Bot:
             await asyncio.sleep(2.0)
 
             if giftwrap:
-                await self.client.send_private_msg(PublicKey.parse(sender), info, None)
+                event = await make_private_msg(self.signer, PublicKey.parse(sender), info)
+                await self.client.send_event(event)
             else:
                 await send_nip04_dm(self.client, info, PublicKey.parse(sender), self.dvm_config)
 
@@ -725,14 +746,16 @@ class Bot:
 
                 if nip89content.get("name"):
                     info += "Name: " + nip89content.get("name") + "\n"
-                if nip89content.get("image"):
+                if nip89content.get("picture"):
+                    info += nip89content.get("picture") + "\n"
+                elif nip89content.get("image"):
                     info += nip89content.get("image") + "\n"
                 if nip89content.get("about"):
                     info += "About:\n" + nip89content.get("about") + "\n\n"
-                if nip89content.get("cashuAccepted"):
-                    cashu_accepted = str(nip89content.get("cashuAccepted"))
-                if nip89content.get("encryptionSupported"):
-                    encryption_supported = str(nip89content.get("encryptionSupported"))
+                if nip89content.get("acceptsNutZaps"):
+                    cashu_accepted = str(nip89content.get("acceptsNutZaps"))
+                if nip89content.get("supportsEncryption"):
+                    encryption_supported = str(nip89content.get("supportsEncryption"))
 
                 info += "Encryption supported: " + str(encryption_supported) + "\n"
                 info += "Cashu accepted: " + str(cashu_accepted) + "\n\n"

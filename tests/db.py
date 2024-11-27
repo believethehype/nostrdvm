@@ -32,7 +32,7 @@ async def do_some_work():
     f = Filter().author(keys.public_key()).limit(10)
     events = await database.query([f])
 
-    for event in events:
+    for event in events.to_vec():
         print(event.as_json())
 
 nostr_dvm_thread = Thread(target=reconcile_db)

@@ -4,7 +4,8 @@ import os
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    LogLevel, Options, nip04_encrypt, Kind, RelayLimits, uniffi_set_event_loop
+    LogLevel, Options, nip04_encrypt, nip44_encrypt, Nip44Version, Kind, RelayLimits, uniffi_set_event_loop, ClientBuilder, NostrSigner
+
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
 from nostr_dvm.utils.backend_utils import get_amount_per_task, check_task_is_supported, get_task
@@ -47,7 +48,8 @@ class DVM:
         opts = (
             Options().relay_limits(relaylimits)) #.difficulty(28)
 
-        self.client = Client.with_opts(self.keys, opts)
+        #self.client = Client(self.keys)
+        self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
@@ -106,7 +108,7 @@ class DVM:
 
         async def handle_nip90_job_event(nip90_event):
             # decrypted encrypted events
-            nip90_event = check_and_decrypt_tags(nip90_event, self.dvm_config)
+            nip90_event, use_legacy_encryption = check_and_decrypt_tags(nip90_event, self.dvm_config)
             # if event is encrypted, but we can't decrypt it (e.g. because its directed to someone else), return
             if nip90_event is None:
                 return
@@ -234,7 +236,7 @@ class DVM:
                     if dvm_config.SEND_FEEDBACK_EVENTS:
                         await send_job_status_reaction(nip90_event, "processing", True, 0,
                                                        content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                       client=self.client, dvm_config=self.dvm_config, user=user)
+                                                       client=self.client, dvm_config=self.dvm_config)
 
                     #  when we reimburse users on error make sure to not send anything if it was free
                     if user.iswhitelisted or task_is_free:
@@ -336,7 +338,7 @@ class DVM:
                                     job_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
                                                                       config=self.dvm_config)
                                     if job_event is not None:
-                                        job_event = check_and_decrypt_tags(job_event, self.dvm_config)
+                                        job_event, use_legacy_encryption = check_and_decrypt_tags(job_event, self.dvm_config)
                                         if job_event is None:
                                             return
                                     else:
@@ -356,7 +358,7 @@ class DVM:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     await send_job_status_reaction(job_event, "processing", client=self.client,
                                                                    content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                                   dvm_config=self.dvm_config, user=user)
+                                                                   dvm_config=self.dvm_config)
                                     indices = [i for i, x in enumerate(self.job_list) if
                                                x.event == job_event]
                                     index = -1
@@ -418,7 +420,7 @@ class DVM:
                                 job_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
                                                                   config=self.dvm_config)
                                 if job_event is not None:
-                                    job_event = check_and_decrypt_tags(job_event, self.dvm_config)
+                                    job_event, use_legacy_encryption = check_and_decrypt_tags(job_event, self.dvm_config)
                                     if job_event is None:
                                         return
                                 else:
@@ -530,11 +532,11 @@ class DVM:
                     if self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and not is_paid:
                         await send_nostr_reply_event(data, original_event.as_json())
                         await send_job_status_reaction(original_event, "success", amount,
-                                                       dvm_config=self.dvm_config,
+                                                       dvm_config=self.dvm_config
                                                        )  # or payment-required, or both?
                     elif not self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and not is_paid:
                         await send_job_status_reaction(original_event, "success", amount,
-                                                       dvm_config=self.dvm_config,
+                                                       dvm_config=self.dvm_config
                                                        )  # or payment-required, or both?
 
                     if self.dvm_config.SHOW_RESULT_BEFORE_PAYMENT and is_paid:
@@ -594,11 +596,15 @@ class DVM:
                 reply_tags.append(relay_tag)
 
             encrypted = False
+            is_legacy_encryption = False
+            encryption_tags = []
             for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
-                    reply_tags.append(encrypted_tag)
+                    encryption_tags.append(encrypted_tag)
+                    #_, is_legacy_encryption = check_and_decrypt_tags(original_event, dvm_config)
+
 
             for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "i":
@@ -607,13 +613,29 @@ class DVM:
                         reply_tags.append(i_tag)
 
             if encrypted:
+                encryption_tags.append(p_tag)
+                encryption_tags.append(e_tag)
+
+            else:
+                reply_tags.append(p_tag)
+
+            if encrypted:
                 print(content)
-                content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
-                                        content)
+                if is_legacy_encryption:
+                    content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
+                                            content)
+                else:
 
-            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content), reply_tags).sign_with_keys(
+                    content = nip44_encrypt(self.keys.secret_key(),
+                                            PublicKey.from_hex(original_event.author().to_hex()),
+                                            content, Nip44Version.V2)
+
+                reply_tags = encryption_tags
+
+
+            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content)).tags(reply_tags).sign_with_keys(
                 self.keys)
-
+            #print(reply_event)
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -625,7 +647,7 @@ class DVM:
 
         async def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None,
                                            content=None,
-                                           dvm_config=None, user=None):
+                                           dvm_config=None):
 
             task = await get_task(original_event, client=client, dvm_config=dvm_config)
             alt_description, reaction = build_status_reaction(status, task, amount, content, dvm_config)
@@ -648,11 +670,13 @@ class DVM:
             encryption_tags = []
 
             encrypted = False
+            is_legacy_encryption = False
             for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
                     encryption_tags.append(encrypted_tag)
+                    #_, is_legacy_encryption = check_and_decrypt_tags(original_event, dvm_config)
 
             if encrypted:
                 encryption_tags.append(p_tag)
@@ -719,15 +743,20 @@ class DVM:
                     str_tags.append(element.as_vec())
 
                 content = json.dumps(str_tags)
-                content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
-                                        content)
+                if is_legacy_encryption:
+                    content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
+                                            content)
+                else:
+                    content = nip44_encrypt(self.keys.secret_key(),
+                                            PublicKey.from_hex(original_event.author().to_hex()),
+                                            content, version=Nip44Version.V2)
                 reply_tags = encryption_tags
 
             else:
                 content = reaction
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).sign_with_keys(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
             # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
 

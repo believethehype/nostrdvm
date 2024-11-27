@@ -12,7 +12,7 @@ from nostr_dvm.utils.output_utils import PostProcessFunctionType
 
 async def build_client(config):
     keys = Keys.parse(config.PRIVATE_KEY)
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     for relay in config.RELAY_LIST:
         await client.add_relay(relay)
@@ -44,24 +44,26 @@ def build_external_dvm(pubkey, task, kind, fix_cost, per_unit_cost, config,
         nip89content = json.loads(nip89content_str)
         if nip89content.get("name"):
             name = nip89content.get("name")
-        if nip89content.get("image"):
+        if nip89content.get("picture"):
+            image = nip89content.get("picture")
+        elif nip89content.get("image"):
             image = nip89content.get("image")
         if nip89content.get("about"):
             about = nip89content.get("about")
         if nip89content.get("nip90Params"):
             nip90params = nip89content["nip90Params"]
-        if nip89content.get("encryptionSupported"):
-            encryption_supported = nip89content["encryptionSupported"]
-        if nip89content.get("cashuAccepted"):
-            cashu_accepted = nip89content["cashuAccepted"]
+        if nip89content.get("supportsEncryption"):
+            encryption_supported = nip89content["supportsEncryption"]
+        if nip89content.get("acceptsNutZaps"):
+            cashu_accepted = nip89content["acceptsNutZaps"]
     else:
         print("No NIP89 set for " + name)
     nip89info = {
         "name": name,
-        "image": image,
+        "picture": image,
         "about": about,
-        "encryptionSupported": encryption_supported,
-        "cashuAccepted": cashu_accepted,
+        "supportsEncryption": encryption_supported,
+        "acceptsNutZaps": cashu_accepted,
         "nip90Params": nip90params
     }
     nip89config = NIP89Config()

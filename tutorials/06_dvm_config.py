@@ -119,7 +119,7 @@ def run_dvm(identifier, announce):
         "name": name,
         "picture": "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
         "about": "I'm a very simply DVM that always responds with the same message.",
-        "encryptionSupported": True,
+        "supportsEncryption": True,
         "nip90Params": {
             "some_option": {
                 "required": False,
@@ -131,7 +131,7 @@ def run_dvm(identifier, announce):
     # We now create or Nip89Config object
     nip89config = NIP89Config()
     nip89config.KIND = kind
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
 

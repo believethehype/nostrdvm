@@ -55,7 +55,7 @@ def run_dvm(identifier, announce):
         "name": name,
         "picture": "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
         "about": "I'm a very simply DVM that always responds with the same message.",
-        "encryptionSupported": True,
+        "supportsEncryption": True,
         "nip90Params": {
             "some_option": {
                 "required": False,
@@ -72,7 +72,7 @@ def run_dvm(identifier, announce):
     # We set a d tag. We need the dtag so if we want to update or delete the announcement, relays know which event is meant
     # You can choose a dtag you like. Here we build a hash from identiier, name, key and image and store it in the .env file.
     # So even if you change the name or image, it will now use the dtag from the env file until you delete it.
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     # We dump the nip89info struct from above to the content
     nip89config.CONTENT = json.dumps(nip89info)
 

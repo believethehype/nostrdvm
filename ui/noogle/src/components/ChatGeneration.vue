@@ -181,7 +181,7 @@ async function listen() {
                 if (JSON.parse(el.event).pubkey === event.author.toHex().toString() && el.kind === "5050") {
                   jsonentry.name = el.name
                   jsonentry.about = el.about
-                  jsonentry.image = el.image
+                  jsonentry.picture = el.picture
                   jsonentry.nip90Params = el.nip90Params
                   //jsonentry.reactions = await dvmreactions(PublicKey.parse(el.id), store.state.followings)
                   //jsonentry.reactions.negativeUser = false

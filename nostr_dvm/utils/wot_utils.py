@@ -46,7 +46,7 @@ async def get_following(pks, max_time_request=10, newer_than_time=None, dvm_conf
 
     # fetching events
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    cli = ClientBuilder().signer(keys).build()
+    cli = ClientBuilder().signer(NostrSigner.keys(keys)).build()
 
     for relay in dvm_config.SYNC_DB_RELAY_LIST:
         await cli.add_relay(relay)
@@ -586,7 +586,7 @@ async def get_metadata(npub):
     except:
         return "", "", ""
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    client = ClientBuilder().signer(keys).build()
+    client = ClientBuilder().signer(NostrSigner.keys(keys)).build()
     await client.add_relay("wss://relay.damus.io")
     await client.add_relay("wss://purplepag.es")
     await client.connect()

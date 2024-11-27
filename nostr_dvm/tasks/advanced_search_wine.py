@@ -147,10 +147,10 @@ def build_example(name, identifier, admin_config):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
+        "picture": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
         "about": "I search notes on nostr.wine using the nostr-wine API",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "users": {
                 "required": False,
@@ -176,7 +176,7 @@ def build_example(name, identifier, admin_config):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return AdvancedSearchWine(name=name, dvm_config=dvm_config, nip89config=nip89config,

@@ -35,10 +35,10 @@ def build_dalle(name, identifier):
     dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/22f2267ca9d4ee9d5e8a0c7818a9fa325bbbcdac5573a60a2d163e699bb69923.jpg",
+        "picture": "https://image.nostr.build/22f2267ca9d4ee9d5e8a0c7818a9fa325bbbcdac5573a60a2d163e699bb69923.jpg",
         "about": "I create Images bridging OpenAI's DALL·E 3",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "size": {
                 "required": False,
@@ -48,7 +48,7 @@ def build_dalle(name, identifier):
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     aconfig = AdminConfig()
     aconfig.REBROADCAST_NIP89 = False  # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89

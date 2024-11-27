@@ -15,9 +15,9 @@ async def announce_dm_relays(dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = ""
 
-    event = EventBuilder(Kind(10050), content, tags).sign_with_keys(keys)
+    event = EventBuilder(Kind(10050), content).tags(tags).sign_with_keys(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
-    if (eventid is not None):
+    if eventid is not None:
         print(
             bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced DM relays for " + dvm_config.NIP89.NAME + " (EventID: " + str(
                 eventid.id.to_hex()) + ")" + bcolors.ENDC)
@@ -39,9 +39,9 @@ async def nip65_announce_relays(dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = ""
 
-    event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content, tags).sign_with_keys(keys)
+    event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content).tags(tags).sign_with_keys(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
-    if (eventid is not None):
+    if eventid is not None:
         print(
             bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME + " (EventID: " + str(
                 eventid.id.to_hex()) + ")" + bcolors.ENDC)

@@ -79,17 +79,17 @@ def playground(announce=False):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/I8fJo0n355cbNEbS.png", # "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
+        "picture": "https://i.nostr.build/I8fJo0n355cbNEbS.png", # "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
         "about": "I create a personalized feed based on topics you were writing about recently",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
         }
     }
 
     nip89config = NIP89Config()
     nip89config.KIND = Kind(kind)
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     options = {
@@ -183,11 +183,11 @@ def playground(announce=False):
 
         events = await database.query(filters)
         if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+            print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
         #search_list = result.split(',')
 
-        for event in events:
+        for event in events.to_vec():
             #if all(ele in event.content().lower() for ele in []):
                     #if not any(ele in event.content().lower() for ele in []):
             filt = Filter().kinds(
@@ -195,8 +195,8 @@ def playground(announce=False):
                  definitions.EventDefinitions.KIND_REPOST,
                  definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
             reactions = await database.query([filt])
-            if len(reactions) >= 1:
-                ns.finallist[event.id().to_hex()] = len(reactions)
+            if len(reactions.to_vec()) >= 1:
+                ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(200)]

@@ -58,10 +58,10 @@ def build_sd35(name, identifier, announce):
     dvm_config.FIX_COST = int(((4.0 / (get_price_per_sat("USD") * 100)) + profit_in_sats))
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/NOXcCIPmOZrDTK35.jpg",
+        "picture": "https://i.nostr.build/NOXcCIPmOZrDTK35.jpg",
         "about": "I draw images using Stable diffusion ultra",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "negative_prompt": {
                 "required": False,
@@ -75,7 +75,7 @@ def build_sd35(name, identifier, announce):
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     aconfig = AdminConfig()
     aconfig.REBROADCAST_NIP89 = announce  # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
@@ -107,10 +107,10 @@ def build_dalle(name, identifier, announce):
 
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/22f2267ca9d4ee9d5e8a0c7818a9fa325bbbcdac5573a60a2d163e699bb69923.jpg",
+        "picture": "https://image.nostr.build/22f2267ca9d4ee9d5e8a0c7818a9fa325bbbcdac5573a60a2d163e699bb69923.jpg",
         "about": "I create Images bridging OpenAI's DALL·E 3",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "size": {
                 "required": False,
@@ -121,7 +121,7 @@ def build_dalle(name, identifier, announce):
 
     nip89config = NIP89Config()
     nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                                              nip89info["image"])
+                                                              nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
@@ -143,16 +143,16 @@ def build_svd(name, identifier, announce):
 
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
+        "picture": "https://image.nostr.build/c33ca6fc4cc038ca4adb46fdfdfda34951656f87ee364ef59095bae1495ce669.jpg",
         "about": "I use Stable Video Diffusion to create short videos",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {}
     }
 
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     # We add an optional AdminConfig for this one, and tell the dvm to rebroadcast its NIP89
     return VideoGenerationReplicateSVD(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -170,10 +170,10 @@ def build_media_converter(name, identifier, announce):
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
     nip89info = {
     "name": name,
-    "image": "https://cdn.nostr.build/i/a177be1159da5aad8396a1188f686728d55647d3a7371549584daf2b5e50eec9.jpg",
+    "picture": "https://cdn.nostr.build/i/a177be1159da5aad8396a1188f686728d55647d3a7371549584daf2b5e50eec9.jpg",
         "about": "I convert videos from urls to given output format.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "media_format": {
                 "required": False,
@@ -183,7 +183,7 @@ def build_media_converter(name, identifier, announce):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     return MediaConverter(name=name, dvm_config=dvm_config, nip89config=nip89config,
                           admin_config=admin_config)
@@ -204,10 +204,10 @@ def build_inactive_follows_finder(name, identifier, announce):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/50621bbf8082c478bc06a06684e1c443b5d37f1362ad56d679cab7328e0481db.jpg",
+        "picture": "https://image.nostr.build/50621bbf8082c478bc06a06684e1c443b5d37f1362ad56d679cab7328e0481db.jpg",
         "about": "I discover npubs you follow, but that have been inactive on Nostr for the last 90 days",
         "action": "unfollow",
-        "cashuAccepted": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "user": {
                 "required": False,
@@ -225,7 +225,7 @@ def build_inactive_follows_finder(name, identifier, announce):
 
     nip89config = NIP89Config()
     nip89config.DTAG = nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                                              nip89info["image"])
+                                                              nip89info["picture"])
 
     nip89config.CONTENT = json.dumps(nip89info)
     return DiscoverInactiveFollows(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -244,10 +244,10 @@ def build_1984(name, identifier, announce):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/19872a2edd866258fa9eab137631efda89310d52b2c6ea8f99ef057325aa1c7b.jpg",
+        "picture": "https://image.nostr.build/19872a2edd866258fa9eab137631efda89310d52b2c6ea8f99ef057325aa1c7b.jpg",
         "about": "I show users that have been reported by either your followers or your Web of Trust. Note: Anyone can report, so you might double check and decide for yourself who to mute. Considers spam, illegal and impersonation reports. Notice: This works with NIP51 mute lists. Not all clients support the new mute list format.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "action": "mute",  # follow, unfollow, mute, unmute
         "nip90Params": {
             "since_days": {
@@ -258,7 +258,7 @@ def build_1984(name, identifier, announce):
         }
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DiscoverReports(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -279,10 +279,10 @@ def build_botfarms(name, identifier, announce):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/981b560820bc283c58de7989b7abc6664996b487a531d852e4ef7322586a2122.jpg",
+        "picture": "https://image.nostr.build/981b560820bc283c58de7989b7abc6664996b487a531d852e4ef7322586a2122.jpg",
         "about": "I hunt down bot farms.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "action": "mute",  # follow, unfollow, mute, unmute
         "nip90Params": {
             "max_results": {
@@ -294,7 +294,7 @@ def build_botfarms(name, identifier, announce):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     options = {"relay": "wss://relay.damus.io"}
@@ -317,10 +317,10 @@ def build_replicate(name, identifier, model,  announce):
 
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/qnoBIN4jSkfF8IHk.png",
+        "picture": "https://i.nostr.build/qnoBIN4jSkfF8IHk.png",
         "about": "I use Replicate to run StableDiffusion XL",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "size": {
                 "required": False,
@@ -330,7 +330,7 @@ def build_replicate(name, identifier, model,  announce):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     opts = {"model": model}
@@ -354,10 +354,10 @@ def build_replicate_recraft(name, identifier,  announce):
 
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/jSbrXvYglXCzSeAc.jpg",
+        "picture": "https://i.nostr.build/jSbrXvYglXCzSeAc.jpg",
         "about": "I use Replicate to run Recraft v3",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "size": {
                 "required": False,
@@ -367,7 +367,7 @@ def build_replicate_recraft(name, identifier,  announce):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
 
@@ -389,10 +389,10 @@ def build_replicate_fluxpro(name, identifier, announce):
 
     nip89info = {
         "name": name,
-        "image": "https://i.nostr.build/AQTujqzVmLxLmG16.jpg",
+        "picture": "https://i.nostr.build/AQTujqzVmLxLmG16.jpg",
         "about": "I use Replicate to FluxPro 1.1.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {
             "size": {
                 "required": False,
@@ -402,7 +402,7 @@ def build_replicate_fluxpro(name, identifier, announce):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
 

@@ -98,7 +98,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
 
         database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().database(database).signer(keys).opts(opts).build()
+        cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).opts(opts).build()
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(relay)
 
@@ -137,18 +137,18 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
             filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
             events = await cli.database().query([filter1])
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-                print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events)) + " Events")
+                print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
 
             ns.finallist = {}
-            for event in events:
+            for event in events.to_vec():
                 # if event.created_at().as_secs() > timestamp_since:
                 filt = Filter().kinds(
                     [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                      definitions.EventDefinitions.KIND_REPOST,
                      definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = await cli.database().query([filt])
-                if len(reactions) >= self.min_reactions:
-                    ns.finallist[event.id().to_hex()] = len(reactions)
+                if len(reactions.to_vec()) >= self.min_reactions:
+                    ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 
             finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[
                                :int(options["max_results"])]
@@ -192,7 +192,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(keys).database(database).build()
+            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(relay)
@@ -243,12 +243,11 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=3
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular from people you follow",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -261,7 +260,7 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=3
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     # admin_config.UPDATE_PROFILE = False
@@ -287,12 +286,11 @@ def build_example_subscription(name, identifier, admin_config, options, processi
     image = "https://image.nostr.build/d92652a6a07677e051d647dcf9f0f59e265299b3335a939d008183a911513f4a.jpg"
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": "I show notes that are currently popular, just like the free DVM, I'm also used for testing subscriptions. (beta)",
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "subscription": True,
         "nip90Params": {
@@ -305,14 +303,14 @@ def build_example_subscription(name, identifier, admin_config, options, processi
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     nip88config = NIP88Config()
-    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
     nip89config.NAME = name
-    nip88config.IMAGE = nip89info["image"]
+    nip88config.IMAGE = nip89info["picture"]
     nip88config.TITLE = name
     nip88config.AMOUNT_DAILY = 100
     nip88config.AMOUNT_MONTHLY = 2000

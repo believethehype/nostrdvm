@@ -52,6 +52,7 @@ def build_advanced_search(name, identifier):
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
 
 
+
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
@@ -61,10 +62,10 @@ def build_advanced_search(name, identifier):
 
     nip89info = {
         "name": name,
-        "image": "https://nostr.band/android-chrome-192x192.png",
+        "picture": "https://nostr.band/android-chrome-192x192.png",
         "about": "I search notes on nostr.band",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "users": {
                 "required": False,
@@ -90,7 +91,7 @@ def build_advanced_search(name, identifier):
     }
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return AdvancedSearch(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -101,7 +102,7 @@ def build_advanced_search_wine(name, identifier):
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
     dvm_config.RELAY_LIST = RELAY_LIST
-    invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
+    invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     dvm_config.LNBITS_INVOICE_KEY = invoice_key
     dvm_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
     dvm_config.LNBITS_URL = os.getenv("LNBITS_HOST")
@@ -117,10 +118,10 @@ def build_advanced_search_wine(name, identifier):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
+        "picture": "https://image.nostr.build/d844d6a963724b9f9deb6b3326984fd95352343336718812424d5e99d93a6f2d.jpg",
         "about": "I search notes on nostr.wine using the nostr-wine API",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "users": {
                 "required": False,
@@ -147,7 +148,7 @@ def build_advanced_search_wine(name, identifier):
 
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY,
-                                           nip89info["image"])
+                                           nip89info["picture"])
 
     nip89config.CONTENT = json.dumps(nip89info)
 
@@ -158,11 +159,11 @@ def build_advanced_search_wine(name, identifier):
 
 def build_user_search(name, identifier):
     dvm_config = build_default_config(identifier)
-    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.damus.io"]
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.WOT_FILTERING = True
     npub = Keys.parse(dvm_config.PRIVATE_KEY).public_key().to_bech32()
-    dvm_config.RELAY_LIST = RELAY_LIST
     invoice_key, admin_key, wallet_id, lnaddress = check_and_set_ln_bits_keys(identifier, npub)
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -173,10 +174,10 @@ def build_user_search(name, identifier):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/bd0181a3089181f1d92a5da1ef85cffbe37ba80fbcc695b9d85648dc2fa92583.jpg",
+        "picture": "https://image.nostr.build/bd0181a3089181f1d92a5da1ef85cffbe37ba80fbcc695b9d85648dc2fa92583.jpg",
         "about": "I search users based on their profile info.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
             "max_results": {
                 "required": False,
@@ -187,13 +188,11 @@ def build_user_search(name, identifier):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
-    options = {"relay": "wss://profiles.nostr1.com"}
-
 
     return SearchUser(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                      admin_config=admin_config, options=options)
+                      admin_config=admin_config)
 
 
 
@@ -208,8 +207,8 @@ def playground():
     advanced_search_wine = build_advanced_search_wine("Nostr.wine Search", "discovery_content_searchwine")
     advanced_search_wine.run()
 
-    #profile_search = build_user_search("Profile Searcher", "profile_search")
-    #profile_search.run()
+    profile_search = build_user_search("Profile Searcher", "profile_search")
+    profile_search.run()
 
 
 

@@ -2,7 +2,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits, ClientBuilder
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -73,7 +73,7 @@ class DiscoverReports(DVMTaskInterface):
             Options().relay_limits(relaylimits))
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = Client.with_opts(keys, opts)
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
         # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(relay)
@@ -171,10 +171,10 @@ def build_example(name, identifier, admin_config):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/19872a2edd866258fa9eab137631efda89310d52b2c6ea8f99ef057325aa1c7b.jpg",
+        "picture": "https://image.nostr.build/19872a2edd866258fa9eab137631efda89310d52b2c6ea8f99ef057325aa1c7b.jpg",
         "about": "I show users that have been reported by either your followers or your Web of Trust. Note: Anyone can report, so you might double check and decide for yourself who to mute. Considers spam, illegal and impersonation reports. Notice: This works with NIP51 mute lists. Not all clients support the new mute list format.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "action": "mute",  # follow, unfollow, mute, unmute
         "nip90Params": {
             "since_days": {
@@ -185,7 +185,7 @@ def build_example(name, identifier, admin_config):
         }
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DiscoverReports(name=name, dvm_config=dvm_config, nip89config=nip89config,
