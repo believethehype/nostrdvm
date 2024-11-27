@@ -23,7 +23,7 @@ use_logger = True
 #SYNC_DB_RELAY_LIST = ["wss://relay.momostr.pink", "wss://relay.mostr.pub/"]  # , "wss://relay.snort.social"]
 
 if use_logger:
-    init_logger(LogLevel.DEBUG)
+    init_logger(LogLevel.ERROR)
 
 
 RELAY_LIST = ["wss://nostr.mom",
@@ -40,7 +40,8 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.mostr.pub"]
+    #dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.DEBUG
