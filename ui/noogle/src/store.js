@@ -32,8 +32,8 @@ const store = createStore({
             results: [],
             profile_results: [],
             relays: ["wss://relay.primal.net",
-                "wss://nostr.mom", "wss://nostr.oxtr.dev",
-                "wss://relay.nostr.net"
+                  "wss://nostr.mom",
+                  "wss://nostr.oxtr.dev",
             ],
         }
     },

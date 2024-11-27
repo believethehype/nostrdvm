@@ -40,13 +40,11 @@ class DVM:
         uniffi_set_event_loop(asyncio.get_running_loop())
 
     async def run_dvm(self, dvm_config, admin_config):
-
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         relaylimits = RelayLimits.disable()
-        opts = (
-            Options().relay_limits(relaylimits)) #.difficulty(28)
+        opts = Options().relay_limits(relaylimits) #.difficulty(28)
 
         #self.client = Client(self.keys)
         self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
@@ -94,6 +92,7 @@ class DVM:
             keys = self.keys
 
             async def handle(self, relay_url, subscription_id, nostr_event: Event):
+                print(nostr_event.as_json())
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                     print(nostr_event.as_json())
                 if EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u16() <= nostr_event.kind().as_u16() <= EventDefinitions.KIND_NIP90_GENERIC.as_u16():
@@ -108,6 +107,7 @@ class DVM:
 
         async def handle_nip90_job_event(nip90_event):
             # decrypted encrypted events
+
             nip90_event, use_legacy_encryption = check_and_decrypt_tags(nip90_event, self.dvm_config)
             # if event is encrypted, but we can't decrypt it (e.g. because its directed to someone else), return
             if nip90_event is None:

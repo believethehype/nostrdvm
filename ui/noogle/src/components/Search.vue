@@ -158,23 +158,30 @@ async function send_search_request(msg) {
     let contentwine = await signer.nip44Encrypt(PublicKey.parse(winesearch), tags_as_str, NIP44Version.V2)
     let contentprofile = await signer.nip44Encrypt(PublicKey.parse(profilesearch), tags_profile_as_str, NIP44Version.V2)
 
+    let relays = ["relays"]
+    for (let relay of store.state.relays) {
+      relays.push(relay)
+    }
 
     let tags_nb = [
       ["p", nostrbadnsearch],
       ["encrypted"],
       ["client", "noogle"]
     ]
+     tags_nb.push(relays)
 
     let tags_wine = [
       ["p", winesearch],
       ["encrypted"],
       ["client", "noogle"]
     ]
+     tags_wine.push(relays)
     let tags_profile = [
       ["p", profilesearch],
       ["encrypted"],
       ["client", "noogle"]
     ]
+    tags_profile.push(relays)
 
 
     let res;
@@ -208,6 +215,8 @@ async function send_search_request(msg) {
 
       res = await client.sendEventBuilder(evt)
       requestid = res.toHex()
+      console.log(requestid)
+
 
       let res2 = await client.sendEventBuilder(evt2)
       requestid2 = res2.toHex()
@@ -302,8 +311,16 @@ async function listen() {
               if (is_encrypted) {
                 let signer = store.state.signer
                 if (ptag === store.state.pubkey.toHex()) {
-                  let tags_str = await signer.nip44Decrypt(event.author, event.content)
+                  let tags_str = ""
+                  try{
+                    tags_str = await signer.nip44Decrypt(event.author, event.content)
                   console.log(tags_str)
+                  }
+                  catch(e){
+                    tags_str = await signer.nip04Decrypt(event.author, event.content)
+                    console.log(tags_str)
+                  }
+
                   let params = JSON.parse(tags_str)
                   params.push(Tag.parse(["p", ptag]).asVec())
                   params.push(Tag.parse(["encrypted"]).asVec())
@@ -387,11 +404,20 @@ async function listen() {
           } else if (event.kind === 6302) {
             let entries = []
             //console.log("6302:", event.content);
-
+            let content = ""
             if (is_encrypted) {
               let signer = store.state.signer
               if (ptag === store.state.pubkey.toHex()) {
-                content = await signer.nip44Decrypt(event.author, event.content)
+
+                  try{
+                    content = await signer.nip44Decrypt(event.author, event.content)
+                    console.log("nip44")
+
+                  }
+                  catch(e){
+                    content = await signer.nip04Decrypt(event.author, event.content)
+                      console.log("nip04")
+                  }
               }
             }
 
@@ -399,7 +425,6 @@ async function listen() {
             try {
 
               let event_etags = JSON.parse(content)
-              console.log(event_etags)
               if (event_etags.length > 0) {
                 for (let etag of event_etags) {
                   const eventid = EventId.parse(etag[1]).toHex() //a bit unnecessary
@@ -452,8 +477,8 @@ async function listen() {
               store.commit('set_active_search_dvms', dvms)
               console.log("Events from" + event.author.toHex())
               store.commit('set_search_results', items)
-            } catch {
-
+            } catch(e) {
+              console.log(e)
             }
           } else if (event.kind === 6303) {
             let entries = []

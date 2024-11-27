@@ -320,7 +320,14 @@ export default {
       } else {
         await this.sign_in_anon()
       }
-      await this.getnip89s()
+       await this.getnip89s()
+
+
+       await this.reconcile_all_profiles(store.state.pubkey)
+
+
+
+
       let nwc = loadNWCObject()
       this.hasNWC = false
 
@@ -397,7 +404,7 @@ export default {
         console.log("SIGNER: " + this.signer.toString())
         let limits = RelayLimits.disable()
 
-        let opts = new Options().waitForSend(false).connectionTimeout(Duration.fromSecs(5)).relayLimits(limits);
+        let opts = new Options().relayLimits(limits);
         let client = new ClientBuilder().signer(this.signer).opts(opts).build()
 
 
@@ -416,10 +423,7 @@ export default {
         localStorage.setItem('nostr-key', pubkey.toHex())
         console.log("Client Nip46 connected")
         await this.get_user_info(pubkey)
-        if (launch) {
-          await this.reconcile_all_profiles(pubkey)
 
-        }
         console.log(pubkey.toBech32())
         //await this.reconcile_all_profiles()
 
@@ -683,7 +687,8 @@ export default {
     async getnip89s() {
 
       //let keys = Keys.generate()
-      let keys = Keys.parse(store.state.nooglekey)
+      let keys = Keys.parse(import.meta.env.VITE_NOOGLE_PK)
+      // let keys = Keys.parse(store.state.nooglekey)
       let signer = NostrSigner.keys(keys)
       let client = new ClientBuilder().signer(signer).build()
 
@@ -872,7 +877,7 @@ export default {
         dbclient = new ClientBuilder().signer(signer).database(await db).opts(relayopts).build()
 
         await dbclient.addRelay("wss://relay.damus.io");
-        await dbclient.addRelay("wss://purplepag.es");
+        await dbclient.addRelay("wss://relay.primal.net");
         await dbclient.connect()
 
         store.commit('set_dbclient', dbclient)
