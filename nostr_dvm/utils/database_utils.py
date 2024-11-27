@@ -1,13 +1,11 @@
 # DATABASE LOGIC
 import json
 import os
-import pathlib
 import shutil
 import sqlite3
 from dataclasses import dataclass
 from logging import Filter
 from sqlite3 import Error
-from tkinter.filedialog import Directory
 
 from nostr_sdk import Timestamp, Keys, PublicKey, Filter, Kind, make_private_msg, NostrSigner, NostrDatabase
 
