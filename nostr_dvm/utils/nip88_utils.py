@@ -83,7 +83,7 @@ async def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_NIP88_TIER_EVENT) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "", [e_tag, a_tag]).sign_with_keys(keys)
+    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).sign_with_keys(keys)
     await send_event(event, client, config)
 
 
@@ -130,7 +130,7 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
 
 async def nip88_announce_tier(dvm_config, client):
     title_tag = Tag.parse(["title", str(dvm_config.NIP88.TITLE)])
-    image_tag = Tag.parse(["image", str(dvm_config.NIP88.IMAGE)])
+    image_tag = Tag.parse(["picture", str(dvm_config.NIP88.IMAGE)])
     d_tag = Tag.parse(["d", dvm_config.NIP88.DTAG])
 
     # zap splits. Feel free to change this for your DVM
@@ -176,7 +176,7 @@ async def nip88_announce_tier(dvm_config, client):
 
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP88.CONTENT
-    event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content, tags).sign_with_keys(keys)
+    event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content).tags(tags).sign_with_keys(keys)
     annotier_id = await send_event(event, client=client, dvm_config=dvm_config)
 
     if dvm_config.NIP89 is not None:

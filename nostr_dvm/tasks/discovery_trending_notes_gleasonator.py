@@ -72,7 +72,7 @@ class TrendingNotesGleasonator(DVMTaskInterface):
 
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = Client(keys)
+        cli = Client(NostrSigner.keys(keys))
 
         await cli.add_relay(options["relay"])
         await cli.connect()
@@ -125,16 +125,15 @@ def build_example(name, identifier, admin_config, custom_processing_msg):
 
     nip89info = {
         "name": name,
-        "picture": "0c760b3ecdbc993ba47b785d0adecf00c760b3ecdbc993ba47b785d0adecf0ec71fd9c59808e27d0665b9f77a32d8de.png",
-        "image": "0c760b3ecdbc993ba47b785d0adecf00c760b3ecdbc993ba47b785d0adecf0ec71fd9c59808e27d0665b9f77a32d8de.png",
+        "picture": "https://image.nostr.build/0c760b3ecdbc993ba47b785d0adecf00c760b3ecdbc993ba47b785d0adecf0ec71fd9c59808e27d0665b9f77a32d8de.png",
         "about": "I show trending notes from Soapbox Ditto",
         "amount": "Free",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {}
     }
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return TrendingNotesGleasonator(name=name, dvm_config=dvm_config, nip89config=nip89config,

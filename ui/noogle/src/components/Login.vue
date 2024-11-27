@@ -749,8 +749,8 @@ export default {
 
                   }
 
-                  if (jsonentry.picture) {
-                    jsonentry.image = jsonentry.picture
+                  if (jsonentry.image) {
+                    jsonentry.picture = jsonentry.image
                   }
 
                   if (!jsonentry.amount) {

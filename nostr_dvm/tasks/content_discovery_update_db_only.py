@@ -11,6 +11,7 @@ from nostr_sdk import Timestamp, PublicKey, Keys, Options, SecretKey, NostrSigne
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
+from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
@@ -42,6 +43,8 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     personalized = False
     result = ""
     database = None
+    wot_counter = 0
+    max_db_size = 280
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
@@ -62,6 +65,8 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             self.db_name = self.options.get("db_name")
         if self.options.get("db_since"):
             self.db_since = int(self.options.get("db_since"))
+        if self.options.get("max_db_size"):
+            self.max_db_size = int(self.options.get("max_db_size"))
 
         use_logger = False
         if use_logger:
@@ -135,16 +140,17 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             if self.database is None:
-                self.database = NostrDatabase.lmdb(self.db_name)
+                self.database = await init_db(self.db_name, True, self.max_db_size)
+                #self.database = NostrDatabase.lmdb(self.db_name)
 
-            cli = ClientBuilder().signer(keys).database(self.database).opts(opts).build()
+            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(self.database).opts(opts).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(relay)
 
             await cli.connect()
 
-            if self.dvm_config.WOT_FILTERING:
+            if self.dvm_config.WOT_FILTERING and self.wot_counter == 0:
                 print("Calculating WOT for " + str(self.dvm_config.WOT_BASED_ON_NPUBS))
                 filtering = cli.filtering()
                 index_map, G = await build_wot_network(self.dvm_config.WOT_BASED_ON_NPUBS,
@@ -166,7 +172,10 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 # toc = time.time()
                 # print(f'finished in {toc - tic} seconds')
                 await filtering.add_public_keys(wot_keys)
-
+            self.wot_counter += 1
+            # only calculate wot every 10th call
+            if self.wot_counter >= 10:
+                self.wot_counter = 0
             # Mute public key
             # await cli. (self.dvm_config.MUTE)
 
@@ -177,7 +186,6 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
                  definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
-            # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
@@ -214,12 +222,11 @@ def build_example(name, identifier, admin_config, options, image, description, u
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -232,7 +239,7 @@ def build_example(name, identifier, admin_config, options, image, description, u
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentDBUpdateScheduler(name=name, dvm_config=dvm_config, nip89config=nip89config,
@@ -254,12 +261,11 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "subscription": True,
         "personalized": False,
         "nip90Params": {
@@ -272,14 +278,14 @@ def build_example_subscription(name, identifier, admin_config, options, image, d
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     nip88config = NIP88Config()
-    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip88config.DTAG = check_and_set_d_tag_nip88(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip88config.TIER_EVENT = check_and_set_tiereventid_nip88(identifier, "1")
     nip89config.NAME = name
-    nip88config.IMAGE = nip89info["image"]
+    nip88config.IMAGE = nip89info["picture"]
     nip88config.TITLE = name
     nip88config.AMOUNT_DAILY = 100
     nip88config.AMOUNT_MONTHLY = 2000

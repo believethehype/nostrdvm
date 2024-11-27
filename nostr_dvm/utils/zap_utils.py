@@ -304,8 +304,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             tags = [p_tag]
             if zapped_event is not None:
                 tags.append(e_tag)
-            zap_request = EventBuilder(Kind(9733), content,
-                                       tags).sign_with_keys(keys).as_json()
+            zap_request = EventBuilder(Kind(9733), content).tags(tags).sign_with_keys(keys).as_json()
             keys = Keys.parse(encryption_key)
             if zapped_event is not None:
                 encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
@@ -316,8 +315,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             tags.append(anon_tag)
             content = ""
 
-        zap_request = EventBuilder(Kind(9734), content,
-                                   tags).sign_with_keys(keys).as_json()
+        zap_request = EventBuilder(Kind(9734), content).tags(tags).sign_with_keys(keys).as_json()
 
         response = requests.get(callback + "?amount=" + str(int(amount) * 1000) + "&nostr=" + urllib.parse.quote_plus(
             zap_request) + "&lnurl=" + encoded_lnurl)

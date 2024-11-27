@@ -17,7 +17,7 @@ async def generate_nip98_header(pkeys_hex, url="", kind="POST", filepath=""):
     if kind == "POST":
         payloadtag = Tag.parse(["payload", sha256sum(filepath)])
         tags.append(payloadtag)
-    eb = EventBuilder(Kind(27235), "", tags)
+    eb = EventBuilder(Kind(27235), "").tags(tags)
     event  = eb.sign_with_keys(keys)
 
     encoded_nip98_event = base64.b64encode(event.as_json().encode('utf-8')).decode('utf-8')

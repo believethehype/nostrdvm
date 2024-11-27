@@ -5,8 +5,8 @@ import os
 import signal
 from datetime import timedelta
 
-from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip04_encrypt, NostrSigner, EventId, uniffi_set_event_loop)
+from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
+                       Options, Tag, Event, nip44_encrypt, NostrSigner, EventId, uniffi_set_event_loop, make_private_msg)
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -39,7 +39,7 @@ class Subscription:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        self.client = Client(self.keys)
+        self.client = Client(NostrSigner.keys(self.keys))
 
         pk = self.keys.public_key()
 
@@ -146,12 +146,12 @@ class Subscription:
                 str_tags.append(element.as_vec())
 
             content = json.dumps(str_tags)
-            content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
+            content = nip44_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
                                     content)
             reply_tags = encryption_tags
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content), reply_tags).sign_with_keys(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
             await send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.NAME + "]" + ": Sent Kind " + str(
                 EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + "success" + " " + reaction_event.as_json())
@@ -209,7 +209,7 @@ class Subscription:
             tags = [pTag, PTag, eTag, validTag, tierTag, alttag]
 
             event = EventBuilder(EventDefinitions.KIND_NIP88_PAYMENT_RECIPE,
-                                 message, tags).sign_with_keys(self.keys)
+                                 message).tags(tags).sign_with_keys(self.keys)
 
             dvmconfig = DVMConfig()
             client = Client(self.keys)
@@ -229,7 +229,12 @@ class Subscription:
                 return
 
             try:
-                decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
+
+                try:
+                    decrypted_text = nip44_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
+                except:
+                    decrypted_text = nip04_decrypt(self.keys.secret_key(), nostr_event.author(), nostr_event.content())
+
                 subscriber = ""
                 nwc = ""
                 try:
@@ -348,7 +353,8 @@ class Subscription:
                                 Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
                                                                                                        " ") + " GMT"))
 
-                            self.client.send_private_msg(PublicKey.parse(subscriber), message, None)
+                            event = await make_private_msg(NostrSigner.keys(self.keys), PublicKey.parse(subscriber), message)
+                            await self.client.send_event(event)
 
 
 
@@ -407,7 +413,8 @@ class Subscription:
                 Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
                                                                                        " ")))
             # await self.client.send_direct_msg(PublicKey.parse(subscription.subscriber), message, None)
-            await self.client.send_private_msg(PublicKey.parse(subscription.subscriber), message, None)
+            event = await make_private_msg(NostrSigner.keys(self.keys), PublicKey.parse(subscription.subscriber), message)
+            await self.client.send_event(event)
 
         async def check_subscriptions():
             try:

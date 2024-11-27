@@ -67,7 +67,6 @@ async function generate_feed(id) {
   try {
 
     let client = store.state.client
-    //console.log(dvms.find(i => i.id === id).encryptionSupported)
 
     let current_dvm = dvms.find(i => i.id === id)
 
@@ -85,7 +84,7 @@ async function generate_feed(id) {
     let requestid;
 
     // for now we only want to use encrypted events for subscribed dvms (might change later, also we dont encrypt on amber because decryption and update doesnt work)
-    if (current_dvm.encryptionSupported && current_dvm.nip88 && current_dvm.nip88.hasActiveSubscription && localStorage.getItem('nostr-key-method') !== 'android-signer' && localStorage.getItem('nostr-key-method') !== 'nostr-login') {
+    if (current_dvm.supportsEncryption && current_dvm.nip88 && current_dvm.nip88.hasActiveSubscription && localStorage.getItem('nostr-key-method') !== 'android-signer' && localStorage.getItem('nostr-key-method') !== 'nostr-login') {
 
       let tags_str = []
       for (let tag of tags) {
@@ -101,7 +100,7 @@ async function generate_feed(id) {
 
 
       let pk = PublicKey.parse(id)
-      let content = await signer.nip04Encrypt(pk, params_as_str)
+      let content = await signer.nip44Encrypt(pk, params_as_str)
 
       let tags_t = []
       tags_t.push(Tag.parse(["p", id]))
@@ -150,7 +149,7 @@ async function listen() {
   let client = store.state.client
   let pubkey = store.state.pubkey
 
-  const filter = new Filter().kinds([7000, 6301]).pubkey(pubkey).since(Timestamp.now());
+  const filter = new Filter().kinds([Kind(7000), Kind(6301)]).pubkey(pubkey).since(Timestamp.now());
   await client.subscribe([filter]);
 
   const handle = {
@@ -197,7 +196,7 @@ async function listen() {
                   return
                   // tags_str = await amberSignerService.nip04Decrypt(event.author.toHex(), event.content)
                 } else {
-                  tags_str = await signer.nip04Decrypt(event.author, event.content)
+                  tags_str = await signer.nip44Decrypt(event.author, event.content)
                 }
 
 
@@ -301,7 +300,7 @@ async function listen() {
           if (is_encrypted) {
             if (ptag === store.state.pubkey.toHex()) {
               let signer = store.state.signer
-              content = await signer.nip04Decrypt(event.author, event.content)
+              content = await signer.nip44Decrypt(event.author, event.content)
 
             } else {
               console.log("not addressed to us")
@@ -465,7 +464,7 @@ async function addAllContentDVMs() {
 
   console.log(active_dvms)
 
-  const filtera = new Filter().authors(relevant_dvms).kinds([6301, 7000])
+  const filtera = new Filter().authors(relevant_dvms).kinds([Kind(6301), Kind(7000)])
   let client = store.state.client
   let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
 
@@ -503,8 +502,8 @@ async function addAllContentDVMs() {
         about: el.about,
         image: el.image,
         amount: el.amount,
-        encryptionSupported: el.encryptionSupported,
-        cashuAccepted: el.cashuAccepted,
+        supportsEncryption: el.supportsEncryption,
+        acceptsNutZaps: el.acceptsNutZaps,
         bolt11: "",
         lud16: el.lud16,
         subscription: "",
@@ -538,8 +537,8 @@ async function addDVM(event) {
     bolt11: "",
     lud16: "",
     subscription: "",
-    encryptionSupported: false,
-    cashuAccepted: false
+    supportsEncryption: false,
+    acceptsNutZaps: false
   }
 
   for (const tag in event.tags) {
@@ -584,8 +583,8 @@ async function addDVM(event) {
       jsonentry.about = el.about
       jsonentry.image = el.image
       jsonentry.lud16 = el.lud16
-      jsonentry.encryptionSupported = el.encryptionSupported
-      jsonentry.cashuAccepted = el.cashuAccepted
+      jsonentry.supportsEncryption = el.supportsEncryption
+      jsonentry.acceptsNutZaps = el.acceptsNutZaps
       jsonentry.action = el.action
 
       console.log(jsonentry)
@@ -713,7 +712,7 @@ async function subscribe_to_dvm() {
 
     try {
 
-      let msg = await (await nclient.signer()).nip04Encrypt(nwcdvm, tags_as_str)
+      let msg = await (await nclient.signer()).nip44Encrypt(nwcdvm, tags_as_str)
       let tags_t = []
       tags_t.push(Tag.parse(["p", store.state.subscription_verifier_pubkey]))
       tags_t.push(Tag.parse(["encrypted"]))
@@ -789,7 +788,7 @@ async function mute_all(results) {
 
     try {
       let eventasjson = JSON.parse(list.asJson())
-      let content = await (await signer).nip04Decrypt(store.state.pubkey, list.content)
+      let content = await (await signer).nip44Decrypt(store.state.pubkey, list.content)
       let jsonObject = JSON.parse(content)
       console.log(content)
 
@@ -817,7 +816,7 @@ async function mute_all(results) {
       let newcontent = JSON.stringify(jsonObject)
       console.log(newcontent)
       let lol = "[]"
-      eventasjson.content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+      eventasjson.content = await (await signer).nip44Encrypt(store.state.pubkey, newcontent)
       let newList = new EventBuilder(list.kind, eventasjson.content, list.tags).toUnsignedEvent(store.state.pubkey)
 
       try {
@@ -841,7 +840,7 @@ async function mute_all(results) {
 
 
     let newcontent = JSON.stringify(jsonObject)
-    let content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+    let content = await (await signer).nip44Encrypt(store.state.pubkey, newcontent)
     let tags = []
     let newList = new EventBuilder(10000, content, tags).toUnsignedEvent(store.state.pubkey)
     try {
@@ -873,7 +872,7 @@ async function mute(result) {
       try {
         //  console.log(list.content)
         let signer = await store.state.signer
-        content = await signer.nip04Decrypt(store.state.pubkey, list.content)
+        content = await signer.nip44Decrypt(store.state.pubkey, list.content)
         //    console.log(content)
 
       } catch (error) {
@@ -895,7 +894,7 @@ async function mute(result) {
         store.state.mutes.push(result.authorid)
         let newcontent = JSON.stringify(jsonObject)
         console.log(newcontent)
-        eventasjson.content = await store.state.signer.nip04Encrypt(store.state.pubkey, newcontent)
+        eventasjson.content = await store.state.signer.nip44Encrypt(store.state.pubkey, newcontent)
         let newList = new EventBuilder(list.kind, eventasjson.content, list.tags).toUnsignedEvent(store.state.pubkey)
         //console.log(signedMuteList.asJson())
         try {
@@ -924,7 +923,7 @@ async function mute(result) {
 
 
     let newcontent = JSON.stringify(jsonObject)
-    let content = await (await signer).nip04Encrypt(store.state.pubkey, newcontent)
+    let content = await (await signer).nip44Encrypt(store.state.pubkey, newcontent)
     let tags = []
     let newList = new EventBuilder(10000, content, tags).toUnsignedEvent(store.state.pubkey)
     try {
@@ -1301,7 +1300,7 @@ const submitHandler = async () => {
 
             <div class="flex">
               <div class="tooltip" style="border-width: 0">
-                <svg v-if="dvm.encryptionSupported && dvm.nip88" aria-hidden="true"
+                <svg v-if="dvm.supportsEncryption && dvm.nip88" aria-hidden="true"
                      class="w-4 h-4 text-gray-800 dark:text-white flex" fill="currentColor"
                      style="margin-left: auto; margin-right: 5px" viewBox="0 0 22 22" xmlns="http://www.w3.org/2000/svg">
                   <path

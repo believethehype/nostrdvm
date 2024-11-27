@@ -1,11 +1,15 @@
 # DATABASE LOGIC
 import json
+import os
+import pathlib
+import shutil
 import sqlite3
 from dataclasses import dataclass
 from logging import Filter
 from sqlite3 import Error
+from tkinter.filedialog import Directory
 
-from nostr_sdk import Timestamp, Keys, PublicKey, Filter, Kind
+from nostr_sdk import Timestamp, Keys, PublicKey, Filter, Kind, make_private_msg, NostrSigner, NostrDatabase
 
 from nostr_dvm.utils.definitions import relay_timeout
 from nostr_dvm.utils.nostr_utils import send_nip04_dm
@@ -192,7 +196,8 @@ async def update_user_balance(db, npub, additional_sats, client, config, giftwra
 
             # always send giftwrapped. sorry not sorry.
             #if giftwrap:
-            await client.send_private_msg(PublicKey.parse(npub), message, None)
+            event = await make_private_msg(NostrSigner.keys(keys), PublicKey.parse(npub), message)
+            await client.send_event(event)
             #else:
             #    await send_nip04_dm(client, message, PublicKey.parse(npub), config)
 
@@ -243,6 +248,30 @@ async def get_or_add_user(db, npub, client, config, update=False, skip_meta=Fals
             print("Error Updating User in DB: " + str(e))
 
     return user
+
+
+async def init_db(database, wipe=False, limit=1000, print_filesize=True):
+    # LMDB can't grow smaller, so by using this function we can wipe the database on init to avoid
+    # it growing too big. If wipe is set to true, the database will be deleted once the size is above the limit param.
+    database_content = database + "/data.mdb"
+    if  os.path.isfile(database_content):
+        file_stats = os.stat(database_content)
+        sizeinmb = file_stats.st_size / (1024 * 1024)
+        if print_filesize:
+            print("Filesize of database \"" + database + "\": " + str(sizeinmb) + " Mb.")
+
+        if wipe and sizeinmb > limit:
+            try:
+                shutil.rmtree(database)
+                print("Removed database due to large file size. Waiting for resync")
+            except OSError as e:
+                print("Error: %s - %s." % (e.filename, e.strerror))
+    else:
+        print("Creating database: " + database)
+
+
+    return NostrDatabase.lmdb(database)
+
 
 
 async def fetch_user_metadata(npub, client):

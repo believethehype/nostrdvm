@@ -20,7 +20,7 @@ async def test():
     pk = keys.public_key()
     print(f"Bot public key: {pk.to_bech32()}")
 
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     await client.add_relay("wss://relay.damus.io")
     await client.add_relay("wss://nostr.mom")
@@ -50,7 +50,7 @@ async def test():
                 print("Decrypting NIP59 event")
                 try:
                     # Extract rumor
-                    unwrapped_gift = UnwrappedGift.from_gift_wrap(keys, event)
+                    unwrapped_gift = UnwrappedGift.from_gift_wrap(NostrSigner(keys), event)
                     sender = unwrapped_gift.sender()
                     rumor: UnsignedEvent = unwrapped_gift.rumor()
 

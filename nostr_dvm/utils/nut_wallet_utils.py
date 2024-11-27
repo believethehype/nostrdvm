@@ -6,10 +6,10 @@ from datetime import timedelta
 
 import requests
 from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
-    EventId, nip04_decrypt, nip04_encrypt, PublicKey, Metadata
+    EventId, nip04_decrypt, nip04_encrypt, PublicKey, Metadata, NostrSigner
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
-from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout, relay_timeout_long
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.print_utils import bcolors
@@ -52,7 +52,7 @@ class NutZapWallet:
 
     async def client_connect(self, relay_list, keys):
 
-        client = Client(keys)
+        client = Client(NostrSigner.keys(keys))
         for relay in relay_list:
             await client.add_relay(relay)
         await client.connect()
@@ -103,7 +103,7 @@ class NutZapWallet:
             relay_tag = Tag.parse(["relay", relay])
             tags.append(relay_tag)
 
-        event = EventBuilder(EventDefinitions.KIND_NUT_WALLET, content, tags).sign_with_keys(keys)
+        event = EventBuilder(EventDefinitions.KIND_NUT_WALLET, content).tags(tags).sign_with_keys(keys)
         send_response = await client.send_event(event)
 
         print(
@@ -327,7 +327,7 @@ class NutZapWallet:
             p_tag = Tag.parse(["p", sender_hex])
             tags.append(p_tag)
 
-        event = EventBuilder(Kind(7376), content, tags).sign_with_keys(keys)
+        event = EventBuilder(Kind(7376), content).tags(tags).sign_with_keys(keys)
         eventid = await client.send_event(event)
 
     async def create_unspent_proof_event(self, nut_wallet: NutWallet, mint_proofs, mint_url, amount, direction, marker,
@@ -373,7 +373,7 @@ class NutZapWallet:
         else:
             content = nip44_encrypt(keys.secret_key(), keys.public_key(), message, Nip44Version.V2)
 
-        event = EventBuilder(Kind(7375), content, tags).sign_with_keys(keys)
+        event = EventBuilder(Kind(7375), content).tags(tags).sign_with_keys(keys)
         eventid = await client.send_event(event)
         await self.create_transaction_history_event(nut_wallet, amount, nut_wallet.unit, old_event_id, eventid.id,
                                                     direction, marker, sender_hex, event_hex, client, keys)
@@ -436,7 +436,7 @@ class NutZapWallet:
         pubkey = Keys.parse(nut_wallet.privkey).public_key().to_hex()
         tags.append(Tag.parse(["pubkey", pubkey]))
 
-        event = EventBuilder(Kind(10019), "", tags).sign_with_keys(keys)
+        event = EventBuilder(Kind(10019), "").tags(tags).sign_with_keys(keys)
         eventid = await client.send_event(event)
         print(
             bcolors.CYAN + "[" + nut_wallet.name + "] Announced mint preferences info event (" + eventid.id.to_hex() + ")" + bcolors.ENDC)
@@ -624,7 +624,7 @@ class NutZapWallet:
                 }
                 tags.append(Tag.parse(["proof", json.dumps(nut_proof)]))
 
-            event = EventBuilder(Kind(9321), comment, tags).sign_with_keys(keys)
+            event = EventBuilder(Kind(9321), comment).tags(tags).sign_with_keys(keys)
             response = await client.send_event(event)
 
             await self.update_spend_mint_proof_event(nut_wallet, proofs, mint_url, "zapped", keys.public_key().to_hex(),

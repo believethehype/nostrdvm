@@ -46,12 +46,11 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": image,
         "picture": image,
         "about": description,
         "lud16": dvm_config.LN_ADDRESS,
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "personalized": True,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -79,7 +78,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     return DicoverContentCurrentlyPopularbyTopic(name=name, dvm_config=dvm_config, nip89config=nip89config,

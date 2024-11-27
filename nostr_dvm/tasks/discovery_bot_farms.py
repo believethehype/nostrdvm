@@ -78,7 +78,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
 
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().database(database).signer(keys).build()
+        cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
 
         await cli.add_relay("wss://relay.damus.io")
         # cli.add_relay("wss://atl.purplerelay.com")
@@ -91,13 +91,13 @@ class DiscoveryBotFarms(DVMTaskInterface):
         filter1 = Filter().kind(Kind(0))
         events = await cli.database().query([filter1])
         result_list = []
-        print("Events: " + str(len(events)))
+        print("Events: " + str(len(events.to_vec())))
 
         searchterms = str(options["search"]).split(";")
         index = 0
-        if len(events) > 0:
+        if len(events.to_vec()) > 0:
 
-            for event in events:
+            for event in events.to_vec():
                 if index < options["max_results"]:
                     try:
                         if any(ext in event.content().lower() for ext in searchterms):
@@ -137,7 +137,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().signer(keys).database(database).build()
+        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
         await cli.add_relay("wss://relay.damus.io")
         await cli.add_relay("wss://nostr21.com")
@@ -163,10 +163,10 @@ def build_example(name, identifier, admin_config):
     # Add NIP89
     nip89info = {
         "name": name,
-        "image": "https://image.nostr.build/981b560820bc283c58de7989b7abc6664996b487a531d852e4ef7322586a2122.jpg",
+        "picture": "https://image.nostr.build/981b560820bc283c58de7989b7abc6664996b487a531d852e4ef7322586a2122.jpg",
         "about": "I hunt down bot farms.",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "action": "mute",  # follow, unfollow, mute, unmute
         "nip90Params": {
             "max_results": {
@@ -178,7 +178,7 @@ def build_example(name, identifier, admin_config):
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
     options = {"relay": "wss://relay.damus.io"}

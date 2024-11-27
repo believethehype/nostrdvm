@@ -17,7 +17,7 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 async def test():
     relay_list = dvmconfig.DVMConfig.RELAY_LIST
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
         await client.add_relay(relay)
@@ -71,7 +71,7 @@ async def test_gallery():
     relay_list = dvmconfig.DVMConfig.RELAY_LIST
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
         await client.add_relay(relay)

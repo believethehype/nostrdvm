@@ -149,15 +149,15 @@ def build_example(name, identifier, admin_config):
 
     nip89info = {
         "name": name,
-        "image": "https://unleashed.chat/_app/immutable/assets/hero.pehsu4x_.jpeg",
+        "picture": "https://unleashed.chat/_app/immutable/assets/hero.pehsu4x_.jpeg",
         "about": "I summarize Text with https://unleashed.chat",
-        "encryptionSupported": True,
-        "cashuAccepted": True,
+        "supportsEncryption": True,
+        "acceptsNutZaps": False,
         "nip90Params": {}
     }
 
     nip89config = NIP89Config()
-    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["image"])
+    nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
     admin_config2 = AdminConfig()
     admin_config2.REBROADCAST_NIP89 = False

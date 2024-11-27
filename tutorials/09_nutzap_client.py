@@ -31,9 +31,9 @@ async def nostr_client_generic_test(ptag):
     pTag = Tag.parse(["p", PublicKey.parse(ptag).to_hex()])
     tags = [relaysTag, alttag, pTag, paramTag]
     event = EventBuilder(Kind(5050), "This is a test",
-                         tags).sign_with_keys(keys)
+                         ).tags(tags).sign_with_keys(keys)
 
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
@@ -46,7 +46,7 @@ async def nostr_client(target_dvm_npub):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(keys)
+    client = Client(NostrSigner.keys(keys))
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
