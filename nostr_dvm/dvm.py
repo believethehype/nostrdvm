@@ -92,7 +92,6 @@ class DVM:
             keys = self.keys
 
             async def handle(self, relay_url, subscription_id, nostr_event: Event):
-                print(nostr_event.as_json())
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                     print(nostr_event.as_json())
                 if EventDefinitions.KIND_NIP90_EXTRACT_TEXT.as_u16() <= nostr_event.kind().as_u16() <= EventDefinitions.KIND_NIP90_GENERIC.as_u16():
