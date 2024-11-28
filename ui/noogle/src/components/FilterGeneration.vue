@@ -149,7 +149,7 @@ async function listen() {
   let client = store.state.client
   let pubkey = store.state.pubkey
 
-  const filter = new Filter().kinds([Kind(7000), Kind(6301)]).pubkey(pubkey).since(Timestamp.now());
+  const filter = new Filter().kinds([7000, 6301]).pubkey(pubkey).since(Timestamp.now());
   await client.subscribe([filter]);
 
   const handle = {
@@ -464,7 +464,7 @@ async function addAllContentDVMs() {
 
   console.log(active_dvms)
 
-  const filtera = new Filter().authors(relevant_dvms).kinds([Kind(6301), Kind(7000)])
+  const filtera = new Filter().authors(relevant_dvms).kinds([6301, 7000])
   let client = store.state.client
   let activities = await client.getEventsOf([filtera], Duration.fromSecs(1))
 
