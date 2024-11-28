@@ -9,8 +9,8 @@ from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.output_utils import upload_media_to_hoster
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
+from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
 RELAY_LIST = ["wss://nostr.mom",
               #"wss://relay.primal.net",

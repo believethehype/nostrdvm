@@ -1,18 +1,13 @@
-from datetime import timedelta
+import argparse
+import asyncio
 from pathlib import Path
 
 import dotenv
 from nostr_sdk import PublicKey, Keys
 
-
-import asyncio
-import argparse
-
-
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
-
 
 # Run with params for test functions or set the default here
 parser = argparse.ArgumentParser(description='Nutzaps')

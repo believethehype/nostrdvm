@@ -1,9 +1,8 @@
 import asyncio
 import json
-from datetime import timedelta
 
-from nostr_sdk import Options, SecretKey, NostrSigner, Keys, Client, RelayOptions, Alphabet, SingleLetterTag, Filter, \
-    Kind, PublicKey, init_logger, LogLevel, Tag
+from nostr_sdk import NostrSigner, Keys, Client, Alphabet, SingleLetterTag, Filter, \
+    PublicKey, init_logger, LogLevel, Tag
 
 from nostr_dvm.utils.definitions import relay_timeout_long
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key

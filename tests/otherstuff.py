@@ -1,11 +1,10 @@
-import asyncio
 import json
 import os
 import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Keys, LogLevel, init_logger
+from nostr_sdk import LogLevel, init_logger
 
 from nostr_dvm.bot import Bot
 from nostr_dvm.tasks.convert_media import MediaConverter
@@ -19,12 +18,10 @@ from nostr_dvm.tasks.imagegeneration_replicate_recraft import ImageGenerationRep
 from nostr_dvm.tasks.imagegeneration_sd35_api import ImageGenerationSD35
 from nostr_dvm.tasks.videogeneration_replicate_svd import VideoGenerationReplicateSVD
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
+from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
-from nostr_dvm.utils.zap_utils import get_price_per_sat, check_and_set_ln_bits_keys
-
+from nostr_dvm.utils.zap_utils import get_price_per_sat
 
 # Some other DVMs to run.
 

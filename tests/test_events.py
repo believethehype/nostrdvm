@@ -1,11 +1,9 @@
 import asyncio
-import json
-from datetime import timedelta
 from pathlib import Path
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, Filter, Timestamp, \
-    EventId, Options, PublicKey, NostrSigner, Nip19Event, Kind
+    EventId, PublicKey, NostrSigner, Nip19Event, Kind
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.definitions import relay_timeout
