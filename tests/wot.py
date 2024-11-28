@@ -1,19 +1,17 @@
 import asyncio
-import json
-from datetime import timedelta
-import os
 import csv
-import networkx as nx
-
-import pandas as pd
-
+import json
+import os
 import warnings
+
+import networkx as nx
+import pandas as pd
 
 from nostr_dvm.utils.definitions import relay_timeout
 
 warnings.filterwarnings('ignore')
 
-from nostr_sdk import  Options, Keys, NostrSigner, Filter, PublicKey, Kind, \
+from nostr_sdk import Keys, NostrSigner, Filter, PublicKey, Kind, \
     SyncOptions, SyncDirection, ClientBuilder, NostrDatabase
 
 

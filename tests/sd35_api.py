@@ -5,12 +5,11 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import LogLevel, init_logger
 
-
 from nostr_dvm.tasks.imagegeneration_sd35_api import ImageGenerationSD35
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.zap_utils import  get_price_per_sat
+from nostr_dvm.utils.zap_utils import get_price_per_sat
 
 rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = False

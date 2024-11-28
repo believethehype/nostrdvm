@@ -5,7 +5,6 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import Keys, LogLevel, init_logger
 
-from nostr_dvm.tasks import search_users, advanced_search
 from nostr_dvm.tasks.advanced_search import AdvancedSearch
 from nostr_dvm.tasks.advanced_search_wine import AdvancedSearchWine
 from nostr_dvm.tasks.search_users import SearchUser

@@ -2,16 +2,15 @@ import asyncio
 import json
 from pathlib import Path
 
-from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
-from nostr_dvm.utils.print_utils import bcolors
-
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
     nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, RelayOptions
 
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
-from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
+from nostr_dvm.utils.print_utils import bcolors
 
 
 # TODO HINT: Best use this path with a previously whitelisted privkey, as zapping events is not implemented in the lib/code

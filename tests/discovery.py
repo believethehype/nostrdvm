@@ -1,12 +1,11 @@
 import asyncio
 import json
 import os
-import shutil
 import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import init_logger, LogLevel, Keys, NostrDatabase
+from nostr_sdk import init_logger, LogLevel, Keys
 
 # os.environ["RUST_BACKTRACE"] = "full"
 from nostr_dvm.subscription import Subscription

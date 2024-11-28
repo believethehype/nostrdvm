@@ -1,9 +1,9 @@
 from pathlib import Path
 
 import dotenv
+
 from nostr_dvm.tasks import discovery_bot_farms
 from nostr_dvm.utils.admin_utils import AdminConfig
-
 
 
 def playground():

@@ -1,9 +1,7 @@
 import asyncio
-import time
 
 from nostr_sdk import Client, NostrSigner, Keys, Event, UnsignedEvent, Filter, \
-    HandleNotification, Timestamp, nip04_decrypt, UnwrappedGift, init_logger, LogLevel, Kind, KindEnum, EventBuilder, \
-    Tag
+    HandleNotification, Timestamp, nip04_decrypt, UnwrappedGift, init_logger, LogLevel, Kind, KindEnum
 
 from nostr_dvm.utils.nostr_utils import send_nip04_dm
 
