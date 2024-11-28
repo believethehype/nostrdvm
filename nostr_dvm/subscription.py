@@ -46,7 +46,7 @@ class Subscription:
 
         self.job_list = []
         print(bcolors.BLUE + "[Subscription] " + "Nostr Subscription Handler public key: " + str(
-            pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + "\n"  + bcolors.ENDC)
+            pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + bcolors.ENDC)
 
 
         for relay in self.dvm_config.RELAY_LIST:
