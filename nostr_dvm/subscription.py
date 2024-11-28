@@ -15,6 +15,7 @@ from nostr_dvm.utils.nip88_utils import nip88_has_active_subscription
 from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.nwc_tools import nwc_zap
+from nostr_dvm.utils.print_utils import bcolors
 from nostr_dvm.utils.subscription_utils import create_subscription_sql_table, add_to_subscription_sql_table, \
     get_from_subscription_sql_table, update_subscription_sql_table, get_all_subscriptions_from_sql_table, \
     delete_from_subscription_sql_table
@@ -44,9 +45,9 @@ class Subscription:
         pk = self.keys.public_key()
 
         self.job_list = []
+        print(bcolors.BLUE + "[Subscription] " + "Nostr Subscription Handler public key: " + str(
+            pk.to_bech32()) + " Hex: " + str(pk.to_hex()) + "\n"  + bcolors.ENDC)
 
-        print("Nostr Subscription Handler public key: " + str(pk.to_bech32()) + " Hex: " + str(
-            pk.to_hex()) + "\n")
 
         for relay in self.dvm_config.RELAY_LIST:
             await self.client.add_relay(relay)
