@@ -50,10 +50,6 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     dvm_config.WOT_FILTERING = True
-
-    # Activate these to use a subscription based model instead
-    # dvm_config.SUBSCRIPTION_REQUIRED = True
-    # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
