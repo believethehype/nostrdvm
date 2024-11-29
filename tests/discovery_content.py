@@ -1,34 +1,18 @@
 import asyncio
 import json
-import os
-import threading
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import init_logger, LogLevel, Keys
+from nostr_sdk import init_logger, LogLevel
 
 # os.environ["RUST_BACKTRACE"] = "full"
-from nostr_dvm.subscription import Subscription
-from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
-from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverContentLatestWiki
-from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCurrentlyPopular
-from nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps import DicoverContentCurrentlyPopularZaps
-from nostr_dvm.tasks.content_discovery_currently_popular_followers import DicoverContentCurrentlyPopularFollowers
-from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
-from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
-from nostr_dvm.tasks.content_discovery_currently_popular_nonfollowers import DicoverContentCurrentlyPopularNonFollowers
 from nostr_dvm.tasks.content_discovery_currently_popular_topic import DicoverContentCurrentlyPopularbyTopic
-from nostr_dvm.tasks.content_discovery_latest_one_per_follower import Discoverlatestperfollower
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
-from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.database_utils import init_db
-from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
-from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
+from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
-from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
-from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
@@ -39,14 +23,16 @@ use_logger = True
 log_level = LogLevel.ERROR
 max_sync_duration_in_h = 24
 
-SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
-                      "wss://relay.primal.net",
-                      "wss://nostr.oxtr.dev"]
 
 RELAY_LIST = ["wss://nostr.mom",
               "wss://relay.primal.net",
               "wss://nostr.oxtr.dev",
               ]
+
+SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
+                      "wss://relay.primal.net",
+                      "wss://nostr.oxtr.dev"
+                      ]
 
 if use_logger:
     init_logger(log_level)
@@ -143,19 +129,18 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
                                                  admin_config=admin_config, options=options)
 
 
-
 def playground():
     main_db = "db/nostr_recent_notes.db"
-    main_db_limit = 1024 # in mb
+    main_db_limit = 1024  # in mb
 
-    DATABASE = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
+    database = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
     # DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler = AdminConfig()
     options_db = {
         "db_name": main_db,
         "db_since": max_sync_duration_in_h * 60 * 60,  # 48h since gmt,
         "personalized": False,
-        "max_db_size" : main_db_limit,
+        "max_db_size": main_db_limit,
         "logger": False}
     image = ""
     about = "I just update the Database based on my schedule"
@@ -167,10 +152,8 @@ def playground():
                                       update_rate=global_update_rate,
                                       cost=0,
                                       update_db=True,
-                                      database=DATABASE)
+                                      database=database)
     db_scheduler.run()
-
-
 
     # Popular Animals (Fluffy frens)
     admin_config = AdminConfig()
@@ -213,7 +196,7 @@ def playground():
     custom_processing_msg = ["Looking for fluffy frens...", "Let's see if we find some animals for you..",
                              "Looking for the goodest bois and girls.."]
     cost = 0
-    update_db = False # we use the DB scheduler above for a shared database. Or don't use it and let the DVM manage it
+    update_db = False  # we use the DB scheduler above for a shared database. Or don't use it and let the DVM manage it
     discovery_animals = build_example_topic("Fluffy Frens",
                                             "discovery_content_fluffy",
                                             admin_config, options,
@@ -223,10 +206,9 @@ def playground():
                                             cost=cost,
                                             processing_msg=custom_processing_msg,
                                             update_db=update_db,
-                                            database=DATABASE)
+                                            database=database)
 
     discovery_animals.run()
-
 
 
 if __name__ == '__main__':
