@@ -419,7 +419,8 @@ async def update_profile(dvm_config, client, lud16=""):
 
 async def send_nip04_dm(client: Client, msg, receiver: PublicKey, dvm_config):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
-    content = await keys.nip04_encrypt(receiver, msg)
+    signer = NostrSigner.keys(keys)
+    content = await signer.nip04_encrypt(receiver, msg)
     ptag = Tag.parse(["p", receiver.to_hex()])
     event = EventBuilder(Kind(4), content).tags([ptag]).sign_with_keys(Keys.parse(dvm_config.PRIVATE_KEY))
     await client.send_event(event)
