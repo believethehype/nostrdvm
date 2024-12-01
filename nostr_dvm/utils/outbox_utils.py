@@ -84,7 +84,7 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol", "wss://nostr.fmt.wiz.biz", "wss://no
                            "ws://localhost:7777", "wss://nostr.fmt.wiz.biz", "wss://nostrich.friendship.tw",
                            "wss://public.relaying.io", "wss://relay.me3d.app", "wss://dreamofthe90s.nostr1.com",
                            "wss://lnbits.eldamar.icu/nostrrelay/relay", "wss://nostr.olwe.link",
-                           "wss://nostr.cheeserobot.org", "wss://nostr-relay.nokotaro.com"
+                           "wss://nostr.cheeserobot.org", "wss://nostr-relay.nokotaro.com", "wss://premium.primal.net"
 
 
 
