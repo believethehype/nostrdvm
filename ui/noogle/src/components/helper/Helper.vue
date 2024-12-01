@@ -50,6 +50,39 @@ export async function react_to_dvm(dvm, reaction) {
 
 }
 
+export async function get_main_relays(user_pk, client){
+
+    await client.connect()
+  console.log(user_pk.toHex())
+    let filter = new Filter().kind(3).authors(user_pk)
+    let events = await client.getEventsOf([filter], Duration.fromSecs(5))
+      console.log(events)
+
+    if (events.length === 0){
+       return []
+    }
+    else{
+      let followlist = events[0]
+      console.log(followlist.content)
+      try{
+           content  = JSON.parse(followlist.content)
+           let relays = []
+            for (let relay in content){
+                relays.append(relay)
+            }
+            return relays
+
+
+      }
+      catch (e){
+         return []
+      }
+
+    }
+}
+
+
+
 export async function schedule(note, datetopost) {
 
 
