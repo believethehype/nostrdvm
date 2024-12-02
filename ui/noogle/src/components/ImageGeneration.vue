@@ -254,7 +254,7 @@ const urlinput = ref("");
 
 
 async function zap_local(dvm) {
-  if (dvm.bolt11 == ""){
+  if (dvm.bolt11 === ""){
     dvm.bolt11 = await get_invoice(dvm.id, dvm.event_id, dvm.amount)
   }
   let success = await zap(dvm.bolt11)
