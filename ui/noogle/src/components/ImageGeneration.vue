@@ -79,6 +79,8 @@ async function generate_image(message) {
     requestid = signedEvent.id.toHex()
     requestids.push(requestid)
     store.commit('set_current_request_id_image', requestids)
+    store.commit('set_image_command_sent', true)
+
     await client.sendEvent(signedEvent)
 
 
@@ -114,7 +116,9 @@ async function listen() {
 
         }
         if (resonsetorequest === true) {
+           store.commit('set_image_command_sent', false)
           if (event.kind === 7000) {
+
 
 
             try {
@@ -329,7 +333,7 @@ const submitHandler = async () => {
       <br>
       <input v-model="message" autofocus class="c-Input" placeholder="A purple ostrich..."
              @keyup.enter="generate_image(message)" @keydown.enter="nextInput">
-      <button class="v-Button" @click="generate_image(message)">Generate Image</button>
+      <button class="v-Button" :disabled="store.state.image_command_sent === true"  @click="generate_image(message)">Generate Image</button>
     </h3>
     <details class="collapse bg-base " className="advanced">
       <summary class="collapse-title font-thin bg">Advanced Options</summary>
@@ -342,6 +346,11 @@ const submitHandler = async () => {
         </div>
       </div>
     </details>
+
+     <div style="text-align: center">
+      <button v-if="store.state.image_command_sent === true" :disabled="true" class="badge border-nostr">Waiting for Replies by DVMs, hold on. <span
+          class="loading loading-infinity loading-md"></span></button>
+    </div>
   </div>
   <br>
 
