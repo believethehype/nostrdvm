@@ -31,6 +31,7 @@ const store = createStore({
             summarizationdvms: [],
             results: [],
             profile_results: [],
+            image_command_sent: false,
             relays: ["wss://relay.primal.net",
                   "wss://nostr.mom",
                   "wss://nostr.oxtr.dev",
@@ -84,7 +85,9 @@ const store = createStore({
         set_current_request_id_search2(state, requestid2) {
             state.requestidSearch2 = String(requestid2)
         },
-
+        set_image_command_sent(state, sent) {
+            state.image_command_sent = sent
+        },
 
         set_current_request_id_summarization(state, requestid) {
             state.requestidSummarization.length = 0
