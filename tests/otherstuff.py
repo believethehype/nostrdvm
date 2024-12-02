@@ -497,6 +497,6 @@ if __name__ == '__main__':
         dotenv.load_dotenv(env_path, verbose=True, override=True)
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
-    announce = True
+    announce = False
     playground(announce)
 
