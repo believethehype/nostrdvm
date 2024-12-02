@@ -315,7 +315,7 @@ def build_replicate(name, identifier, model,  announce):
     nip89info = {
         "name": name,
         "picture": "https://i.nostr.build/qnoBIN4jSkfF8IHk.png",
-        "about": "I use Replicate to run StableDiffusion XL",
+        "about": "I make images with StableDiffusion XL",
         "supportsEncryption": True,
         "acceptsNutZaps": False,
         "nip90Params": {
@@ -352,7 +352,7 @@ def build_replicate_recraft(name, identifier,  announce):
     nip89info = {
         "name": name,
         "picture": "https://i.nostr.build/jSbrXvYglXCzSeAc.jpg",
-        "about": "I use Replicate to run Recraft v3",
+        "about": "I produce images with Recraft v3",
         "supportsEncryption": True,
         "acceptsNutZaps": False,
         "nip90Params": {
@@ -387,13 +387,13 @@ def build_replicate_fluxpro(name, identifier, announce):
     nip89info = {
         "name": name,
         "picture": "https://i.nostr.build/AQTujqzVmLxLmG16.jpg",
-        "about": "I use Replicate to FluxPro 1.1.",
+        "about": "I provide images with FluxPro 1.1",
         "supportsEncryption": True,
         "acceptsNutZaps": False,
         "nip90Params": {
             "size": {
                 "required": False,
-                "values": ["5:4"]
+                "values": ["4:5"]
             }
         }
     }
@@ -441,6 +441,8 @@ def playground(announce=False):
         recraftreplicate = build_replicate_recraft("Recraft v3", "recraftsvg", announce)
         bot_config.SUPPORTED_DVMS.append(recraftreplicate)
         recraftreplicate.run()
+
+ 
 
 
     media_bringer = build_media_converter("Nostr AI DVM Media Converter", "media_converter", announce)
