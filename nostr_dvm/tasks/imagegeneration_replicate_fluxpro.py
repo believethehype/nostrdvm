@@ -111,7 +111,7 @@ class ImageGenerationReplicateFluxPro(DVMTaskInterface):
             output = replicate.run(
                 "black-forest-labs/flux-1.1-pro",
                 input={"prompt": options["prompt"],
-                       "aspect_ratio": "5:4",
+                       "aspect_ratio": "4:5",
                        "output_format": "jpg",
                        "output_quality": 80,
                        "safety_tolerance": 2,
