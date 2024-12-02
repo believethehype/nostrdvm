@@ -2,7 +2,7 @@
 
 import {requestProvider} from "webln";
 import store from "@/store";
-import {copyinvoice, fetchAsync} from "@/components/helper/Helper.vue";
+import {copyinvoice, fetchAsync, get_user_infos} from "@/components/helper/Helper.vue";
 import {EventBuilder, EventId, PublicKey, Tag} from "@rust-nostr/nostr-sdk";
 import {bech32} from "bech32";
 import {webln} from "@getalby/sdk";
@@ -86,6 +86,49 @@ export async function zap(invoice) {
   return false
 }
 
+
+
+export async function get_invoice(author_hex, event_id_hex, amount_in_sats){
+   let profiles = await get_user_infos([author_hex])
+                    let created = 0
+                    let current
+                    let bolt11 =  ""
+                    console.log("NUM KIND0 FOUND " + profiles.length)
+                    if (profiles.length > 0) {
+                      // for (const profile of profiles){
+                      console.log(profiles[0].profile)
+                      let current = profiles[0]
+                      // if (profiles[0].profile.createdAt > created){
+                      //     created = profile.profile.createdAt
+                      //     current = profile
+                      //   }
+
+
+                      let lud16 = current.profile.lud16
+                      if (lud16 !== null && lud16 !== "") {
+                        console.log("LUD16: " + lud16)
+                        //jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount) //todo replace with zaprequest
+                        bolt11 = await zaprequest(lud16, amount_in_sats, "zapped from noogle.lol", event_id_hex, author_hex, store.state.relays)  //Not working yet
+
+                        console.log(bolt11)
+
+                        if (bolt11 === "") {
+                          console.log("no bolt 11")
+                          //status = "error"
+                        }
+
+                      } else {
+                        console.log("NO LNURL")
+                      }
+
+                    } else {
+                      console.log("PROFILE NOT FOUND")
+                    }
+
+   return bolt11
+
+}
+
 export async function zap_lud16(lud16, eventid, authorid) {
   if (lud16 !== null && lud16 !== "") {
     let invoice = await zaprequest(lud16, 21, "with love from noogle.lol", eventid, authorid, store.state.relays)
@@ -153,7 +196,7 @@ export async function zaprequest(lud16, amount, content, zapped_evt_id, zapped_u
     const encoded_lnurl = bech32.encode('lnurl', bech32.toWords(urlBytes), 1023);
 
 
-    const amount_tag = ['amount', (amount * 1000).toString()];
+    const amount_tag = ['amount', (amount).toString()];
     let relays = ['relays']
     relays.push.apply(relays, relay_list)
     //let  relays_tag = Tag.parse(relays);
@@ -194,9 +237,7 @@ export async function zaprequest(lud16, amount, content, zapped_evt_id, zapped_u
 
     try {
 
-      const queryString = `amount=${(amount * 1000).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
-
-      console.log(queryString)
+      const queryString = `amount=${(amount).toString()}&nostr=${encodeURIComponent(zap_request)}&lnurl=${encoded_lnurl}`;
       let ob = await fetchAsync(`${callback}?${queryString}`)
       return ob["pr"]
     } catch (e) {

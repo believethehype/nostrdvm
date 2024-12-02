@@ -446,7 +446,7 @@ class DVM:
                                     print("[" + self.dvm_config.NIP89.NAME + "]  Payment-request fulfilled...")
                                     await send_job_status_reaction(job_event, "processing", client=self.client,
                                                                    content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                                   dvm_config=self.dvm_config, user=user)
+                                                                   dvm_config=self.dvm_config)
                                     indices = [i for i, x in enumerate(self.job_list) if
                                                x.event == job_event]
                                     index = -1
@@ -696,7 +696,7 @@ class DVM:
             expires = original_event.created_at().as_secs() + (60 * 60 * 24)
             if status == "payment-required" or (
                     status == "processing" and not is_paid):
-                if dvm_config.LNBITS_INVOICE_KEY != "":
+                if dvm_config.LNBITS_INVOICE_KEY != "" and dvm_config.PROVIDE_INVOICE:
                     try:
                         bolt11, payment_hash = create_bolt11_ln_bits(amount, dvm_config)
                     except Exception as e:
@@ -707,12 +707,14 @@ class DVM:
                         except Exception as e:
                             print(e)
                             bolt11 = None
-                elif dvm_config.LN_ADDRESS != "":
+                elif dvm_config.LN_ADDRESS != "" and dvm_config.PROVIDE_INVOICE:
                     try:
                         bolt11, payment_hash = create_bolt11_lud16(dvm_config.LN_ADDRESS, amount)
                     except Exception as e:
                         print(e)
                         bolt11 = None
+                else:
+                    bolt11 = None
 
             if not any(x.event == original_event for x in self.job_list):
                 self.job_list.append(

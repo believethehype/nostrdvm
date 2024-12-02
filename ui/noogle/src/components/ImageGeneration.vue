@@ -9,13 +9,12 @@ import VueDatePicker from "@vuepic/vue-datepicker";
 import {
   copyurl,
   dvmreactions,
-  get_user_infos,
   nextInput,
   post_note,
   schedule,
   sleep
 } from "../components/helper/Helper.vue"
-import {zap, zaprequest} from "../components/helper/Zap.vue"
+import {zap, get_invoice} from "../components/helper/Zap.vue"
 
 import StringUtil from "@/components/helper/string.ts";
 
@@ -129,6 +128,7 @@ async function listen() {
               let status = "unknown"
               let jsonentry = {
                 id: event.author.toHex(),
+                event_id: event.id.toHex(),
                 kind: "",
                 status: status,
                 result: "",
@@ -151,38 +151,7 @@ async function listen() {
                   if (event.tags[tag].asVec().length > 2) {
                     jsonentry.bolt11 = event.tags[tag].asVec()[2]
                   } else {
-                    let profiles = await get_user_infos([event.author.toHex()])
-                    let created = 0
-                    let current
-                    console.log("NUM KIND0 FOUND " + profiles.length)
-                    if (profiles.length > 0) {
-                      // for (const profile of profiles){
-                      console.log(profiles[0].profile)
-                      let current = profiles[0]
-                      // if (profiles[0].profile.createdAt > created){
-                      //     created = profile.profile.createdAt
-                      //     current = profile
-                      //   }
-
-
-                      let lud16 = current.profile.lud16
-                      if (lud16 !== null && lud16 !== "") {
-                        console.log("LUD16: " + lud16)
-                        //jsonentry.bolt11 = await createBolt11Lud16(lud16, jsonentry.amount) //todo replace with zaprequest
-                        jsonentry.bolt11 = await zaprequest(lud16, jsonentry.amount, "zapped from noogle.lol", event.id.toHex(), event.author.toHex(), store.state.relays)  //Not working yet
-
-                        console.log(jsonentry.bolt11)
-                        if (jsonentry.bolt11 === "") {
-                          console.log("no bolt 11")
-                          //status = "error"
-                        }
-                      } else {
-                        console.log("NO LNURL")
-                      }
-
-                    } else {
-                      console.log("PROFILE NOT FOUND")
-                    }
+                     jsonentry.bolt11 = ""
                   }
 
                 }
@@ -236,6 +205,7 @@ async function listen() {
               let status = "unknown"
               let jsonentry = {
                 id: event.author.toHex(),
+                event_id: event.id.toHex(),
                 kind: "",
                 status: status,
                 result: "",
@@ -283,10 +253,13 @@ async function listen() {
 const urlinput = ref("");
 
 
-async function zap_local(invoice) {
-  let success = await zap(invoice)
+async function zap_local(dvm) {
+  if (dvm.bolt11 == ""){
+    dvm.bolt11 = await get_invoice(dvm.id, dvm.event_id, dvm.amount)
+  }
+  let success = await zap(dvm.bolt11)
   if (success) {
-    dvms.find(i => i.bolt11 === invoice).status = "paid"
+    dvms.find(i => i.bolt11 === dvm.bolt11).status = "paid"
     store.commit('set_imagedvm_results', dvms)
   }
 }
@@ -419,7 +392,7 @@ const submitHandler = async () => {
               <button v-if="dvm.status === 'finished'" className="btn">Done</button>
               <button v-if="dvm.status === 'paid'" className="btn">Paid, waiting for DVM..</button>
               <button v-if="dvm.status === 'error'" className="btn">Error</button>
-              <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap_local(dvm.bolt11);">
+              <button v-if="dvm.status === 'payment-required'" className="zap-Button" @click="zap_local(dvm);">
                 {{ dvm.amount / 1000 }} Sats
               </button>
 
