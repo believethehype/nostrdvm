@@ -66,8 +66,8 @@ class ImageGenerationReplicateFluxPro(DVMTaskInterface):
     async def create_request_from_nostr_event(self, event, client=None, dvm_config=None):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
         prompt = ""
-        width = "1024"
-        height = "1024"
+        width = "4"
+        height = "5"
 
         for tag in event.tags().to_vec():
 
@@ -94,7 +94,7 @@ class ImageGenerationReplicateFluxPro(DVMTaskInterface):
 
         options = {
             "prompt": prompt,
-            "size": width + "x" + height,
+            "ratio": width + ":" + height,
             "number": 1
         }
         request_form['options'] = json.dumps(options)
@@ -111,7 +111,7 @@ class ImageGenerationReplicateFluxPro(DVMTaskInterface):
             output = replicate.run(
                 "black-forest-labs/flux-1.1-pro",
                 input={"prompt": options["prompt"],
-                       "aspect_ratio": "4:5",
+                       "aspect_ratio": options["ratio"],
                        "output_format": "jpg",
                        "output_quality": 80,
                        "safety_tolerance": 2,
