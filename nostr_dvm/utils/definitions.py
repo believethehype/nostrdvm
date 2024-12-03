@@ -12,6 +12,7 @@ class EventDefinitions:
     KIND_DELETION = Kind(5)
     KIND_REPOST = Kind(6)
     KIND_REACTION = Kind(7)
+    KIND_NIP68_IMAGEEVENT = Kind(20)
     KIND_NIP94_METADATA = Kind(1063)
     KIND_NIP93_GALLERYENTRY = Kind(1163)
     KIND_NIP90_EXTRACT_TEXT = Kind(5000)

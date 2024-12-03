@@ -14,7 +14,7 @@
   </div>
 </template> -->
     <template
-        #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid, zapped, zapAmount, reacted, reactions, boosts, boosted, event, replied}">
+        #item-content="{content, author, authorurl, avatar, indicator, links, lud16, id, authorid, zapped, zapAmount, reacted, reactions, boosts, boosted, event, replied, kind20_image}">
 
       <div class="playeauthor-wrapper">
 
@@ -34,6 +34,7 @@
       <!--.substr(0, 320) + "\u2026"}} -->
 
       <h3 v-html="StringUtil.parseImages(content)"></h3>
+       <h3 v-html="StringUtil.parseImages_save(kind20_image)"></h3>
       <!-- <h3>{{StringUtil.parseImages(content)}}</h3> -->
       <!--<p>{{content.substr(0, 320) + "\u2026"}}</p> -->
       <div style="padding: 2px; text-align: left;">
