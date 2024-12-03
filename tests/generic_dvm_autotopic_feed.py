@@ -79,10 +79,13 @@ def playground(announce=False):
     # Add NIP89
     nip89info = {
         "name": name,
+        "image": "https://i.nostr.build/I8fJo0n355cbNEbS.png",
         "picture": "https://i.nostr.build/I8fJo0n355cbNEbS.png", # "https://image.nostr.build/28da676a19841dcfa7dcf7124be6816842d14b84f6046462d2a3f1268fe58d03.png",
         "about": "I create a personalized feed based on topics you were writing about recently",
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
+        "personalized": True,
+        "amount": "free",
         "nip90Params": {
         }
     }
@@ -103,6 +106,7 @@ def playground(announce=False):
     async def process_request(options, prompt):
         result = ""
         try:
+            # pip install -U https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
             from duck_chat import DuckChat
             async with DuckChat(model=ModelType.GPT4o) as chat:
                 query = prompt

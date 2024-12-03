@@ -53,9 +53,12 @@ async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, 
             return
 
         if event.author().to_hex() == keys.public_key().to_hex():
-            await nip89_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
             if pow:
                 await nip89_delete_announcement_pow(event.id().to_hex(), keys, d_tag, client, dvmconfig)
+            else:
+                print("Delete with POW, this might take a while, please wait until finished")
+                await nip89_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
+
             print("NIP89 announcement deleted from known relays!")
         else:
             print("Privatekey does not belong to event")
@@ -66,7 +69,7 @@ async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
     event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).sign_with_keys(keys)
-    print(f"POW event: {event.as_json()}")
+    print(f"Deletion event: {event.as_json()}")
     await send_event(event, client, config)
 
 
