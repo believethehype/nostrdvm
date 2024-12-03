@@ -343,7 +343,7 @@ async def nostr_client_test_discovery_gallery(user, ptag):
 
     tags = [relaysTag, alttag, paramTag, pTag]
 
-    event = EventBuilder(EventDefinitions.KIND_NIP90_VISUAL_DISCOVERY, str("Give me visuals")).tags(
+    event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me visuals")).tags(
                          tags).sign_with_keys(keys)
 
     client = Client(NostrSigner.keys(keys))
@@ -352,7 +352,7 @@ async def nostr_client_test_discovery_gallery(user, ptag):
     await client.connect()
     config = DVMConfig
     eventid = await send_event(event, client=client, dvm_config=config)
-    print(eventid.to_hex())
+
     return event.as_json()
 
 
@@ -421,7 +421,7 @@ async def nostr_client():
     # await nostr_client_test_translation("44a0a8b395ade39d46b9d20038b3f0c8a11168e67c442e3ece95e4a1703e2beb", "event", "zh", 20, 20)
 
     #await nostr_client_test_image("a beautiful purple ostrich watching the sunset, eating a cashew nut")
-    await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "7240284b84951cfedbc20fce26f0e3f0a36da3e9c1be85d7a06965f0d4fe25fb")
+    #await nostr_client_custom_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "7240284b84951cfedbc20fce26f0e3f0a36da3e9c1be85d7a06965f0d4fe25fb")
     #"a018ba05af400b52772e33162d8326fca4a167fe7b6d3cd2382e14cac2af6841"
    # await nostr_client_duckduck_test(PublicKey.parse("7a63849b684d90c0de983492578b12e147e56f5d79ed6585cc64e5aa8a122744").to_hex() , "How do i create a dockerfile for python 3.12")
     #await nostr_client_flux_schnell("d57f1efb7582f58cade6f482d53eefa998d8082711b996aae3dc5f5527cbdd6e" , "topics")
@@ -429,7 +429,7 @@ async def nostr_client():
     # await nostr_client_test_search_profile("dontbelieve")
     #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
     #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "ab6cdf12ca3ae5109416295b8cd8a53fdec3a9d54beb7a9aee0ebfb67cb4edf7")
-    # await nostr_client_test_discovery_gallery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "4add3944eb596a27a650f9b954f5ed8dfefeec6ca50473605b0fbb058dd11306")
+    await nostr_client_test_discovery_gallery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "4add3944eb596a27a650f9b954f5ed8dfefeec6ca50473605b0fbb058dd11306")
 
     #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
     #                                      "7a63849b684d90c0de983492578b12e147e56f5d79ed6585cc64e5aa8a122744")

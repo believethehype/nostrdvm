@@ -54,9 +54,9 @@ async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, 
 
         if event.author().to_hex() == keys.public_key().to_hex():
             if pow:
+                print("Delete with POW, this might take a while, please wait until finished")
                 await nip89_delete_announcement_pow(event.id().to_hex(), keys, d_tag, client, dvmconfig)
             else:
-                print("Delete with POW, this might take a while, please wait until finished")
                 await nip89_delete_announcement(event.id().to_hex(), keys, d_tag, client, dvmconfig)
 
             print("NIP89 announcement deleted from known relays!")

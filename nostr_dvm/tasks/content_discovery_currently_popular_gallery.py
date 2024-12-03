@@ -25,7 +25,7 @@ Params:  None
 
 
 class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
-    KIND: Kind = EventDefinitions.KIND_NIP90_VISUAL_DISCOVERY
+    KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
     TASK: str = "discover-visuals"
     FIX_COST: float = 0
     dvm_config: DVMConfig
@@ -33,7 +33,6 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_gallery.db"
-    generic_db_name = "db/nostr_recent_notes.db"
     min_reactions = 2
     personalized = False
     result = ""
@@ -52,8 +51,6 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
         if self.options.get("db_name"):
             self.db_name = self.options.get("db_name")
-        if self.options.get("generic_db_name"):
-            self.generic_db_name = self.options.get("generic_db_name")
         if self.options.get("db_since"):
             self.db_since = int(self.options.get("db_since"))
 
@@ -117,33 +114,22 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
-        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NIP93_GALLERYENTRY).since(since)
+        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NIP68_IMAGEEVENT).since(since)
 
         ge_events = await databasegallery.query([filter1])
+        
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events.to_vec())) + " Events")
         ns.finallist = {}
 
         ids = []
         relays = []
-
         if len(ge_events.to_vec()) == 0:
             return []
 
         for ge_event in ge_events.to_vec():
-
-            id = None
-            for tag in ge_event.tags().to_vec():
-                if tag.as_vec()[0] == "e":
-                    id = EventId.from_hex(tag.as_vec()[1])
-                    ids.append(id)
-                    # if len(tag.as_vec()) > 2:
-                    # if (tag.as_vec()[2]) not in relays:
-                    #    relays.append(tag.as_vec()[2])
-
-            if id is None:
-                print("No event id found")
-                continue
+            ids.append(ge_event.id())
+              
 
         relaylimits = RelayLimits.disable()
         opts = (Options().relay_limits(relaylimits))
@@ -169,8 +155,8 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
         filter2 = Filter().ids(ids)
         events = await cli.fetch_events([filter2], relay_timeout)
+        
 
-        print(len(events.to_vec()))
 
         for event in events.to_vec():
             if event.created_at().as_secs() > timestamp_since:
@@ -184,32 +170,28 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = await databasegallery.query([filt])
-
+                
+                #print("Reactions:" + str(len(reactions.to_vec())))
                 if len(reactions.to_vec()) >= self.min_reactions:
-                    found = False
                     for ge_event in ge_events.to_vec():
-                        for tag in ge_event.tags().to_vec():
-                            if tag.as_vec()[0] == "e":
-                                if event.id().to_hex() == tag.as_vec()[1]:
-                                    ns.finallist[ge_event.id().to_hex()] = len(reactions.to_vec())
-                                    found = True
-                                    break
-                        if found:
+                        if event.id().to_hex() == ge_event.id().to_hex():
+                            ns.finallist[ge_event.id().to_hex()] = len(reactions.to_vec())
                             break
-
+                     
         if len(ns.finallist) == 0:
             return self.result
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:
-            # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
+            #print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
             result_list.append(e_tag.as_vec())
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
         # await cli.shutdown()
+        
         return json.dumps(result_list)
 
     async def post_process(self, result, event):
@@ -251,7 +233,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NIP93_GALLERYENTRY]).since(
+            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NIP68_IMAGEEVENT]).since(
                 since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())

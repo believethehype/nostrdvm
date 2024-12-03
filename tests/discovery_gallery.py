@@ -9,26 +9,22 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 
-rebroadcast_NIP89 = False  # Announce NIP89 on startup
+rebroadcast_NIP89 = True  # Announce NIP89 on startup
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
-global_update_rate = 1200  # set this high on first sync so db can fully sync before another process trys to.
+global_update_rate = 500  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
 
 if use_logger:
-    init_logger(LogLevel.INFO)
+    init_logger(LogLevel.ERROR)
 
 
 def build_example_gallery(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
                       update_db=True):
     dvm_config = build_default_config(identifier)
-    dvm_config.USE_OWN_VENV = False
-    dvm_config.LOGLEVEL = LogLevel.INFO
-    # dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
-    dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -37,11 +33,12 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     nip89info = {
         "name": name,
         "picture": image,
-        "about": "I show popular gallery entries",
+        "image": image,
+        "about": "I show popular notes people put in their galleries",
         "lud16": dvm_config.LN_ADDRESS,
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
-        "personalized": True,
+        "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
             "max_results": {
@@ -61,29 +58,28 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
 
 def playground():
     # Popular Global
-    admin_config_global_wot = AdminConfig()
-    admin_config_global_wot.REBROADCAST_NIP89 = rebroadcast_NIP89
-    admin_config_global_wot.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
-    admin_config_global_wot.UPDATE_PROFILE = update_profile
-    # admin_config_global_popular.DELETE_NIP89 = True
-    # admin_config_global_popular.PRIVKEY = ""
-    # admin_config_global_popular.EVENTID = "2fea4ee2ccf0fa11db171113ffd7a676f800f34121478b7c9a4e73c2f1990028"
-    # admin_config_global_popular.POW = True
+    admin_config_global_gallery = AdminConfig()
+    admin_config_global_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
+    admin_config_global_gallery.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    admin_config_global_gallery.UPDATE_PROFILE = update_profile
+    admin_config_global_gallery.DELETE_NIP89 = False
+    admin_config_global_gallery.PRIVKEY = ""
+    admin_config_global_gallery.EVENTID = ""
+    admin_config_global_gallery.POW = False
     custom_processing_msg = ["Looking for popular Gallery entries"]
     update_db = True
 
     options_gallery = {
         "db_name": "db/nostr_gallery.db",
-        "generic_db_name": "db/nostr_recent_notes.db",
-        "db_since": 60 * 60 * 24 * 30,  # 1h since gmt,
+        "db_since": 60 * 60 * 24 * 3,  # 1h since gmt,
     }
 
 
     cost = 0
-    image = "https://i.nostr.build/4Rw6lrsH5O0P5zjT.jpg"
-    discover_gallery = build_example_gallery("Gallery entries",
+    image = "https://image.nostr.build/f5901156825ef1d9dad557890020ce9c5d917f52bc31863226b980fa232a9c23.png"
+    discover_gallery = build_example_gallery("Popular Gallery Entries",
                                       "discovery_gallery_entries",
-                                      admin_config=admin_config_global_wot,
+                                      admin_config=admin_config_global_gallery,
                                       options=options_gallery,
                                       image=image,
                                       cost=cost,
