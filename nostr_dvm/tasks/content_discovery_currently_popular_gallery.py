@@ -33,7 +33,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_gallery.db"
-    min_reactions = 2
+    min_reactions = 1
     personalized = False
     result = ""
 
