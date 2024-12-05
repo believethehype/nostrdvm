@@ -5,8 +5,8 @@ import os
 import signal
 from datetime import timedelta
 
-from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, nip44_encrypt, NostrSigner, EventId, uniffi_set_event_loop, make_private_msg)
+from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey, 
+                       Options, Tag, Event, nip44_encrypt, NostrSigner, EventId, uniffi_set_event_loop, make_private_msg, Nip44Version)
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -148,7 +148,7 @@ class Subscription:
 
             content = json.dumps(str_tags)
             content = nip44_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
-                                    content)
+                                    content, Nip44Version.V2)
             reply_tags = encryption_tags
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
