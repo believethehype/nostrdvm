@@ -302,7 +302,7 @@ async function listen() {
                 result: "",
                 name: event.author.toBech32(),
                 about: "",
-                image: "",
+                picture: "",
                 amount: 0,
                 bolt11: ""
               }

@@ -738,7 +738,7 @@ export default {
 
                   let nip88 = {
                     title: "",
-                    image: "",
+                    picture: "",
                     amounts: [],
                     zaps: [],
                     perks: [],
@@ -754,8 +754,8 @@ export default {
 
                   }
 
-                  if (jsonentry.picture) {
-                    jsonentry.image = jsonentry.picture
+                  if (jsonentry.image) {
+                    jsonentry.picture = jsonentry.image
                   }
 
                   if (!jsonentry.amount) {
