@@ -92,7 +92,7 @@
 
 
         <figure style="max-width: 20%; flex:  fit-content; background-size: cover;">
-          <img v-if="dvm.image" :alt="dvm.name" :src="dvm.image" onerror="this.src='https://noogle.lol/favicon.ico'"
+          <img v-if="dvm.picture" :alt="dvm.name" :src="dvm.picture" onerror="this.src='https://noogle.lol/favicon.ico'"
                style=" width: 90%; object-fit: cover;"/>
         </figure>
         <div class="card-body">
