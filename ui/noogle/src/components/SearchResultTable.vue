@@ -18,7 +18,8 @@
         </div>
       </div>
 
-      <p>{{ content.substr(0, 320) + "\u2026" }}</p>
+<!--      <p>{{ content.substr(0, 320) + "\u2026" }}</p>-->
+       <p v-html="StringUtil.parseImages(content).substr(0, 640) + '\u2026'"></p>
       <div style="padding: 2px; text-align: left;">
         <a :href="links.uri" class="menusmall" target="_blank">Nostr Client</a>
         <a :href="links.njump" class="menusmall" target="_blank">NJump</a>
@@ -37,6 +38,7 @@
 
 import type {Header, SortType} from "vue3-easy-data-table";
 import store from '../store';
+import StringUtil from "@/components/helper/string";
 
 const sortBy = "indicator.time";
 const sortType: SortType = "desc";

@@ -18,7 +18,7 @@ import VueNotifications from "vue-notifications";
 import {onMounted, ref} from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import '@vuepic/vue-datepicker/dist/main.css'
-import {get_user_infos, getEvents, nextInput, sleep} from "../components/helper/Helper.vue"
+import {get_user_infos, getEvents, nextInput, sleep, parseandreplacenpubsName} from "../components/helper/Helper.vue"
 import StringUtil from "@/components/helper/string.ts";
 
 
@@ -452,7 +452,7 @@ async function listen() {
                     if (items.find(e => e.id.toHex() === evt.id.toHex()) === undefined) {
                       items.push({
                         id: evt.id,
-                        content: evt.content,
+                        content:  await parseandreplacenpubsName(evt.content),
                         author: name,
                         authorurl: "https://njump.me/" + evt.author.toBech32(),
                         links: {
