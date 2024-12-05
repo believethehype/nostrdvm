@@ -5,7 +5,7 @@ import signal
 from multiprocessing.connection import Connection
 
 from nostr_sdk import (Keys, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, EventId, Nip19Event, Kind, KindEnum, NostrSigner, nip44_encrypt,
+                       Options, Tag, Event, EventId, Nip19Event, Kind, KindEnum, NostrSigner, nip44_encrypt, Nip44Version,
                        UnsignedEvent, UnwrappedGift, uniffi_set_event_loop, ClientBuilder, make_private_msg)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
@@ -192,7 +192,7 @@ class Bot:
                                                                          PublicKey.from_hex(
                                                                              self.dvm_config.SUPPORTED_DVMS[
                                                                                  index].PUBLIC_KEY),
-                                                                         params_as_str)
+                                                                         params_as_str, Nip44Version.V2)
                                         #  add encrypted and p tag on the outside
                                         encrypted_tag = Tag.parse(['encrypted'])
                                         #  add the encrypted params to the content
@@ -391,7 +391,7 @@ class Bot:
                                                      client=self.client, config=self.dvm_config)
                         await asyncio.sleep(2.0)
                         if entry["giftwrap"]:
-                            event = await make_private_msg(self.signer, PublicKey.parse(PublicKey.parse(entry["npub"])), content)
+                            event = await make_private_msg(self.signer, PublicKey.parse(entry["npub"]), content)
                             await self.client.send_event(event)
                         else:
                             await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']), self.dvm_config)
@@ -421,7 +421,7 @@ class Bot:
                                         amount) + " Sats from balance to DVM. New balance is " + str(
                                         balance) + " Sats.\n"
                                     if entry["giftwrap"]:
-                                        event = await make_private_msg(self.signer, PublicKey.parse(PublicKey.parse(entry["npub"])), message)
+                                        event = await make_private_msg(self.signer, PublicKey.parse(entry["npub"]), message)
                                         await self.client.send_event(event)
                                     else:
                                         await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']),
@@ -437,7 +437,7 @@ class Bot:
                                         int(amount - user.balance)) + " Sats, then try again."
 
                                     if entry["giftwrap"]:
-                                        event = await make_private_msg(self.signer, PublicKey.parse(PublicKey.parse((entry["npub"]))), message)
+                                        event = await make_private_msg(self.signer, PublicKey.parse(entry["npub"]), message)
                                         await self.client.send_event(event)
                                     else:
                                         await send_nip04_dm(self.client, message, PublicKey.parse(entry['npub']),
