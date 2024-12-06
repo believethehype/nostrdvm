@@ -33,7 +33,6 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     nip89info = {
         "name": name,
         "picture": image,
-        "image": image,
         "about": "I show popular notes from the Olas feed",
         "lud16": dvm_config.LN_ADDRESS,
         "supportsEncryption": True,
