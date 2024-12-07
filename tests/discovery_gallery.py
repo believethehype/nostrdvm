@@ -9,9 +9,9 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 
-rebroadcast_NIP89 = True  # Announce NIP89 on startup
+rebroadcast_NIP89 = False  # Announce NIP89 on startup
 rebroadcast_NIP65_Relay_List = False
-update_profile = True
+update_profile = False
 
 global_update_rate = 500  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
@@ -69,8 +69,8 @@ def playground():
     update_db = True
 
     options_gallery = {
-        "db_name": "db/nostr_gallery.db",
-        "db_since": 60 * 60 * 24 * 2,  # 2d since gmt,
+        "db_name": "db/nostr_olas.db",
+        "db_since": 60 * 60 * 24 * 4,  # 2d since gmt,
     }
 
 
