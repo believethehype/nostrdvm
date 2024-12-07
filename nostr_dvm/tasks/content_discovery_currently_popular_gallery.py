@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, EventId, Kind, \
-    RelayLimits
+    RelayLimits, SingleLetterTag, Alphabet
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -150,8 +150,16 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                                         definitions.EventDefinitions.KIND_DELETION,
                                         definitions.EventDefinitions.KIND_NOTE]).events(ids).since(since)
 
+        ids_str = []
+        for id in ids:
+            ids_str.append(id.to_hex())
+
+        filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tag(SingleLetterTag.uppercase(Alphabet.E),
+                                                                             ids_str).since(since)
+
         dbopts = SyncOptions().direction(SyncDirection.DOWN)
         await cli.sync(filtreactions, dbopts)
+        await cli.sync(filter_nip22, dbopts)
 
         filter2 = Filter().ids(ids)
         events = await cli.fetch_events([filter2], relay_timeout)
@@ -169,7 +177,12 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = await databasegallery.query([filt])
+
+                filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tag(
+                    SingleLetterTag.uppercase(Alphabet.E),
+                    [event.id().to_hex()])
+
+                reactions = await databasegallery.query([filt, filter_nip22])
                 
                 #print("Reactions:" + str(len(reactions.to_vec())))
                 if len(reactions.to_vec()) >= self.min_reactions:
