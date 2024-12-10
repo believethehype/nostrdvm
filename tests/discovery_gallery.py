@@ -9,7 +9,7 @@ from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 
-rebroadcast_NIP89 = True  # Announce NIP89 on startup
+rebroadcast_NIP89 = False  # Announce NIP89 on startup
 rebroadcast_NIP65_Relay_List = False
 update_profile = False
 
