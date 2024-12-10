@@ -500,7 +500,7 @@ async function addAllContentDVMs() {
         result: [],
         name: el.name,
         about: el.about,
-        image: el.image,
+        image: el.picture,
         amount: el.amount,
         supportsEncryption: el.supportsEncryption,
         acceptsNutZaps: el.acceptsNutZaps,
@@ -581,7 +581,7 @@ async function addDVM(event) {
     if (JSON.parse(el.event).pubkey === event.author.toHex()) {
       jsonentry.name = el.name
       jsonentry.about = el.about
-      jsonentry.image = el.image
+      jsonentry.image = el.picture
       jsonentry.lud16 = el.lud16
       jsonentry.supportsEncryption = el.supportsEncryption
       jsonentry.acceptsNutZaps = el.acceptsNutZaps
