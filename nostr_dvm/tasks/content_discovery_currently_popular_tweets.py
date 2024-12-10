@@ -1,58 +1,66 @@
 import json
-import json
 import os
 from datetime import timedelta
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, EventId, Kind, \
-    RelayLimits, SingleLetterTag, Alphabet
+    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
-from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
+from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
 
 """
-This File contains a Module to discover popular notes
+This File contains a Module to discover popular notes by topics
 Accepted Inputs: none
 Outputs: A list of events 
 Params:  None
 """
 
 
-class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
+class DicoverContentCurrentlyPopularTweets(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY
-    TASK: str = "discover-visuals"
+    TASK: str = "discover-content"
     FIX_COST: float = 0
     dvm_config: DVMConfig
     request_form = None
     last_schedule: int
-    db_since = 3600
-    db_name = "db/nostr_recent_gallery.db"
-    min_reactions = 1
+    min_reactions = 2
+    db_since = 10 * 3600
+    db_name = "db/nostr_default_recent_notes.db"
+    search_list = []
+    avoid_list = []
+    must_list = []
     personalized = False
     result = ""
+    database = None
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                        admin_config: AdminConfig = None, options=None):
 
-        dvm_config.SCRIPT = os.path.abspath(__file__)
+        if dvm_config.DATABASE is not None:
+            self.database = dvm_config.DATABASE
         self.request_form = {"jobID": "generic"}
         opts = {
             "max_results": 200,
         }
         self.request_form['options'] = json.dumps(opts)
 
-        self.last_schedule = Timestamp.now().as_secs()
+        dvm_config.SCRIPT = os.path.abspath(__file__)
 
+        if self.options.get("personalized"):
+            self.personalized = bool(self.options.get("personalized"))
+        self.last_schedule = Timestamp.now().as_secs()
         if self.options.get("db_name"):
             self.db_name = self.options.get("db_name")
         if self.options.get("db_since"):
             self.db_since = int(self.options.get("db_since"))
+            
+        self.avoid_list = ["http", "nostr:nevent", "nostr:note"]
 
         use_logger = False
         if use_logger:
@@ -78,8 +86,8 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
 
         # default values
-        search = ""
         max_results = 200
+        user = event.author().to_hex()
 
         for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
@@ -88,11 +96,16 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                 param = tag.as_vec()[1]
                 if param == "max_results":  # check for param type
                     max_results = int(tag.as_vec()[2])
+                elif param == "user":  # check for param type
+                    user = (tag.as_vec()[2])
 
         options = {
             "max_results": max_results,
+            "request_event_id": event.id().to_hex(),
+            "request_event_author": event.author().to_hex()
         }
         request_form['options'] = json.dumps(options)
+        self.request_form = request_form
         return request_form
 
     async def process(self, request_form):
@@ -102,110 +115,6 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         # else return the result that gets updated once every schenduled update. In this case on database update.
         else:
             return self.result
-
-    async def calculate_result(self, request_form):
-        from nostr_sdk import Filter
-        from types import SimpleNamespace
-        ns = SimpleNamespace()
-
-        options = self.set_options(request_form)
-        databasegallery = NostrDatabase.lmdb(self.db_name)
-
-        timestamp_since = Timestamp.now().as_secs() - self.db_since
-        since = Timestamp.from_secs(timestamp_since)
-
-        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NIP68_IMAGEEVENT).since(since)
-
-        ge_events = await databasegallery.query([filter1])
-        
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events.to_vec())) + " Events")
-        ns.finallist = {}
-
-        ids = []
-        relays = []
-        if len(ge_events.to_vec()) == 0:
-            return []
-
-        for ge_event in ge_events.to_vec():
-            ids.append(ge_event.id())
-              
-
-        relaylimits = RelayLimits.disable()
-        opts = (Options().relay_limits(relaylimits))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
-        keys = Keys.parse(sk.to_hex())
-
-        cli = ClientBuilder().database(databasegallery).signer(NostrSigner.keys(keys)).opts(opts).build()
-        for relay in relays:
-            await cli.add_relay(relay)
-
-        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            await cli.add_relay(relay)
-
-        await cli.connect()
-
-        filtreactions = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
-                                        definitions.EventDefinitions.KIND_REACTION,
-                                        definitions.EventDefinitions.KIND_DELETION,
-                                        definitions.EventDefinitions.KIND_NOTE]).events(ids).since(since)
-
-        ids_str = []
-        for id in ids:
-            ids_str.append(id.to_hex())
-
-        filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tag(SingleLetterTag.uppercase(Alphabet.E),
-                                                                             ids_str).since(since)
-
-        dbopts = SyncOptions().direction(SyncDirection.DOWN)
-        #await cli.sync(filtreactions, dbopts)
-        await cli.sync(filter_nip22, dbopts)
-
-        filter2 = Filter().ids(ids)
-        events = await cli.fetch_events([filter2], relay_timeout)
-        
-
-
-        for event in events.to_vec():
-            if event.created_at().as_secs() > timestamp_since:
-                filt1 = Filter().kinds([definitions.EventDefinitions.KIND_DELETION]).event(event.id()).limit(1)
-                deletions = await databasegallery.query([filt1])
-                if len(deletions.to_vec()) > 0:
-                    print("Deleted event, skipping")
-                    continue
-
-                filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
-                                       definitions.EventDefinitions.KIND_REACTION,
-                                       definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-
-                filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tag(
-                    SingleLetterTag.uppercase(Alphabet.E),
-                    [event.id().to_hex()])
-
-                reactions = await databasegallery.query([filt, filter_nip22])
-                
-                #print("Reactions:" + str(len(reactions.to_vec())))
-                if len(reactions.to_vec()) >= self.min_reactions:
-                    for ge_event in ge_events.to_vec():
-                        if event.id().to_hex() == ge_event.id().to_hex():
-                            ns.finallist[ge_event.id().to_hex()] = len(reactions.to_vec())
-                            break
-                     
-        if len(ns.finallist) == 0:
-            return self.result
-
-        result_list = []
-        finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
-        for entry in finallist_sorted:
-            #print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
-            e_tag = Tag.parse(["e", entry[0]])
-            result_list.append(e_tag.as_vec())
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
-                len(result_list)) + " fitting events.")
-        # await cli.shutdown()
-        
-        return json.dumps(result_list)
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
@@ -218,6 +127,56 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         # if not text/plain, don't post-process
         return result
 
+    async def calculate_result(self, request_form):
+        from nostr_sdk import Filter
+        from types import SimpleNamespace
+        ns = SimpleNamespace()
+
+        options = self.set_options(request_form)
+        if self.database is None:
+            self.database = NostrDatabase.lmdb(self.db_name)
+
+        timestamp_since = Timestamp.now().as_secs() - self.db_since
+        since = Timestamp.from_secs(timestamp_since)
+
+
+        filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
+        events = await self.database.query([filter1])
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
+        ns.finallist = {}
+
+        for event in events.to_vec():
+            if len(event.content()) < 211:
+                # if any(ele in event.content().lower() for ele in self.search_list):
+                if not any(ele in event.content().lower() for ele in self.avoid_list):
+                    # only look for top level events, not replies
+                    is_reply = False
+                    for tag in event.tags().to_vec():
+                        if tag.as_vec()[0] == 'e':
+                            is_reply = True
+                    if is_reply:
+                        continue
+                    filt = Filter().kinds(
+                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                         definitions.EventDefinitions.KIND_REPOST,
+                         definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+                    reactions = await self.database.query([filt])
+                    if len(reactions.to_vec()) >= self.min_reactions:
+                        ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
+
+        result_list = []
+        finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
+        for entry in finallist_sorted:
+            # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
+            e_tag = Tag.parse(["e", entry[0]])
+            result_list.append(e_tag.as_vec())
+        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+            print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
+                len(result_list)) + " fitting events.")
+        # await cli.shutdown()
+        return json.dumps(result_list)
+
     async def schedule(self, dvm_config):
         if dvm_config.SCHEDULE_UPDATES_SECONDS == 0:
             return 0
@@ -227,9 +186,8 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                     await self.sync_db()
                 self.last_schedule = Timestamp.now().as_secs()
                 self.result = await self.calculate_result(self.request_form)
+
                 return 1
-            else:
-                return 0
 
     async def sync_db(self):
         try:
@@ -246,8 +204,9 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds([definitions.EventDefinitions.KIND_NIP68_IMAGEEVENT]).since(
-                since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds(
+                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
+                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -259,9 +218,9 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-                print(
-                    "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
-                        self.db_since) + " seconds..")
+                print("[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
+                    self.db_since) + " seconds..")
+
         except Exception as e:
             print(e)
 
@@ -269,8 +228,8 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config, options, cost=0, update_rate=180, processing_msg=None,
-                  update_db=True):
+def build_example(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
+                  processing_msg=None, update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
@@ -283,16 +242,14 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
-
     # Add NIP89
     nip89info = {
         "name": name,
         "picture": image,
-        "about": "I show notes that are currently popular",
+        "about": description,
         "lud16": dvm_config.LN_ADDRESS,
         "supportsEncryption": True,
-        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
+        "acceptsNutZaps": False,
         "personalized": False,
         "amount": create_amount_tag(cost),
         "nip90Params": {
@@ -308,35 +265,30 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=1
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    # admin_config.UPDATE_PROFILE = False
-    # admin_config.REBROADCAST_NIP89 = False
-
-    return DicoverContentCurrentlyPopularGallery(name=name, dvm_config=dvm_config, nip89config=nip89config,
+    return DicoverContentCurrentlyPopularTweets(name=name, dvm_config=dvm_config, nip89config=nip89config,
                                                  admin_config=admin_config, options=options)
 
 
-def build_example_subscription(name, identifier, admin_config, options, update_rate=180, processing_msg=None,
+def build_example_subscription(name, identifier, admin_config, options, image, description, processing_msg=None,
                                update_db=True):
     dvm_config = build_default_config(identifier)
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
-    dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 3 minutes
+    dvm_config.SCHEDULE_UPDATES_SECONDS = 600  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     # Activate these to use a subscription based model instead
-    # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = 0
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
     # Add NIP89
     nip89info = {
         "name": name,
         "picture": image,
-        "about": "I show notes that are currently popular all over Nostr. I'm also used for testing subscriptions.",
+        "about": description,
         "lud16": dvm_config.LN_ADDRESS,
         "supportsEncryption": True,
-        "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
+        "acceptsNutZaps": False,
         "subscription": True,
         "personalized": False,
         "nip90Params": {
@@ -365,18 +317,15 @@ def build_example_subscription(name, identifier, admin_config, options, update_r
     nip88config.PERK2DESC = "Support NostrDVM & NostrSDK development"
     nip88config.PAYMENT_VERIFIER_PUBKEY = "5b5c045ecdf66fb540bdf2049fe0ef7f1a566fa427a4fe50d400a011b65a3a7e"
 
-    # admin_config.UPDATE_PROFILE = False
-    # admin_config.REBROADCAST_NIP89 = False
-    # admin_config.REBROADCAST_NIP88 = False
-
     # admin_config.FETCH_NIP88 = True
-    # admin_config.EVENTID = ""
+    # admin_config.EVENTID = "63a791cdc7bf78c14031616963105fce5793f532bb231687665b14fb6d805fdb"
     # admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
-    return DicoverContentCurrentlyPopularGallery(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                                                 nip88config=nip88config, options=options,
-                                                 admin_config=admin_config)
+    return DicoverContentCurrentlyPopularTweets(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                                                 nip88config=nip88config,
+                                                 admin_config=admin_config,
+                                                 options=options)
 
 
 if __name__ == '__main__':
-    process_venv(DicoverContentCurrentlyPopularGallery)
+    process_venv(DicoverContentCurrentlyPopularTweets)
