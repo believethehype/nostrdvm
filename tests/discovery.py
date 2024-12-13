@@ -68,7 +68,8 @@ def build_db_scheduler(name, identifier, admin_config, options, image, descripti
     dvm_config.WOT_FILTERING = True
     dvm_config.WOT_BASED_ON_NPUBS = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
                           "460c25e682fda7832b52d1f22d3d22b3176d972f60dcdc3212ed8c92ef85065c",
-                          "3f770d65d3a764a9c5cb503ae123e62ec7598ad035d836e2a810f3877a745b24"
+                          "3f770d65d3a764a9c5cb503ae123e62ec7598ad035d836e2a810f3877a745b24",
+                          "6e468422dfb74a5738702a8823b9b28168abab8655faacb6853cd0ee15deee93"
                           ]
 
     # Activate these to use a subscription based model instead
