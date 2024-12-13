@@ -1164,12 +1164,12 @@ def playground():
         "logger": False}
 
     image = "https://image.nostr.build/53536b3eccb03fdb127849b79f85b0b6ecb241d12068b65f52afe4a4650d5318.jpg"
-    description = "I show popular notes with < 210 symbols"
+    description = "I show popular tweets with < 210 symbols"
 
     custom_processing_msg = ["Tweets are short notes"]
     cost = 0
     update_db = False  # we use the DB scheduler above for a shared database. Or don't use it and let the DVM manage it
-    discovery_tweets = build_example_tweets("Popular Tweets",
+    discovery_tweets = build_example_tweets("Free Bird",
                                             "discovery_content_tweets",
                                             admin_config, options,
                                             image=image,
