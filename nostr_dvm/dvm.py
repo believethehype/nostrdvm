@@ -138,7 +138,7 @@ class DVM:
                                              config=self.dvm_config, skip_meta=False)
                 # if user is blacklisted for some reason, send an error reaction and return
                 if user.isblacklisted:
-                    await send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
+                    # await send_job_status_reaction(nip90_event, "error", client=self.client, dvm_config=self.dvm_config)
                     print("[" + self.dvm_config.NIP89.NAME + "] Request by blacklisted user, skipped")
                     return
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:

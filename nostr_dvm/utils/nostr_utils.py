@@ -215,9 +215,10 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
 
     # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
     relaylimits = RelayLimits.disable()
-    connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
+    connection = Connection().embedded_tor().target(ConnectionTarget.ONION)    
+    
     # connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
-    opts = Options().relay_limits(relaylimits).connection(connection).timeout(timedelta(seconds=5))
+    opts = Options().relay_limits(relaylimits).connection(connection)
     sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
     outboxclient = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
