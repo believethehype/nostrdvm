@@ -8,7 +8,7 @@ from nostr_dvm.utils.print_utils import bcolors
 
 async def announce_dm_relays(dvm_config, client):
     tags = []
-    relays_to_publish = DVMConfig.RELAY_LIST
+    relays_to_publish = DVMConfig.ANNOUNCE_RELAY_LIST
 
     for relay in dvm_config.RELAY_LIST:
         if relay not in relays_to_publish:
@@ -38,7 +38,7 @@ async def nip65_announce_relays(dvm_config, client):
 
     tags = []
 
-    relays_to_publish = DVMConfig.RELAY_LIST
+    relays_to_publish = DVMConfig.ANNOUNCE_RELAY_LIST
 
     for relay in dvm_config.RELAY_LIST:
         if relay not in relays_to_publish:
