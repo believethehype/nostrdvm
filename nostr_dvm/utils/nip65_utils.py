@@ -1,20 +1,20 @@
 from nostr_sdk import Tag, Keys, EventBuilder, Kind
 
 from nostr_dvm.utils.definitions import EventDefinitions
-from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.print_utils import bcolors
 
 
 async def announce_dm_relays(dvm_config, client):
     tags = []
-    relays_to_publish = DVMConfig.ANNOUNCE_RELAY_LIST
 
+    RELAY_LIST = dvm_config.ANNOUNCE_RELAY_LIST
     for relay in dvm_config.RELAY_LIST:
-        if relay not in relays_to_publish:
-            relays_to_publish.append(relay)
+        if relay not in RELAY_LIST:
+            RELAY_LIST.append(relay)
 
-    for relay in relays_to_publish:
+    dvm_config.RELAY_LIST = RELAY_LIST
+    for relay in RELAY_LIST:
         r_tag = Tag.parse(["r", relay])
         tags.append(r_tag)
 
@@ -38,14 +38,14 @@ async def nip65_announce_relays(dvm_config, client):
 
     tags = []
 
-    relays_to_publish = DVMConfig.ANNOUNCE_RELAY_LIST
-
+    RELAY_LIST = dvm_config.ANNOUNCE_RELAY_LIST
     for relay in dvm_config.RELAY_LIST:
-        if relay not in relays_to_publish:
-            relays_to_publish.append(relay)
+        if relay not in RELAY_LIST:
+            RELAY_LIST.append(relay)
 
+    dvm_config.RELAY_LIST = RELAY_LIST
 
-    for relay in relays_to_publish:
+    for relay in RELAY_LIST:
         r_tag = Tag.parse(["r", relay])
         tags.append(r_tag)
 

@@ -6,7 +6,6 @@ import dotenv
 from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
-from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.print_utils import bcolors
 
@@ -32,11 +31,10 @@ async def nip89_announce_tasks(dvm_config, client):
     content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags([k_tag, d_tag]).sign_with_keys(keys)
 
-    new_dvm_config = DVMConfig()
-    new_dvm_config.RELAY_LIST = new_dvm_config.ANNOUNCE_RELAY_LIST
+    RELAY_LIST = dvm_config.ANNOUNCE_RELAY_LIST
     for relay in dvm_config.RELAY_LIST:
-        if relay not in new_dvm_config.RELAY_LIST:
-            new_dvm_config.RELAY_LIST.append(relay)
+        if relay not in RELAY_LIST:
+            dvm_config.RELAY_LIST.append(relay)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
 
     print(
