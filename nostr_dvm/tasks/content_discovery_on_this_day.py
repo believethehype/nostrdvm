@@ -187,9 +187,7 @@ class DicoverContentOnThisDay(DVMTaskInterface):
             await cli.connect()
 
             timestamp_since = Timestamp.now().as_secs() - self.db_since
-            print(timestamp_since)
             timestamp_until = Timestamp.now().as_secs() - (self.db_since - (60 + 60 * 24))
-            print(timestamp_until)
             since = Timestamp.from_secs(timestamp_since)
             until = Timestamp.from_secs(timestamp_until)
 

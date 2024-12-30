@@ -167,15 +167,16 @@ async def nostr_client_test_tts(prompt):
 async def nostr_client_test_discovery(user, ptag):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz",
+    relay_list = ["wss://relay.nostrdvm.com",
                   ]
 
     relaysTag = Tag.parse(relay_list)
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to find content"])
     paramTag = Tag.parse(["param", "user", user])
     pTag = Tag.parse(["p", ptag])
+    expiration_tag = Tag.parse(["expiration", str(Timestamp.now().as_secs() + 60*60)])
 
-    tags = [relaysTag, alttag, paramTag, pTag]
+    tags = [relaysTag, alttag, paramTag, pTag, expiration_tag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content")).tags(
                          tags).sign_with_keys(keys)
@@ -184,7 +185,6 @@ async def nostr_client_test_discovery(user, ptag):
     for relay in relay_list:
         await client.add_relay(relay)
 
-    await client.add_relay("wss://nostr.band")
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
