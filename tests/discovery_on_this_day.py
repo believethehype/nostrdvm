@@ -14,7 +14,7 @@ from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 
-rebroadcast_NIP89 = True  # Announce NIP89 on startup Only do this if you know what you're doing.
+rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
 update_profile = True
 
