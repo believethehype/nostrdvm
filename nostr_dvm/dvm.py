@@ -598,6 +598,8 @@ class DVM:
             is_legacy_encryption = False
             encryption_tags = []
             for tag in original_event.tags().to_vec():
+
+
                 if tag.as_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
@@ -607,9 +609,10 @@ class DVM:
 
             for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "i":
-                    i_tag = tag
                     if not encrypted:
-                        reply_tags.append(i_tag)
+                        reply_tags.append(tag)
+                elif tag.as_vec()[0] == "expiration":
+                    reply_tags.append(tag)
 
             if encrypted:
                 encryption_tags.append(p_tag)
@@ -670,12 +673,15 @@ class DVM:
 
             encrypted = False
             is_legacy_encryption = False
+            expiration_tag = None
             for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
                     encryption_tags.append(encrypted_tag)
                     #_, is_legacy_encryption = check_and_decrypt_tags(original_event, dvm_config)
+                elif tag.as_vec()[0] == "expiration":
+                    expiration_tag = tag
 
             if encrypted:
                 encryption_tags.append(p_tag)
@@ -755,6 +761,9 @@ class DVM:
 
             else:
                 content = reaction
+
+            if expiration_tag is not None:
+                reply_tags.append(expiration_tag)
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)

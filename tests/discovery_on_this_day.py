@@ -27,9 +27,7 @@ if use_logger:
     init_logger(log_level)
 
 
-RELAY_LIST = ["wss://nostr.mom",
-              "wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
+RELAY_LIST = ["wss://relay.nostrdvm.com"
               ]
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
@@ -42,6 +40,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
 def build_example_on_this_day(name, identifier, admin_config, options, image, description, update_rate=600, cost=0,
                         processing_msg=None, update_db=True, database=None):
     dvm_config = build_default_config(identifier)
+
     dvm_config.USE_OWN_VENV = False
     dvm_config.SHOWLOG = True
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
