@@ -25,9 +25,8 @@ class DVMConfig:
                          ]
     # announce inbox relays, dm relays and NIP89 announcement to
     ANNOUNCE_RELAY_LIST = ["wss://relay.primal.net",
-                  "wss://nostr.mom", "wss://relay.damus.io",
-                  "wss://nostr.oxtr.dev", "wss://nostr.mom",
-                  "wss://relay.nostrdvm.com"
+                  "wss://relay.damus.io",
+                  "wss://nostr.oxtr.dev", "wss://nostr.mom"
                   ]
 
     # Straight Censorship (reply guy spam)

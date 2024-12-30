@@ -41,10 +41,10 @@ log_level = LogLevel.ERROR
 max_sync_duration_in_h = 24
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
-                      #"wss://relay.primal.net",
+                      "wss://relay.primal.net",
                       "wss://nostr.oxtr.dev"]
 
-RELAY_LIST = ["wss://nostr.mom",
+RELAY_LIST = ["wss://relay.nostrdvm.com",
               #"wss://relay.primal.net",
               "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"

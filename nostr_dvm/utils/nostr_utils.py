@@ -259,7 +259,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
     return event_id
 
 
-async def send_event(event: Event, client: Client, dvm_config):
+async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
     try:
         relays = []
         for tag in event.tags().to_vec():
@@ -274,12 +274,18 @@ async def send_event(event: Event, client: Client, dvm_config):
                                     index] + " couldn't be added to outbox relays")
                 break
 
-        if len(relays) == 0:
-            relays = dvm_config.RELAY_LIST
+        relay_list = dvm_config.RELAY_LIST
+        if broadcast:
+            relay_list = dvm_config.ANNOUNCE_RELAY_LIST
 
+        if len(relays) == 0:
+            relays = relay_list
+        print(relays)
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
                 await client.add_relay(relay)
+
+        await client.connect()
 
         try:
             event_id = await client.send_event(event)
@@ -389,7 +395,7 @@ async def update_profile_lnaddress(private_key, dvm_config, lud16="", ):
     await client.set_metadata(metadata)
 
 
-async def update_profile(dvm_config, client, lud16=""):
+async def update_profile(dvm_config, client, lud16="", broadcast=True):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
     try:
         nip89content = json.loads(dvm_config.NIP89.CONTENT)
@@ -415,7 +421,12 @@ async def update_profile(dvm_config, client, lud16=""):
 
     print("[" + dvm_config.NIP89.NAME + "] Setting profile metadata for " + keys.public_key().to_bech32() + "...")
     print(metadata.as_json())
-    await client.set_metadata(metadata)
+    if broadcast:
+       for relay in dvm_config.ANNOUNCE_RELAY_LIST:
+           await client.add_relay(relay)
+       await client.connect()
+
+    return await client.set_metadata(metadata)
 
 
 async def send_nip04_dm(client: Client, msg, receiver: PublicKey, dvm_config):

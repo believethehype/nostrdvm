@@ -31,11 +31,8 @@ async def nip89_announce_tasks(dvm_config, client):
     content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags([k_tag, d_tag]).sign_with_keys(keys)
 
-    RELAY_LIST = dvm_config.ANNOUNCE_RELAY_LIST
-    for relay in dvm_config.RELAY_LIST:
-        if relay not in RELAY_LIST:
-            dvm_config.RELAY_LIST.append(relay)
-    eventid = await send_event(event, client=client, dvm_config=dvm_config)
+    eventid = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
+    print(eventid.output)
 
     print(
         bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME + " (" + eventid.id.to_hex() + ")" + bcolors.ENDC)
