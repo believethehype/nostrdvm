@@ -16,14 +16,19 @@ class DVMConfig:
     FIX_COST: float = None
     PER_UNIT_COST: float = None
 
-    RELAY_LIST = ["wss://relay.primal.net",
-                  "wss://nostr.mom",
-                  "wss://nostr.oxtr.dev",
+    # The relays the dvm is operating on and announces in its inbox relays
+    RELAY_LIST = ["wss://relay.nostrdvm.com",
                   ]
-
+    # DBs to sync with
     SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                           "wss://nostr.oxtr.dev",
                          ]
+    # announce inbox relays, dm relays and NIP89 announcement to
+    ANNOUNCE_RELAY_LIST = ["wss://relay.primal.net",
+                  "wss://nostr.mom", "wss://relay.damus.io",
+                  "wss://nostr.oxtr.dev", "wss://nostr.mom",
+                  "wss://relay.nostrdvm.com"
+                  ]
 
     # Straight Censorship (reply guy spam)
     WOT_FILTERING = False
