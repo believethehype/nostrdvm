@@ -8,13 +8,7 @@ from nostr_dvm.utils.print_utils import bcolors
 async def announce_dm_relays(dvm_config, client):
     tags = []
 
-    RELAY_LIST = dvm_config.ANNOUNCE_RELAY_LIST
     for relay in dvm_config.RELAY_LIST:
-        if relay not in RELAY_LIST:
-            RELAY_LIST.append(relay)
-
-    dvm_config.RELAY_LIST = RELAY_LIST
-    for relay in RELAY_LIST:
         r_tag = Tag.parse(["r", relay])
         tags.append(r_tag)
 
@@ -22,7 +16,7 @@ async def announce_dm_relays(dvm_config, client):
     content = ""
 
     event = EventBuilder(Kind(10050), content).tags(tags).sign_with_keys(keys)
-    eventid = await send_event(event, client=client, dvm_config=dvm_config)
+    eventid = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
     if eventid is not None:
         print(
             bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced DM relays for " + dvm_config.NIP89.NAME + " (EventID: " + str(
@@ -38,14 +32,7 @@ async def nip65_announce_relays(dvm_config, client):
 
     tags = []
 
-    RELAY_LIST = dvm_config.ANNOUNCE_RELAY_LIST
     for relay in dvm_config.RELAY_LIST:
-        if relay not in RELAY_LIST:
-            RELAY_LIST.append(relay)
-
-    dvm_config.RELAY_LIST = RELAY_LIST
-
-    for relay in RELAY_LIST:
         r_tag = Tag.parse(["r", relay])
         tags.append(r_tag)
 
@@ -53,7 +40,7 @@ async def nip65_announce_relays(dvm_config, client):
     content = ""
 
     event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content).tags(tags).sign_with_keys(keys)
-    eventid = await send_event(event, client=client, dvm_config=dvm_config)
+    eventid = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
     if eventid is not None:
         print(
             bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME + " (EventID: " + str(

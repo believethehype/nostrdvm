@@ -128,4 +128,5 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         await fetch_nip88_event(keys, event_id, client, dvmconfig)
 
     if adminconfig.UPDATE_PROFILE:
-        await update_profile(dvmconfig, client, lud16=dvmconfig.LN_ADDRESS)
+        event = await update_profile(dvmconfig, client, lud16=dvmconfig.LN_ADDRESS)
+        print(event.output)
