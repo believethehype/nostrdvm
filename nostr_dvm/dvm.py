@@ -640,18 +640,20 @@ class DVM:
             #print(reply_event)
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
             response_status = await send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
+            if response_status is not None:
+                if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                    print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
+                        original_event.kind().as_u16() + 1000) + " Job Response event sent: " + reply_event.as_json() + ". Success: " + str(
+                        response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                          + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
 
-            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-                print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
-                    original_event.kind().as_u16() + 1000) + " Job Response event sent: " + reply_event.as_json() + ". Success: " + str(
-                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
-                      + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
-
-            elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
-                print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
-                    original_event.kind().as_u16() + 1000) + " Job Response event sent. Success: " + str(
-                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
-                      + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+                elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
+                    print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
+                        original_event.kind().as_u16() + 1000) + " Job Response event sent. Success: " + str(
+                        response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                          + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+                else:
+                    print( bcolors.RED +  "No success" + bcolors.ENDC)
 
         async def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None,
                                            content=None,
@@ -775,17 +777,20 @@ class DVM:
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
             # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             response_status = await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
-            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "] Sent Kind " + str(
-                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.as_json() +  ". Success: " + str(
-                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
-                      + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+            if response_status is not None:
+                if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                    print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "] Sent Kind " + str(
+                        EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.as_json() +  ". Success: " + str(
+                        response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                          + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
 
-            elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
-                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "] Sent Kind " + str(
-                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + ". Success: " + str(
-                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
-                + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+                elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
+                    print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "] Sent Kind " + str(
+                        EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + ". Success: " + str(
+                        response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                    + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+            else:
+                print(bcolors.RED + "No success" + bcolors.ENDC)
 
 
             return reaction_event.as_json()
