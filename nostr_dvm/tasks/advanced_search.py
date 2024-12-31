@@ -87,7 +87,7 @@ class AdvancedSearch(DVMTaskInterface):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         cli = Client(NostrSigner.keys(keys))
 
@@ -110,12 +110,7 @@ class AdvancedSearch(DVMTaskInterface):
             user = tag.as_vec()[1]
             # user = user[1]
             user = str(user).lstrip("@")
-            if str(user).startswith('npub'):
-                userkey = PublicKey.from_bech32(user)
-            elif str(user).startswith("nostr:npub"):
-                userkey = PublicKey.from_nostr_uri(user)
-            else:
-                userkey = PublicKey.from_hex(user)
+            userkey = PublicKey.parse(user)
 
             userkeys.append(userkey)
 

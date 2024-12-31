@@ -120,7 +120,7 @@ def playground(announce=False):
     async def process(request_form):
         since = 2 * 60 * 60
         options = dvm.set_options(request_form)
-        sk = SecretKey.from_hex(dvm.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(dvm.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         relaylimits = RelayLimits.disable()
 

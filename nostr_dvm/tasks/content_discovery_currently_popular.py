@@ -170,7 +170,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
 
     async def sync_db(self):
         try:
-            sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+            sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
 
             database = NostrDatabase.lmdb(self.db_name)

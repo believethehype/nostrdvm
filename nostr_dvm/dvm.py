@@ -17,7 +17,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nip88_utils import nip88_has_active_subscription
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, check_and_decrypt_tags, \
-    send_event_outbox
+    send_event_outbox, print_send_result
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 from nostr_dvm.utils.output_utils import build_status_reaction
 from nostr_dvm.utils.print_utils import bcolors
@@ -432,7 +432,7 @@ class DVM:
                         print(status)
                         if job_event.kind() == EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT:
                             await send_job_status_reaction(job_event, "subscription-success", client=self.client,
-                                                           dvm_config=self.dvm_config, user=user)
+                                                           dvm_config=self.dvm_config)
 
 
 
@@ -579,8 +579,8 @@ class DVM:
             request_tag = Tag.parse(["request", original_event_as_str])
             e_tag = Tag.parse(["e", original_event.id().to_hex()])
             p_tag = Tag.parse(["p", original_event.author().to_hex()])
-            alt_tag = Tag.parse(["alt", "This is the result of a NIP90 DVM AI task with kind " + str(
-                original_event.kind().as_u16()) + ". The task was: " + original_event.content()])
+            alt_tag = Tag.parse(["alt", "This is the result of a NIP90 DVM task with kind " + str(
+                original_event.kind().as_u16())])
             status_tag = Tag.parse(["status", "success"])
             reply_tags = [request_tag, e_tag, p_tag, alt_tag, status_tag]
 
@@ -624,12 +624,12 @@ class DVM:
             if encrypted:
                 print(content)
                 if is_legacy_encryption:
-                    content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
+                    content = nip04_encrypt(self.keys.secret_key(), PublicKey.parse(original_event.author().to_hex()),
                                             content)
                 else:
 
                     content = nip44_encrypt(self.keys.secret_key(),
-                                            PublicKey.from_hex(original_event.author().to_hex()),
+                                            PublicKey.parse(original_event.author().to_hex()),
                                             content, Nip44Version.V2)
 
                 reply_tags = encryption_tags
@@ -639,13 +639,19 @@ class DVM:
                 self.keys)
             #print(reply_event)
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
-            await send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
+            response_status = await send_event_outbox(reply_event, client=self.client, dvm_config=self.dvm_config)
+
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
-                    original_event.kind().as_u16() + 1000) + " Job Response event sent: " + reply_event.as_json() + bcolors.ENDC)
+                    original_event.kind().as_u16() + 1000) + " Job Response event sent: " + reply_event.as_json() + ". Success: " + str(
+                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                      + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+
             elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
                 print(bcolors.GREEN + "[" + self.dvm_config.NIP89.NAME + "] " + str(
-                    original_event.kind().as_u16() + 1000) + " Job Response event sent: " + reply_event.id().to_hex() + bcolors.ENDC)
+                    original_event.kind().as_u16() + 1000) + " Job Response event sent. Success: " + str(
+                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                      + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
 
         async def send_job_status_reaction(original_event, status, is_paid=True, amount=0, client=None,
                                            content=None,
@@ -751,11 +757,11 @@ class DVM:
 
                 content = json.dumps(str_tags)
                 if is_legacy_encryption:
-                    content = nip04_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
+                    content = nip04_encrypt(self.keys.secret_key(), PublicKey.parse(original_event.author().to_hex()),
                                             content)
                 else:
                     content = nip44_encrypt(self.keys.secret_key(),
-                                            PublicKey.from_hex(original_event.author().to_hex()),
+                                            PublicKey.parse(original_event.author().to_hex()),
                                             content, version=Nip44Version.V2)
                 reply_tags = encryption_tags
 
@@ -768,14 +774,19 @@ class DVM:
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
             # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
-            await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
-
+            response_status = await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
-                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.as_json() + bcolors.ENDC)
+                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "] Sent Kind " + str(
+                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.as_json() +  ". Success: " + str(
+                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                      + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+
             elif self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
-                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "]" + " Sent Kind " + str(
-                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + " " + reaction_event.id().to_hex() + bcolors.ENDC)
+                print(bcolors.YELLOW + "[" + self.dvm_config.NIP89.NAME + "] Sent Kind " + str(
+                    EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + status + ". Success: " + str(
+                    response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+                + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
+
 
             return reaction_event.as_json()
 

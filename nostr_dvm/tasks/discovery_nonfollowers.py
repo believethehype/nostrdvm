@@ -66,7 +66,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         opts = (
             Options().relay_limits(
                 relaylimits))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         cli= ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
 
@@ -81,7 +81,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         options = self.set_options(request_form)
         step = 20
 
-        followers_filter = Filter().author(PublicKey.from_hex(options["user"])).kind(Kind(3))
+        followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
         followers = await cli.fetch_events([followers_filter], relay_timeout)
 
         if len(followers.to_vec()) > 0:
@@ -113,7 +113,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
 
                 for i in range(i, i + st):
                     filters = []
-                    filter1 = Filter().author(PublicKey.from_hex(users[i])).kind(Kind(3))
+                    filter1 = Filter().author(PublicKey.parse(users[i])).kind(Kind(3))
                     filters.append(filter1)
                     followers = await cli.fetch_events(filters, relay_timeout)
 

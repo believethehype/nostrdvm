@@ -207,7 +207,7 @@ class DiscoverPeopleWOT(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()

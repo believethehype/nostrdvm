@@ -69,7 +69,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
 
         relaylimits = RelayLimits.disable()

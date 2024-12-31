@@ -68,7 +68,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         # relaylimits = RelayLimits().event_max_num_tags(max_num_tags=10000)
         # relaylimits.event_max_size(None)
@@ -130,7 +130,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
                 filters = []
                 for i in range(i, i + st):
-                    filter1 = Filter().author(PublicKey.from_hex(users[i])).since(notactivesince).limit(1)
+                    filter1 = Filter().author(PublicKey.parse(users[i])).since(notactivesince).limit(1)
                     filters.append(filter1)
                 event_from_authors = await cli.fetch_events(filters, relay_timeout_long)
                 for author in event_from_authors.to_vec():

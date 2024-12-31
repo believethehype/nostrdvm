@@ -9,7 +9,7 @@ from nostr_dvm.utils.nip65_utils import nip65_announce_relays
 from nostr_dvm.utils.nip88_utils import nip88_announce_tier, fetch_nip88_parameters_for_deletion, fetch_nip88_event, \
     check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import nip89_announce_tasks, fetch_nip89_parameters_for_deletion
-from nostr_dvm.utils.nostr_utils import update_profile
+from nostr_dvm.utils.nostr_utils import update_profile, print_send_result
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 
 
@@ -128,5 +128,5 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
         await fetch_nip88_event(keys, event_id, client, dvmconfig)
 
     if adminconfig.UPDATE_PROFILE:
-        event = await update_profile(dvmconfig, client, lud16=dvmconfig.LN_ADDRESS)
-        print(event.output)
+        event_result = await update_profile(dvmconfig, client, lud16=dvmconfig.LN_ADDRESS)
+        print_send_result(event_result)

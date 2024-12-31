@@ -74,7 +74,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
 
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
@@ -134,7 +134,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()

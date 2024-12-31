@@ -35,7 +35,7 @@ def nip88_create_d_tag(name, pubkey, image):
 
 
 async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
-    idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
+    idfilter = Filter().id(EventId.parse(eventid)).limit(1)
     nip88events = await client.fetch_events([idfilter], relay_timeout)
     d_tag = ""
     if len(nip88events.to_vec()) == 0:

@@ -70,7 +70,7 @@ class TrendingNotesGleasonator(DVMTaskInterface):
     async def process(self, request_form):
         options = self.set_options(request_form)
 
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         cli = Client(NostrSigner.keys(keys))
 

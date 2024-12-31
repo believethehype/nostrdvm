@@ -137,7 +137,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             opts = (Options().relay_limits(relaylimits))
             if self.dvm_config.WOT_FILTERING:
                 opts = opts.filtering_mode(RelayFilteringMode.WHITELIST)
-            sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+            sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             if self.database is None:
                 self.database = await init_db(self.db_name, True, self.max_db_size)
