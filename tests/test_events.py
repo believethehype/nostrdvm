@@ -28,14 +28,14 @@ async def test():
     await test_referred_events(client, "5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e",
                                definitions.EventDefinitions.ANY_RESULT)
 
-    bech32evnt = EventId.from_hex("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_bech32()
+    bech32evnt = EventId.parse("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_bech32()
     print(bech32evnt)
 
     test = Nip19Event.from_bech32(
         "nevent1qqsrjcpejsrlt3u7dy42y6rc97svrq9ver08xy4jr2ll55ynq3sxafcppamhxue69uhkummnw3ezumt0d5pzpmnqx2pla0zvxxcfjqeeysy29ll3mtmf4s3yff0y45r7egau080vqvzqqqqqqyu4q839")
     print(test.event_id().to_hex())
 
-    nostruri = EventId.from_hex("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_nostr_uri()
+    nostruri = EventId.parse("5635e5dd930b3c831f6ab1e348bb488f3c9aca2f13190e93ab5e5e1e1ba1835e").to_nostr_uri()
     print(nostruri)
 
     await test_search_by_user_since_days(client,
@@ -49,9 +49,9 @@ async def test_referred_events(client, event_id, kinds=None):
         kinds = []
 
     if len(kinds) > 0:
-        job_id_filter = Filter().kinds(kinds).event(EventId.from_hex(event_id))
+        job_id_filter = Filter().kinds(kinds).event(EventId.parse(event_id))
     else:
-        job_id_filter = Filter().event(EventId.from_hex(event_id))
+        job_id_filter = Filter().event(EventId.parse(event_id))
 
     event_struct = await client.fetch_events([job_id_filter], relay_timeout)
     events = event_struct.to_vec()

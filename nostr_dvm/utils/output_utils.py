@@ -107,7 +107,7 @@ def post_process_list_to_events(result):
     for tag in result_list:
         try:
             e_tag = Tag.parse(tag)
-            id = EventId.from_hex(e_tag.as_vec()[1]).to_bech32()
+            id = EventId.parse(e_tag.as_vec()[1]).to_bech32()
             result_str = result_str + "nostr:" + id + "\n"
         except Exception as e:
             print(e)

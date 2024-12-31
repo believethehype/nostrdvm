@@ -11,7 +11,7 @@ from nostr_dvm.utils.print_utils import bcolors
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
     NostrSigner, Event, Kind, PublicKey
-from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
+from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key, print_send_result
 from nostr_dvm.utils.definitions import EventDefinitions
 
 
@@ -46,8 +46,8 @@ async def nostr_client_generic_test(ptag):
     # We connect the client
     await client.connect()
     # and send the Event.
-    result = await send_event(event, client=client, dvm_config=DVMConfig())
-    print(result)
+    response_status = await send_event(event, client=client, dvm_config=DVMConfig())
+    print_send_result(response_status)
 
 
 async def nostr_client(target_dvm_npub):

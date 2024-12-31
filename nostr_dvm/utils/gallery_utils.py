@@ -16,7 +16,7 @@ import requests
 from urllib.parse import urlparse
 
 
-from nostr_dvm.utils.nostr_utils import send_event
+from nostr_dvm.utils.nostr_utils import send_event, print_send_result
 from nostr_dvm.utils.print_utils import bcolors
 
 
@@ -88,8 +88,9 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
         var = input("Convert and post this image? (y(es)/n(o)/d(elete): " + image_url + " Content: " + content + "\n")
         if var == "d" or var == "delete":
             delete_event = EventBuilder.delete([event.id()]).sign_with_keys(keys)
-            result = await client.send_event(delete_event)
-            print(result.output)
+            response_status = await client.send_event(delete_event)
+            print_send_result(response_status)
+
 
 
         elif var == "y" or var == "yes":

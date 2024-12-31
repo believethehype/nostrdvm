@@ -89,12 +89,7 @@ class AdvancedSearchWine(DVMTaskInterface):
             tag = Tag.parse(user)
             user = tag.as_vec()[1]
             user = str(user).lstrip("@")
-            if str(user).startswith('npub'):
-                userkey = PublicKey.from_bech32(user)
-            elif str(user).startswith("nostr:npub"):
-                userkey = PublicKey.from_nostr_uri(user)
-            else:
-                userkey = PublicKey.from_hex(user)
+            userkey = PublicKey.parse(user)
 
             userkeys.append(userkey)
 

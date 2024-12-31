@@ -79,7 +79,7 @@ class SearchUser(DVMTaskInterface):
         from nostr_sdk import Filter
         options = self.set_options(request_form)
 
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
         cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
@@ -140,7 +140,7 @@ class SearchUser(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
         relaylimits = RelayLimits.disable()

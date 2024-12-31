@@ -326,7 +326,7 @@ async def nostr_client_test_discovery_user(user, ptag):
         await client.add_relay(relay)
     await client.connect()
     config = DVMConfig
-    eventid = await send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
     return event.as_json()
 
 
@@ -351,7 +351,7 @@ async def nostr_client_test_discovery_gallery(user, ptag):
         await client.add_relay(relay)
     await client.connect()
     config = DVMConfig
-    eventid = await send_event(event, client=client, dvm_config=config)
+    await send_event(event, client=client, dvm_config=config)
 
     return event.as_json()
 

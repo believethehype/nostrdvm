@@ -6,7 +6,7 @@ import dotenv
 from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
-from nostr_dvm.utils.nostr_utils import send_event
+from nostr_dvm.utils.nostr_utils import send_event, print_send_result
 from nostr_dvm.utils.print_utils import bcolors
 
 
@@ -31,15 +31,15 @@ async def nip89_announce_tasks(dvm_config, client):
     content = dvm_config.NIP89.CONTENT
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags([k_tag, d_tag]).sign_with_keys(keys)
 
-    eventid = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
-    print(eventid.output)
+    response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
 
-    print(
-        bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME + " (" + eventid.id.to_hex() + ")" + bcolors.ENDC)
+
+    print(bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 89 for " + dvm_config.NIP89.NAME +  ". Success: " + str(response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+          + response_status.id.to_hex() + " / " + response_status.id.to_bech32())
 
 
 async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):
-    idfilter = Filter().id(EventId.from_hex(eventid)).limit(1)
+    idfilter = Filter().id(EventId.parse(eventid)).limit(1)
     nip89events = await client.fetch_events([idfilter], relay_timeout)
     d_tag = ""
     if len(nip89events.to_vec()) == 0:
@@ -73,13 +73,8 @@ async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).sign_with_keys(keys)
     print(f"Deletion event: {event.as_json()}")
 
-    new_dvm_config = DVMConfig()
-    new_dvm_config.RELAY_LIST = new_dvm_config.ANNOUNCE_RELAY_LIST
-    for relay in config.RELAY_LIST:
-        if relay not in new_dvm_config.RELAY_LIST:
-            new_dvm_config.RELAY_LIST.append(relay)
 
-    await send_event(event, client, new_dvm_config)
+    await send_event(event, client, config, broadcast=True)
 
 
 async def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client: Client, config):
@@ -88,13 +83,7 @@ async def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client:
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
     event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).pow(28).sign_with_keys(keys)
     print(f"POW event: {event.as_json()}")
-    new_dvm_config = DVMConfig()
-    new_dvm_config.RELAY_LIST = new_dvm_config.ANNOUNCE_RELAY_LIST
-    for relay in config.RELAY_LIST:
-        if relay not in new_dvm_config.RELAY_LIST:
-            new_dvm_config.RELAY_LIST.append(relay)
-
-    await send_event(event, client, new_dvm_config)
+    await send_event(event, client, config, broadcast=True)
 
 
 async def nip89_fetch_all_dvms(client):

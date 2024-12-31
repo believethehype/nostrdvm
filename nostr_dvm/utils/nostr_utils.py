@@ -15,7 +15,7 @@ from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Event | None:
     split = event_id_str.split(":")
     if len(split) == 3:
-        pk = PublicKey.from_hex(split[1])
+        pk = PublicKey.parse(split[1])
         id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
         events = await client.fetch_events([id_filter], relay_timeout)
     else:
@@ -43,21 +43,17 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
     for event_id in event_ids:
         split = event_id.split(":")
         if len(split) == 3:
-            pk = PublicKey.from_hex(split[1])
+            pk = PublicKey.parse(split[1])
             id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
             events = await client.fetch_events([id_filter], relay_timeout)
         else:
-            if str(event_id).startswith('note'):
-                event_id = EventId.from_bech32(event_id)
-            elif str(event_id).startswith("nevent"):
+
+            if str(event_id).startswith("nevent"):
                 event_id = Nip19Event.from_bech32(event_id).event_id()
-            elif str(event_id).startswith('nostr:note'):
-                event_id = EventId.from_nostr_uri(event_id)
             elif str(event_id).startswith("nostr:nevent"):
                 event_id = Nip19Event.from_nostr_uri(event_id).event_id()
-
             else:
-                event_id = EventId.from_hex(event_id)
+                event_id = EventId.parse(event_id)
             search_ids.append(event_id)
 
             id_filter = Filter().ids(search_ids)
@@ -82,16 +78,12 @@ async def get_events_by_id(event_ids: list, client: Client, config=None) -> list
 async def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Event | None:
     if kinds is None:
         kinds = []
-    if str(event_id).startswith('note'):
-        event_id = EventId.from_bech32(event_id)
-    elif str(event_id).startswith("nevent"):
+    if str(event_id).startswith("nevent"):
         event_id = Nip19Event.from_bech32(event_id).event_id()
-    elif str(event_id).startswith('nostr:note'):
-        event_id = EventId.from_nostr_uri(event_id)
     elif str(event_id).startswith("nostr:nevent"):
         event_id = Nip19Event.from_nostr_uri(event_id).event_id()
     else:
-        event_id = EventId.from_hex(event_id)
+        event_id = EventId.parse(event_id)
 
     if len(kinds) > 0:
         job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
@@ -219,10 +211,10 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
     
     # connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
     opts = Options().relay_limits(relaylimits).connection(connection)
-    sk = SecretKey.from_hex(dvm_config.PRIVATE_KEY)
+    sk = SecretKey.parse(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
     outboxclient = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
-    print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
+    #print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays[:5]:
         try:
@@ -233,14 +225,14 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
     await outboxclient.connect()
     try:
         #print("Connected, sending event")
-        event_id = await outboxclient.send_event(event)
-        print(event_id.output)
+        event_response = await outboxclient.send_event(event)
+
     except Exception as e:
-        event_id = None
+        event_response = None
         print(e)
 
     # 5. Fallback, if we couldn't send the event to any relay, we try to send to generic relays instead.
-    if event_id is None:
+    if event_response is None:
         relays = await get_main_relays(event, client, dvm_config)
         if len(relays) == 0:
             return None
@@ -248,15 +240,16 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
             await outboxclient.add_relay(relay)
         try:
             await outboxclient.connect()
-            event_id = await outboxclient.send_event(event)
+            event_response = await outboxclient.send_event(event)
         except Exception as e:
             # Love yourself then.
-            event_id = None
+            event_response = None
             print(e)
+
 
     await outboxclient.shutdown()
 
-    return event_id
+    return event_response
 
 
 async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
@@ -280,7 +273,7 @@ async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
 
         if len(relays) == 0:
             relays = relay_list
-        print(relays)
+
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
                 await client.add_relay(relay)
@@ -288,17 +281,22 @@ async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
         await client.connect()
 
         try:
-            event_id = await client.send_event(event)
+            response_status = await client.send_event(event)
         except Exception as e:
             print(e)
-            event_id = None
+            response_status = None
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
                 await client.force_remove_relay(relay)
-        return event_id
+        return response_status
     except Exception as e:
         print(e)
+
+
+def print_send_result(response_status):
+    print("Success: " + str(response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+          + response_status.id.to_hex() + " / " + response_status.id.to_bech32())
 
 
 def check_and_decrypt_tags(event, dvm_config):
@@ -364,10 +362,10 @@ def check_and_decrypt_own_tags(event, dvm_config):
             elif event.author().to_hex() == dvm_config.PUBLIC_KEY:
                 try:
                     tags_str = nip44_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
-                                             PublicKey.from_hex(p), event.content())
+                                             PublicKey.parse(p), event.content())
                 except:
                     tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
-                                             PublicKey.from_hex(p), event.content())
+                                             PublicKey.parse(p), event.content())
                 params = json.loads(tags_str)
                 params.append(Tag.parse(["p", p]).as_vec())
                 params.append(Tag.parse(["encrypted"]).as_vec())

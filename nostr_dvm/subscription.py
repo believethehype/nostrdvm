@@ -147,7 +147,7 @@ class Subscription:
                 str_tags.append(element.as_vec())
 
             content = json.dumps(str_tags)
-            content = nip44_encrypt(self.keys.secret_key(), PublicKey.from_hex(original_event.author().to_hex()),
+            content = nip44_encrypt(self.keys.secret_key(), PublicKey.parse(original_event.author().to_hex()),
                                     content, Nip44Version.V2)
             reply_tags = encryption_tags
 

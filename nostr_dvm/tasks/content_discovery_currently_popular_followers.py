@@ -94,7 +94,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
         opts = (
             Options().relay_limits(
                 relaylimits))
-        sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+        sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
 
         database = NostrDatabase.lmdb(self.db_name)
@@ -189,7 +189,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
     async def sync_db(self):
         try:
-            sk = SecretKey.from_hex(self.dvm_config.PRIVATE_KEY)
+            sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()

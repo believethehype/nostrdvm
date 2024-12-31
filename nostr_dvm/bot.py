@@ -189,7 +189,7 @@ class Bot:
                                         print(params_as_str)
                                         #  and encrypt them
                                         encrypted_params = nip44_encrypt(self.keys.secret_key(),
-                                                                         PublicKey.from_hex(
+                                                                         PublicKey.parse(
                                                                              self.dvm_config.SUPPORTED_DVMS[
                                                                                  index].PUBLIC_KEY),
                                                                          params_as_str, Nip44Version.V2)
@@ -675,16 +675,12 @@ class Bot:
             elif (input.startswith("nevent") or input.startswith("nostr:nevent") or input.startswith("note") or
                   input.startswith("nostr:note")):
                 input_type = "event"
-                if str(input).startswith('note'):
-                    event_id = EventId.from_bech32(input)
-                elif str(input).startswith("nevent"):
+                if str(input).startswith("nevent"):
                     event_id = Nip19Event.from_bech32(input).event_id()
-                elif str(input).startswith('nostr:note'):
-                    event_id = EventId.from_nostr_uri(input)
                 elif str(input).startswith("nostr:nevent"):
                     event_id = Nip19Event.from_nostr_uri(input).event_id()
                 else:
-                    event_id = EventId.from_hex(input)
+                    event_id = EventId.parse(input)
                 i_tag = Tag.parse(["i", event_id.to_hex(), input_type])
                 tags.append(i_tag)
             else:

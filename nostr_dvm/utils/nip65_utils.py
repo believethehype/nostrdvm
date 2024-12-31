@@ -16,11 +16,12 @@ async def announce_dm_relays(dvm_config, client):
     content = ""
 
     event = EventBuilder(Kind(10050), content).tags(tags).sign_with_keys(keys)
-    eventid = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
-    if eventid is not None:
+    response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
+    if response_status is not None:
         print(
-            bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced DM relays for " + dvm_config.NIP89.NAME + " (EventID: " + str(
-                eventid.id.to_hex()) + ")" + bcolors.ENDC)
+            bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced DM relays for " + dvm_config.NIP89.NAME + ". Success: " + str(
+                response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+            + response_status.id.to_hex() + " / " + response_status.id.to_bech32())
     else:
         print(
             bcolors.RED + "[" + dvm_config.NIP89.NAME + "] Could not announce DM relays for " + dvm_config.NIP89.NAME + bcolors.ENDC)
@@ -40,11 +41,12 @@ async def nip65_announce_relays(dvm_config, client):
     content = ""
 
     event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content).tags(tags).sign_with_keys(keys)
-    eventid = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
-    if eventid is not None:
+    response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
+    if response_status is not None:
         print(
-            bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME + " (EventID: " + str(
-                eventid.id.to_hex()) + ")" + bcolors.ENDC)
+            bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME + ". Success: " + str(
+                response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
+            + response_status.id.to_hex() + " / " + response_status.id.to_bech32())
     else:
         print(
             bcolors.RED + "[" + dvm_config.NIP89.NAME + "] Could not announce NIP 65 for " + dvm_config.NIP89.NAME + bcolors.ENDC)

@@ -14,7 +14,7 @@ from nostr_sdk import PublicKey, Client, NostrSigner, EventBuilder, Kind, Tag, K
 import asyncio
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
-from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
+from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key, print_send_result
 from nostr_dvm.utils.nut_wallet_utils import NutZapWallet
 from nostr_dvm.utils.print_utils import bcolors
 
@@ -36,8 +36,8 @@ async def nostr_client_generic_test(ptag):
     for relay in relay_list:
         await client.add_relay(relay)
     await client.connect()
-    result = await send_event(event, client=client, dvm_config=DVMConfig())
-    print(result)
+    response_status = await send_event(event, client=client, dvm_config=DVMConfig())
+    print_send_result(response_status)
 
 
 async def nostr_client(target_dvm_npub):
