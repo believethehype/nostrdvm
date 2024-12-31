@@ -77,7 +77,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
         opts = Options().relay_limits(relaylimits)
 
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
-        for relay in self.dvm_config.RELAY_LIST:
+        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(relay)
         # ropts = RelayOptions().ping(False)
         # await cli.add_relay_with_opts("wss://nostr.band", ropts)
@@ -124,7 +124,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
                 cli = Client(NostrSigner.keys(keys))
-                for relay in self.dvm_config.RELAY_LIST:
+                for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                     await cli.add_relay(relay)
                 await cli.connect()
 
