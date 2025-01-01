@@ -46,7 +46,7 @@ async def nip65_announce_relays(dvm_config, client):
         print(
             bcolors.BLUE + "[" + dvm_config.NIP89.NAME + "] Announced NIP 65 for " + dvm_config.NIP89.NAME + ". Success: " + str(
                 response_status.success) + " Failed: " + str(response_status.failed) + " EventID: "
-            + response_status.id.to_hex() + " / " + response_status.id.to_bech32())
+            + response_status.id.to_hex() + " / " + response_status.id.to_bech32() + bcolors.ENDC)
     else:
         print(
             bcolors.RED + "[" + dvm_config.NIP89.NAME + "] Could not announce NIP 65 for " + dvm_config.NIP89.NAME + bcolors.ENDC)

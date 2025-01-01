@@ -13,7 +13,7 @@ from nostr_dvm.utils.print_utils import bcolors
 class NIP89Config:
     DTAG: str = ""
     NAME: str = ""
-    KIND: int = None
+    KIND: Kind = None
     PK: str = ""
     CONTENT: str = ""
 
