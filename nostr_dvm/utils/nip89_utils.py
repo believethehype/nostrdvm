@@ -1,9 +1,10 @@
 import os
+from datetime import timedelta
 from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind
+from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind, NostrSigner
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.nostr_utils import send_event, print_send_result
@@ -142,3 +143,20 @@ def create_amount_tag(cost=None):
         return "free"
     else:
         return str(cost)
+
+
+async def delete_nip_89(dvm_config, pow=True):
+    keys = Keys.parse(dvm_config.PRIVATE_KEY)
+    client = Client(NostrSigner.keys(keys))
+    for relay in dvm_config.RELAY_LIST:
+        await client.add_relay(relay)
+    await client.connect()
+    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(keys.public_key())
+    events = await client.fetch_events([filter], timedelta(seconds=5))
+
+    if len(events.to_vec()) == 0:
+        print("Couldn't find note on relays. Seems they are gone.")
+        return
+    for event in events.to_vec():
+        await fetch_nip89_parameters_for_deletion(keys, event.id().to_hex(), client, dvm_config, pow)
+

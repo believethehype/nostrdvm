@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import sys
 from sys import platform
 
 from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
@@ -27,6 +28,7 @@ from nostr_dvm.utils.zap_utils import check_bolt11_ln_bits_is_paid, create_bolt1
 #os.environ["RUST_BACKTRACE"] = "full"
 
 
+
 class DVM:
     dvm_config: DVMConfig
     admin_config: AdminConfig
@@ -34,15 +36,23 @@ class DVM:
     client: Client
     job_list: list
     jobs_on_hold_list: list
+    stop_thread = False
 
-    def __init__(self, dvm_config, admin_config=None):
-        asyncio.run(self.run_dvm(dvm_config, admin_config))
-        uniffi_set_event_loop(asyncio.get_running_loop())
+    def __init__(self, dvm_config, admin_config=None, stop_thread=False):
+        try:
+            asyncio.run(self.run_dvm(dvm_config, admin_config, stop_thread))
+            #uniffi_set_event_loop(asyncio.get_running_loop())
+        except Exception as e:
+            print(e)
 
-    async def run_dvm(self, dvm_config, admin_config):
+
+
+
+    async def run_dvm(self, dvm_config, admin_config, stop_thread):
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+        self.stop_thread = stop_thread
         relaylimits = RelayLimits.disable()
         opts = Options().relay_limits(relaylimits) #.difficulty(28)
 
@@ -913,44 +923,46 @@ class DVM:
 
         asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
+        try:
 
+            while not self.stop_thread:
+                for dvm in self.dvm_config.SUPPORTED_DVMS:
+                    await dvm.schedule(self.dvm_config)
 
+                for job in self.job_list:
+                    if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
+                        ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)
+                        if ispaid and job.is_paid is False:
+                            print("is paid")
+                            job.is_paid = True
+                            amount = parse_amount_from_bolt11_invoice(job.bolt11)
 
-        while True:
-            for dvm in self.dvm_config.SUPPORTED_DVMS:
-                await dvm.schedule(self.dvm_config)
+                            job.is_paid = True
+                            await send_job_status_reaction(job.event, "processing", True, 0,
+                                                           content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
+                                                           client=self.client,
+                                                           dvm_config=self.dvm_config)
+                            print("[" + self.dvm_config.NIP89.NAME + "] doing work from joblist")
+                            await do_work(job.event, amount)
+                        elif ispaid is None:  # invoice expired
+                            self.job_list.remove(job)
 
-            for job in self.job_list:
-                if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
-                    ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)
-                    if ispaid and job.is_paid is False:
-                        print("is paid")
-                        job.is_paid = True
-                        amount = parse_amount_from_bolt11_invoice(job.bolt11)
-
-                        job.is_paid = True
-                        await send_job_status_reaction(job.event, "processing", True, 0,
-                                                       content=self.dvm_config.CUSTOM_PROCESSING_MESSAGE,
-                                                       client=self.client,
-                                                       dvm_config=self.dvm_config)
-                        print("[" + self.dvm_config.NIP89.NAME + "] doing work from joblist")
-                        await do_work(job.event, amount)
-                    elif ispaid is None:  # invoice expired
+                    if Timestamp.now().as_secs() > job.expires:
                         self.job_list.remove(job)
 
-                if Timestamp.now().as_secs() > job.expires:
-                    self.job_list.remove(job)
+                for job in self.jobs_on_hold_list:
+                    if await check_event_has_not_unfinished_job_input(job.event, False, client=self.client,
+                                                                      dvmconfig=self.dvm_config):
+                        await handle_nip90_job_event(nip90_event=job.event)
+                        try:
+                            self.jobs_on_hold_list.remove(job)
+                        except:
+                            print("[" + self.dvm_config.NIP89.NAME + "] Error removing Job on Hold from List after expiry")
 
-            for job in self.jobs_on_hold_list:
-                if await check_event_has_not_unfinished_job_input(job.event, False, client=self.client,
-                                                                  dvmconfig=self.dvm_config):
-                    await handle_nip90_job_event(nip90_event=job.event)
-                    try:
+                    if Timestamp.now().as_secs() > job.timestamp + 60 * 20:  # remove jobs to look for after 20 minutes..
                         self.jobs_on_hold_list.remove(job)
-                    except:
-                        print("[" + self.dvm_config.NIP89.NAME + "] Error removing Job on Hold from List after expiry")
 
-                if Timestamp.now().as_secs() > job.timestamp + 60 * 20:  # remove jobs to look for after 20 minutes..
-                    self.jobs_on_hold_list.remove(job)
+                await asyncio.sleep(1)
+        except BaseException:
+            print("ende")
 
-            await asyncio.sleep(1)

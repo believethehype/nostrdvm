@@ -7,6 +7,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import init_logger, LogLevel, Keys
 
+from nostr_dvm.framework import DVMFramework
 # os.environ["RUST_BACKTRACE"] = "full"
 from nostr_dvm.subscription import Subscription
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
@@ -34,6 +35,7 @@ from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
 update_profile = False
+delete_announcement_on_shutdown = False
 
 global_update_rate = 180  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
@@ -121,6 +123,7 @@ def build_example_tweets(name, identifier, admin_config, options, image, descrip
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -164,6 +167,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     dvm_config.SEND_FEEDBACK_EVENTS = False
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -201,6 +205,7 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     # Add NIP89
 
@@ -238,6 +243,7 @@ def build_longform(name, identifier, admin_config, options, cost=0, update_rate=
     # dvm_config.SUBSCRIPTION_DAILY_COST = 1
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     image = "https://image.nostr.build/d30a75c438a8b0815b5c65b494988da26fce719f4138058929fa52d2a2dc3433.jpg"
@@ -290,6 +296,7 @@ def build_wiki(name, identifier, admin_config, options, cost=0, update_rate=180,
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     image = "https://i.nostr.build/ctfc5o47ICm56TOv.jpg"
@@ -340,6 +347,7 @@ def build_example_topic(name, identifier, admin_config, options, image, descript
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -382,6 +390,7 @@ def build_example_popular(name, identifier, admin_config, options, image, cost=0
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -423,6 +432,7 @@ def build_example_popular_followers(name, identifier, admin_config, options, ima
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
 
@@ -471,6 +481,7 @@ def build_example_popular_non_followers(name, identifier, admin_config, options,
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.SUBSCRIPTION_REQUIRED = False
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
     admin_config.REBROADCAST_NIP88 = False
     # admin_config.REBROADCAST_NIP89 = True
@@ -540,6 +551,7 @@ def build_example_top_zapped(name, identifier, admin_config, options, image, cos
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.DATABASE = database
     dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -588,6 +600,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
 
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -630,6 +643,7 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     # Add NIP89
@@ -659,6 +673,10 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
 
 
 def playground():
+
+    framework = DVMFramework()
+
+
     main_db = "db/nostr_recent_notes.db"
     main_db_limit = 1024 # in mb
 
@@ -682,7 +700,9 @@ def playground():
                                       cost=0,
                                       update_db=True,
                                       database=DATABASE)
-    db_scheduler.run()
+
+    framework.add(db_scheduler)
+    #db_scheduler.run()
 
     admin_config_gallery = AdminConfig()
     admin_config_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -741,7 +761,7 @@ def playground():
                                      processing_msg=custom_processing_msg,
                                      update_db=update_db)
 
-    latest_longform.run()
+    framework.add(latest_longform)
 
     # Latest Wiki
     admin_config_wiki = AdminConfig()
@@ -769,7 +789,7 @@ def playground():
                              processing_msg=custom_processing_msg,
                              update_db=update_db)
 
-    latest_wiki.run()
+    framework.add(latest_wiki)
 
     # Popular top zapped
     admin_config_top_zaps = AdminConfig()
@@ -802,7 +822,7 @@ def playground():
                                                  update_db=update_db,
                                                  database=DATABASE)
 
-    discovery_topzaps.run()
+    framework.add(discovery_topzaps)
 
     # Popular NOSTR.band
     admin_config_trending_nostr_band = AdminConfig()
@@ -822,7 +842,7 @@ def playground():
                                           about=about,
                                           admin_config=admin_config_trending_nostr_band,
                                           custom_processing_msg=custom_processing_msg)
-    trending_nb.run()
+    framework.add(trending_nb)
 
     admin_config_mostr = AdminConfig()
     admin_config_mostr.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -879,7 +899,8 @@ def playground():
                                              processing_msg=custom_processing_msg,
                                              update_db=update_db,
                                              database=DATABASE)
-    discovery_asknostr.run()
+
+    framework.add(discovery_asknostr)
 
     # Popular Garden&Plants
     admin_config_mining = AdminConfig()
@@ -912,7 +933,8 @@ def playground():
                                            processing_msg=custom_processing_msg,
                                            update_db=update_db,
                                            database=DATABASE)
-    discovery_mining.run()
+
+    framework.add(discovery_mining)
 
     # Popular Garden&Plants
     admin_config_gm = AdminConfig()
@@ -945,8 +967,8 @@ def playground():
                                            processing_msg=custom_processing_msg,
                                            update_db=update_db,
                                            database=DATABASE)
-    discovery_gm.run()
 
+    framework.add(discovery_gm)
 
 
 
@@ -1007,7 +1029,8 @@ def playground():
                                             update_db=update_db,
                                             database=DATABASE)
 
-    discovery_animals.run()
+
+    framework.add(discovery_animals)
 
     # Popular Garden&Plants
     admin_config_plants = AdminConfig()
@@ -1055,7 +1078,8 @@ def playground():
                                            processing_msg=custom_processing_msg,
                                            update_db=update_db,
                                            database=DATABASE)
-    discovery_garden.run()
+
+    framework.add(discovery_garden)
 
     # Popular Followers
     admin_config_followers = AdminConfig()
@@ -1088,7 +1112,8 @@ def playground():
         update_rate=global_update_rate,
         processing_msg=custom_processing_msg,
         update_db=update_db)
-    discovery_followers.run()
+
+    framework.add(discovery_followers)
 
     # Popular Followers
     admin_config_nonfollowers = AdminConfig()
@@ -1121,7 +1146,9 @@ def playground():
         processing_msg=custom_processing_msg,
         update_db=update_db,
         database=DATABASE)
-    discovery_non_followers.run()
+
+    framework.add(discovery_non_followers)
+
 
     admin_config_opf = AdminConfig()
     admin_config_opf.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -1150,7 +1177,7 @@ def playground():
                                                           update_rate=global_update_rate,
                                                           processing_msg=custom_processing_msg,
                                                           update_db=update_db)
-    discovery_one_per_follow.run()
+    framework.add(discovery_one_per_follow)
 
     # Popular Tweets 
     admin_config = AdminConfig()
@@ -1181,7 +1208,7 @@ def playground():
                                             update_db=update_db,
                                             database=DATABASE)
 
-    discovery_tweets.run()
+    framework.add(discovery_tweets)
     
     
 
@@ -1215,7 +1242,8 @@ def playground():
                                              processing_msg=custom_processing_msg,
                                              update_db=update_db,
                                              database=DATABASE)
-    discovery_global.run()
+
+    framework.add(discovery_global)
 
     # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
     # discovery_test_sub.run()
@@ -1261,6 +1289,10 @@ def playground():
     #                                       processing_msg=custom_processing_msg,
     #                                       update_db=update_db)
     # discovery_nostriga.run()
+
+
+    framework.run()
+
 
     # Subscription Manager DVM
     subscription_config = DVMConfig()
