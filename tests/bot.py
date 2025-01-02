@@ -6,6 +6,7 @@ import dotenv
 from nostr_sdk import Keys
 
 from nostr_dvm.bot import Bot
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks import textextraction_pdf, convert_media, discovery_inactive_follows, translation_google
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -17,6 +18,7 @@ from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 
 def playground():
+    framework = DVMFramework()
     bot_config = DVMConfig()
     identifier = "bot_test"
     bot_config.PRIVATE_KEY = check_and_set_private_key(identifier)
@@ -32,7 +34,7 @@ def playground():
 
     pdfextractor = textextraction_pdf.build_example("PDF Extractor", "pdf_extractor", admin_config)
     # If we don't add it to the bot, the bot will not provide access to the DVM
-    pdfextractor.run()
+    framework.add(pdfextractor)
     bot_config.SUPPORTED_DVMS.append(pdfextractor)  # We add translator to the bot
 
     ymhm_external = build_external_dvm(pubkey="58c52fdca7593dffea63ba6f758779d8251c6732f54e9dc0e56d7a1afe1bb1b6",
@@ -49,7 +51,7 @@ def playground():
     media_bringer = convert_media.build_example("Nostr AI DVM Media Converter",
                                           "media_converter", admin_config_media)
     bot_config.SUPPORTED_DVMS.append(media_bringer)
-    media_bringer.run()
+    framework.add(media_bringer)
 
 
     admin_config_followers = AdminConfig()
@@ -58,7 +60,7 @@ def playground():
     discover_inactive = discovery_inactive_follows.build_example("Those who left",
                                                       "discovery_inactive_follows", admin_config_followers)
     bot_config.SUPPORTED_DVMS.append(discover_inactive)
-    discover_inactive.run()
+    framework.add(discover_inactive)
 
     admin_config_google = AdminConfig()
     admin_config_google.UPDATE_PROFILE = True
@@ -66,7 +68,10 @@ def playground():
 
     translator = translation_google.build_example("NostrAI DVM Translator", "google_translator", admin_config_google)
     bot_config.SUPPORTED_DVMS.append(translator)  # We add translator to the bot
-    translator.run()
+    framework.add(translator)
+
+
+    framework.run()
 
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP65_RELAY_LIST = True

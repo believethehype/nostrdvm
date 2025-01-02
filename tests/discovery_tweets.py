@@ -5,6 +5,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import init_logger, LogLevel
 
+from nostr_dvm.framework import DVMFramework
 # os.environ["RUST_BACKTRACE"] = "full"
 from nostr_dvm.tasks.content_discovery_currently_popular_tweets import DicoverContentCurrentlyPopularTweets
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
@@ -126,6 +127,7 @@ def build_example_tweets(name, identifier, admin_config, options, image, descrip
 
 
 def playground():
+    framework = DVMFramework()
     main_db = "db/nostr_recent_notes.db"
     main_db_limit = 1024  # in mb
 
@@ -149,7 +151,8 @@ def playground():
                                       cost=0,
                                       update_db=True,
                                       database=database)
-    db_scheduler.run()
+
+    framework.add(db_scheduler)
 
     # Popular Tweets 
     admin_config = AdminConfig()
@@ -180,7 +183,9 @@ def playground():
                                             update_db=update_db,
                                             database=database)
 
-    discovery_tweets.run()
+    framework.add(discovery_tweets)
+
+    framework.run()
 
 
 if __name__ == '__main__':

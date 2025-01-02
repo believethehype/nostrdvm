@@ -4,6 +4,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import init_logger, LogLevel
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.content_discovery_currently_latest_longform import DicoverContentLatestLongForm
 from nostr_dvm.tasks.content_discovery_currently_latest_wiki import DicoverContentLatestWiki
 from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
@@ -588,6 +589,7 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
 
 def playground():
 
+    framework = DVMFramework()
 
     #DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler= AdminConfig()
@@ -606,7 +608,8 @@ def playground():
                                             update_rate=global_update_rate,
                                             cost=0,
                                             update_db=True)
-    db_scheduler.run()
+
+    framework.add(db_scheduler)
 
 
 
@@ -643,7 +646,7 @@ def playground():
                                                  processing_msg=custom_processing_msg,
                                                  update_db=update_db)
 
-    discovery_topzaps.run()
+    framework.add(discovery_topzaps)
 
     admin_config_plants = AdminConfig()
     admin_config_plants.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -672,7 +675,9 @@ def playground():
                                            cost=cost,
                                            processing_msg=custom_processing_msg,
                                            update_db=update_db)
-    discovery_custom.run(True)
+    framework.add(discovery_custom)
+
+    framework.run
 
 
 

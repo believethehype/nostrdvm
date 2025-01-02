@@ -111,14 +111,12 @@ class DVMTaskInterface:
         print("Implement the run dvm function")
         pass
 
-    def run(self, join=False):
+    def run(self):
 
 
         try:
             self.nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config, lambda: self.stop_threads], daemon=False)
             self.nostr_dvm_thread.start()
-            if join:
-                self.nostr_dvm_thread.join()
         except BaseException as e:
             print("gone")
 

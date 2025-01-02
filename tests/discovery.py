@@ -47,9 +47,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                       "wss://nostr.oxtr.dev"]
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
-              #"wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
-              #"wss://relay.nostr.net"
+              "wss://nostr.oxtr.dev"
               ]
 
 if use_logger:
@@ -702,16 +700,11 @@ def playground():
                                       database=DATABASE)
 
     framework.add(db_scheduler)
-    #db_scheduler.run()
 
     admin_config_gallery = AdminConfig()
     admin_config_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config_gallery.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_gallery.UPDATE_PROFILE = update_profile
-    # admin_config_global_popular.DELETE_NIP89 = True
-    # admin_config_global_popular.PRIVKEY = ""
-    # admin_config_global_popular.EVENTID = "2fea4ee2ccf0fa11db171113ffd7a676f800f34121478b7c9a4e73c2f1990028"
-    # admin_config_global_popular.POW = True
     custom_processing_msg = ["Looking for popular Gallery entries"]
     update_db = True
 
