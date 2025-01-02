@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 
 import dotenv
+
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -18,6 +20,9 @@ from nostr_dvm.utils.zap_utils import change_ln_address
 
 # We keep the main code structure almost the same as in tutorial02 and 05.
 def run_dvm(identifier, announce):
+
+    # Initialize the framework
+    framework = DVMFramework()
 
     # Remember, with build_default_config(identifier) the framework will either create or load certain information
     # such as private nostr keys, wallet information, and d tags.
@@ -144,7 +149,9 @@ def run_dvm(identifier, announce):
         return result
 
     dvm.process = process
-    dvm.run()
+    framework.add(dvm)
+
+    framework.run()
 
 
 
