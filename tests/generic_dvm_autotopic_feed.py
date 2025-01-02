@@ -8,7 +8,7 @@ from duck_chat import ModelType
 from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, Options, ClientBuilder, Tag, \
     LogLevel, Timestamp, NostrDatabase
 
-
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -18,8 +18,8 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 from nostr_dvm.utils.output_utils import send_job_status_reaction
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 
-RELAY_LIST = ["wss://nostr.mom",
-              #"wss://relay.primal.net",
+RELAY_LIST = ["wss://relay.nostrdvm.com",
+              "wss://relay.primal.net",
               "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"
               ]
@@ -31,31 +31,14 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
 
 
 def playground(announce=False):
-    # admin_config_db_scheduler = AdminConfig()
-    # options = {
-    #     "db_name": "db/nostr_recent_notes.db",
-    #     "db_since": 24 * 60 * 60,  # 48h since gmt,
-    #     "personalized": False,
-    #     "logger": False}
-    # image = ""
-    # about = "I just update the Database based on my schedule"
-    # db_scheduler = build_db_scheduler("DB Scheduler",
-    #                                   "db_scheduler",
-    #                                   admin_config_db_scheduler, options,
-    #                                   image=image,
-    #                                   description=about,
-    #                                   update_rate=global_update_rate,
-    #                                   cost=0,
-    #                                   update_db=True)
-    # db_scheduler.run()
+
+    framework = DVMFramework()
 
     kind = 5300
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = announce
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
     admin_config.UPDATE_PROFILE = announce
-
-
 
 
     name = "Your topics (beta)"
@@ -68,12 +51,6 @@ def playground(announce=False):
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
 
-
-
-    #admin_config.DELETE_NIP89 = True
-    #admin_config.POW = True
-    #admin_config.EVENTID = "5322b731230cf8961f8403d025722a381af9b012b5d5f6dcc09f88e160f4e4ff"
-    #admin_config.PRIVKEY = dvm_config.PRIVATE_KEY
 
 
     # Add NIP89
@@ -216,7 +193,8 @@ def playground(announce=False):
 
 
     dvm.process = process  # overwrite the process function with the above one
-    dvm.run(True)
+    framework.add(dvm)
+    framework.run()
 
 
 if __name__ == '__main__':
@@ -231,4 +209,4 @@ if __name__ == '__main__':
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    playground(announce=False)
+    playground(announce=True)

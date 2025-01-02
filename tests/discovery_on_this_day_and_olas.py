@@ -20,10 +20,10 @@ from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag, delete_nip_89
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 
-rebroadcast_NIP89 = True  # Announce NIP89 on startup Only do this if you know what you're doing.
+rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
 update_profile = True
-delete_nip_89_on_shutdown = False
+delete_nip_89_on_shutdown = True
 
 global_update_rate = 60*60  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
@@ -34,7 +34,8 @@ if use_logger:
     init_logger(log_level)
 
 
-RELAY_LIST = ["wss://relay.nostrdvm.com"
+RELAY_LIST = ["wss://relay.nostrdvm.com",
+              "wss://nostr.oxtr.dev"
               ]
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
