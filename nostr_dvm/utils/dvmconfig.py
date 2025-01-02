@@ -40,8 +40,8 @@ class DVMConfig:
     AVOID_OUTBOX_RELAY_LIST = outbox_utils.AVOID_OUTBOX_RELAY_LIST
     # If a DVM has a paid subscription, overwrite list without the paid one.
 
-    DELETE_ANNOUNCEMENT_ON_SHUTDOWN = False
-    # remove the announcement when the DVM stops. Recommended. Will be True later.
+    DELETE_ANNOUNCEMENT_ON_SHUTDOWN = True
+    # remove the announcement when the DVM stops. Recommended.
     # Make sure to set admin_utils.REBROADCAST_NIP89 = True on start.
 
     DELETE_ANNOUNCEMENT_ON_SHUTDOWN_POW = False
