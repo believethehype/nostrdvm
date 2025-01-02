@@ -1,8 +1,10 @@
 import asyncio
 import json
 import os
+import signal
 import subprocess
 import sys
+import time
 from subprocess import run
 from sys import platform
 from threading import Thread
@@ -14,7 +16,7 @@ from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config
-from nostr_dvm.utils.nip89_utils import NIP89Config
+from nostr_dvm.utils.nip89_utils import NIP89Config, delete_nip_89
 from nostr_dvm.utils.output_utils import post_process_result
 
 
@@ -36,6 +38,8 @@ class DVMTaskInterface:
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None,
                  options=None, task=None):
+        self.stop_threads = False
+        self.nostr_dvm_thread = None
         if options is None:
             self.options = {}
         else:
@@ -108,10 +112,21 @@ class DVMTaskInterface:
         pass
 
     def run(self, join=False):
-        nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config], daemon=False)
-        nostr_dvm_thread.start()
-        if join:
-            nostr_dvm_thread.join()
+
+
+        try:
+            self.nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config, lambda: self.stop_threads], daemon=False)
+            self.nostr_dvm_thread.start()
+            if join:
+                self.nostr_dvm_thread.join()
+        except BaseException as e:
+            print("gone")
+
+
+    def join(self):
+        self.stop_threads = True
+        self.nostr_dvm_thread.join(1)
+        dvm_shutdown(self.dvm_config)
 
     async def schedule(self, dvm_config):
         """schedule something, e.g. define some time to update or to post, does nothing by default"""
@@ -178,3 +193,12 @@ def process_venv(identifier):
         DVMTaskInterface.write_output(result, args.output)
     except Exception as e:
         DVMTaskInterface.write_output("Error: " + str(e), args.output)
+
+def dvm_shutdown(dvm_config):
+    if dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN:
+        print(dvm_config.NIP89.NAME)
+        asyncio.run(delete_nip_89(dvm_config, dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN_POW))
+
+
+
+
