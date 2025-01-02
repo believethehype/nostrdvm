@@ -38,7 +38,7 @@ class DVMTaskInterface:
     def __init__(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
                  admin_config: AdminConfig = None,
                  options=None, task=None):
-        self.stop_threads = False
+        self.stop_thread = False
         self.nostr_dvm_thread = None
         if options is None:
             self.options = {}
@@ -112,17 +112,17 @@ class DVMTaskInterface:
         pass
 
     def run(self):
-        stop_threads = False
+        self.stop_thread = False
 
         try:
-            self.nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config, lambda: stop_threads], daemon=False)
+            self.nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config, lambda: self.stop_thread], daemon=False)
             self.nostr_dvm_thread.start()
         except BaseException as e:
             print("gone")
 
 
     def join(self):
-        self.stop_threads = True
+        self.stop_thread = True
         self.nostr_dvm_thread.join(1)
         dvm_shutdown(self.dvm_config)
 
