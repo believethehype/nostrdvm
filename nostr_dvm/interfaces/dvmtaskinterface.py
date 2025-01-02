@@ -112,10 +112,10 @@ class DVMTaskInterface:
         pass
 
     def run(self):
-
+        stop_threads = False
 
         try:
-            self.nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config, lambda: self.stop_threads], daemon=False)
+            self.nostr_dvm_thread = Thread(target=self.DVM, args=[self.dvm_config, self.admin_config, lambda: stop_threads], daemon=False)
             self.nostr_dvm_thread.start()
         except BaseException as e:
             print("gone")

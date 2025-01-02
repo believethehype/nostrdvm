@@ -50,6 +50,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_nip_89_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 

@@ -52,7 +52,6 @@ class DVM:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        self.stop_thread = stop_thread
         relaylimits = RelayLimits.disable()
         opts = Options().relay_limits(relaylimits) #.difficulty(28)
 
@@ -925,7 +924,7 @@ class DVM:
 
         try:
 
-            while not self.stop_thread:
+            while self.stop_thread is False:
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     await dvm.schedule(self.dvm_config)
 
@@ -965,4 +964,6 @@ class DVM:
                 await asyncio.sleep(1)
         except BaseException:
             print("ende")
+
+        print("and now my watch has ended.")
 
