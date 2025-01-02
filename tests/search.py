@@ -5,6 +5,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import Keys, LogLevel, init_logger
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.advanced_search import AdvancedSearch
 from nostr_dvm.tasks.advanced_search_wine import AdvancedSearchWine
 from nostr_dvm.tasks.search_users import SearchUser
@@ -199,15 +200,22 @@ def build_user_search(name, identifier):
 
 def playground():
 
+    framework = DVMFramework()
+
     advanced_search = build_advanced_search("Nostr.band Search",
                                            "discovery_content_search")
-    advanced_search.run()
+    framework.add(advanced_search)
 
     advanced_search_wine = build_advanced_search_wine("Nostr.wine Search", "discovery_content_searchwine")
-    advanced_search_wine.run()
+    framework.add(advanced_search_wine)
+
+    framework.run()
+
 
     #profile_search = build_user_search("Profile Searcher", "profile_search")
-    #profile_search.run()
+    #framework.add(profile_search)
+
+    framework.run()
 
 
 

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import dotenv
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
@@ -11,6 +12,8 @@ from nostr_sdk import Keys, Kind
 
 
 def playground(announce=False):
+    framework = DVMFramework()
+
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = announce
     admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
@@ -51,7 +54,9 @@ def playground(announce=False):
         return result
 
     dvm.process = process  # overwrite the process function with the above one
-    dvm.run(True)
+    framework.add(dvm)
+
+    framework.run()
 
 if __name__ == '__main__':
     env_path = Path('.env')

@@ -7,6 +7,7 @@ import dotenv
 from nostr_sdk import LogLevel, init_logger
 
 from nostr_dvm.bot import Bot
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.convert_media import MediaConverter
 from nostr_dvm.tasks.discovery_bot_farms import DiscoveryBotFarms
 from nostr_dvm.tasks.discovery_censor_wot import DiscoverReports
@@ -422,6 +423,9 @@ def build_replicate_fluxpro(name, identifier, announce):
 
 
 def playground(announce=False):
+
+    framework = DVMFramework()
+
     #bot_config = DVMConfig()
     bot_config = build_default_config("bot")
     bot_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
@@ -436,48 +440,51 @@ def playground(announce=False):
     if os.getenv("OPENAI_API_KEY") is not None and os.getenv("OPENAI_API_KEY") != "":
         dalle = build_dalle("Dall-E 3", "dalle3", announce)
         bot_config.SUPPORTED_DVMS.append(dalle)
-        dalle.run()
+        framework.add(dalle)
+
     if os.getenv("STABILITY_KEY") is not None and os.getenv("STABILITY_KEY") != "":
         sd35 = build_sd35("Stable Diffusion Ultra", "sd35", announce)
-        sd35.run()
+        framework.add(sd35)
 
     if os.getenv("REPLICATE_API_TOKEN") is not None and os.getenv("REPLICATE_API_TOKEN") != "":
         model = "stability-ai/stable-diffusion-3.5-large"
         sd3replicate = build_replicate("Stable Diffusion 3.5 Large", "replicate_svd", model, announce)
         bot_config.SUPPORTED_DVMS.append(sd3replicate)
-        sd3replicate.run()
+        framework.add(sd3replicate)
 
         model = "black-forest-labs/flux-1.1-pro"
         fluxreplicate = build_replicate_fluxpro("Flux 1.1. Pro", "fluxpro", announce)
         bot_config.SUPPORTED_DVMS.append(fluxreplicate)
-        fluxreplicate.run()
+        framework.add(fluxreplicate)
 
         recraftreplicate = build_replicate_recraft("Recraft v3", "recraftsvg", announce)
         bot_config.SUPPORTED_DVMS.append(recraftreplicate)
-        recraftreplicate.run()
+        framework.add(recraftreplicate)
 
 
 
 
     media_bringer = build_media_converter("Nostr AI DVM Media Converter", "media_converter", announce)
     #bot_config.SUPPORTED_DVMS.append(media_bringer)
-    media_bringer.run()
+    framework.add(media_bringer)
 
 
     discover_inactive = build_inactive_follows_finder("Those who left", "discovery_inactive_follows", announce)
     bot_config.SUPPORTED_DVMS.append(discover_inactive)
-    discover_inactive.run()
+    framework.add(discover_inactive)
 
 
     discovery_censor = build_1984("Censorship 1984", "discovery_censor", announce)
     #bot_config.SUPPORTED_DVMS.append(discovery_censor)
-    discovery_censor.run()
+    framework.add(discovery_censor)
 
 
 
     discovery_bots = build_botfarms("Bot Hunter", "discovery_botfarms", announce)
     #bot_config.SUPPORTED_DVMS.append(discovery_bots)
-    discovery_bots.run()
+    framework.add(discovery_bots)
+
+    framework.run()
 
 
     admin_config = AdminConfig()

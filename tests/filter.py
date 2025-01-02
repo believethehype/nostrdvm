@@ -2,11 +2,13 @@ from pathlib import Path
 
 import dotenv
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks import discovery_bot_farms
 from nostr_dvm.utils.admin_utils import AdminConfig
 
 
 def playground():
+    framework = DVMFramework()
     # Generate an optional Admin Config, in this case, whenever we give our DVMs this config, they will (re)broadcast
     # their NIP89 announcement
     # You can create individual admins configs and hand them over when initializing the dvm,
@@ -17,16 +19,15 @@ def playground():
     admin_config.UPDATE_PROFILE = False
 
     #discovery_test_sub = discovery_censor_wot.build_example("Censorship", "discovery_censor", admin_config)
-    #discovery_test_sub.run()
+    #framework.add(discovery_test_sub)
 
     discovery_test_sub = discovery_bot_farms.build_example("Bot Hunter", "discovery_botfarms", admin_config)
-    discovery_test_sub.run()
+    framework.add(discovery_test_sub)
+
     #discovery_test_sub = discovery_inactive_follows.build_example("Inactive Followings", "discovery_inactive", admin_config)
-    #discovery_test_sub.run()
+    #framework.add(discovery_test_sub)
 
-
-
-    #keep_alive()
+    framework.run()
 
 
 if __name__ == '__main__':

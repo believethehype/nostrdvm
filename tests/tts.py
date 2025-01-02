@@ -3,6 +3,7 @@ from pathlib import Path
 
 import dotenv
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.texttospeech import TextToSpeech
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
@@ -15,6 +16,8 @@ if __name__ == '__main__':
         dotenv.load_dotenv(env_path, verbose=True, override=True)
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
+
+    framework = DVMFramework()
     name = "TTS Guy Swann"
     identifier = "ttsguy"
     admin_config_tts = AdminConfig()
@@ -51,4 +54,6 @@ if __name__ == '__main__':
     nip89config.CONTENT = json.dumps(nip89info)
     tts = TextToSpeech(name=name, dvm_config=dvm_config, nip89config=nip89config, admin_config=admin_config_tts,
                        options=options)
-    tts.run()
+
+    framework.add(tts)
+    framework.run()

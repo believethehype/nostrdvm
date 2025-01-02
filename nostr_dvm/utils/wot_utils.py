@@ -164,8 +164,11 @@ async def _build_network_from(index_map, network_graph, visited_pk=None, depth=2
     else:
 
         # recursive call
-        index_map, network_graph = await _build_network_from(index_map, network_graph, visited_pk, depth - 1, max_batch,
-                                                             max_time_request, dvm_config=dvm_config)
+        try:
+            index_map, network_graph = await _build_network_from(index_map, network_graph, visited_pk, depth - 1, max_batch,
+                                                                 max_time_request, dvm_config=dvm_config)
+        except BaseException as e:
+            print(e)
 
     print('current network: ' + str(len(network_graph.nodes())) + ' npubs', end='\r')
 

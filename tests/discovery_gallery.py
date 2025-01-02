@@ -4,6 +4,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import init_logger, LogLevel
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
@@ -56,6 +57,8 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
 
 
 def playground():
+    framework = DVMFramework()
+
     # Popular Global
     admin_config_global_gallery = AdminConfig()
     admin_config_global_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -85,27 +88,12 @@ def playground():
                                       update_rate=global_update_rate,
                                       processing_msg=custom_processing_msg,
                                       update_db=update_db)
-    discover_gallery.run()
 
-    # discovery_test_sub = content_discovery_currently_popular.build_example_subscription("Currently Popular Notes DVM (with Subscriptions)", "discovery_content_test", admin_config)
-    # discovery_test_sub.run()
+    framework.add(discover_gallery)
 
-    # Subscription Manager DVM
-    # subscription_config = DVMConfig()
-    # subscription_config.PRIVATE_KEY = check_and_set_private_key("dvm_subscription")
-    # npub = Keys.parse(subscription_config.PRIVATE_KEY).public_key().to_bech32()
-    # invoice_key, admin_key, wallet_id, user_id, lnaddress = check_and_set_ln_bits_keys("dvm_subscription", npub)
-    # subscription_config.LNBITS_INVOICE_KEY = invoice_key
-    # subscription_config.LNBITS_ADMIN_KEY = admin_key  # The dvm might pay failed jobs back
-    # subscription_config.LNBITS_URL = os.getenv("LNBITS_HOST")
-    # sub_admin_config = AdminConfig()
-    # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
+    framework.run()
 
-    # currently there is none, but add this once subscriptions are live.
-    # x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
-    # x.start()
 
-    # keep_alive()
 
 
 if __name__ == '__main__':
