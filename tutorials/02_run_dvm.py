@@ -11,6 +11,7 @@ from pathlib import Path
 
 import dotenv
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -20,6 +21,10 @@ from nostr_dvm.utils.zap_utils import change_ln_address
 
 
 def run_dvm(identifier):
+
+    # Initialize the framework
+    framework = DVMFramework()
+
     # This function will either create or load the parameters of our DVMConfig.
     # Make sure you replace the identifier down in the main function with the one you generated in tutorial 2, or we will create a new one here.
     dvm_config = build_default_config(identifier)
@@ -60,8 +65,11 @@ def run_dvm(identifier):
         return result
 
     dvm.process = process  # now we simply overwrite our DVM's process function with the one we defined here.
-    # and finally we run the DVM #RunDVM
-    dvm.run()
+
+    # we add each DVM to the framework, in this case the one we just built
+    framework.add(dvm)
+    # and finally we run the framework #RunDVM
+    framework.run()
 
     # When the DVM is running you should see a blue message with the name and the public key in bech32 and hex format.
     # For the next exercise, copy the Hex key, and let this DVM run, you will need it :)

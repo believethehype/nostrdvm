@@ -14,6 +14,8 @@ import os
 from pathlib import Path
 
 import dotenv
+
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_sdk import Kind, Keys
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -25,6 +27,8 @@ from nostr_dvm.utils.zap_utils import change_ln_address
 
 def run_dvm(identifier, announce):
 
+    # Initialize the framework
+    framework = DVMFramework()
 
     dvm_config = build_default_config(identifier)
     kind = Kind(5050)
@@ -71,7 +75,8 @@ def run_dvm(identifier, announce):
         return result
 
     dvm.process = process
-    dvm.run(True)
+    framework.add(dvm)
+    framework.run()
 
 
 
