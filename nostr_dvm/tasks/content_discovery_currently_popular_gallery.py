@@ -141,7 +141,8 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
             await cli.add_relay(relay)
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            await cli.add_relay(relay)
+            if relay not in relays:
+                await cli.add_relay(relay)
 
         await cli.connect()
 
@@ -158,7 +159,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                                                                              ids_str).since(since)
 
         dbopts = SyncOptions().direction(SyncDirection.DOWN)
-        #await cli.sync(filtreactions, dbopts)
+        await cli.sync(filtreactions, dbopts)
         await cli.sync(filter_nip22, dbopts)
 
         filter2 = Filter().ids(ids)

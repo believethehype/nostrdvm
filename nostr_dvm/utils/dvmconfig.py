@@ -22,11 +22,12 @@ class DVMConfig:
     # DBs to sync with
     SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                           "wss://nostr.oxtr.dev",
+                          "wss://relay.primal.net",
                          ]
     # announce inbox relays, dm relays and NIP89 announcement to
     ANNOUNCE_RELAY_LIST = ["wss://relay.primal.net",
                   "wss://relay.damus.io",
-                  "wss://nostr.oxtr.dev", "wss://nostr.mom"
+                  "wss://nostr.oxtr.dev", "wss://relay.nostrdvm.com"
                   ]
 
     # Straight Censorship (reply guy spam)

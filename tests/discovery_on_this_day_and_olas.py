@@ -23,7 +23,7 @@ from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
 update_profile = True
-delete_nip_89_on_shutdown = True
+delete_nip_89_on_shutdown = False
 
 global_update_rate = 60*60  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
@@ -43,14 +43,23 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                       "wss://nostr.oxtr.dev"
                       ]
 
+SYNC_DB_RELAY_LIST_OLAS = ["wss://relay.damus.io",
+                      "wss://relay.primal.net",
+                      "wss://relay.olas.app"
+                      ]
+
 
 def build_example_gallery(name, identifier, admin_config, options, image, cost=0, update_rate=180, processing_msg=None,
-                      update_db=True):
+                      update_db=True, database=None):
     dvm_config = build_default_config(identifier)
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.FIX_COST = cost
+    dvm_config.DATABASE = database
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
+    dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
+    dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST_OLAS
+    dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.SEND_FEEDBACK_EVENTS = False
     dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_nip_89_on_shutdown
     admin_config.LUD16 = dvm_config.LN_ADDRESS
@@ -153,7 +162,7 @@ def playground():
 
     options = {
         "db_name": main_db,
-        "db_since": 24 * 60 * 60 * (days+1),
+        "db_since": 24 * 60 * 60 * (days),
         "personalized": False,
         "logger": False}
 
@@ -177,20 +186,21 @@ def playground():
     framework.add(discovery_onthisday)
 
 
+    olas_db = "db/nostr_olas.db"
+    olas_db_limit = 1024  # in mb
+
+    olas_database = asyncio.run(init_db(olas_db, wipe=True, limit=olas_db_limit, print_filesize=True))
+
     admin_config_global_gallery = AdminConfig()
     admin_config_global_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
     admin_config_global_gallery.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
     admin_config_global_gallery.UPDATE_PROFILE = update_profile
-    admin_config_global_gallery.DELETE_NIP89 = False
-    admin_config_global_gallery.PRIVKEY = ""
-    admin_config_global_gallery.EVENTID = ""
-    admin_config_global_gallery.POW = False
     custom_processing_msg = ["Looking for popular Gallery entries"]
     update_db = True
 
     options_gallery = {
         "db_name": "db/nostr_olas.db",
-        "db_since": 60 * 60 * 24 * 4,  # 2d since gmt,
+        "db_since": 60 * 60 * 24 * 3,  # 2d since gmt,
     }
 
 
@@ -204,7 +214,8 @@ def playground():
                                       cost=cost,
                                       update_rate=global_update_rate,
                                       processing_msg=custom_processing_msg,
-                                      update_db=update_db)
+                                      update_db=update_db,
+                                      database=olas_database)
 
 
     framework.add(discover_olas)
