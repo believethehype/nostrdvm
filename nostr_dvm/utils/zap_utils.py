@@ -393,6 +393,44 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain, newname=" 
             return "", ""
 
 
+def make_ln_address_nostdress_manual_lnbits(new_name, invoice_key, npub, nostdress_domain, lnbits_domain, pin = " ", currentname= " "):
+
+    data = {
+        'name': new_name,
+        'domain': nostdress_domain,
+        'kind': "lnbits",
+        'host': lnbits_domain,
+        'key': invoice_key,
+        'pin': pin,
+        'npub': npub,
+        'currentname': currentname
+    }
+    try:
+        url = "https://" + nostdress_domain + "/api/easy/"
+        res = requests.post(url, data=data)
+        print(res.text)
+        obj = json.loads(res.text)
+
+        if obj.get("ok"):
+            return data["name"] + "@" + nostdress_domain, obj["pin"]
+
+    except Exception as e:
+        print("Creating random name..")
+        data["name"] = data["name"] + "_" + randomword(10)
+        try:
+            url = "https://" + nostdress_domain + "/api/easy/"
+            res = requests.post(url, data=data)
+            print(res.text)
+            obj = json.loads(res.text)
+
+            if obj.get("ok"):
+                return data["name"] + "@" + nostdress_domain, obj["pin"]
+
+        except Exception as e:
+            return "", ""
+
+
+
 def check_and_set_ln_bits_keys(identifier, npub):
     if not os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()):
         invoicekey, adminkey, walletid, userid, success = create_lnbits_account(identifier)
