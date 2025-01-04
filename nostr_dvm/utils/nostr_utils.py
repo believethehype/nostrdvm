@@ -237,7 +237,10 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
         if len(relays) == 0:
             return None
         for relay in relays:
-            await outboxclient.add_relay(relay)
+            try:
+                await outboxclient.add_relay(relay)
+            except:
+                print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
         try:
             await outboxclient.connect()
             event_response = await outboxclient.send_event(event)
@@ -276,7 +279,11 @@ async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
-                await client.add_relay(relay)
+                try:
+                    await client.add_relay(relay)
+                except:
+                    print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to relays")
+
 
         await client.connect()
 
