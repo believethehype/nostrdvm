@@ -212,7 +212,7 @@ def playground():
                                       options=options_gallery,
                                       image=image,
                                       cost=cost,
-                                      update_rate=global_update_rate,
+                                      update_rate=500,
                                       processing_msg=custom_processing_msg,
                                       update_db=update_db,
                                       database=olas_database)
