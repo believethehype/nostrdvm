@@ -4,6 +4,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import init_logger, LogLevel
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.content_discovery_currently_popular_mostr import DicoverContentCurrentlyPopularMostr
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
@@ -23,7 +24,7 @@ if use_logger:
     init_logger(LogLevel.ERROR)
 
 
-RELAY_LIST = ["wss://nostr.mom",
+RELAY_LIST = ["wss://relay.nostrdvm.com",
               #"wss://relay.primal.net",
               "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"
@@ -72,6 +73,8 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
 
 
 def playground():
+
+    framework = DVMFramework()
     # Popular Global
     admin_config_global_wot = AdminConfig()
     admin_config_global_wot.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -101,7 +104,8 @@ def playground():
                                       update_rate=global_update_rate,
                                       processing_msg=custom_processing_msg,
                                       update_db=update_db)
-    discovery_mostr.run(True)
+    framework.add(discovery_mostr)
+    framework.run()
 
 
 

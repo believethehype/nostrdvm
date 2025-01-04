@@ -5,6 +5,7 @@ from pathlib import Path
 import dotenv
 from nostr_sdk import Kind
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
@@ -26,6 +27,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
 
 def playground(announce=False):
 
+    framework = DVMFramework()
     kind = Kind(5100)
     model = "dev" #schnell
 
@@ -103,7 +105,8 @@ def playground(announce=False):
 
 
     dvm.process = process  # overwrite the process function with the above one
-    dvm.run(True)
+    framework.add(dvm)
+    framework.run()
 
 
 if __name__ == '__main__':

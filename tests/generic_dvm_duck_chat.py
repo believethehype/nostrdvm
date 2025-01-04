@@ -5,6 +5,7 @@ import dotenv
 from duck_chat import ModelType
 from nostr_sdk import Kind
 
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
@@ -25,6 +26,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
 
 def playground(announce=False):
 
+    framework = DVMFramework()
     kind = 5050
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = announce
@@ -77,7 +79,8 @@ def playground(announce=False):
         return result
 
     dvm.process = process  # overwrite the process function with the above one
-    dvm.run(True)
+    framework.add(dvm)
+    framework.run()
 
 
 if __name__ == '__main__':
