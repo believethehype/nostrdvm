@@ -196,3 +196,5 @@ tests/test_data/wallet_mint_api/wallet.sqlite3
 tests/cat4.png
 tests/cat4.png
 *.png
+tests/gifs/data.mdb
+tests/gifs/lock.mdb
