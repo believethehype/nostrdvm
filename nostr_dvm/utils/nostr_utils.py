@@ -218,6 +218,8 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
 
     for relay in relays[:5]:
         try:
+            if not relay.startswith("ws://") and not relay.startswith("wss://"):
+                raise Exception("wrong Scheme")
             await outboxclient.add_relay(relay)
         except:
             print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
@@ -238,6 +240,8 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
             return None
         for relay in relays:
             try:
+                if not relay.startswith("ws://") and not relay.startswith("wss://"):
+                    raise Exception("wrong Scheme")
                 await outboxclient.add_relay(relay)
             except:
                 print("[" + dvm_config.NIP89.NAME + "] " + relay + " couldn't be added to outbox relays")
