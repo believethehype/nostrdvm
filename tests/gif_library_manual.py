@@ -1,4 +1,4 @@
-import asyncio
+LPimport asyncio
 
 from nostr_sdk import Tag, Keys, EventBuilder, Kind, NostrSigner, Client
 
@@ -134,7 +134,7 @@ async def delete_gif_collection(keys, eid: str, dtag: str):
 
 if __name__ == "__main__":
 
-    keys =  "yournsed" #check_and_set_private_key("test_client")
+    keys =  "yournsec" #check_and_set_private_key("test_client")
 
     asyncio.run(create_gif_collection(keys=keys, title="DBTH's gif collection", dtag="dbth"))
 
