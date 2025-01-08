@@ -9,6 +9,7 @@ from duck_chat import ModelType
 from nostr_sdk import Keys, Kind
 
 from nostr_dvm.bot import Bot
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
@@ -18,16 +19,17 @@ from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
 
 def playground(announce = False):
 
-
+    framework = DVMFramework()
 
     identifier = "bot_test"
     bot_config = build_default_config(identifier)
-    bot_config.CHATBOT = True
+    bot_config.CHATBOT = False
     bot_config.DVM_KEY = "aa8ab5b774d47e7b29a985dd739cfdcccf93451678bf7977ba1b2e094ecd8b30"
 
     admin_config = AdminConfig()
-    admin_config.REBROADCAST_NIP65_RELAY_LIST = True
-    admin_config.UPDATE_PROFILE = True
+    admin_config.REBROADCAST_NIP65_RELAY_LIST = False
+    admin_config.UPDATE_PROFILE = False
+    bot_config.RELAY_LIST = ["wss://relay.primal.net", "wss://relay.nostrdvm.com", "wss://nostr.oxtr.dev"]
     x = threading.Thread(target=Bot, args=([bot_config, admin_config]))
     x.start()
 
@@ -56,7 +58,7 @@ def playground(announce = False):
     }
 
     nip89config = NIP89Config()
-    nip89config.KIND = kind
+    nip89config.KIND = Kind(kind)
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
@@ -79,7 +81,8 @@ def playground(announce = False):
         return result
 
     dvm.process = process  # overwrite the process function with the above one
-    dvm.run(True)
+    framework.add(dvm)
+    #framework.run()
 
 
 

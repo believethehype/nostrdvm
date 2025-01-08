@@ -963,7 +963,7 @@ class DVM:
 
                 await asyncio.sleep(1)
         except BaseException:
-            print("ende")
+            print("end")
 
         print("and now my watch has ended.")
 
