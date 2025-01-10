@@ -224,7 +224,7 @@ async function listen() {
                   result: event.content,
                   name: el.name,
                   about: el.about,
-                  image: el.image,
+                  image: el.picture,
                   amount: 0,
                   bolt11: "",
                   nip90params: el.nip90Params,
