@@ -55,7 +55,7 @@ def playground(announce=False):
     }
 
     nip89config = NIP89Config()
-    nip89config.KIND = kind
+    nip89config.KIND = Kind(kind)
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
@@ -72,10 +72,71 @@ def playground(announce=False):
 
         from duck_chat import DuckChat
         options = dvm.set_options(request_form)
-        async with DuckChat(model=ModelType.GPT4o) as chat:
-            query = ("{role: system, content: " + options["system_prompt"] + "}" +" {role: user, content:" +  options["input"]+ "}")
-            result = await chat.ask_question(query)
+        result = "No worky"
+        try:
+            """
+            Simple Python client for ddg.gg/chat
+            """
+
+            from typing import Dict, List
+            import requests, json
+
+            class ConversationOver(Exception):
+                """Raised when the conversation limit is reached."""
+                pass
+
+            class ChatModel:
+                """Available models for chat."""
+                claude = "claude-3-haiku-20240307"
+                gpt = "gpt-4o-mini"
+                llama = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
+                mistral = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+
+            class ChatInstance:
+                def __init__(self, model: str):
+                    self.base = "https://duckduckgo.com/duckchat/v1%s"
+                    self.vqd: str = requests.get(
+                        self.base % "/status",
+                        headers={"x-vqd-accept": "1"},
+                        timeout=5
+                    ).headers["x-vqd-4"]
+                    self.model: str = model
+                    self.transcript: List[Dict[str, str]] = []
+
+                def chat(self, message: str) -> str:
+                    """
+                    Chat with the chosen model. Takes a message and returns the model's response.
+                    """
+                    self.transcript.append({"role": "user", "content": message})
+                    res = requests.post(
+                        self.base % "/chat",
+                        headers={"x-vqd-4": self.vqd},
+                        timeout=5,
+                        json={"model": self.model, "messages": self.transcript},
+                    )
+                    self.vqd = res.headers["x-vqd-4"]
+
+                    out: str = ""
+                    for item in (i.removeprefix("data: ") for i in res.text.split("\n\n")):
+                        if item.startswith("[DONE]"):
+                            if item.endswith("[LIMIT_CONVERSATION]"):
+                                raise ConversationOver
+                            break
+                        out += json.loads(item).get("message", "").encode("latin-1").decode()
+
+                    self.transcript.append({"role": "assistant", "content": out})
+                    return out
+
+
+            chat = ChatInstance(ChatModel.gpt)
+            query = ("{role: system, content: " + options["system_prompt"] + "}" + " {role: user, content:" +
+                     options["input"] + "}")
+
+            result = chat.chat(query)
             print(result)
+
+        except Exception as e:
+            print(e)
         return result
 
     dvm.process = process  # overwrite the process function with the above one
