@@ -25,7 +25,7 @@ RELAY_LIST = ["wss://relay.nostrdvm.com",
               ]
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
-                      #"wss://relay.primal.net",
+                      "wss://relay.primal.net",
                       "wss://nostr.oxtr.dev"]
 
 
@@ -83,13 +83,61 @@ def playground(announce=False):
     async def process_request(options, prompt):
         result = ""
         try:
-            # pip install -U https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
-            from duck_chat import DuckChat
-            async with DuckChat(model=ModelType.GPT4o) as chat:
-                query = prompt
-                result = await chat.ask_question(query)
-                result = result.replace(", ", ",")
-                print(result)
+
+            from typing import Dict, List
+            import requests, json
+
+            class ConversationOver(Exception):
+                """Raised when the conversation limit is reached."""
+                pass
+
+            class ChatModel:
+                """Available models for chat."""
+                claude = "claude-3-haiku-20240307"
+                gpt = "gpt-4o-mini"
+                llama = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo"
+                mistral = "mistralai/Mixtral-8x7B-Instruct-v0.1"
+
+            class ChatInstance:
+                def __init__(self, model: str):
+                    self.base = "https://duckduckgo.com/duckchat/v1%s"
+                    self.vqd: str = requests.get(
+                        self.base % "/status",
+                        headers={"x-vqd-accept": "1"},
+                        timeout=5
+                    ).headers["x-vqd-4"]
+                    self.model: str = model
+                    self.transcript: List[Dict[str, str]] = []
+
+                def chat(self, message: str) -> str:
+                    """
+                    Chat with the chosen model. Takes a message and returns the model's response.
+                    """
+                    self.transcript.append({"role": "user", "content": message})
+                    res = requests.post(
+                        self.base % "/chat",
+                        headers={"x-vqd-4": self.vqd},
+                        timeout=5,
+                        json={"model": self.model, "messages": self.transcript},
+                    )
+                    self.vqd = res.headers["x-vqd-4"]
+
+                    out: str = ""
+                    for item in (i.removeprefix("data: ") for i in res.text.split("\n\n")):
+                        if item.startswith("[DONE]"):
+                            if item.endswith("[LIMIT_CONVERSATION]"):
+                                raise ConversationOver
+                            break
+                        out += json.loads(item).get("message", "").encode("latin-1").decode()
+
+                    self.transcript.append({"role": "assistant", "content": out})
+                    return out
+
+            chat = ChatInstance(ChatModel.gpt)
+            query = prompt
+
+            result = chat.chat(query)
+            print(result)
         except Exception as e:
             print(e)
         return result
@@ -133,7 +181,6 @@ def playground(announce=False):
 
         #loop = asyncio.get_running_loop()
         result =  await process_request(options, prompt)
-        print(result)
         content = "I identified these as your topics:\n\n"+result.replace(",", ", ") + "\n\nProcessing, just a few more seconds..."
         await send_job_status_reaction(original_event_id_hex=dvm.options["request_event_id"], original_event_author_hex=dvm.options["request_event_author"],  client=cli, dvm_config=dvm_config, content=content)
 
@@ -159,12 +206,11 @@ def playground(announce=False):
 
         filters = []
         for keyword in keywords:
-            print(keyword)
-            filters.append(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(" " + keyword + " "))
+            filters.append(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(" " + keyword.lstrip().rstrip() + " "))
 
         events = await database.query(filters)
-        if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
+
+        print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
         #search_list = result.split(',')
 
