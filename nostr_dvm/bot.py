@@ -5,7 +5,7 @@ import signal
 
 from nostr_sdk import (Keys, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
                        Options, Tag, Event, EventId, Nip19Event, Kind, NostrSigner, nip44_encrypt, Nip44Version,
-                       UnsignedEvent, UnwrappedGift, uniffi_set_event_loop, ClientBuilder, make_private_msg)
+                       UnsignedEvent, UnwrappedGift, KindStandard, ClientBuilder, make_private_msg)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.cashu_utils import redeem_cashu
@@ -73,7 +73,7 @@ class Bot:
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
-        nip17_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_GIFTWRAP]).limit(0)
+        nip59_filter = Filter().pubkey(pk).kind(Kind.from_std(KindStandard.GIFT_WRAP)).limit(0)
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
@@ -84,7 +84,7 @@ class Bot:
 
         await self.client.subscribe(zap_filter, None)
         await self.client.subscribe(dm_filter, None)
-        await self.client.subscribe(nip17_filter, None)
+        await self.client.subscribe(nip59_filter, None)
         await self.client.subscribe(dvm_filter, None)
 
         create_sql_table(self.dvm_config.DB)
@@ -110,7 +110,8 @@ class Bot:
                         await handle_dm(nostr_event, False)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
-                elif nostr_event.kind().as_u16()  == EventDefinitions.KIND_GIFTWRAP.as_u16():
+                elif nostr_event.kind().as_std() == KindStandard.GIFT_WRAP:
+
                     try:
                         await handle_dm(nostr_event, True)
                     except Exception as e:
@@ -128,23 +129,24 @@ class Bot:
             try:
                 sealed = " "
                 if giftwrap:
-                    try:
-                        # Extract rumor
-                        unwrapped_gift = await UnwrappedGift.from_gift_wrap(NostrSigner.keys(self.keys), nostr_event)
-                        sender = unwrapped_gift.sender().to_hex()
-                        rumor: UnsignedEvent = unwrapped_gift.rumor()
+                    signer = NostrSigner.keys(self.keys)
+                    if nostr_event.kind().as_std() == KindStandard.GIFT_WRAP:
+                        print("Decrypting NIP59 event")
+                        try:
+                            # Extract rumor
+                            unwrapped_gift = await UnwrappedGift.from_gift_wrap(signer, nostr_event)
+                            sender = unwrapped_gift.sender().to_hex()
+                            rumor: UnsignedEvent = unwrapped_gift.rumor()
 
-                        if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
-                            if rumor.kind().as_u16() == EventDefinitions.KIND_PRIVATE_DM.as_u16():
-                                print(f"Received new msg [sealed]: {decrypted_text}")
-                                decrypted_text = rumor.content()
-                                sealed = " [sealed] "
-                            else:
-                                print(f"{rumor.as_json()}")
+                            # Check timestamp of rumor
+                            if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
+                                if rumor.kind().as_std() == KindStandard.PRIVATE_DIRECT_MESSAGE:
+                                    decrypted_text = rumor.content()
+                                else:
+                                    print(f"{rumor.as_json()}")
+                        except Exception as e:
+                            print(f"Error during content NIP59 decryption: {e}")
 
-
-                    except Exception as e:
-                        print(f"Error during content NIP59 decryption: {e}")
 
                 else:
                     try:
