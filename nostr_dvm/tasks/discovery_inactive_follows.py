@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-from datetime import timedelta
 from threading import Thread
 
 from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
@@ -77,7 +76,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         opts = (Options().relay_limits(relaylimits))
 
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
-        for relay in self.dvm_config.RELAY_LIST:
+        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(relay)
         await cli.add_relay("wss://nostr.band")
 
@@ -87,8 +86,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.fetch_events([followers_filter], relay_timeout)
-
+        followers = await cli.fetch_events(followers_filter, relay_timeout)
         if len(followers.to_vec()) > 0:
             result_list = []
             newest = 0
@@ -100,10 +98,6 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                     newest = entry.created_at().as_secs()
                     best_entry = entry
 
-            print(best_entry.as_json())
-            print(len(best_entry.tags().to_vec()))
-            print(best_entry.created_at().as_secs())
-            print(Timestamp.now().as_secs())
             followings = []
             ns.dic = {}
             tagcount = 0
@@ -124,15 +118,16 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
                 cli = Client(NostrSigner.keys(keys))
-                for relay in self.dvm_config.RELAY_LIST:
+                for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                     await cli.add_relay(relay)
                 await cli.connect()
+                filter1 = Filter().author(PublicKey.parse(users[i])).since(notactivesince).limit(1)
+                event_from_authors = await cli.fetch_events(filter1, relay_timeout_long)
+                for j in range(i+1, i + st):
+                    filter1 = Filter().author(PublicKey.parse(users[j])).since(notactivesince).limit(1)
+                    events = await cli.fetch_events(filter1, relay_timeout_long)
+                    event_from_authors.merge(events)
 
-                filters = []
-                for i in range(i, i + st):
-                    filter1 = Filter().author(PublicKey.parse(users[i])).since(notactivesince).limit(1)
-                    filters.append(filter1)
-                event_from_authors = await cli.fetch_events(filters, relay_timeout_long)
                 for author in event_from_authors.to_vec():
                     instance.dic[author.author().to_hex()] = "True"
                 print(str(i) + "/" + str(len(users)))

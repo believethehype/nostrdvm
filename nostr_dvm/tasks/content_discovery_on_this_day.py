@@ -113,7 +113,7 @@ class DicoverContentOnThisDay(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).until(until)
 
-        events = await database.query([filter1])
+        events = await database.query(filter1)
         print(len(events.to_vec()))
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
@@ -123,7 +123,7 @@ class DicoverContentOnThisDay(DVMTaskInterface):
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = await database.query([filt])
+                reactions = await database.query(filt)
 
                 if len(reactions.to_vec()) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions.to_vec())

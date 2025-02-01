@@ -70,7 +70,9 @@ class Subscription:
                 [EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
                 Timestamp.now())
 
-        await self.client.subscribe([zap_filter, dvm_filter, cancel_subscription_filter], None)
+        await self.client.subscribe(zap_filter, None)
+        await self.client.subscribe(dvm_filter, None)
+        await self.client.subscribe(cancel_subscription_filter, None)
 
         create_subscription_sql_table(dvm_config.DB)
 
@@ -248,7 +250,7 @@ class Subscription:
 
                     subscriptionfilter = Filter().kind(EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT).author(
                         PublicKey.parse(subscriber)).limit(1)
-                    evts = await self.client.fetch_events([subscriptionfilter], relay_timeout)
+                    evts = await self.client.fetch_events(subscriptionfilter, relay_timeout)
                     if len(evts.to_vec()) > 0:
                         event7001id = evts.to_vec()[0].id().to_hex()
                         print(evts.to_vec()[0].as_json())
@@ -285,7 +287,7 @@ class Subscription:
 
                         if tier_dtag == "" or len(zaps) == 0:
                             tierfilter = Filter().id(EventId.parse(subscription_event_id))
-                            evts = await self.client.fetch_events([tierfilter], relay_timeout)
+                            evts = await self.client.fetch_events(tierfilter, relay_timeout)
                             if len(evts.to_vec()) > 0:
                                 for tag in evts[0].tags().to_vec():
                                     if tag.as_vec()[0] == "d":

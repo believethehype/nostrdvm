@@ -32,7 +32,7 @@ async def getmetadata(npub):
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    event_struct = await client.fetch_events([profile_filter], relay_timeout)
+    event_struct = await client.fetch_events(profile_filter, relay_timeout)
     events = event_struct.to_vec()
     if len(events) > 0:
         try:
@@ -82,7 +82,7 @@ async def analyse_users(user_ids=None):
 
         database = NostrDatabase.lmdb("db/nostr_followlists.db")
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
-        followers = await database.query([followers_filter])
+        followers = await database.query(followers_filter)
         allfriends = []
         if len(followers.to_vec()) > 0:
             for follower in followers.to_vec():

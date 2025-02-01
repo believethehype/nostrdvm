@@ -92,7 +92,7 @@ class DiscoverReports(DVMTaskInterface):
         # if we don't add users, e.g. by a wot, we check all our followers.
         if len(pubkeys) == 0:
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
-            followers = await cli.fetch_events([followers_filter], relay_timeout)
+            followers = await cli.fetch_events(followers_filter, relay_timeout)
 
             if len(followers.to_vec()) > 0:
                 result_list = []
@@ -113,7 +113,7 @@ class DiscoverReports(DVMTaskInterface):
             options["since_days"])  # TODO make this an option, 180 days for now
         since = Timestamp.from_secs(ago)
         kind1984_filter = Filter().authors(pubkeys).kind(Kind(1984)).since(since)
-        reports = await cli.fetch_events([kind1984_filter], relay_timeout)
+        reports = await cli.fetch_events(kind1984_filter, relay_timeout)
 
         bad_actors = []
         ns.dic = {}

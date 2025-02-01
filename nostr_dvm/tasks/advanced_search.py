@@ -124,7 +124,7 @@ class AdvancedSearch(DVMTaskInterface):
             notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
                 search_since).until(search_until).limit(options["max_results"])
 
-        events = await cli.fetch_events([notes_filter], relay_timeout)
+        events = await cli.fetch_events(notes_filter, relay_timeout)
 
         result_list = []
         if len(events.to_vec()) > 0:

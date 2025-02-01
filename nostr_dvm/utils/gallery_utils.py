@@ -43,7 +43,7 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
 
     nip93_filter = Filter().kind(Kind(1163)).author(PublicKey.parse(user_to_import_npub))
 
-    events =  await client.fetch_events([nip93_filter], timedelta(5))
+    events =  await client.fetch_events(nip93_filter, timedelta(5))
 
     events_vec = events.to_vec()
     reversed_events_vec = reversed(events_vec)
@@ -80,7 +80,7 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
                     except Exception as e:
                         print(relay_hint)
                 e_filter = Filter().id(EventId.parse(eventid)).limit(1)
-                content_events = await client.fetch_events([e_filter], timedelta(5))
+                content_events = await client.fetch_events(e_filter, timedelta(5))
                 if len(content_events.to_vec()) > 0:
                     content_event = content_events.to_vec()[0]
                     content =  re.sub(r'^https?:\/\/.*[\r\n]*', '', content_event.content(), flags=re.MULTILINE).rstrip()

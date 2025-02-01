@@ -25,7 +25,7 @@ async def delete_nip_89(private_key, relay_list, pow=True):
         await client.add_relay(relay)
     await client.connect()
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(keys.public_key())
-    events = await client.fetch_events([filter], timedelta(seconds=5))
+    events = await client.fetch_events(filter, timedelta(seconds=5))
     
     if len(events.to_vec()) == 0:
         print("Couldn't find note on relays. Seems they are gone.")

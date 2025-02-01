@@ -70,7 +70,7 @@ async def nwc_test(nwc_server):
         keys = Keys.parse(check_and_set_private_key("test"))
 
         # we zap npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8's profile 21 sats and say Cool stuff
-        pubkey = PublicKey.from_bech32("npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8")
+        pubkey = PublicKey.parse("npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8")
         bolt11 = zaprequest("hype@bitcoinfixesthis.org", 21, "Cool Stuff", None,
                             pubkey, keys, DVMConfig.RELAY_LIST)
 

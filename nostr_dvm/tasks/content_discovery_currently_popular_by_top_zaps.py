@@ -113,7 +113,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
-        events = await database.query([filter1])
+        events = await database.query(filter1)
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
 
@@ -121,7 +121,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         for event in events.to_vec():
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
-                zaps = await database.query([filt])
+                zaps = await database.query(filt)
                 invoice_amount = 0
                 event_author = event.author().to_hex()
                 if len(zaps.to_vec()) >= self.min_reactions:

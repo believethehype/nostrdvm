@@ -279,7 +279,7 @@ async def fetch_user_metadata(npub, client):
     pk = PublicKey.parse(npub)
     print(f"\nGetting profile metadata for {pk.to_bech32()}...")
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    events = await client.fetch_events([profile_filter], relay_timeout)
+    events = await client.fetch_events(profile_filter, relay_timeout)
     if len(events.to_vec()) > 0:
         latest_entry = events.to_vec()[0]
         latest_time = 0

@@ -163,7 +163,7 @@ def playground(announce=False):
         print(options["request_event_author"])
         filterauth = Filter().kind(definitions.EventDefinitions.KIND_NOTE).author(author).limit(100)
 
-        event_struct = await cli.fetch_events([filterauth], relay_timeout)
+        event_struct = await cli.fetch_events(filterauth, relay_timeout)
         text = ""
 
         if len(event_struct.to_vec()) == 0:
@@ -204,11 +204,16 @@ def playground(announce=False):
         if len(keywords) == 0:
             return json.dumps([])
 
-        filters = []
-        for keyword in keywords:
-            filters.append(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(" " + keyword.lstrip().rstrip() + " "))
+        filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(
+            " " + keywords[0].lstrip().rstrip() + " ")
+        events = await database.query(filter)
 
-        events = await database.query(filters)
+        for keyword in keywords[1:]:
+            filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(" " + keyword.lstrip().rstrip() + " ")
+            evts = await database.query(filter)
+            events.merge(evts)
+
+
 
         print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
@@ -221,7 +226,7 @@ def playground(announce=False):
                 [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                  definitions.EventDefinitions.KIND_REPOST,
                  definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-            reactions = await database.query([filt])
+            reactions = await database.query(filt)
             if len(reactions.to_vec()) >= 1:
                 ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 

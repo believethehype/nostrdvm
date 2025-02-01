@@ -119,7 +119,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
-        events = await database.query([filter1])
+        events = await database.query(filter1)
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
@@ -131,7 +131,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
                     [EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST,
                      EventDefinitions.KIND_REACTION,
                      EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = await database.query([filt])
+                reactions = await database.query(filt)
 
                 if len(reactions.to_vec()) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
@@ -209,7 +209,10 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
             # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
             try:
-                events = await cli.fetch_events([filter1, filter2, filter3], relay_timeout_long)
+                events1 = await cli.fetch_events(filter1, relay_timeout_long)
+                events2 = await cli.fetch_events(filter2, relay_timeout_long)
+                events3 = await cli.fetch_events(filter3, relay_timeout_long)
+                events = events1.merge(events2).merge(events3)
             except Exception as e:
                 print(e)
             # Do not delete profiles

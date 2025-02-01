@@ -116,7 +116,7 @@ class NutZapWallet:
 
         wallet_filter = Filter().kind(EventDefinitions.KIND_NUT_WALLET).author(keys.public_key())
         # relay_timeout = EventSource.relays(timedelta(seconds=10))
-        wallets = await client.fetch_events([wallet_filter], timedelta(seconds=10))
+        wallets = await client.fetch_events(wallet_filter, timedelta(seconds=10))
 
         if len(wallets.to_vec()) > 0:
 
@@ -190,7 +190,7 @@ class NutZapWallet:
 
             # Now all proof events
             proof_filter = Filter().kind(Kind(7375)).author(keys.public_key())
-            proof_events = await client.fetch_events([proof_filter], timedelta(seconds=5))
+            proof_events = await client.fetch_events(proof_filter, timedelta(seconds=5))
 
             latest_proof_sec = 0
             latest_proof_event_id = EventId
@@ -443,7 +443,7 @@ class NutZapWallet:
 
     async def fetch_mint_info_event(self, pubkey, client):
         mint_info_filter = Filter().kind(Kind(10019)).author(PublicKey.parse(pubkey))
-        preferences = await client.fetch_events([mint_info_filter], timedelta(seconds=5))
+        preferences = await client.fetch_events(mint_info_filter, timedelta(seconds=5))
         mints = []
         relays = []
         pubkey = ""

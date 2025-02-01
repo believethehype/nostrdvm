@@ -41,7 +41,7 @@ async def nip89_announce_tasks(dvm_config, client):
 
 async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip89events = await client.fetch_events([idfilter], relay_timeout)
+    nip89events = await client.fetch_events(idfilter, relay_timeout)
     d_tag = ""
     if len(nip89events.to_vec()) == 0:
         print("Event not found. Potentially gone.")
@@ -92,8 +92,8 @@ async def nip89_fetch_all_dvms(client):
     for i in range(5000, 5999):
         ktags.append(str(i))
 
-    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags)
-    events = await client.fetch_events([filter], relay_timeout)
+    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags)
+    events = await client.fetch_events(filter, relay_timeout)
     for event in events.to_vec():
         print(event.as_json())
 
@@ -101,8 +101,8 @@ async def nip89_fetch_all_dvms(client):
 async def nip89_fetch_events_pubkey(client, pubkey, kind):
     ktags = [str(kind.as_u16())]
     nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.parse(pubkey)).
-                   custom_tag(SingleLetterTag.lowercase(Alphabet.K), ktags))
-    events = await client.fetch_events([nip89filter], relay_timeout)
+                   custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags))
+    events = await client.fetch_events(nip89filter, relay_timeout)
 
     dvms = {}
     for event in events.to_vec():
@@ -152,7 +152,7 @@ async def delete_nip_89(dvm_config, pow=True):
         await client.add_relay(relay)
     await client.connect()
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(keys.public_key())
-    events = await client.fetch_events([filter], timedelta(seconds=5))
+    events = await client.fetch_events(filter, timedelta(seconds=5))
 
     if len(events.to_vec()) == 0:
         print("Couldn't find note on relays. Seems they are gone.")

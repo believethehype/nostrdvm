@@ -53,7 +53,7 @@ async def test_referred_events(client, event_id, kinds=None):
     else:
         job_id_filter = Filter().event(EventId.parse(event_id))
 
-    event_struct = await client.fetch_events([job_id_filter], relay_timeout)
+    event_struct = await client.fetch_events(job_id_filter, relay_timeout)
     events = event_struct.to_vec()
 
     if len(events) > 0:
@@ -129,7 +129,7 @@ async def test_search_by_user_since_days(client, pubkey, days, prompt):
     since = Timestamp.from_secs(dif)
 
     filterts = Filter().search(prompt).author(pubkey).kinds([Kind(1)]).since(since)
-    event_struct = await client.fetch_events([filterts], relay_timeout)
+    event_struct = await client.fetch_events(filterts, relay_timeout)
     events = event_struct.to_vec()
 
     if len(events) > 0:

@@ -16,14 +16,14 @@ async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Eve
     split = event_id_str.split(":")
     if len(split) == 3:
         pk = PublicKey.parse(split[1])
-        id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-        events = await client.fetch_events([id_filter], relay_timeout)
+        id_filter = Filter().author(pk).custom_tags(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
+        events = await client.fetch_events(id_filter, relay_timeout)
     else:
         event_id = EventId.parse(event_id_str)
 
         id_filter = Filter().id(event_id).limit(1)
 
-        events = await client.fetch_events([id_filter], relay_timeout)
+        events = await client.fetch_events(id_filter, relay_timeout)
 
     if len(events.to_vec()) > 0:
         return events.to_vec()[0]
@@ -32,8 +32,8 @@ async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Eve
         return None
 
 
-async def get_events_async(client, filter, timeout):
-    events = await client.fetch_events([filter], timedelta(seconds=timeout))
+async def get_events_async(client, filter1, timeout):
+    events = await client.fetch_events(filter1, timedelta(seconds=timeout))
     return events.to_vec()
 
 
@@ -44,8 +44,8 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
         split = event_id.split(":")
         if len(split) == 3:
             pk = PublicKey.parse(split[1])
-            id_filter = Filter().author(pk).custom_tag(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-            events = await client.fetch_events([id_filter], relay_timeout)
+            id_filter = Filter().author(pk).custom_tags(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
+            events = await client.fetch_events(id_filter, relay_timeout)
         else:
 
             if str(event_id).startswith("nevent"):
@@ -57,7 +57,7 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
             search_ids.append(event_id)
 
             id_filter = Filter().ids(search_ids)
-            events = await client.fetch_events([id_filter], relay_timeout)
+            events = await client.fetch_events(id_filter, relay_timeout)
 
     if len(events.to_vec()) > 0:
         return events.to_vec()
@@ -66,9 +66,10 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
 
 
 async def get_events_by_id(event_ids: list, client: Client, config=None) -> list[Event] | None:
+
     id_filter = Filter().ids(event_ids)
     # events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
-    events = await client.fetch_events([id_filter], relay_timeout)
+    events = await client.fetch_events(id_filter, relay_timeout)
     if len(events.to_vec()) > 0:
         return events.to_vec()
     else:
@@ -89,7 +90,7 @@ async def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Eve
         job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
     else:
         job_id_filter = Filter().event(event_id).limit(1)
-    events = await client.fetch_events([job_id_filter], relay_timeout)
+    events = await client.fetch_events(job_id_filter, relay_timeout)
 
     if len(events.to_vec()) > 0:
         return events.to_vec()[0]
@@ -104,8 +105,8 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
             ptag = PublicKey.parse(tag.as_vec()[1])
             ptags.append(ptag)
 
-    filter = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
-    events = await client.fetch_events([filter], relay_timeout)
+    filter1 = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
+    events = await client.fetch_events(filter1, relay_timeout)
     if len(events.to_vec()) == 0:
         return []
     else:
@@ -128,8 +129,8 @@ async def get_dm_relays(event_to_send: Event, client: Client, dvm_config):
             ptag = PublicKey.parse(tag.as_vec()[1])
             ptags.append(ptag)
 
-    filter = Filter().kinds([Kind(10050)]).authors(ptags)
-    events = await client.fetch_events([filter], relay_timeout)
+    filter1 = Filter().kinds([Kind(10050)]).authors(ptags)
+    events = await client.fetch_events(filter1, relay_timeout)
     if len(events.to_vec()) == 0:
         return []
     else:
@@ -157,8 +158,8 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
             await client.add_relay(relay)
 
     await client.connect()
-    filter = Filter().kinds([EventDefinitions.KIND_FOLLOW_LIST]).authors(ptags)
-    events = await client.fetch_events([filter], relay_timeout)
+    filter1 = Filter().kinds([EventDefinitions.KIND_FOLLOW_LIST]).authors(ptags)
+    events = await client.fetch_events(filter1, relay_timeout)
     if len(events.to_vec()) == 0:
         return []
     else:
@@ -207,9 +208,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
 
     # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
     relaylimits = RelayLimits.disable()
-    connection = Connection().embedded_tor().target(ConnectionTarget.ONION)    
-    
-    # connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
+    connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
     opts = Options().relay_limits(relaylimits).connection(connection)
     sk = SecretKey.parse(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())

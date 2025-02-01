@@ -414,7 +414,8 @@ async def nostr_client():
         if kind not in kinds:
             kinds.append(Kind(kind))
     dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()).pubkey(pk))
-    await client.subscribe([dm_zap_filter, dvm_filter], None)
+    await client.subscribe(dm_zap_filter, None)
+    await client.subscribe(dvm_filter, None)
 
     # await nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
     # await nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
