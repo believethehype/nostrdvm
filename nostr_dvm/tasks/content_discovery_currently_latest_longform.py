@@ -121,7 +121,7 @@ class DicoverContentLatestLongForm(DVMTaskInterface):
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_LONGFORM).since(since)
-        events = await cli.database().query([filter1])
+        events = await cli.database().query(filter1)
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}

@@ -79,10 +79,10 @@ class TrendingNotesGleasonator(DVMTaskInterface):
 
         ltags = ["#e", "pub.ditto.trends"]
         authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
-        notes_filter = Filter().authors(authors).kind(Kind(1985)).custom_tag(SingleLetterTag.lowercase(Alphabet.L),
+        notes_filter = Filter().authors(authors).kind(Kind(1985)).custom_tags(SingleLetterTag.lowercase(Alphabet.L),
                                                                              ltags)
 
-        events = await cli.fetch_events([notes_filter], relay_timeout_long)
+        events = await cli.fetch_events(notes_filter, relay_timeout_long)
 
         result_list = []
         if len(events.to_vec()) > 0:

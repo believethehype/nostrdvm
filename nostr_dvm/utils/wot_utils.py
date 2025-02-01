@@ -53,7 +53,7 @@ async def get_following(pks, max_time_request=10, newer_than_time=None, dvm_conf
 
     await cli.connect()
 
-    events = await cli.fetch_events([filter], relay_timeout)
+    events = await cli.fetch_events(filter, relay_timeout)
 
     for relay in dvm_config.SYNC_DB_RELAY_LIST:
         await cli.force_remove_relay(relay)
@@ -596,7 +596,7 @@ async def get_metadata(npub):
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
 
-    events_struct = await client.fetch_events([profile_filter], relay_timeout)
+    events_struct = await client.fetch_events(profile_filter, relay_timeout)
     events = events_struct.to_vec()
     if len(events) > 0:
         try:

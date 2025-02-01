@@ -2,10 +2,9 @@ import asyncio
 import json
 import os
 import signal
-from multiprocessing.connection import Connection
 
 from nostr_sdk import (Keys, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, EventId, Nip19Event, Kind, KindEnum, NostrSigner, nip44_encrypt, Nip44Version,
+                       Options, Tag, Event, EventId, Nip19Event, Kind, NostrSigner, nip44_encrypt, Nip44Version,
                        UnsignedEvent, UnwrappedGift, uniffi_set_event_loop, ClientBuilder, make_private_msg)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
@@ -35,7 +34,7 @@ class Bot:
 
         self.client = None
         asyncio.run(self.run_bot(dvm_config, admin_config))
-        uniffi_set_event_loop(asyncio.get_running_loop())
+        #uniffi_set_event_loop(asyncio.get_running_loop())
 
         # add_sql_table_column(dvm_config.DB)
 
@@ -74,7 +73,7 @@ class Bot:
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
         dm_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM]).since(Timestamp.now())
-        nip17_filter = Filter().pubkey(pk).kinds([Kind.from_enum(KindEnum.GIFT_WRAP())]).limit(0)
+        nip17_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_GIFTWRAP]).limit(0)
         kinds = [EventDefinitions.KIND_NIP90_GENERIC, EventDefinitions.KIND_FEEDBACK]
         for dvm in self.dvm_config.SUPPORTED_DVMS:
             if dvm.KIND not in kinds:
@@ -83,7 +82,10 @@ class Bot:
             kinds.append(Kind(6050))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
-        await self.client.subscribe([zap_filter, dm_filter, nip17_filter, dvm_filter], None)
+        await self.client.subscribe(zap_filter, None)
+        await self.client.subscribe(dm_filter, None)
+        await self.client.subscribe(nip17_filter, None)
+        await self.client.subscribe(dvm_filter, None)
 
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
@@ -108,7 +110,7 @@ class Bot:
                         await handle_dm(nostr_event, False)
                     except Exception as e:
                         print(f"Error during content NIP04 decryption: {e}")
-                elif nostr_event.kind().as_enum() == KindEnum.GIFT_WRAP():
+                elif nostr_event.kind().as_u16()  == EventDefinitions.KIND_GIFTWRAP.as_u16():
                     try:
                         await handle_dm(nostr_event, True)
                     except Exception as e:
@@ -133,7 +135,7 @@ class Bot:
                         rumor: UnsignedEvent = unwrapped_gift.rumor()
 
                         if rumor.created_at().as_secs() >= Timestamp.now().as_secs():
-                            if rumor.kind().as_enum() == KindEnum.PRIVATE_DIRECT_MESSAGE():
+                            if rumor.kind().as_u16() == EventDefinitions.KIND_PRIVATE_DM.as_u16():
                                 print(f"Received new msg [sealed]: {decrypted_text}")
                                 decrypted_text = rumor.content()
                                 sealed = " [sealed] "
@@ -637,7 +639,7 @@ class Bot:
                                     if param == "user":
                                         if value.startswith("@") or value.startswith("nostr:") or value.startswith(
                                                 "npub"):
-                                            value = PublicKey.from_bech32(
+                                            value = PublicKey.parse(
                                                 value.replace("@", "").replace("nostr:", "")).to_hex()
                                     tag = Tag.parse(["param", param, value])
                                 tags.append(tag)
@@ -718,7 +720,7 @@ class Bot:
                             else:
                                 if param == "user":
                                     if value.startswith("@") or value.startswith("nostr:") or value.startswith("npub"):
-                                        value = PublicKey.from_bech32(
+                                        value = PublicKey.parse(
                                             value.replace("@", "").replace("nostr:", "")).to_hex()
                                 tag = Tag.parse(["param", param, value])
                             tags.append(tag)
@@ -766,6 +768,8 @@ class Bot:
 
             return None
 
+
+
         asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
         try:
@@ -793,3 +797,6 @@ class Bot:
         except KeyboardInterrupt:
             print('Stay weird!')
             os.kill(os.getpid(), signal.SIGTERM)
+
+
+

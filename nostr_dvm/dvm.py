@@ -78,7 +78,8 @@ class DVM:
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
-        await self.client.subscribe([dvm_filter, zap_filter], None)
+        await self.client.subscribe(dvm_filter, None)
+        await self.client.subscribe(zap_filter, None)
 
         if self.dvm_config.ENABLE_NUTZAP:
             nutzap_wallet = NutZapWallet()
@@ -232,7 +233,7 @@ class DVM:
                         await send_job_status_reaction(nip90_event, "error", False, amount, self.client, cashu_message,
                                                        self.dvm_config)
                         return
-                # if user is whitelisted or task is free, just do the job
+                # if user is whitelisted or task is free, just dxo the job
                 if (user.iswhitelisted or task_is_free or cashu_redeemed) and (
                         p_tag_str == "" or p_tag_str ==
                         self.dvm_config.PUBLIC_KEY):

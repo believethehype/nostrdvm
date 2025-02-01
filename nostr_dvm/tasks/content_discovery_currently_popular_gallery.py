@@ -116,7 +116,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NIP68_IMAGEEVENT).since(since)
 
-        ge_events = await databasegallery.query([filter1])
+        ge_events = await databasegallery.query(filter1)
         
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events.to_vec())) + " Events")
@@ -155,7 +155,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         for id in ids:
             ids_str.append(id.to_hex())
 
-        filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tag(SingleLetterTag.uppercase(Alphabet.E),
+        filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tags(SingleLetterTag.uppercase(Alphabet.E),
                                                                              ids_str).since(since)
 
         dbopts = SyncOptions().direction(SyncDirection.DOWN)
@@ -163,14 +163,14 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         await cli.sync(filter_nip22, dbopts)
 
         filter2 = Filter().ids(ids)
-        events = await cli.fetch_events([filter2], relay_timeout)
+        events = await cli.fetch_events(filter2, relay_timeout)
         
 
 
         for event in events.to_vec():
             if event.created_at().as_secs() > timestamp_since:
                 filt1 = Filter().kinds([definitions.EventDefinitions.KIND_DELETION]).event(event.id()).limit(1)
-                deletions = await databasegallery.query([filt1])
+                deletions = await databasegallery.query(filt1)
                 if len(deletions.to_vec()) > 0:
                     print("Deleted event, skipping")
                     continue
@@ -179,11 +179,14 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
 
-                filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tag(
+                filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tags(
                     SingleLetterTag.uppercase(Alphabet.E),
                     [event.id().to_hex()])
 
-                reactions = await databasegallery.query([filt, filter_nip22])
+                reactions = await databasegallery.query(filt)
+                reactions2 = await databasegallery.query(filter_nip22)
+                reactions.merge(reactions2)
+
                 
                 #print("Reactions:" + str(len(reactions.to_vec())))
                 if len(reactions.to_vec()) >= self.min_reactions:

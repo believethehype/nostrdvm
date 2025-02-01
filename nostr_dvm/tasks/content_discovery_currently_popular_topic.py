@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
+    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind, Events
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -154,12 +154,19 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
 
-        filters = []
-        for word in self.search_list:
-            filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(word)
-            filters.append(filter)
+        if len(self.search_list) == 0:
+            print("Search List empty")
+            return {}
 
-        events = await self.database.query(filters)
+        filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(self.search_list[0])
+        events = await self.database.query(filter)
+        for word in self.search_list[1:]:
+            filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(word)
+            evts = await self.database.query(filter)
+            events.merge(evts)
+
+
+
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
@@ -172,7 +179,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                         [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                          definitions.EventDefinitions.KIND_REPOST,
                          definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                    reactions = await self.database.query([filt])
+                    reactions = await self.database.query(filt)
                     if len(reactions.to_vec()) >= self.min_reactions:
                         ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 

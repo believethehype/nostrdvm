@@ -32,7 +32,7 @@ async def reconcile_db():
 async def do_some_work():
     database = NostrDatabase.lmdb("nostr.db")
     f = Filter().author(keys.public_key()).limit(10)
-    events = await database.query([f])
+    events = await database.query(f)
 
     for event in events.to_vec():
         print(event.as_json())

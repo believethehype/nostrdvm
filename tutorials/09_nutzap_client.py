@@ -58,7 +58,7 @@ async def nostr_client(target_dvm_npub):
             kinds.append(Kind(kind))
 
     dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()).pubkey(pk))
-    await client.subscribe([dvm_filter], None)
+    await client.subscribe(dvm_filter, None)
 
     # This will send a request to the DVM
     await nostr_client_generic_test(target_dvm_npub)

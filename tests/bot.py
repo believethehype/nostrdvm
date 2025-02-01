@@ -70,18 +70,14 @@ def playground():
     bot_config.SUPPORTED_DVMS.append(translator)  # We add translator to the bot
     framework.add(translator)
 
-
-    framework.run()
-
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP65_RELAY_LIST = True
     admin_config.UPDATE_PROFILE = True
     x = threading.Thread(target=Bot, args=([bot_config, admin_config]))
     x.start()
 
-    # Keep the main function alive for libraries that require it, like openai
-    # keep_alive()
 
+    framework.run()
 
 
 

@@ -56,7 +56,8 @@ async def nostr_client():
         Timestamp.now())  # events to us specific
     dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_RESULT_TEXT_TO_SPEECH,
                                   EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
-    await client.subscribe([dm_zap_filter, dvm_filter])
+    await client.subscribe(dm_zap_filter)
+    await client.subscribe(dvm_filter)
 
 
     await nostr_client_test_tts("Hello, this is a test. Mic check one, two.")

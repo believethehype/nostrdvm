@@ -157,7 +157,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         await cli.connect()
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
-        followers = await cli.fetch_events([followers_filter], relay_timeout)
+        followers = await cli.fetch_events(followers_filter, relay_timeout)
         if len(followers.to_vec()) > 0:
             newest = 0
             best_entry = followers.to_vec()[0]
@@ -183,7 +183,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
-        events = await self.database.query([filter1])
+        events = await self.database.query(filter1)
 
         print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
         ns.finallist = {}
@@ -196,7 +196,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
                 [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                  definitions.EventDefinitions.KIND_REPOST,
                  definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-            reactions = await self.database.query([filt])
+            reactions = await self.database.query(filt)
             if len(reactions.to_vec()) >= self.min_reactions:
                 ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 

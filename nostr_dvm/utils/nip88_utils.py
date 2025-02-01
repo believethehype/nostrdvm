@@ -36,7 +36,7 @@ def nip88_create_d_tag(name, pubkey, image):
 
 async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip88events = await client.fetch_events([idfilter], relay_timeout)
+    nip88events = await client.fetch_events(idfilter, relay_timeout)
     d_tag = ""
     if len(nip88events.to_vec()) == 0:
         print("Event not found. Potentially gone.")
@@ -59,7 +59,7 @@ async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
 
 async def fetch_nip88_event(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip88events = await client.fetch_events([idfilter], relay_timeout)
+    nip88events = await client.fetch_events(idfilter, relay_timeout)
     d_tag = ""
     if len(nip88events.to_vec()) == 0:
         print("Event not found. Potentially gone.")
@@ -97,9 +97,9 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
     }
 
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
-        PublicKey.parse(receiver_public_key_hex)).custom_tag(SingleLetterTag.uppercase(Alphabet.P),
+        PublicKey.parse(receiver_public_key_hex)).custom_tags(SingleLetterTag.uppercase(Alphabet.P),
                                                              [user.to_hex()]).limit(1)
-    evts = await client.fetch_events([subscriptionfilter], relay_timeout)
+    evts = await client.fetch_events(subscriptionfilter, relay_timeout)
     if len(evts.to_vec()) > 0:
         print(evts.to_vec()[0].as_json())
         matchesdtag = False
@@ -120,7 +120,7 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
             cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
                 user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
                 EventId.parse(subscription_status["subscriptionId"])).limit(1)
-            cancel_events = await client.fetch_events([cancel_filter], relay_timeout)
+            cancel_events = await client.fetch_events(cancel_filter, relay_timeout)
             if len(cancel_events.to_vec()) > 0:
                 if cancel_events.to_vec()[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True

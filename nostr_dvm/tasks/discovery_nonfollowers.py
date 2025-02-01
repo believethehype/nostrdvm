@@ -82,7 +82,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.fetch_events([followers_filter], relay_timeout)
+        followers = await cli.fetch_events(followers_filter, relay_timeout)
 
         if len(followers.to_vec()) > 0:
             result_list = []
@@ -111,11 +111,12 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     await cli.add_relay(relay)
                 await cli.connect()
 
-                for i in range(i, i + st):
-                    filters = []
+                filter1 = Filter().author(PublicKey.parse(users[i])).kind(Kind(3))
+                followers = await cli.fetch_events(filter1, relay_timeout)
+                for i in range(i+1, i + st):
                     filter1 = Filter().author(PublicKey.parse(users[i])).kind(Kind(3))
-                    filters.append(filter1)
-                    followers = await cli.fetch_events(filters, relay_timeout)
+                    follower = await cli.fetch_events(filter1, relay_timeout)
+                    followers.merge(follower)
 
                     if len(followers.to_vec()) > 0:
                         result_list = []

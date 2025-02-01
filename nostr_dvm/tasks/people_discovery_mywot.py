@@ -247,7 +247,7 @@ async def analyse_users(user_ids=None, dunbar=100000000):
 
         database = NostrDatabase.lmdb("db/nostr_followlists.db")
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
-        followers = await database.query([followers_filter])
+        followers = await database.query(followers_filter)
         allfriends = []
         if len(followers.to_vec()) > 0:
             for follower in followers.to_vec():

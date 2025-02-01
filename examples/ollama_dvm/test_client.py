@@ -51,7 +51,8 @@ async def nostr_client():
         Timestamp.now())  # events to us specific
     dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_RESULT_GENERATE_TEXT,
                                   EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
-    await client.subscribe([dm_zap_filter, dvm_filter])
+    await client.subscribe(dm_zap_filter)
+    await client.subscribe(dvm_filter)
 
 
     await nostr_client_test_llm("Tell me a joke about a purple Ostrich!")

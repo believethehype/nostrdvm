@@ -24,9 +24,9 @@ async def main():
     ltags = ["#e", "pub.ditto.trends"]
     itags = [str(SingleLetterTag.lowercase(Alphabet.E))]
     authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
-    notes_filter = Filter().authors(authors).custom_tag(SingleLetterTag.lowercase(Alphabet.L), ltags)
+    notes_filter = Filter().authors(authors).custom_tags(SingleLetterTag.lowercase(Alphabet.L), ltags)
 
-    events_struct = await cli.fetch_events([notes_filter], relay_timeout_long)
+    events_struct = await cli.fetch_events(notes_filter, relay_timeout_long)
     events = events_struct.to_vec()
 
 

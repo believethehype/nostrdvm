@@ -27,14 +27,15 @@ async def test():
 
     now = Timestamp.now()
 
-    nip04_filter = Filter().pubkey(pk).kind(Kind.from_enum(KindEnum.ENCRYPTED_DIRECT_MESSAGE())).since(now)
-    nip59_filter = Filter().pubkey(pk).kind(Kind.from_enum(KindEnum.GIFT_WRAP())).limit(0)
-    await client.subscribe([nip04_filter, nip59_filter], None)
+    nip04_filter = Filter().pubkey(pk).kind(Kind(KindEnum.ENCRYPTED_DIRECT_MESSAGE())).since(now)
+    nip59_filter = Filter().pubkey(pk).kind(Kind((KindEnum.GIFT_WRAP()))).limit(0)
+    await client.subscribe(nip04_filter)
+    await client.subscribe(nip59_filter)
 
     class NotificationHandler(HandleNotification):
         async def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
-            if event.kind().as_enum() == KindEnum.ENCRYPTED_DIRECT_MESSAGE():
+            if event.kind().as_u16() == KindEnum.ENCRYPTED_DIRECT_MESSAGE():
                 print("Decrypting NIP04 event")
                 try:
                     msg = nip04_decrypt(sk, event.author(), event.content())

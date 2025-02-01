@@ -94,7 +94,7 @@ class SearchUser(DVMTaskInterface):
         # Query events from database
 
         filter1 = Filter().kind(Kind(0))
-        events = await cli.database().query([filter1])
+        events = await cli.database().query(filter1)
 
         result_list = []
         print("Events: " + str(len(events.to_vec())))

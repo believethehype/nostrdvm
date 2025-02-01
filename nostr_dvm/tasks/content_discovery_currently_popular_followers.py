@@ -109,7 +109,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
 
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
-        followers = await cli.fetch_events([followers_filter], relay_timeout)
+        followers = await cli.fetch_events(followers_filter, relay_timeout)
         # print(followers)
 
         # Negentropy reconciliation
@@ -135,7 +135,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     followings.append(following)
 
             filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).authors(followings).since(since)
-            events = await cli.database().query([filter1])
+            events = await cli.database().query(filter1)
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
 
@@ -146,7 +146,7 @@ class DicoverContentCurrentlyPopularFollowers(DVMTaskInterface):
                     [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
                      definitions.EventDefinitions.KIND_REPOST,
                      definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = await cli.database().query([filt])
+                reactions = await cli.database().query(filt)
                 if len(reactions.to_vec()) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 

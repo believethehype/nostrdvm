@@ -13,6 +13,8 @@ class EventDefinitions:
     KIND_REPOST = Kind(6)
     KIND_REACTION = Kind(7)
     KIND_NIP68_IMAGEEVENT = Kind(20)
+    KIND_GIFTWRAP = Kind(59)
+    KIND_PRIVATE_DM = Kind(60)
     KIND_NIP94_METADATA = Kind(1063)
     KIND_NIP22_COMMENT = Kind(1111)
     KIND_NIP93_GALLERYENTRY = Kind(1163)

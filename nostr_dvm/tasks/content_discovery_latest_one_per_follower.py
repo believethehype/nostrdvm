@@ -88,7 +88,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.fetch_events([followers_filter], relay_timeout)
+        followers = await cli.fetch_events(followers_filter, relay_timeout)
 
         if len(followers.to_vec()) > 0:
             result_list = []
@@ -128,17 +128,21 @@ class Discoverlatestperfollower(DVMTaskInterface):
                     await cli.add_relay(relay)
                 await cli.connect()
 
-                filters = []
-                for i in range(i, i + st):
+                user = PublicKey.parse(users[i])
+                filter1 = (Filter().author(user).kind(Kind(1))
+                           .limit(1))
+                event_from_authors = await cli.fetch_events(filter1, relay_timeout_long)
+
+                for i in range(i+1, i + st):
                     try:
                         user = PublicKey.parse(users[i])
                         filter1 = (Filter().author(user).kind(Kind(1))
                                    .limit(1))
-                        filters.append(filter1)
+                        events = await cli.fetch_events(filter1, relay_timeout_long)
+                        event_from_authors.merge(events)
                     except Exception as e:
                         print(e)
 
-                event_from_authors = await cli.fetch_events(filters, relay_timeout_long)
                 for author in event_from_authors.to_vec():
                     if instance.dic[author.author().to_hex()] is None:
                         instance.dic[author.author().to_hex()] = author
