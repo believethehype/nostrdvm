@@ -193,10 +193,10 @@ def pay_bolt11_ln_bits(bolt11: str, config):
 def check_for_zapplepay(pubkey_hex: str, content: str):
     try:
         # Special case Zapplepay
-        if (pubkey_hex == PublicKey.from_bech32("npub1wxl6njlcgygduct7jkgzrvyvd9fylj4pqvll6p32h59wyetm5fxqjchcan")
+        if (pubkey_hex == PublicKey.parse("npub1wxl6njlcgygduct7jkgzrvyvd9fylj4pqvll6p32h59wyetm5fxqjchcan")
                 .to_hex()):
             real_sender_bech32 = content.replace("From: nostr:", "")
-            pubkey_hex = PublicKey.from_bech32(real_sender_bech32).to_hex()
+            pubkey_hex = PublicKey.parse(real_sender_bech32).to_hex()
         return pubkey_hex
 
     except Exception as e:
