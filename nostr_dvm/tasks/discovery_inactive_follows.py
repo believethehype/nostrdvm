@@ -23,6 +23,9 @@ Params:  None
 """
 
 
+# TODO: This is currently broken after SDK update.
+
+
 class DiscoverInactiveFollows(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
     TASK: str = "inactive-followings"
