@@ -116,7 +116,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                 for i in range(i+1, i + st):
                     filter1 = Filter().author(PublicKey.parse(users[i])).kind(Kind(3))
                     follower = await cli.fetch_events(filter1, relay_timeout)
-                    followers.merge(follower)
+                    followers = followers.merge(follower)
 
                     if len(followers.to_vec()) > 0:
                         result_list = []

@@ -2,7 +2,7 @@
 # even trying to send to them, avoiding potential errors or delays on the way.
 
 
-AVOID_OUTBOX_RELAY_LIST = ["wss://nos.lol", "wss://nostr.fmt.wiz.biz", "wss://nostrelay.yeghro.site", "wss://nostr.wine",
+AVOID_OUTBOX_RELAY_LIST = ["wss://nostr.fmt.wiz.biz", "wss://nostrelay.yeghro.site", "wss://nostr.wine",
                            "wss://filter.nostr.wine", "wss://relay.lightwork.space", "wss://onchain.pub",
                            "wss://nostr21.com", "wss://nostr.bitcoiner.social", "wss://nostr.orangepill.dev",
                            "wss://brb.io", "wss://relay.nostr.ch", "wss://nostr.rock", "wss://nostr.sandwich.farm",

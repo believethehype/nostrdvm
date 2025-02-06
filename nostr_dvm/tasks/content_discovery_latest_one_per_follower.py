@@ -139,7 +139,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
                         filter1 = (Filter().author(user).kind(Kind(1))
                                    .limit(1))
                         events = await cli.fetch_events(filter1, relay_timeout_long)
-                        event_from_authors.merge(events)
+                        event_from_authors = event_from_authors.merge(events)
                     except Exception as e:
                         print(e)
 

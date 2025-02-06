@@ -23,8 +23,6 @@ Params:  None
 """
 
 
-# TODO: This is currently broken after SDK update.
-
 
 class DiscoverInactiveFollows(DVMTaskInterface):
     KIND: Kind = EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY
@@ -129,7 +127,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 for j in range(i+1, i + st):
                     filter1 = Filter().author(PublicKey.parse(users[j])).since(notactivesince).limit(1)
                     events = await cli.fetch_events(filter1, relay_timeout_long)
-                    event_from_authors.merge(events)
+                    event_from_authors = event_from_authors.merge(events)
 
                 for author in event_from_authors.to_vec():
                     instance.dic[author.author().to_hex()] = "True"

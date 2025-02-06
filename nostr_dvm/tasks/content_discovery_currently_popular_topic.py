@@ -163,7 +163,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         for word in self.search_list[1:]:
             filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(word)
             evts = await self.database.query(filter)
-            events.merge(evts)
+            events = events.merge(evts)
 
 
 

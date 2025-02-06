@@ -152,7 +152,7 @@ def playground(announce=False):
         opts = Options().relay_limits(relaylimits)
         signer = NostrSigner.keys(keys)
         cli = ClientBuilder().signer(signer).opts(opts).build()
-        for relay in dvm.dvm_config.RELAY_LIST:
+        for relay in dvm.dvm_config.ANNOUNCE_RELAY_LIST:
             await cli.add_relay(relay)
         # ropts = RelayOptions().ping(False)
         # await cli.add_relay_with_opts("wss://nostr.band", ropts)
@@ -160,7 +160,6 @@ def playground(announce=False):
         await cli.connect()
         #pip install -U https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
         author = PublicKey.parse(options["request_event_author"])
-        print(options["request_event_author"])
         filterauth = Filter().kind(definitions.EventDefinitions.KIND_NOTE).author(author).limit(100)
 
         event_struct = await cli.fetch_events(filterauth, relay_timeout)
@@ -211,7 +210,8 @@ def playground(announce=False):
         for keyword in keywords[1:]:
             filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(" " + keyword.lstrip().rstrip() + " ")
             evts = await database.query(filter)
-            events.merge(evts)
+            events = events.merge(evts)
+
 
 
 
