@@ -178,7 +178,7 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
 async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput | None:
     # 1. OK, Let's overcomplicate things.
     # 2. If our event has a relays tag, we just send the event to these relay in the classical way.
-    relays = []
+    relays = dvm_config.RELAY_LIST
     for tag in event.tags().to_vec():
         if tag.as_vec()[0] == 'relays':
             for index, param in enumerate(tag.as_vec()):
@@ -192,19 +192,14 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
             break
 
     # 3. If we couldn't find relays, we look in the receivers inbox
-    if len(relays) == 0:
+    if len(relays) == len(dvm_config.RELAY_LIST):
         relays = await get_inbox_relays(event, client, dvm_config)
 
     # 4. If we don't find inbox relays (e.g. because the user didn't announce them, we just send to our default relays
-    if len(relays) == 0:
+    if len(relays) == len(dvm_config.RELAY_LIST):
         print("[" + dvm_config.NIP89.NAME + "] No Inbox found, replying to generic relays")
         relays = await get_main_relays(event, client, dvm_config)
 
-
-    if len(relays) == 0:
-        return
-        # eventid = await send_event(event, client, dvm_config)
-        # return eventid
 
     # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
     relaylimits = RelayLimits.disable()
