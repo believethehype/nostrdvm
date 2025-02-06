@@ -185,7 +185,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
                 reactions = await databasegallery.query(filt)
                 reactions2 = await databasegallery.query(filter_nip22)
-                reactions.merge(reactions2)
+                reactions = reactions.merge(reactions2)
 
                 
                 #print("Reactions:" + str(len(reactions.to_vec())))
