@@ -104,8 +104,10 @@ class MCPBridge(DVMTaskInterface):
         elif options["command"] == "execute-tool":
 
             print(options["payload"])
-            tool_name = "get-crypto-price"
-            tool_args = {"symbol": "BTC"}
+            ob = json.loads(options["payload"])
+
+            tool_name = ob["name"]
+            tool_args = ob["parameters"]
             tool_response = await self.call_tool(config_path, server_names, tool_name, tool_args)
 
             return json.dumps(tool_response)
@@ -187,15 +189,6 @@ class MCPBridge(DVMTaskInterface):
             pass
 
         return "not_found"
-
-
-
-
-
-
-
-
-
 
 
         alltools = []
