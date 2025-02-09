@@ -13,6 +13,7 @@ from nostr_dvm.backends.mcp.messages.send_initialize_message import send_initial
 from nostr_dvm.backends.mcp.messages.send_ping import send_ping
 from nostr_dvm.backends.mcp.messages.send_tools_list import send_tools_list
 from nostr_dvm.backends.mcp.transport.stdio.stdio_client import stdio_client
+from nostr_dvm.framework import DVMFramework
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -222,49 +223,65 @@ class MCPBridge(DVMTaskInterface):
 # We build an example here that we can call by either calling this file directly from the main directory,
 # or by adding it to our playground. You can call the example and adjust it to your needs or redefine it in the
 # playground or elsewhere
-def build_example(name, identifier, admin_config):
+def build_example(announce):
+    framework = DVMFramework()
+
+    admin_config = AdminConfig()
+    admin_config.REBROADCAST_NIP89 = announce
+    admin_config.REBROADCAST_NIP65_RELAY_LIST = announce
+    admin_config.UPDATE_PROFILE = announce
+
+    name = "MCP Test DVM"
+    identifier = "mcp_test"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
-    dvm_config.USE_OWN_VENV = False
+
+    # MCP CONFIG
+    config_path = str(Path.absolute(Path(__file__).parent / "mcp_server_config.json"))
+    server_names = ["mcp-crypto-price"]
+
+    tools = asyncio.run(get_tools(config_path, server_names))
+    # for now get the first connected server only
+    # print(tools)
+    j = json.loads(json.dumps(tools[0][1]))
+
     # Add NIP89
     nip89info = {
         "name": name,
-        "picture": "https://nostr.band/android-chrome-192x192.png",
-        "about": "I search notes on Nostr.band.",
+        "picture": "https://i.nostr.build/er2Vu8DccjfanFLo.png",
+        "about": "I'm a MCP Test DVM'",
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
-            "users": {
-                "required": False,
-                "values": [],
-                "description": "Search for content from specific users"
-            },
-            "since": {
-                "required": False,
-                "values": [],
-                "description": "A unix timestamp in the past from where the search should start"
-            },
-            "until": {
-                "required": False,
-                "values": [],
-                "description": "A unix timestamp that tells until the search should include results"
-            },
-            "max_results": {
-                "required": False,
-                "values": [],
-                "description": "The number of maximum results to return (default currently 20)"
-            }
-        }
+        },
+        "tools": j["tools"]
+
     }
 
     nip89config = NIP89Config()
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": "wss://relay.nostr.band"}
+    capabilities_tag = Tag.parse(["capabilities", "mcp-1.0"])
+    t1_tag = Tag.parse(["t", "mcp"])
+    t2_tag = Tag.parse(["t", "bitcoin price"])
+    nip89config.EXTRA_TAGS = [capabilities_tag, t1_tag, t2_tag]
 
-    return MCPBridge(name=name, dvm_config=dvm_config, nip89config=nip89config,
-                          admin_config=admin_config, options=options)
+    options = {
+        "config_path": config_path,
+        "server_names": server_names
+    }
 
+    dvm = MCPBridge(name=name, dvm_config=dvm_config, nip89config=nip89config,
+                    admin_config=admin_config, options=options)
+
+    framework.add(dvm)
+
+    framework.run()
+
+
+async def get_tools(config_path, server_names):
+    tools = await MCPBridge.list_tools(config_path, server_names)
+    return tools
 
 if __name__ == '__main__':
     process_venv(MCPBridge)
