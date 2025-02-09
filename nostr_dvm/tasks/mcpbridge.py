@@ -69,13 +69,7 @@ class MCPBridge(DVMTaskInterface):
         if self.options.get("server_names"):
             self.server_names = (self.options.get("server_names"))
 
-
-
-
-
         c = "list-tools"
-
-
         for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'c':
                 c = tag.as_vec()[1]
