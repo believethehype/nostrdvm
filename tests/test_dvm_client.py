@@ -63,6 +63,27 @@ async def nostr_client_test_search_profile(input):
     return event.as_json()
 
 
+async def nostr_client_test_mcp(command="list-tools"):
+    keys = Keys.parse(check_and_set_private_key("test_client"))
+
+    outTag = Tag.parse(["output", "application/json"])
+    cTag = Tag.parse(["c", command])
+    alttag = Tag.parse(["alt", "This is a NIP90 Request to contact MCP server"])
+    event = EventBuilder(EventDefinitions.KIND_NIP90_MCP, str("MCP request")).tags(
+                         [outTag, alttag, cTag]).sign_with_keys(keys)
+
+    relay_list = ["wss://relay.nostr.oxtr.dev", "wss://relay.nostrdvm.com"]
+
+    client = Client(NostrSigner.keys(keys))
+
+    for relay in relay_list:
+        await client.add_relay(relay)
+    await client.connect()
+    config = DVMConfig
+    await send_event(event, client=client, dvm_config=config)
+    return event.as_json()
+
+
 async def nostr_client_test_image(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
@@ -429,7 +450,7 @@ async def nostr_client():
 
     # await nostr_client_test_search_profile("dontbelieve")
     #wot = ["99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64"]
-    await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "9e09a914f41db178ba442b7372944b021135c08439516464a9bd436588af0b58")
+    #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "9e09a914f41db178ba442b7372944b021135c08439516464a9bd436588af0b58")
     #await nostr_client_test_discovery_gallery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64", "4add3944eb596a27a650f9b954f5ed8dfefeec6ca50473605b0fbb058dd11306")
 
     #await nostr_client_test_discovery("99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64",
@@ -442,31 +463,30 @@ async def nostr_client():
 
     # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
     # await nostr_client_test_image_private("a beautiful ostrich watching the sunset")
+    await nostr_client_test_mcp()
+    #nutzap_wallet = NutZapWallet()
 
-    nutzap_wallet = NutZapWallet()
 
-
-    nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+    #nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
     #dangerous, dont use this, except your wallet is messed up.
-    delete = False
-    if delete:
-        for mint in nut_wallet.nutmints:
-            await nutzap_wallet.update_spend_mint_proof_event(nut_wallet, mint.proofs, mint.mint_url, "", None,
-                                                     None, client, keys)
-
-        nut_wallet.balance = 0
-        await nutzap_wallet.update_nut_wallet(nut_wallet, [], client, keys)
-        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
-    else:
-        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
-        if nut_wallet is None:
-            await nutzap_wallet.create_new_nut_wallet(dvmconfig.NUZAP_MINTS, dvmconfig.NUTZAP_RELAYS, client, keys,
-                                                      "Test", "My Nutsack")
-            nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
-            if nut_wallet is not None:
-                await nutzap_wallet.announce_nutzap_info_event(nut_wallet, client, keys)
-            else:
-                print("Couldn't fetch wallet, please restart and see if it is there")
+    #delete = False
+    #if delete:
+    #    for mint in nut_wallet.nutmints:
+    #        await nutzap_wallet.update_spend_mint_proof_event(nut_wallet, mint.proofs, mint.mint_url, "", None,
+    #
+    #    nut_wallet.balance = 0
+    #    await nutzap_wallet.update_nut_wallet(nut_wallet, [], client, keys)
+    #    nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+    #else:
+    #    nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+    #    if nut_wallet is None:
+    #        await nutzap_wallet.create_new_nut_wallet(dvmconfig.NUZAP_MINTS, dvmconfig.NUTZAP_RELAYS, client, keys,
+    #                                                  "Test", "My Nutsack")
+    #        nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+    #        if nut_wallet is not None:
+    #            await nutzap_wallet.announce_nutzap_info_event(nut_wallet, client, keys)
+    #        else:
+     #           print("Couldn't fetch wallet, please restart and see if it is there")
 
 
 

@@ -181,7 +181,6 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
     relays = dvm_config.RELAY_LIST
     for tag in event.tags().to_vec():
         if tag.as_vec()[0] == 'relays':
-            print(tag.as_vec())
             for index, param in enumerate(tag.as_vec()):
                 if index != 0:
                     if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:

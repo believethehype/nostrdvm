@@ -39,7 +39,7 @@ async def test():
     print(nostruri)
 
     await test_search_by_user_since_days(client,
-                                         PublicKey.from_bech32(
+                                         PublicKey.parse(
                                              "npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8"), 60,
                                          "Bitcoin")
 
