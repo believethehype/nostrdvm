@@ -14,7 +14,7 @@
       <excludeFolder url="file://$MODULE_DIR$/p1234" />
       <excludeFolder url="file://$MODULE_DIR$/p23" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 (dvm) (2)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 virtualenv at ~/Documents/GitHub/nostrdvm/final" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

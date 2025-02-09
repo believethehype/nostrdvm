@@ -17,6 +17,7 @@ class NIP89Config:
     KIND: Kind = None
     PK: str = ""
     CONTENT: str = ""
+    EXTRA_TAGS : []
 
 
 def nip89_create_d_tag(name, pubkey, image):
@@ -28,9 +29,14 @@ def nip89_create_d_tag(name, pubkey, image):
 async def nip89_announce_tasks(dvm_config, client):
     k_tag = Tag.parse(["k", str(dvm_config.NIP89.KIND.as_u16())])
     d_tag = Tag.parse(["d", dvm_config.NIP89.DTAG])
+
+    tags = [k_tag, d_tag]
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
-    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags([k_tag, d_tag]).sign_with_keys(keys)
+
+    tags += dvm_config.EXTRA_TAGS
+
+    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags(tags).sign_with_keys(keys)
 
     response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
 
