@@ -34,7 +34,7 @@ async def nip89_announce_tasks(dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP89.CONTENT
 
-    tags += dvm_config.EXTRA_TAGS
+    tags += dvm_config.NIP89.EXTRA_TAGS
 
     event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags(tags).sign_with_keys(keys)
 

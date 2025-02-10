@@ -137,6 +137,7 @@ class DVMTaskInterface:
         nip89.PK = self.PRIVATE_KEY
         nip89.DTAG = nip89config.DTAG
         nip89.CONTENT = nip89config.CONTENT
+        nip89.EXTRA_TAGS = nip89config.EXTRA_TAGS
         return nip89
 
     async def is_input_supported(self, tags, client=None, dvm_config=None) -> bool:
