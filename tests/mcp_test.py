@@ -32,13 +32,23 @@ def playground(announce=False):
 
     # MCP CONFIG
     config_path = str(Path.absolute(Path(__file__).parent / "mcp_server_config.json"))
-    server_names = ["mcp-crypto-price"]
+    server_names = ["Echo", "mcp-crypto-price"]
 
 
     tools = asyncio.run(get_tools(config_path, server_names))
     # for now get the first connected server only
     #print(tools)
-    j = json.loads(json.dumps(tools[0][1]))
+    if len (tools) == 0:
+        print("Couldnt load tools, shutting down.")
+        exit()
+
+    final_tools =[]
+    for tool in tools:
+        j = json.loads(json.dumps(tool[1]))["tools"]
+        for tool in j:
+            final_tools.append(tool)
+    print(final_tools)
+
 
 
     # Add NIP89
@@ -50,7 +60,7 @@ def playground(announce=False):
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
         },
-        "tools": j["tools"]
+        "tools": final_tools
 
     }
 

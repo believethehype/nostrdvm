@@ -90,7 +90,9 @@ async def nostr_client():
     await client.subscribe(mcp_filter, None)
 
     #await nostr_client_test_mcp_get_tools()
-    await nostr_client_test_mcp_execute_tool(tool_name="get-crypto-price", tool_parameters={"symbol": "BTC"})
+    #await nostr_client_test_mcp_execute_tool(tool_name="get-crypto-price", tool_parameters={"symbol": "BTC"})
+    await nostr_client_test_mcp_execute_tool(tool_name="echo_tool", tool_parameters={"message": "Hello"})
+
 
     class NotificationHandler(HandleNotification):
         async def handle(self, relay_url, subscription_id, event: Event):

@@ -96,9 +96,18 @@ class MCPBridge(DVMTaskInterface):
         if options["command"] == "list-tools":
             tools = await self.list_tools(config_path, server_names)
             # Just return the first for now.
+
+            if len(tools) == 0:
+                print("Couldnt load tools, shutting down.")
+                exit()
+
+            final_tools = []
             for tool in tools:
-                print(tool[1])
-                return json.dumps(tool[1])
+                j = json.loads(json.dumps(tool[1]))["tools"]
+                for tool in j:
+                    final_tools.append(tool)
+            print(final_tools)
+            return json.dumps(final_tools)
 
 
         elif options["command"] == "execute-tool":
@@ -134,6 +143,12 @@ class MCPBridge(DVMTaskInterface):
             try:
                 async with stdio_client(server_params) as (read_stream, write_stream):
                     # Initialize the server
+                    init_result = await send_initialize(read_stream, write_stream)
+
+                    # check we got a result
+                    if not init_result:
+                        print("Server initialization failed")
+                        return
 
                     tools = await send_tools_list(read_stream, write_stream)
                     if tools is not None:
@@ -161,6 +176,11 @@ class MCPBridge(DVMTaskInterface):
                     async with stdio_client(server_params) as (read_stream, write_stream):
                         #Check if our current config has a tool.
 
+                        init_result = await send_initialize(read_stream, write_stream)
+                        # check we got a result
+                        if not init_result:
+                            print("Server initialization failed")
+                            return
 
                         tools = await send_tools_list(read_stream, write_stream)
                         stuff = json.dumps(tools)
@@ -173,43 +193,22 @@ class MCPBridge(DVMTaskInterface):
                                 print(f"Found tool {tool_name}.")
                                 server_has_tool = True
                         if server_has_tool is False:
-                            continue
-
-                        tool_response = await send_call_tool(
-                            tool_name, tool_args, read_stream, write_stream)
-                        raise Exception("I'm gonna leave you.") # Until we find a better way to leave the async with
+                            print("no tool in server")
+                            raise Exception()
+                        else:
+                            tool_response = await send_call_tool(
+                                tool_name, tool_args, read_stream, write_stream)
+                            raise Exception() # Until we find a better way to leave the async with
 
                 except:
                     pass
 
-                return tool_response
-
-            raise Exception("I'm gonna leave you.")
+            raise Exception()
         except:
             pass
 
-        return "not_found"
+        return tool_response
 
-
-        alltools = []
-        for server_name in server_names:
-            server_params = await config.load_config(config_path, server_name)
-            try:
-                async with stdio_client(server_params) as (read_stream, write_stream):
-                    # Initialize the server
-
-                    tools = await send_tools_list(read_stream, write_stream)
-                    if tools is not None:
-                        alltools.append((server_name, tools))
-                        raise Exception("I'm gonna leave you.")
-
-                    else:
-                        print("nada")
-            except:
-                pass
-
-        print("All clear. We made it out of thread hell. never mind the error.")
-        return alltools
 
 
 
