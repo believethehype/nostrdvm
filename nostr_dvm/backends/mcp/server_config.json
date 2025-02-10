@@ -3,6 +3,17 @@
     "sqlite": {
       "command": "uvx",
       "args": ["mcp-server-sqlite", "--db-path", "test.db"]
+    },
+     "Echo": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp[cli]",
+        "mcp",
+        "run",
+        "~/Documents/GitHub/nostrdvm/tests/mcp_server.py"
+      ]
     }
   }
 }

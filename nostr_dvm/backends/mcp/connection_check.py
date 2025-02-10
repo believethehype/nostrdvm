@@ -18,7 +18,7 @@ async def main():
     """Stripped-down script to initialize the server and send a ping."""
     # Configuration values
     config_path = "server_config.json"
-    server_name = "sqlite"
+    server_name = "Echo"
 
     # Load server configuration
     server_params = await load_config(config_path, server_name)
