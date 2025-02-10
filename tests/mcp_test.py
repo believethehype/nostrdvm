@@ -16,6 +16,9 @@ async def get_tools(config_path, server_names):
     tools = await MCPBridge.list_tools(config_path, server_names)
     return tools
 
+
+
+
 def playground(announce=False):
 
     framework = DVMFramework()
@@ -28,7 +31,7 @@ def playground(announce=False):
     name = "MCP Test DVM"
     identifier = "mcp_test"  # Chose a unique identifier in order to get a lnaddress
     dvm_config = build_default_config(identifier)
-
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = True
 
     # MCP CONFIG
     config_path = str(Path.absolute(Path(__file__).parent / "mcp_server_config.json"))
