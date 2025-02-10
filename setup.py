@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 DESCRIPTION = 'A framework to build and run Nostr NIP90 Data Vending Machines'
 LONG_DESCRIPTION = ('A framework to build and run Nostr NIP90 Data Vending Machines. See the github repository for more information')
 
@@ -25,7 +25,7 @@ setup(
                       "PyUpload==0.1.4",
                       "pandas==2.2.2",
                       "requests==2.32.3",
-                      "moviepy==2.0.0.dev2",
+                      "moviepy==2.0.0",
                       "zipp==3.19.1",
                       "urllib3==2.2.2",
                       "networkx==3.3",

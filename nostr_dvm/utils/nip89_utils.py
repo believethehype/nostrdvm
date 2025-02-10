@@ -103,6 +103,13 @@ async def nip89_fetch_all_dvms(client):
     for event in events.to_vec():
         print(event.as_json())
 
+async def nip89_fetch_all_dvms_by_kind(client, kind):
+    ktags = [str(kind)]
+    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags)
+    events = await client.fetch_events(filter, relay_timeout)
+    return events.to_vec()
+
+
 
 async def nip89_fetch_events_pubkey(client, pubkey, kind):
     ktags = [str(kind.as_u16())]

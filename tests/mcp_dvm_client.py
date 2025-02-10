@@ -7,21 +7,23 @@ from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotificatio
     nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, init_logger, LogLevel
 
 from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.nip89_utils import nip89_fetch_all_dvms_by_kind
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
 
 relay_list = ["wss://nostr.oxtr.dev", "wss://relay.nostrdvm.com"]
 
 
-async def nostr_client_test_mcp_get_tools():
+async def nostr_client_test_mcp_get_tools(dvm_pubkey):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     outTag = Tag.parse(["output", "application/json"])
     cTag = Tag.parse(["c", "list-tools"])
     alttag = Tag.parse(["alt", "This is a NIP90 Request to contact MCP server"])
     relaysTag = Tag.parse(['relays'] + relay_list)
+    ptag = Tag.parse(["p", dvm_pubkey])
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_MCP, str("MCP request")).tags(
-                         [outTag, alttag, cTag, relaysTag]).sign_with_keys(keys)
+                         [ptag, outTag, alttag, cTag, relaysTag]).sign_with_keys(keys)
 
 
     client = Client(NostrSigner.keys(keys))
@@ -36,20 +38,21 @@ async def nostr_client_test_mcp_get_tools():
     return result
 
 
-async def nostr_client_test_mcp_execute_tool(tool_name, tool_parameters):
+async def nostr_client_test_mcp_execute_tool(tool_name, tool_parameters, dvm_pubkey):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     outTag = Tag.parse(["output", "application/json"])
     cTag = Tag.parse(["c", "execute-tool"])
     alttag = Tag.parse(["alt", "This is a NIP90 Request to contact MCP server"])
     relaysTag = Tag.parse(['relays'] + relay_list)
+    ptag = Tag.parse(["p", dvm_pubkey])
 
     payload = {"name": tool_name,
                 "parameters": tool_parameters
                }
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_MCP, json.dumps(payload)).tags(
-                         [outTag, alttag, cTag, relaysTag]).sign_with_keys(keys)
+                         [ptag, outTag, alttag, cTag, relaysTag]).sign_with_keys(keys)
 
 
     client = Client(NostrSigner.keys(keys))
@@ -89,9 +92,22 @@ async def nostr_client():
     mcp_filter = Filter().pubkey(pk).kind(Kind(6910)).limit(0)
     await client.subscribe(mcp_filter, None)
 
-    #await nostr_client_test_mcp_get_tools()
-    await nostr_client_test_mcp_execute_tool(tool_name="get-crypto-price", tool_parameters={"symbol": "BTC"})
-    #await nostr_client_test_mcp_execute_tool(tool_name="echo_tool", tool_parameters={"message": "Hello"})
+    print("Existing MCP DVMS:")
+    nip89s = await nip89_fetch_all_dvms_by_kind(client, 5910)
+    for announcement in nip89s:
+        print(announcement.as_json())
+
+
+
+    dvm_pubkey = "12e76a4504c09f0b4b02d8c7497525136c18520b23b9a035c998d23c817f381d"
+
+    #await nostr_client_test_mcp_get_tools(dvm_pubkey=dvm_pubkey)
+
+    #await nostr_client_test_mcp_execute_tool(tool_name="get-crypto-price", tool_parameters={"symbol": "BTC"}, dvm_pubkey=dvm_pubkey)
+    #await nostr_client_test_mcp_execute_tool(tool_name="echo_tool", tool_parameters={"message": "Hello"}, dvm_pubkey=dvm_pubkey)
+
+    #await nostr_client_test_mcp_get_tools(dvm_pubkey=dvm_pubkey)
+    await nostr_client_test_mcp_execute_tool(tool_name="extract", tool_parameters={"url": "https://en.wikipedia.org/wiki/Nostr"}, dvm_pubkey=dvm_pubkey)
 
 
     class NotificationHandler(HandleNotification):
@@ -99,7 +115,7 @@ async def nostr_client():
             print(f"Received new event from {relay_url}: {event.as_json()}")
 
             if event.kind().as_u16() == 6910:
-                print(event.content())
+                print(event.content() + "\n")
 
 
 
