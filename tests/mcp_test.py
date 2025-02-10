@@ -102,4 +102,4 @@ if __name__ == '__main__':
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
-    playground(announce=False)
+    playground(announce=True)

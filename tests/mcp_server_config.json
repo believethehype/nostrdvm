@@ -7,7 +7,18 @@
      "mcp-crypto-price": {
       "command": "node",
       "args": [
-        "/Volumes/Home/~/Documents/mcp-crypto-price/build/index.js"
+        "../../mcp-crypto-price/build/index.js"
+      ]
+    },
+     "Echo": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp[cli]",
+        "mcp",
+        "run",
+        "tests/mcp_server.py"
       ]
     }
   }
