@@ -48,7 +48,7 @@ async def nostr_client_test_mcp_execute_tool(tool_name, tool_parameters, dvm_pub
     ptag = Tag.parse(["p", dvm_pubkey])
 
     payload = {"name": tool_name,
-                "parameters": tool_parameters
+                "parameters": json.loads(tool_parameters)
                }
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_MCP, json.dumps(payload)).tags(
@@ -99,15 +99,15 @@ async def nostr_client():
 
 
 
-    dvm_pubkey = "12e76a4504c09f0b4b02d8c7497525136c18520b23b9a035c998d23c817f381d"
+    dvm_pubkey = "85a319f3084cd23d3534d0ab2ddb80454df5dbd296d688257b4a336ed571d36a"
 
     #await nostr_client_test_mcp_get_tools(dvm_pubkey=dvm_pubkey)
 
-    #await nostr_client_test_mcp_execute_tool(tool_name="get-crypto-price", tool_parameters={"symbol": "BTC"}, dvm_pubkey=dvm_pubkey)
+    await nostr_client_test_mcp_execute_tool(tool_name="get-crypto-price", tool_parameters=json.dumps({"symbol": "BTC"}), dvm_pubkey=dvm_pubkey)
     #await nostr_client_test_mcp_execute_tool(tool_name="echo_tool", tool_parameters={"message": "Hello"}, dvm_pubkey=dvm_pubkey)
 
     #await nostr_client_test_mcp_get_tools(dvm_pubkey=dvm_pubkey)
-    await nostr_client_test_mcp_execute_tool(tool_name="extract", tool_parameters={"url": "https://en.wikipedia.org/wiki/Nostr"}, dvm_pubkey=dvm_pubkey)
+    #await nostr_client_test_mcp_execute_tool(tool_name="extract", tool_parameters={"url": "https://en.wikipedia.org/wiki/Nostr"}, dvm_pubkey=dvm_pubkey)
 
 
     class NotificationHandler(HandleNotification):
@@ -127,7 +127,7 @@ async def nostr_client():
 
 if __name__ == '__main__':
 
-    env_path = Path('.env')
+    env_path = Path('../.env')
     if env_path.is_file():
         print(f'loading environment from {env_path.resolve()}')
         dotenv.load_dotenv(env_path, verbose=True, override=True)

@@ -201,3 +201,5 @@ tests/gifs/lock.mdb
 tests/gif_library.py
 /.idea
 /.idea
+/tests/mcp/package-lock.json
+/tests/mcp/node_modules

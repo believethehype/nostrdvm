@@ -70,13 +70,15 @@ class MCPBridge(DVMTaskInterface):
         if self.options.get("server_names"):
             self.server_names = (self.options.get("server_names"))
 
-        c = "list-tools"
+        c = "execute-tool"
         for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'c':
+            if tag.as_vec()[0] == "c":
                 c = tag.as_vec()[1]
+                print(c)
 
         content = event.content()
-
+        print(c)
+        print(content)
 
         options = {
             "command" : c,
@@ -110,7 +112,7 @@ class MCPBridge(DVMTaskInterface):
             return json.dumps(final_tools)
 
 
-        elif options["command"] == "execute-tool":
+        else:
 
             print(options["payload"])
             ob = json.loads(options["payload"])
@@ -118,7 +120,7 @@ class MCPBridge(DVMTaskInterface):
             tool_name = ob["name"]
             tool_args = ob["parameters"]
             tool_response = await self.call_tool(config_path, server_names, tool_name, tool_args)
-
+            print(tool_response)
             return json.dumps(tool_response)
 
 
@@ -153,11 +155,11 @@ class MCPBridge(DVMTaskInterface):
                     tools = await send_tools_list(read_stream, write_stream)
                     if tools is not None:
                         alltools.append((server_name, tools))
-                        raise Exception("I'm gonna leave you.")
+                        raise BaseException()
 
                     else:
                         print("nada")
-            except:
+            except BaseException as e:
                 pass
 
         print("Ignore the error. We're good.")
@@ -194,17 +196,18 @@ class MCPBridge(DVMTaskInterface):
                                 server_has_tool = True
                         if server_has_tool is False:
                             print("no tool in server")
-                            raise Exception()
+                            raise BaseException()
                         else:
+                            print(tool_args)
                             tool_response = await send_call_tool(
                                 tool_name, tool_args, read_stream, write_stream)
-                            raise Exception() # Until we find a better way to leave the async with
+                            raise BaseException() # Until we find a better way to leave the async with
 
                 except:
                     pass
 
-            raise Exception()
-        except:
+            raise BaseException()
+        except BaseException as e:
             pass
 
         return tool_response
