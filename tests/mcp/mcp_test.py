@@ -35,7 +35,7 @@ def playground(announce=False):
 
     # MCP CONFIG
     config_path = str(Path.absolute(Path(__file__).parent / "mcp_server_config.json"))
-    server_names = ["Echo", "mcp-crypto-price"]
+    server_names = ["mcp-crypto-price"]
 
 
     tools = asyncio.run(get_tools(config_path, server_names))
@@ -74,7 +74,8 @@ def playground(announce=False):
     capabilities_tag = Tag.parse(["capabilities", "mcp-1.0"])
     t1_tag = Tag.parse(["t","mcp"])
     t2_tag = Tag.parse(["t", "bitcoin price"])
-    nip89config.EXTRA_TAGS =[capabilities_tag, t1_tag, t2_tag]
+    t3_tag = Tag.parse(["t", "bitcoin analysis"])
+    nip89config.EXTRA_TAGS =[capabilities_tag, t1_tag, t2_tag, t3_tag]
 
 
     options = {
