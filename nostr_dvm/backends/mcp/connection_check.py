@@ -5,6 +5,7 @@ from config import load_config
 from messages.send_initialize_message import send_initialize
 from messages.send_ping import send_ping
 from messages.send_tools_list import send_tools_list
+from messages.send_call_tool import send_call_tool
 from transport.stdio.stdio_client import stdio_client
 
 # Configure logging
@@ -18,7 +19,7 @@ async def main():
     """Stripped-down script to initialize the server and send a ping."""
     # Configuration values
     config_path = "server_config.json"
-    server_name = "Echo"
+    server_name = "nostrdvmmcp"
 
     # Load server configuration
     server_params = await load_config(config_path, server_name)
@@ -42,6 +43,10 @@ async def main():
 
         # get tools
         result = await send_tools_list(read_stream, write_stream)
+        print(result)
+
+        result = await send_call_tool("get-crypto-price", {"symbol":"BTC"}, read_stream, write_stream)
+
         print(result)
 
 # Run the script

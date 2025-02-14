@@ -62,6 +62,39 @@ const server = new McpServer(config);
 await getnip89s()
 
 
+function convertSchemaDefinitionToZod(schemaDefinition) {
+  const zodSchema = {};
+
+  for (const key in schemaDefinition) {
+    const property = schemaDefinition[key];
+
+    let zodProperty;
+     switch (property.type) {
+      case 'string':
+        zodProperty = z.string();
+        break;
+      case 'number':
+        zodProperty = z.number();
+        if (property.min !== undefined) zodProperty = zodProperty.min(property.min);
+        if (property.max !== undefined) zodProperty = zodProperty.max(property.max);
+        break;
+      case 'boolean':
+        zodProperty = z.boolean();
+        break;
+      default:
+        zodProperty = z.any();  // Fallback for unknown types
+    }
+
+    if (property.description) {
+      zodProperty = zodProperty.describe(property.description);
+    }
+
+    zodSchema[key] = zodProperty;
+  }
+
+  return z.object(zodSchema);
+}
+
 //define getNip89s. Fetch from Nostr and add as tools to server.
 async function getnip89s() {
     await loadWasmAsync();
@@ -90,12 +123,9 @@ async function getnip89s() {
             if (tool.inputSchema === undefined || tool.inputSchema.properties === undefined) {
                 continue
             }
-
-            //TODO convert inputSchema.properties? to zod schema or to any other way so it works.
-            let inputSchema = {symbol: z.string()}
-
-            server.tool(tool.name, tool.description, inputSchema,
-                async (args) => {
+            const zodSchema = convertSchemaDefinitionToZod(tool.inputSchema.properties);
+            server.tool(tool.name, tool.description, zodSchema.shape,
+             async (args) => {
                     return await handle_dvm_request(args, tool.name, pubkey)
                 });
         }
@@ -123,7 +153,9 @@ async function handle_dvm_request(args, name, pubkey) {
         await client.addRelay(relay);
     }
     await client.connect();
-      var relays_list = merge(["relays"], relays)
+
+      const relays_list = ["relays"].concat(relays)
+
 
     let tags = [
         Tag.parse(["c", "execute-tool"]),
@@ -145,15 +177,25 @@ async function handle_dvm_request(args, name, pubkey) {
 
     var result = ""
     const handle = {
-        handleEvent: async (relayUrl, subscriptionId, event) => {
-            //TODO More logic / safety checks
-            result = JSON.parse(event.content).content[0].text
-            abortable.abort()
-            return true
+        handleEvent: async (relayUrl, subscriptionId, event) =>
+        {
+            if(event.kind.asU16() === 6910){
+                try {
+                      result = JSON.parse(event.content).content[0].text
+                }
+                catch {
+                    console.log("Error parsing JSON in event")
+                }
+
+                abortable.abort()
+                return true
+            }
+
         },
 
-        handleMsg: async (relayUrl, message) => {
-            //console.log("Received message from", relayUrl, message.asJson());
+        handleMsg: async (relayUrl, message) =>
+        {
+            console.log("Received message from", relayUrl, message.asJson());
         }
 
     };

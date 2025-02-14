@@ -77,8 +77,7 @@ class MCPBridge(DVMTaskInterface):
                 print(c)
 
         content = event.content()
-        print(c)
-        print(content)
+
 
         options = {
             "command" : c,
@@ -112,9 +111,8 @@ class MCPBridge(DVMTaskInterface):
             return json.dumps(final_tools)
 
 
-        else:
+        elif options["command"] == "execute-tool":
 
-            print(options["payload"])
             ob = json.loads(options["payload"])
 
             tool_name = ob["name"]
@@ -162,7 +160,6 @@ class MCPBridge(DVMTaskInterface):
             except BaseException as e:
                 pass
 
-        print("Ignore the error. We're good.")
         return alltools
 
 

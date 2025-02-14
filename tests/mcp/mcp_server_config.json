@@ -9,17 +9,6 @@
       "args": [
         "../../mcp-crypto-price/build/index.js"
       ]
-    },
-     "Echo": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--with",
-        "mcp[cli]",
-        "mcp",
-        "run",
-        "tests/mcp/mcp_server.py"
-      ]
     }
   }
 }
