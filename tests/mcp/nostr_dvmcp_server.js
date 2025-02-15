@@ -121,7 +121,7 @@ async function getnip89s() {
         let content_json = JSON.parse(evt.content)
         let tools = content_json.tools
         for (let tool of tools) {
-            if (tool.inputSchema === undefined || tool.inputSchema.properties === undefined) {
+            if (tool.inputSchema === undefined || tool.inputSchema.properties === undefined || tool.description === undefined) {
                 continue
             }
             const zodSchema = convertSchemaDefinitionToZod(tool.inputSchema.properties);
