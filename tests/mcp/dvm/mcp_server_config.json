@@ -9,6 +9,19 @@
       "args": [
         "../../mcp-crypto-price/build/index.js"
       ]
+    },
+   "nostr-notes": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with",
+        "mcp[cli]",
+        "--with",
+        "nostr_sdk==0.39.0",
+        "mcp",
+        "run",
+        "tests/mcp/mcp-servers/nostr-notes/server.py"
+      ]
     }
   }
 }
