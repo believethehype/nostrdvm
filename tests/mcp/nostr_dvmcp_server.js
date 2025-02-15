@@ -52,7 +52,8 @@ const config = {
             "wss://relay.damus.io",
         ];
 
-// replace publickey with a unique one (it doesn't matter as much, we just do the requests)
+// replace private key with a unique one (it doesn't matter as much, we just do the requests)
+// both hex and nsec are supported
 let pkey = "e318cb3e6ac163814dd297c2c7d745faacfbc2a826eb4f6d6c81430426a83c2b"
 
 // Create an MCP server for Stdio
@@ -195,7 +196,7 @@ async function handle_dvm_request(args, name, pubkey) {
 
         handleMsg: async (relayUrl, message) =>
         {
-            console.log("Received message from", relayUrl, message.asJson());
+            //console.log("Received message from", relayUrl, message.asJson());
         }
 
     };
