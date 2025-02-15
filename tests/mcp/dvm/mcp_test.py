@@ -5,7 +5,7 @@ from pathlib import Path
 import dotenv
 
 from nostr_dvm.framework import DVMFramework
-from nostr_dvm.tasks.mcpbridge import MCPBridge
+from tests.mcp.dvm.mcpbridge import MCPBridge
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
@@ -35,7 +35,7 @@ def playground(announce=False):
 
     # MCP CONFIG
     config_path = str(Path.absolute(Path(__file__).parent / "mcp_server_config.json"))
-    server_names = ["mcp-crypto-price"]
+    server_names = ["mcp-crypto-price", "nostr-notes"]
 
 
     tools = asyncio.run(get_tools(config_path, server_names))
@@ -95,9 +95,9 @@ def playground(announce=False):
 
 
 if __name__ == '__main__':
-    env_path = Path('../.env')
+    env_path = Path('../../.env')
     if not env_path.is_file():
-        with open('../.env', 'w') as f:
+        with open('../../.env', 'w') as f:
             print("Writing new .env file")
             f.write('')
     if env_path.is_file():

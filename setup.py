@@ -30,6 +30,7 @@ setup(
                       "urllib3==2.2.2",
                       "networkx==3.3",
                       "scipy==1.13.1",
+                      "typer==0.15.1",
                       "beautifulsoup4==4.12.3"
                       ],
     keywords=['nostr', 'nip90', 'dvm', 'data vending machine'],
