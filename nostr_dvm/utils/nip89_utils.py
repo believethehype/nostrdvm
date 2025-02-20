@@ -17,7 +17,7 @@ class NIP89Config:
     KIND: Kind = None
     PK: str = ""
     CONTENT: str = ""
-    EXTRA_TAGS : []
+    EXTRA_TAGS = []
 
 
 def nip89_create_d_tag(name, pubkey, image):
