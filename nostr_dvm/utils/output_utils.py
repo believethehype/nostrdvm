@@ -296,6 +296,8 @@ def build_status_reaction(status, task, amount, content, dvm_config):
     elif status == "user-blocked-from-service":
         alt_description = "NIP90 DVM task " + task + " can't be performed. User has been blocked from Service. "
         reaction = alt_description + emoji.emojize(":thumbs_down:")
+    elif status == "pong":
+        reaction = "Pong!"
     else:
         reaction = emoji.emojize(":thumbs_down:")
 

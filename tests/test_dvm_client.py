@@ -377,6 +377,31 @@ async def nostr_client_test_discovery_gallery(user, ptag):
     return event.as_json()
 
 
+async def dvm_ping(ptag):
+    keys = Keys.parse(check_and_set_private_key("test_client5"))
+
+    relay_list = ["wss://relay.damus.io", "wss://dvms.f7z.io", "wss://nostr.oxtr.dev",
+                  ]
+
+    relaysTag = Tag.parse(relay_list)
+    alttag = Tag.parse(["alt", "This is a NIP90 DVM Ping"])
+    pTag = Tag.parse(["p", ptag])
+
+    tags = [relaysTag, alttag, pTag]
+
+    event = EventBuilder(EventDefinitions.KIND_NIP90_PING, "ping").tags(
+                         tags).sign_with_keys(keys)
+
+    client = Client(NostrSigner.keys(keys))
+    for relay in relay_list:
+        await client.add_relay(relay)
+    await client.connect()
+    config = DVMConfig
+    await send_event(event, client=client, dvm_config=config)
+
+    return event.as_json()
+
+
 async def nostr_client_test_image_private(prompt, cashutoken):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     receiver_keys = Keys.parse(check_and_set_private_key("replicate_sdxl"))
@@ -421,6 +446,8 @@ async def nostr_client():
     client = Client(NostrSigner.keys(keys))
 
     dvmconfig = DVMConfig()
+    for relay in dvmconfig.SYNC_DB_RELAY_LIST:
+        await client.add_relay(relay)
     for relay in dvmconfig.RELAY_LIST:
         await client.add_relay(relay)
     await client.connect()
@@ -431,12 +458,15 @@ async def nostr_client():
     kinds = [EventDefinitions.KIND_NIP90_GENERIC]
     #SUPPORTED_KINDS = [Kind(6100), Kind(7000)]
 
-    for kind in range(6000, 7001):
+    for kind in range(6000, 7008):
         if kind not in kinds:
             kinds.append(Kind(kind))
-    dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()).pubkey(pk))
-    await client.subscribe(dm_zap_filter, None)
+    dvm_filter = Filter().pubkey(pk).kinds(kinds).since(Timestamp.now())
+    #await client.subscribe(dm_zap_filter, None)
     await client.subscribe(dvm_filter, None)
+
+    await dvm_ping("f0abaefb4ca4a30411d6e28fa1219330426a73f486dee090a5198103c45d6817")
+
 
     # await nostr_client_test_translation("This is the result of the DVM in spanish", "text", "es", 20, 20)
     # await nostr_client_test_translation("note1p8cx2dz5ss5gnk7c59zjydcncx6a754c0hsyakjvnw8xwlm5hymsnc23rs", "event", "es", 20,20)
@@ -463,7 +493,7 @@ async def nostr_client():
 
     # cashutoken = "cashuAeyJ0b2tlbiI6W3sicHJvb2ZzIjpbeyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MSwiQyI6IjAyNWU3ODZhOGFkMmExYTg0N2YxMzNiNGRhM2VhMGIyYWRhZGFkOTRiYzA4M2E2NWJjYjFlOTgwYTE1NGIyMDA2NCIsInNlY3JldCI6InQ1WnphMTZKMGY4UElQZ2FKTEg4V3pPck5rUjhESWhGa291LzVzZFd4S0U9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6NCwiQyI6IjAyOTQxNmZmMTY2MzU5ZWY5ZDc3MDc2MGNjZmY0YzliNTMzMzVmZTA2ZGI5YjBiZDg2Njg5Y2ZiZTIzMjVhYWUwYiIsInNlY3JldCI6IlRPNHB5WE43WlZqaFRQbnBkQ1BldWhncm44UHdUdE5WRUNYWk9MTzZtQXM9In0seyJpZCI6InZxc1VRSVorb0sxOSIsImFtb3VudCI6MTYsIkMiOiIwMmRiZTA3ZjgwYmMzNzE0N2YyMDJkNTZiMGI3ZTIzZTdiNWNkYTBhNmI3Yjg3NDExZWYyOGRiZDg2NjAzNzBlMWIiLCJzZWNyZXQiOiJHYUNIdHhzeG9HM3J2WWNCc0N3V0YxbU1NVXczK0dDN1RKRnVwOHg1cURzPSJ9XSwibWludCI6Imh0dHBzOi8vbG5iaXRzLmJpdGNvaW5maXhlc3RoaXMub3JnL2Nhc2h1L2FwaS92MS9ScDlXZGdKZjlxck51a3M1eVQ2SG5rIn1dfQ=="
     # await nostr_client_test_image_private("a beautiful ostrich watching the sunset")
-    await nostr_client_test_mcp()
+    #await nostr_client_test_mcp()
     #nutzap_wallet = NutZapWallet()
 
 
@@ -505,6 +535,10 @@ async def nostr_client():
                         amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
                     if tag.as_vec()[0] == "status":
                        status = tag.as_vec()[1]
+                       if status == "pong":
+                           print(status)
+
+
                 # THIS IS FOR TESTING
 
 
@@ -526,10 +560,10 @@ async def nostr_client():
                 #     #sleep to avoid event not being updated on self zap
                 #     await asyncio.sleep(5)
 
-                nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
-                if nut_wallet is not None:
-                    await nutzap_wallet.reedeem_nutzap(event, nut_wallet, client, keys)
-                    # await get_nut_wallet(client, keys)
+               # nut_wallet = await nutzap_wallet.get_nut_wallet(client, keys)
+               # if nut_wallet is not None:
+               #     await nutzap_wallet.reedeem_nutzap(event, nut_wallet, client, keys)
+               #     # await get_nut_wallet(client, keys)
 
         async def handle_msg(self, relay_url, msg):
             return

@@ -76,10 +76,12 @@ class DVM:
             if dvm.KIND not in kinds:
                 kinds.append(dvm.KIND)
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
+        ping_filter= Filter().pubkey(pk).kind(EventDefinitions.KIND_NIP90_PING).since(Timestamp.now())
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
         await self.client.subscribe(dvm_filter, None)
         await self.client.subscribe(zap_filter, None)
+        await self.client.subscribe(ping_filter, None)
 
         if self.dvm_config.ENABLE_NUTZAP:
             nutzap_wallet = NutZapWallet()
@@ -110,6 +112,8 @@ class DVM:
                     await handle_zap(nostr_event)
                 elif nostr_event.kind().as_u16() == EventDefinitions.KIND_NIP61_NUT_ZAP.as_u16():
                     await handle_nutzap(nostr_event)
+                elif nostr_event.kind().as_u16() == EventDefinitions.KIND_NIP90_PING.as_u16():
+                    await handle_ping(nostr_event)
 
             async def handle_msg(self, relay_url, msg):
                 return
@@ -319,6 +323,19 @@ class DVM:
                         print("[" + self.dvm_config.NIP89.NAME + "] Job addressed to someone else, skipping..")
             # else:
             # print("[" + self.dvm_config.NIP89.NAME + "] Task " + task + " not supported on this DVM, skipping..")
+
+
+        async def handle_ping(event):
+            nip90_event, use_legacy_encryption = check_and_decrypt_tags(event, self.dvm_config)
+            # if event is encrypted, but we can't decrypt it (e.g. because its directed to someone else), return
+            if nip90_event is None:
+                return
+
+            await send_job_status_reaction(nip90_event, "pong", client=self.client,
+                                           content="alive and kicking",
+                                           dvm_config=self.dvm_config)
+            print("Sent pong")
+
 
         async def handle_nutzap(nut_zap_event):
             if self.dvm_config.ENABLE_NUTZAP:
