@@ -40,7 +40,10 @@ RELAY_LIST = ["wss://relay.nostrdvm.com",
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                       "wss://relay.primal.net",
-                      "wss://nostr.oxtr.dev"
+                      "wss://nostr.oxtr.dev",
+                      "wss://relay.nostrplebs.com",
+                      "wss://relay.nostr.band",
+
                       ]
 
 SYNC_DB_RELAY_LIST_OLAS = ["wss://relay.damus.io",
@@ -149,10 +152,9 @@ def playground():
     database = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
     last_year = datetime.date.today().year - 1
 
-    if last_year % 4 == 0 and (last_year % 100 != 0 or last_year % 400 == 0) and datetime.date.today().month < 3:
-        days = 366
-    else:
-        days = 365
+
+    days = 365
+
 
     # Popular Tweets 
     admin_config = AdminConfig()
