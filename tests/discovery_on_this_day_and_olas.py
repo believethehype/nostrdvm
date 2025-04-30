@@ -152,9 +152,10 @@ def playground():
     database = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
     last_year = datetime.date.today().year - 1
 
-
-    days = 365
-
+    if last_year % 4 == 0 and (last_year % 100 != 0 or last_year % 400 == 0) and datetime.date.today().month < 3:
+        days = 366
+    else:
+        days = 365
 
     # Popular Tweets 
     admin_config = AdminConfig()
