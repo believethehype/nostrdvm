@@ -4,7 +4,6 @@ import os
 import random
 import string
 import urllib.parse
-import uuid
 from hashlib import sha256
 from pathlib import Path
 
@@ -18,8 +17,6 @@ from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, gene
     Timestamp
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags, update_profile_lnaddress
-
-from bs4 import BeautifulSoup
 
 # tor connection to lnbits
 # proxies = {
