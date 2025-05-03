@@ -4,6 +4,7 @@ import os
 import random
 import string
 import urllib.parse
+import uuid
 from hashlib import sha256
 from pathlib import Path
 
@@ -17,6 +18,8 @@ from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, gene
     Timestamp
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags, update_profile_lnaddress
+
+from bs4 import BeautifulSoup
 
 # tor connection to lnbits
 # proxies = {
@@ -132,6 +135,69 @@ def create_bolt11_lud16(lud16, amount):
     except Exception as e:
         print("LUD16: " + e)
         return None
+
+
+
+def create_lnbits_user(name, privkey):
+    if os.getenv("LNBITS_WALLET_ID") is None or os.getenv("LNBITS_WALLET_ID") == "":
+        print("No admin id set, no wallet created.")
+        return "", "", "", "", "failed"
+
+
+    publickey = Keys.parse(privkey).public_key().to_hex()
+    usr = str(uuid.uuid4())
+    data = {
+        "id": usr,
+        "email": "string",
+        "username": name,
+        "password": privkey,
+        "password_repeat": privkey,
+        "pubkey": publickey,
+        "extensions": [
+            "string"
+        ],
+        "extra": {
+            "email_verified": False,
+            "first_name": "string",
+            "last_name": "string",
+            "display_name": "string",
+            "picture": "string",
+            "provider": "lnbits"
+        }
+    }
+
+    json_object = json.dumps(data)
+    url = os.getenv("LNBITS_HOST") + '/users/api/v1/user?usr=' + usr
+    print(url)
+    headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
+    r = requests.post(url, data=json_object, headers=headers, proxies=proxies)
+    walletjson = json.loads(r.text)
+    print(walletjson)
+
+
+def create_lnbits_wallet(name):
+    if  os.getenv("LNBITS_WALLET_ID") == "":
+        print("No admin id set, no wallet created.")
+        return "", "", "", "failed"
+    data = {
+        'name': name,
+    }
+    try:
+        json_object = json.dumps(data)
+        url = os.getenv("LNBITS_HOST") + '/api/v1/wallet'
+        print(url)
+        headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
+        r = requests.post(url, json=data, headers=headers, proxies=proxies)
+        print(r.text)
+        walletjson = json.loads(r.text)
+        print(walletjson)
+
+        return walletjson['inkey'],  walletjson['adminkey'], walletjson['id'], "success"
+
+    except Exception as e:
+        print(e)
+        print("error creating wallet")
+        return "", "", "", "failed"
 
 
 def create_lnbits_account(name):
@@ -433,10 +499,13 @@ def make_ln_address_nostdress_manual_lnbits(new_name, invoice_key, npub, nostdre
 
 def check_and_set_ln_bits_keys(identifier, npub):
     if not os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()):
-        invoicekey, adminkey, walletid, userid, success = create_lnbits_account(identifier)
+        #invoicekey, adminkey, walletid, walletid, success = create_lnbits_account(identifier)
+        invoicekey, adminkey, walletid, success = create_lnbits_wallet(identifier)
+
+
         add_key_to_env_file("LNBITS_INVOICE_KEY_" + identifier.upper(), invoicekey)
         add_key_to_env_file("LNBITS_ADMIN_KEY_" + identifier.upper(), adminkey)
-        add_key_to_env_file("LNBITS_WALLET_ID_" + identifier.upper(), userid)
+        add_key_to_env_file("LNBITS_WALLET_ID_" + identifier.upper(), walletid)
 
         lnaddress = ""
         pin = ""
