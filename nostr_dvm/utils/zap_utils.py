@@ -18,6 +18,7 @@ from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, gene
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags, update_profile_lnaddress
 
+
 # tor connection to lnbits
 # proxies = {
 #    'http': 'socks5h://127.0.0.1:9050',
@@ -136,15 +137,15 @@ def create_bolt11_lud16(lud16, amount):
 
 
 def create_lnbits_user(name, privkey):
-    if os.getenv("LNBITS_WALLET_ID") is None or os.getenv("LNBITS_WALLET_ID") == "":
+    # not working
+    if os.getenv("LNBITS_ADMIN_KEY") is None or os.getenv("LNBITS_ADMIN_KEY") == "":
         print("No admin id set, no wallet created.")
         return "", "", "", "", "failed"
 
 
     publickey = Keys.parse(privkey).public_key().to_hex()
-    usr = str(uuid.uuid4())
     data = {
-        "id": usr,
+        "id": name,
         "email": "string",
         "username": name,
         "password": privkey,
@@ -173,14 +174,13 @@ def create_lnbits_user(name, privkey):
 
 
 def create_lnbits_wallet(name):
-    if  os.getenv("LNBITS_WALLET_ID") == "":
+    if  os.getenv("LNBITS_ADMIN_KEY") is None or os.getenv("LNBITS_ADMIN_KEY") == "":
         print("No admin id set, no wallet created.")
         return "", "", "", "failed"
     data = {
         'name': name,
     }
     try:
-        json_object = json.dumps(data)
         url = os.getenv("LNBITS_HOST") + '/api/v1/wallet'
         print(url)
         headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
@@ -198,11 +198,11 @@ def create_lnbits_wallet(name):
 
 
 def create_lnbits_account(name):
-    if os.getenv("LNBITS_WALLET_ID") is None or os.getenv("LNBITS_WALLET_ID") == "":
+    if os.getenv("LNBITS_ADMIN_KEY") is None or os.getenv("LNBITS_ADMIN_KEY") == "":
         print("No admin id set, no wallet created.")
         return "", "", "", "", "failed"
     data = {
-        'admin_id': os.getenv("LNBITS_WALLET_ID"),
+        'admin_id': os.getenv("LNBITS_ADMIN_KEY"),
         'wallet_name': name,
         'user_name': name,
     }
