@@ -51,7 +51,7 @@ def playground(announce=False):
         return result
 
     dvm.process = process  # overwrite the process function with the above one
-    dvm.run(True)
+    dvm.run()
 
 
 if __name__ == '__main__':
