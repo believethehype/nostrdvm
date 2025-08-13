@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import timedelta
 
 from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, LogLevel, Kind, EventId
@@ -30,7 +31,7 @@ class DicoverContentOnThisDay(DVMTaskInterface):
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_notes.db"
-    min_reactions = 2
+    min_reactions = 0
     personalized = False
     result = ""
 
@@ -107,7 +108,7 @@ class DicoverContentOnThisDay(DVMTaskInterface):
         database = NostrDatabase.lmdb(self.db_name)
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
-        timestamp_until = Timestamp.now().as_secs() - (self.db_since - (60+60*24))
+        timestamp_until = Timestamp.now().as_secs() - (self.db_since - (60*60*24))
         since = Timestamp.from_secs(timestamp_since)
         until = Timestamp.from_secs(timestamp_until)
 
@@ -201,6 +202,7 @@ class DicoverContentOnThisDay(DVMTaskInterface):
                     self.db_since) + " seconds.. this might take a while..")
             dbopts = SyncOptions().direction(SyncDirection.DOWN)
             await cli.sync(filter1, dbopts)
+            await cli.fetch_events(filter1, timedelta(10))
             await cli.database().delete(Filter().until(since))  # Clear old events so db doesn't get too full.
             await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
