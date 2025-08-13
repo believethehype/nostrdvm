@@ -15,6 +15,7 @@ from nostr_dvm.utils.database_utils import create_sql_table, get_or_add_user, up
     update_user_subscription
 from nostr_dvm.utils.definitions import EventDefinitions, RequiredJobToWatch, JobToWatch
 from nostr_dvm.utils.dvmconfig import DVMConfig
+from nostr_dvm.utils.heartbeat import beat
 from nostr_dvm.utils.mediasource_utils import input_data_file_duration
 from nostr_dvm.utils.nip88_utils import nip88_has_active_subscription
 from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by_id, check_and_decrypt_tags, \
@@ -52,6 +53,7 @@ class DVM:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
+        self.heartbeat_frequency = 300
         relaylimits = RelayLimits.disable()
         opts = Options().relay_limits(relaylimits) #.difficulty(28)
 
@@ -79,6 +81,7 @@ class DVM:
         ping_filter= Filter().pubkey(pk).kind(EventDefinitions.KIND_NIP90_PING).since(Timestamp.now())
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
+        await beat(self.dvm_config, self.client, self.heartbeat_frequency )
         await self.client.subscribe(dvm_filter, None)
         await self.client.subscribe(zap_filter, None)
         await self.client.subscribe(ping_filter, None)
@@ -638,8 +641,10 @@ class DVM:
                 if tag.as_vec()[0] == "i":
                     if not encrypted:
                         reply_tags.append(tag)
-                elif tag.as_vec()[0] == "expiration":
-                    reply_tags.append(tag)
+
+
+            expiration_tag = Tag.parse(["expiration", str(Timestamp.now().as_secs() + dvm_config.EXPIRATION_DURATION)])
+            reply_tags.append(expiration_tag)
 
             if encrypted:
                 encryption_tags.append(p_tag)
@@ -708,15 +713,12 @@ class DVM:
 
             encrypted = False
             is_legacy_encryption = False
-            expiration_tag = None
             for tag in original_event.tags().to_vec():
                 if tag.as_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
                     encryption_tags.append(encrypted_tag)
                     #_, is_legacy_encryption = check_and_decrypt_tags(original_event, dvm_config)
-                elif tag.as_vec()[0] == "expiration":
-                    expiration_tag = tag
 
             if encrypted:
                 encryption_tags.append(p_tag)
@@ -797,8 +799,10 @@ class DVM:
             else:
                 content = reaction
 
-            if expiration_tag is not None:
-                reply_tags.append(expiration_tag)
+
+
+            expiration_tag = Tag.parse(["expiration", str(Timestamp.now().as_secs() + dvm_config.EXPIRATION_DURATION)])
+            reply_tags.append(expiration_tag)
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
             reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
@@ -941,10 +945,14 @@ class DVM:
         asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
 
         try:
-
+            heartbeatsignal = 0
+            sleep = 1
             while self.stop_thread is False:
                 for dvm in self.dvm_config.SUPPORTED_DVMS:
                     await dvm.schedule(self.dvm_config)
+                    if heartbeatsignal >= self.heartbeat_frequency :
+                        heartbeatsignal = 0
+                        await beat(self.dvm_config, self.client, self.heartbeat_frequency )
 
                 for job in self.job_list:
                     if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
@@ -979,7 +987,8 @@ class DVM:
                     if Timestamp.now().as_secs() > job.timestamp + 60 * 20:  # remove jobs to look for after 20 minutes..
                         self.jobs_on_hold_list.remove(job)
 
-                await asyncio.sleep(1)
+                await asyncio.sleep(sleep)
+                heartbeatsignal += sleep
         except BaseException:
             print("end")
 

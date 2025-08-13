@@ -70,6 +70,7 @@ class DVMConfig:
     CUSTOM_PROCESSING_MESSAGE = None
     LOGLEVEL = LogLevel.INFO
     KIND = None
+    EXPIRATION_DURATION = 600
 
     DVM_KEY = None
     CHATBOT = None
