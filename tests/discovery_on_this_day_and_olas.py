@@ -40,7 +40,10 @@ RELAY_LIST = ["wss://relay.nostrdvm.com",
 
 SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
                       "wss://relay.primal.net",
-                      "wss://nostr.oxtr.dev"
+                      "wss://nostr.oxtr.dev",
+                      "wss://relay.nostrplebs.com",
+                      "wss://relay.nostr.band",
+
                       ]
 
 SYNC_DB_RELAY_LIST_OLAS = ["wss://relay.damus.io",
