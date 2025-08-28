@@ -17,7 +17,7 @@ class DVMConfig:
     PER_UNIT_COST: float = None
 
     # The relays the dvm is operating on and announces in its inbox relays
-    RELAY_LIST = ["wss://relay.nostrdvm.com",
+    RELAY_LIST = ["wss://relay.nostrdvm.com",  "wss://nostr.oxtr.dev"
                   ]
     # DBs to sync with
     SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
@@ -26,7 +26,6 @@ class DVMConfig:
                          ]
     # announce inbox relays, dm relays and NIP89 announcement to
     ANNOUNCE_RELAY_LIST = ["wss://relay.primal.net",
-                  "wss://relay.damus.io",
                   "wss://nostr.oxtr.dev", "wss://relay.nostrdvm.com"
                   ]
 
