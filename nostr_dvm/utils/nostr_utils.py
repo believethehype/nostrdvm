@@ -185,20 +185,23 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
                 if index != 0:
                     if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                         try:
-
-                            relays = list(set(relays + [tag.as_vec()[index]]))
+                            if tag.as_vec()[index].rstrip("/")  not in relays and tag.as_vec()[index] not in relays:
+                                relays = list(set(relays + [tag.as_vec()[index]]))
                         except:
                             print("[" + dvm_config.NIP89.NAME + "] " + tag.as_vec()[
                                 index] + " couldn't be added to outbox relays")
             break
 
-    #print(relays)
     # 3. If we couldn't find relays, we look in the receivers inbox
     inbox_relays = []
     if relays == dvm_config.RELAY_LIST:
         print("[" + dvm_config.NIP89.NAME + "] No relay tags found, replying to inbox relays")
         inbox_relays = await get_inbox_relays(event, client, dvm_config)
-        relays = list(set(relays + inbox_relays))
+        for relay in inbox_relays:
+            if relay.rstrip("/") not in relays and relay not in relays:
+                 relays = list(set(relays + [relay]))
+
+    print(relays)
 
    # print(relays)
     #print(dvm_config.RELAY_LIST)

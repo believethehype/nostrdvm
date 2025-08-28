@@ -36,6 +36,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
     search_list = []
     avoid_list = []
     must_list = []
+    any_of_list = []
     personalized = False
     result = ""
     database = None
@@ -63,10 +64,14 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             self.avoid_list = self.options.get("avoid_list")
         if self.options.get("must_list"):
             self.must_list = self.options.get("must_list")
+        if self.options.get("any_of_list"):
+            self.any_of_list = self.options.get("any_of_list")
         if self.options.get("db_name"):
             self.db_name = self.options.get("db_name")
         if self.options.get("db_since"):
             self.db_since = int(self.options.get("db_since"))
+
+
 
         use_logger = False
         if use_logger:
@@ -173,15 +178,15 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         for event in events.to_vec():
             if all(ele in event.content().lower() for ele in self.must_list):
-                # if any(ele in event.content().lower() for ele in self.search_list):
-                if not any(ele in event.content().lower() for ele in self.avoid_list):
-                    filt = Filter().kinds(
-                        [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
-                         definitions.EventDefinitions.KIND_REPOST,
-                         definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                    reactions = await self.database.query(filt)
-                    if len(reactions.to_vec()) >= self.min_reactions:
-                        ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
+                if any(ele in event.content().lower() for ele in self.any_of_list) or len(self.any_of_list) == 0:
+                    if not any(ele in event.content().lower() for ele in self.avoid_list):
+                        filt = Filter().kinds(
+                            [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
+                             definitions.EventDefinitions.KIND_REPOST,
+                             definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+                        reactions = await self.database.query(filt)
+                        if len(reactions.to_vec()) >= self.min_reactions:
+                            ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
