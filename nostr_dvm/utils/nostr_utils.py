@@ -201,8 +201,6 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
             if relay.rstrip("/") not in relays and relay not in relays:
                  relays = list(set(relays + [relay]))
 
-    print(relays)
-
    # print(relays)
     #print(dvm_config.RELAY_LIST)
     # 4. If we don't find inbox relays (e.g. because the user didn't announce them, we just send to our default relays
