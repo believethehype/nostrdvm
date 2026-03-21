@@ -68,6 +68,16 @@ docker compose up -d
 
 This will build the Docker image and start the `nostrdvm` service as defined in the `docker-compose.yml` file. 
 
+## DVMs in Production
+
+Community-operated DVMs built with this framework:
+
+| DVM | Kinds | Stack | Notes |
+|-----|-------|-------|-------|
+| [Vesper DVM](https://neofreight.net) | kind:5050 (translation), kind:5300 (search), kind:5301 (DVM Index) | Node.js | NIP-90 compliant, 6 weeks production, 27 sats earned |
+
+> Running a production DVM? Open a PR to add it here.
+
 ## License
 
 This project is licensed under the MIT License.
