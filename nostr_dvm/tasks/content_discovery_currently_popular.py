@@ -3,7 +3,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
@@ -117,18 +117,20 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
         events = await database.query(filter1)
+        events_vec = events.to_vec()
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
         ns.finallist = {}
-        for event in events.to_vec():
+        for event in events_vec:
             if event.created_at().as_secs() > timestamp_since:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
                                        definitions.EventDefinitions.KIND_REACTION,
                                        definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
                 reactions = await database.query(filt)
 
-                if len(reactions.to_vec()) >= self.min_reactions:
-                    ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
+                reactions_vec = reactions.to_vec()
+                if len(reactions_vec) >= self.min_reactions:
+                    ns.finallist[event.id().to_hex()] = len(reactions_vec)
         if len(ns.finallist) == 0:
             return self.result
 
@@ -177,7 +179,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-                await cli.add_relay(relay)
+                await cli.add_relay(RelayUrl.parse(relay))
 
             await cli.connect()
 

@@ -34,7 +34,7 @@ async def nostr_client_generic_test(ptag):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     response_status = await send_event(event, client=client, dvm_config=DVMConfig())
     print_send_result(response_status)
@@ -49,7 +49,7 @@ async def nostr_client(target_dvm_npub):
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
     kinds = [EventDefinitions.KIND_NIP90_GENERIC]

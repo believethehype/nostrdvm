@@ -2,8 +2,8 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind
+from nostr_sdk import Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind, RelayUrl
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -79,9 +79,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
 
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
         cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
-
-        await cli.add_relay("wss://relay.damus.io")
-        # cli.add_relay("wss://atl.purplerelay.com")
+        # cli.add_relay(RelayUrl.parse("wss://atl.purplerelay.com"))
         await cli.connect()
 
         # Negentropy reconciliation
@@ -91,13 +89,14 @@ class DiscoveryBotFarms(DVMTaskInterface):
         filter1 = Filter().kind(Kind(0))
         events = await cli.database().query(filter1)
         result_list = []
-        print("Events: " + str(len(events.to_vec())))
+        events_vec = events.to_vec()
+        print("Events: " + str(len(events_vec)))
 
         searchterms = str(options["search"]).split(";")
         index = 0
-        if len(events.to_vec()) > 0:
+        if len(events_vec) > 0:
 
-            for event in events.to_vec():
+            for event in events_vec:
                 if index < options["max_results"]:
                     try:
                         if any(ext in event.content().lower() for ext in searchterms):
@@ -138,9 +137,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb("db/nostr_profiles.db")
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
-
-        await cli.add_relay("wss://relay.damus.io")
-        await cli.add_relay("wss://nostr21.com")
+        await cli.add_relay(RelayUrl.parse("wss://nostr21.com"))
         await cli.connect()
 
         filter1 = Filter().kind(Kind(0))
@@ -181,7 +178,7 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": "wss://relay.damus.io"}
+    options = {}
 
     return DiscoveryBotFarms(name=name, dvm_config=dvm_config, nip89config=nip89config,
                              admin_config=admin_config, options=options)

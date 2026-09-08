@@ -1,5 +1,5 @@
 import asyncio
-from nostr_sdk import Keys, ClientBuilder, Options, EventBuilder, Connection, ConnectionTarget, init_logger, LogLevel, NostrSigner
+from nostr_sdk import Keys, ClientBuilder, ClientOptions, EventBuilder, Connection, ConnectionTarget, init_logger, LogLevel, NostrSigner, RelayUrl
 
 
 async def main():
@@ -10,13 +10,11 @@ async def main():
 
     # Configure client to use embedded tor for `.onion` relays
     connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
-    opts = Options().connection(connection)
+    opts = ClientOptions().connection(connection)
     signer = NostrSigner.keys(keys)
     client = ClientBuilder().signer(signer).opts(opts).build()
-
-    await client.add_relay("wss://relay.damus.io")
-    await client.add_relay("ws://oxtrdevav64z64yb7x6rjg4ntzqjhedm5b5zjqulugknhzr46ny2qbad.onion")
-    await client.add_relay("ws://2jsnlhfnelig5acq6iacydmzdbdmg7xwunm4xl6qwbvzacw4lwrjmlyd.onion")
+    await client.add_relay(RelayUrl.parse("ws://oxtrdevav64z64yb7x6rjg4ntzqjhedm5b5zjqulugknhzr46ny2qbad.onion"))
+    await client.add_relay(RelayUrl.parse("ws://2jsnlhfnelig5acq6iacydmzdbdmg7xwunm4xl6qwbvzacw4lwrjmlyd.onion"))
     await client.connect()
 
     event = EventBuilder.text_note("Hello from rust-nostr Python bindings!")

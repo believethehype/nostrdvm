@@ -3,8 +3,8 @@ import json
 import os
 import signal
 
-from nostr_sdk import (Keys, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       Options, Tag, Event, EventId, Nip19Event, Kind, NostrSigner, nip44_encrypt, Nip44Version,
+from nostr_sdk import (RelayUrl, Keys, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
+                       ClientOptions, Tag, Event, EventId, Nip19Event, Kind, NostrSigner, nip44_encrypt, Nip44Version,
                        UnsignedEvent, UnwrappedGift, KindStandard, ClientBuilder, make_private_msg)
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
@@ -50,7 +50,7 @@ class Bot:
         self.signer = NostrSigner.keys(self.keys)
         self.CHATBOT = False
 
-        opts = Options().gossip(True)
+        opts = ClientOptions().gossip(True)
         self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
         self.invoice_list = []
 
@@ -67,7 +67,7 @@ class Bot:
                 self.DVM_KEY = dvm_config.DVM_KEY
 
         for relay in self.dvm_config.RELAY_LIST:
-            await self.client.add_relay(relay)
+            await self.client.add_relay(RelayUrl.parse(relay))
 
         await self.client.connect()
 

@@ -251,7 +251,7 @@ async function boost(eventid, authorid, evt) {
     if (!objects.boosted) {
 
       console.log(evt.asJson())
-      let relay = "wss://relay.damus.io"
+      let relay = "wss://relay.primal.net"
       for (let tag of evt.tags) {
         if (tag.asVec()[0] == "relays") {
           console.log(tag.asVec()[1])

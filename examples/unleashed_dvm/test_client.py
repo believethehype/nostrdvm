@@ -20,13 +20,13 @@ async def nostr_client_test(prompt):
     iTag = Tag.parse(["i", prompt, "text"])
 
 
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relaysTag = Tag.parse(['relays', "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTS"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_TEXT, str("Answer to prompt")).tags(
                          [iTag, relaysTag, alttag]).sign_with_keys(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
     client = Client(NostrSigner.keys(keys))
