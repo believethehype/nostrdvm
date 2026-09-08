@@ -1,10 +1,14 @@
 import os
+
+from nostr_dvm.utils.env_utils import set_env_key
 from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Filter, Tag, Keys, EventBuilder, Client, EventId, PublicKey, Timestamp, SingleLetterTag, \
-    Alphabet, Kind
+from nostr_sdk import (
+    Client, EventBuilder, EventId, Filter, Keys, Kind, PublicKey, ReqTarget, SingleLetterTag, Tag,
+    Timestamp,
+)
 
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -36,17 +40,17 @@ def nip88_create_d_tag(name, pubkey, image):
 
 async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip88events = await client.fetch_events(idfilter, relay_timeout)
+    nip88events = await client.fetch_events(ReqTarget.auto([idfilter]), relay_timeout)
     d_tag = ""
-    nip88events_vec = nip88events.to_vec()
-    if len(nip88events_vec) == 0:
+
+    if len(nip88events) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip88events_vec:
+    for event in nip88events:
         print(event.as_json())
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == "d":
-                d_tag = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == "d":
+                d_tag = tag.to_vec()[1]
         if d_tag == "":
             print("No dtag found")
             return
@@ -60,16 +64,16 @@ async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
 
 async def fetch_nip88_event(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip88events = await client.fetch_events(idfilter, relay_timeout)
+    nip88events = await client.fetch_events(ReqTarget.auto([idfilter]), relay_timeout)
     d_tag = ""
-    if len(nip88events_vec) == 0:
+    if len(nip88events) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip88events_vec:
+    for event in nip88events:
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == "d":
-                d_tag = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == "d":
+                d_tag = tag.to_vec()[1]
         if d_tag == "":
             print("No dtag found")
             return
@@ -84,7 +88,7 @@ async def nip88_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_NIP88_TIER_EVENT) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).sign_with_keys(keys)
+    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).finalize(keys)
     await send_event(event, client, config)
 
 
@@ -98,20 +102,20 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
     }
 
     subscriptionfilter = Filter().kind(definitions.EventDefinitions.KIND_NIP88_PAYMENT_RECIPE).pubkey(
-        PublicKey.parse(receiver_public_key_hex)).custom_tags(SingleLetterTag.uppercase(Alphabet.P),
+        PublicKey.parse(receiver_public_key_hex)).custom_tags(SingleLetterTag.from_byte(ord('P')),
                                                              [user.to_hex()]).limit(1)
-    evts = await client.fetch_events(subscriptionfilter, relay_timeout)
-    evts_vec = evts.to_vec()
+    evts = await client.fetch_events(ReqTarget.auto([subscriptionfilter]), relay_timeout)
+    evts_vec = evts
     if len(evts_vec) > 0:
         print(evts_vec[0].as_json())
         matchesdtag = False
-        for tag in evts_vec[0].tags().to_vec():
-            if tag.as_vec()[0] == "valid":
-                subscription_status["validUntil"] = int(tag.as_vec()[2])
-            elif tag.as_vec()[0] == "e":
-                subscription_status["subscriptionId"] = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "tier":
-                if tag.as_vec()[1] == tiereventdtag:
+        for tag in evts_vec[0].tags():
+            if tag.to_vec()[0] == "valid":
+                subscription_status["validUntil"] = int(tag.to_vec()[2])
+            elif tag.to_vec()[0] == "e":
+                subscription_status["subscriptionId"] = tag.to_vec()[1]
+            elif tag.to_vec()[0] == "tier":
+                if tag.to_vec()[1] == tiereventdtag:
                     matchesdtag = True
 
         if (subscription_status["validUntil"] > Timestamp.now().as_secs()) & matchesdtag:
@@ -122,8 +126,8 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
             cancel_filter = Filter().kind(EventDefinitions.KIND_NIP88_STOP_SUBSCRIPTION_EVENT).author(
                 user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
                 EventId.parse(subscription_status["subscriptionId"])).limit(1)
-            cancel_events = await client.fetch_events(cancel_filter, relay_timeout)
-            cancel_events_vec = cancel_events.to_vec()
+            cancel_events = await client.fetch_events(ReqTarget.auto([cancel_filter]), relay_timeout)
+            cancel_events_vec = cancel_events
             if len(cancel_events_vec) > 0:
                 if cancel_events_vec[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True
@@ -179,7 +183,7 @@ async def nip88_announce_tier(dvm_config, client):
 
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = dvm_config.NIP88.CONTENT
-    event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content).tags(tags).sign_with_keys(keys)
+    event = EventBuilder(EventDefinitions.KIND_NIP88_TIER_EVENT, content).tags(tags).finalize(keys)
     annotier_id = await send_event(event, client=client, dvm_config=dvm_config)
 
     if dvm_config.NIP89 is not None:
@@ -219,8 +223,4 @@ def check_and_set_tiereventid_nip88(identifier, index="1", eventid=None):
 
 
 def nip88_add_dtag_to_env_file(dtag, oskey):
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-        dotenv.set_key(env_path, dtag, oskey)
+    set_env_key(dtag, oskey)

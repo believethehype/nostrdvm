@@ -3,10 +3,15 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind, Events
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, NostrLmdb, RelayUrl, SecretKey,
+    SignerAuthenticator, SyncDirection, SyncOptions, Tag, Timestamp, init_logger,
+)
+
+from nostr_dvm.utils.sdk_utils import merge_events
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
+from nostr_dvm.utils.discovery_utils import sync_discovery_database, engagement_kinds, query_engagement
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -84,9 +89,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -100,23 +105,23 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         max_results = 200
         user = event.author().to_hex()
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
                 elif param == "user":  # check for param type
-                    user = (tag.as_vec()[2])
+                    user = (tag.to_vec()[2])
                 elif param == "search_list":  # check for param type
-                    self.search_list = str(tag.as_vec()[2]).split(",")
+                    self.search_list = str(tag.to_vec()[2]).split(",")
                     print(self.search_list)
                 elif param == "avoid_list":  # check for param type
-                    self.avoid_list = str(tag.as_vec()[2]).split(",")
+                    self.avoid_list = str(tag.to_vec()[2]).split(",")
                     print(self.avoid_list)
                 elif param == "must_list":  # check for param type
-                    self.must_list = str(tag.as_vec()[2]).split(",")
+                    self.must_list = str(tag.to_vec()[2]).split(",")
                     print(self.must_list)
 
         options = {
@@ -138,9 +143,9 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 
@@ -154,7 +159,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
 
         options = self.set_options(request_form)
         if self.database is None:
-            self.database = NostrDatabase.lmdb(self.db_name)
+            self.database = await NostrLmdb.open(self.db_name)
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -168,11 +173,11 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         for word in self.search_list[1:]:
             filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(word)
             evts = await self.database.query(filter)
-            events = events.merge(evts)
+            events = merge_events(events, evts)
 
 
 
-        events_vec = events.to_vec()
+        events_vec = events
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
         ns.finallist = {}
@@ -181,12 +186,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             if all(ele in event.content().lower() for ele in self.must_list):
                 if any(ele in event.content().lower() for ele in self.any_of_list) or len(self.any_of_list) == 0:
                     if not any(ele in event.content().lower() for ele in self.avoid_list):
-                        filt = Filter().kinds(
-                            [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
-                             definitions.EventDefinitions.KIND_REPOST,
-                             definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                        reactions = await self.database.query(filt)
-                        reactions_vec = reactions.to_vec()
+                        reactions = await query_engagement(self.database, event.id(), since)
+                        reactions_vec = reactions
                         if len(reactions_vec) >= self.min_reactions:
                             ns.finallist[event.id().to_hex()] = len(reactions_vec)
 
@@ -195,7 +196,7 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
         for entry in finallist_sorted:
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
-            result_list.append(e_tag.as_vec())
+            result_list.append(e_tag.to_vec())
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
@@ -213,41 +214,42 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
                 self.result = await self.calculate_result(self.request_form)
 
                 return 1
+            return 0
 
     async def sync_db(self):
+        cli = None
         try:
             sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
-            database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+            database = await NostrLmdb.open(self.db_name)
+            cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(RelayUrl.parse(relay))
 
-            await cli.connect()
+            await cli.connect(timedelta(seconds=15))
 
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds(
-                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds(engagement_kinds()).since(since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            dbopts = SyncOptions().direction(SyncDirection.DOWN)
-            await cli.sync(filter1, dbopts)
-            await cli.database().delete(Filter().until(Timestamp.from_secs(
+            await sync_discovery_database(cli, filter1, self.dvm_config.NIP89.NAME)
+            await cli.database().delete_events(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-            await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
                     self.db_since) + " seconds..")
 
         except Exception as e:
             print(e)
+        finally:
+            if cli is not None:
+                await cli.shutdown()
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

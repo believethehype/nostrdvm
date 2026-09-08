@@ -5,7 +5,7 @@ import mimetypes
 import os
 
 import aiohttp
-from nostr_sdk import Keys, Tag, EventBuilder, Kind, Timestamp
+from nostr_sdk import EventBuilder, Keys, Kind, Tag, Timestamp
 
 
 def sha256(file):
@@ -33,7 +33,7 @@ async def generate_blossom_header(key, hash, method):
     tags = [x_tag, t_tag, expiration_tag]
 
     eb = EventBuilder(Kind(24242), "Uploading blob with SHA-256 hash").tags(tags)
-    event  = eb.sign_with_keys(keys)
+    event  = eb.finalize(keys)
 
     encoded_nip98_event = base64.b64encode(event.as_json().encode('utf-8')).decode('utf-8')
     return "Nostr " + encoded_nip98_event
@@ -87,4 +87,3 @@ async def upload_blossom(filepath, pkey, url):
                         resjson = json.loads(res)
                         print(resjson["url"])
                         return resjson["url"]
-

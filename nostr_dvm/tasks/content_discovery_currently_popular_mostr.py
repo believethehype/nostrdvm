@@ -3,10 +3,15 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, init_logger, LogLevel, Kind
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, NostrLmdb, RelayUrl, ReqTarget, SecretKey,
+    SignerAuthenticator, Tag, Timestamp, init_logger,
+)
+
+from nostr_dvm.utils.sdk_utils import merge_events
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
+from nostr_dvm.utils.discovery_utils import query_engagement
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout_long
@@ -64,9 +69,9 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -80,13 +85,13 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         search = ""
         max_results = 200
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "max_results": max_results,
@@ -108,9 +113,9 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
         ns = SimpleNamespace()
         options = self.set_options(request_form)
-        database = NostrDatabase.lmdb(self.db_name)
+        database = await NostrLmdb.open(self.db_name)
         try:
-            await database.delete(Filter().until(Timestamp.from_secs(
+            await database.delete_events(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))
         except Exception as e:
             print(e)
@@ -120,7 +125,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
 
         events = await database.query(filter1)
-        events_vec = events.to_vec()
+        events_vec = events
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
         ns.finallist = {}
@@ -128,13 +133,9 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         for event in events_vec:
 
             if event.created_at().as_secs() > timestamp_since:
-                filt = Filter().kinds(
-                    [EventDefinitions.KIND_ZAP, EventDefinitions.KIND_REPOST,
-                     EventDefinitions.KIND_REACTION,
-                     EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-                reactions = await database.query(filt)
+                reactions = await query_engagement(database, event.id(), since)
 
-                reactions_vec = reactions.to_vec()
+                reactions_vec = reactions
                 if len(reactions_vec) >= self.min_reactions:
                     ns.finallist[event.id().to_hex()] = len(reactions_vec)
         if len(ns.finallist) == 0:
@@ -145,7 +146,7 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         for entry in finallist_sorted:
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
-            result_list.append(e_tag.as_vec())
+            result_list.append(e_tag.to_vec())
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
@@ -154,9 +155,9 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 
@@ -180,8 +181,8 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         try:
             sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
-            database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+            database = await NostrLmdb.open(self.db_name)
+            cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(RelayUrl.parse(relay))
@@ -194,13 +195,13 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
             filter1 = Filter().kinds(
                 [definitions.EventDefinitions.KIND_NOTE, EventDefinitions.KIND_PROFILE, EventDefinitions.KIND_ZAP,
                  EventDefinitions.KIND_REPOST,
-                 EventDefinitions.KIND_REACTION]).since(since)  # Notes, reactions, zaps
+                 EventDefinitions.KIND_REACTION, EventDefinitions.KIND_NIP22_COMMENT]).since(since)  # Notes, reactions, zaps
             filter2 = Filter().kinds(
                 [EventDefinitions.KIND_PROFILE]).limit(10000)  # Notes, reactions, zaps
             filter3 = Filter().kinds(
                 [EventDefinitions.KIND_ZAP,
                  EventDefinitions.KIND_REPOST,
-                 EventDefinitions.KIND_REACTION]).since(since)  # Notes, reactions, zaps
+                 EventDefinitions.KIND_REACTION, EventDefinitions.KIND_NIP22_COMMENT]).since(since)  # Notes, reactions, zaps
             # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
@@ -211,14 +212,14 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
 
             # RECONCOILE NOT POSSIBLE ON THESE RELAYS SO WE FETCH AB BUNCH (will be stored in db)
             try:
-                events1 = await cli.fetch_events(filter1, relay_timeout_long)
-                events2 = await cli.fetch_events(filter2, relay_timeout_long)
-                events3 = await cli.fetch_events(filter3, relay_timeout_long)
-                events = events1.merge(events2).merge(events3)
+                events1 = await cli.fetch_events(ReqTarget.auto([filter1]), relay_timeout_long)
+                events2 = await cli.fetch_events(ReqTarget.auto([filter2]), relay_timeout_long)
+                events3 = await cli.fetch_events(ReqTarget.auto([filter3]), relay_timeout_long)
+                events = merge_events(merge_events(events1, events2), events3)
             except Exception as e:
                 print(e)
             # Do not delete profiles
-            await cli.database().delete(Filter().until(Timestamp.from_secs(
+            await cli.database().delete_events(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
             #await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:

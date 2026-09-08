@@ -8,7 +8,7 @@ import zipfile
 import PIL.Image as Image
 import pandas as pd
 import requests
-from moviepy.video.io.VideoFileClip import VideoFileClip
+import ffmpegio
 
 from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
@@ -97,10 +97,8 @@ def check_server_status(jobID, address) -> str | pd.DataFrame:
                 with open('./outputs/video.mp4', 'wb') as f:
                     f.write(response.content)
                 f.close()
-                clip = VideoFileClip("./outputs/video.mp4")
-                clip.write_videofile("./outputs/video2.mp4")
+                ffmpegio.transcode("./outputs/video.mp4", "./outputs/video2.mp4", overwrite=True)
                 result = asyncio.run(upload_media_to_hoster("./outputs/video2.mp4"))
-                clip.close()
                 os.remove("./outputs/video.mp4")
                 os.remove("./outputs/video2.mp4")
                 return result

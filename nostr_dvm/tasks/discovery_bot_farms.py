@@ -2,8 +2,10 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, NostrLmdb, RelayUrl, SecretKey, SignerAuthenticator,
+    SyncDirection, SyncOptions, Tag, Timestamp,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -36,9 +38,9 @@ class DiscoveryBotFarms(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -53,15 +55,15 @@ class DiscoveryBotFarms(DVMTaskInterface):
         search = "airdrop;just your average nostr enjoyer"  # ;@nostrich.house;
         max_results = 500
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    search = tag.as_vec()[1]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+                    search = tag.to_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "search": search,
@@ -77,8 +79,8 @@ class DiscoveryBotFarms(DVMTaskInterface):
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
 
-        database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
+        database = await NostrLmdb.open("db/nostr_profiles.db")
+        cli = ClientBuilder().database(database).authenticator(SignerAuthenticator(keys)).build()
         # cli.add_relay(RelayUrl.parse("wss://atl.purplerelay.com"))
         await cli.connect()
 
@@ -89,7 +91,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         filter1 = Filter().kind(Kind(0))
         events = await cli.database().query(filter1)
         result_list = []
-        events_vec = events.to_vec()
+        events_vec = events
         print("Events: " + str(len(events_vec)))
 
         searchterms = str(options["search"]).split(";")
@@ -102,7 +104,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
                         if any(ext in event.content().lower() for ext in searchterms):
                             p_tag = Tag.parse(["p", event.author().to_hex()])
                             print(event.as_json())
-                            result_list.append(p_tag.as_vec())
+                            result_list.append(p_tag.to_vec())
                             index += 1
                     except Exception as exp:
                         print(str(exp) + " " + event.author().to_hex())
@@ -113,9 +115,9 @@ class DiscoveryBotFarms(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_users(result)
 
@@ -135,8 +137,8 @@ class DiscoveryBotFarms(DVMTaskInterface):
     async def sync_db(self):
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        database = NostrDatabase.lmdb("db/nostr_profiles.db")
-        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+        database = await NostrLmdb.open("db/nostr_profiles.db")
+        cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).build()
         await cli.add_relay(RelayUrl.parse("wss://nostr21.com"))
         await cli.connect()
 
@@ -145,7 +147,7 @@ class DiscoveryBotFarms(DVMTaskInterface):
         # filter = Filter().author(keys.public_key())
         print("Syncing Profile Database.. this might take a while..")
         dbopts = SyncOptions().direction(SyncDirection.DOWN)
-        await cli.sync(filter1, dbopts)
+        await cli.sync(filter1, opts=dbopts)
         print("Done Syncing Profile Database.")
 
 

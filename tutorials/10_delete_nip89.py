@@ -9,7 +9,7 @@
 import asyncio
 from datetime import timedelta
 
-from nostr_sdk import Keys, Client, NostrSigner, Filter, RelayUrl
+from nostr_sdk import ClientBuilder, Filter, Keys, RelayUrl, ReqTarget, SignerAuthenticator
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -20,14 +20,14 @@ async def delete_nip_89(private_key, relay_list, pow=True):
     keys = Keys.parse(private_key)
     dvm_config = DVMConfig()
     dvm_config.RELAY_LIST = relay_list
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in dvm_config.RELAY_LIST:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(keys.public_key())
-    events = await client.fetch_events(filter, timedelta(seconds=5))
+    events = await client.fetch_events(ReqTarget.auto([filter]), timedelta(seconds=5))
     
-    events_vec = events.to_vec()
+    events_vec = events
     if len(events_vec) == 0:
         print("Couldn't find note on relays. Seems they are gone.")
         return

@@ -2,7 +2,7 @@ import asyncio
 import json
 from datetime import timedelta
 
-from nostr_sdk import PublicKey, Options, Keys, Client, NostrSigner
+from nostr_sdk import ClientBuilder, Keys, PublicKey, RelayUrl, SignerAuthenticator
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -12,10 +12,10 @@ from nostr_dvm.utils.output_utils import PostProcessFunctionType
 
 async def build_client(config):
     keys = Keys.parse(config.PRIVATE_KEY)
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in config.RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     return client
 

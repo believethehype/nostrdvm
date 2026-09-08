@@ -1,11 +1,17 @@
 import asyncio
+from nostr_dvm.utils.database_utils import debit_user_balance
 import json
 import os
 import sys
 from sys import platform
 
-from nostr_sdk import RelayUrl, PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    LogLevel, ClientOptions, nip04_encrypt, nip44_encrypt, Nip44Version, Kind, RelayLimits, uniffi_set_event_loop, ClientBuilder, NostrSigner
+from nostr_sdk import (
+    Client, ClientBuilder, Event, EventBuilder, Filter, Keys, Kind, LogLevel, Nip44Version,
+    PublicKey, RelayLimits, RelayUrl, ReqTarget, SignerAuthenticator, Tag, Timestamp, nip04_encrypt,
+    nip44_encrypt,
+)
+
+from nostr_dvm.utils.sdk_utils import ensure_sdk_callback_loop, format_timestamp, handle_notifications
 
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
@@ -42,7 +48,6 @@ class DVM:
     def __init__(self, dvm_config, admin_config=None, stop_thread=False):
         try:
             asyncio.run(self.run_dvm(dvm_config, admin_config, stop_thread))
-            #uniffi_set_event_loop(asyncio.get_running_loop())
         except Exception as e:
             print(e)
 
@@ -50,15 +55,15 @@ class DVM:
 
 
     async def run_dvm(self, dvm_config, admin_config, stop_thread):
+        ensure_sdk_callback_loop()
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         self.heartbeat_frequency = 300
         relaylimits = RelayLimits.disable()
-        opts = ClientOptions().relay_limits(relaylimits) #.difficulty(28)
 
         #self.client = Client(self.keys)
-        self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
+        self.client = ClientBuilder().authenticator(SignerAuthenticator(self.keys)).relay_limits(relaylimits).build()
         self.job_list = []
         self.jobs_on_hold_list = []
         pk = self.keys.public_key()
@@ -82,9 +87,9 @@ class DVM:
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
         await beat(self.dvm_config, self.client, self.heartbeat_frequency )
-        await self.client.subscribe(dvm_filter, None)
-        await self.client.subscribe(zap_filter, None)
-        await self.client.subscribe(ping_filter, None)
+        await self.client.subscribe(ReqTarget.auto([dvm_filter]), None)
+        await self.client.subscribe(ReqTarget.auto([zap_filter]), None)
+        await self.client.subscribe(ReqTarget.auto([ping_filter]), None)
 
         if self.dvm_config.ENABLE_NUTZAP:
             nutzap_wallet = NutZapWallet()
@@ -101,7 +106,7 @@ class DVM:
                 nut_wallet.mints = dvm_config.NUZAP_MINTS
                 await nutzap_wallet.announce_nutzap_info_event(nut_wallet,  self.client, self.keys)
 
-        class NotificationHandler(HandleNotification):
+        class NotificationHandler:
             client = self.client
             dvm_config = self.dvm_config
             keys = self.keys
@@ -134,11 +139,11 @@ class DVM:
             cashu = ""
             p_tag_str = ""
 
-            for tag in nip90_event.tags().to_vec():
-                if tag.as_vec()[0] == "cashu":
-                    cashu = tag.as_vec()[1]
-                elif tag.as_vec()[0] == "p":
-                    p_tag_str = tag.as_vec()[1]
+            for tag in nip90_event.tags():
+                if tag.to_vec()[0] == "cashu":
+                    cashu = tag.to_vec()[1]
+                elif tag.to_vec()[0] == "p":
+                    p_tag_str = tag.to_vec()[1]
 
             if p_tag_str != "" and p_tag_str != self.dvm_config.PUBLIC_KEY:
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -161,7 +166,7 @@ class DVM:
                 if self.dvm_config.LOGLEVEL.value >= LogLevel.INFO.value:
                     print(
                         bcolors.MAGENTA + "[" + self.dvm_config.NIP89.NAME + "] Received new Request: " + task + " from " + user.name + " (" + PublicKey.parse(
-                            user.npub).to_bech32() + ")" + bcolors.ENDC)
+                            user.npub).to_bech32() + ") RequestID: " + nip90_event.id().to_hex() + bcolors.ENDC)
                 duration = await input_data_file_duration(nip90_event, dvm_config=self.dvm_config, client=self.client)
                 amount = get_amount_per_task(task, self.dvm_config, duration)
                 if amount is None:
@@ -176,12 +181,12 @@ class DVM:
                         Timestamp.now().as_secs()))
                     # if we have an entry in the db that user is subscribed, continue
                     if int(user.subscribed) > int(Timestamp.now().as_secs()):
-                        print("User subscribed until: " + str(Timestamp.from_secs(user.subscribed).to_human_datetime()))
+                        print("User subscribed until: " + str(format_timestamp(Timestamp.from_secs(user.subscribed))))
                         user_has_active_subscription = True
                         await send_job_status_reaction(nip90_event, "subscription-active", True, amount,
                                                        self.client, "User subscripton active until " +
-                                                       Timestamp.from_secs(
-                                                           int(user.subscribed)).to_human_datetime().replace(
+                                                       format_timestamp(Timestamp.from_secs(
+                                                           int(user.subscribed))).replace(
                                                            "Z", " ").replace("T", " ") + " GMT", self.dvm_config)
                         # otherwise we check for an active subscription by checking recipie events
                         # sleep a little to not get rate limited
@@ -201,17 +206,17 @@ class DVM:
                         if subscription_status["isActive"]:
                             await send_job_status_reaction(nip90_event, "subscription-required", True, amount,
                                                            self.client,
-                                                           "User subscripton active until " + Timestamp.from_secs(int(
+                                                           "User subscripton active until " + format_timestamp(Timestamp.from_secs(int(
                                                                subscription_status[
-                                                                   "validUntil"])).to_human_datetime().replace("Z",
+                                                                   "validUntil"]))).replace("Z",
                                                                                                                " ").replace(
                                                                "T", " ") + " GMT",
                                                            self.dvm_config)
 
                             print("Checked Recipe: User subscribed until: " + str(
-                                Timestamp.from_secs(int(subscription_status["validUntil"])).to_human_datetime()))
+                                format_timestamp(Timestamp.from_secs(int(subscription_status["validUntil"])))))
                             user_has_active_subscription = True
-                            update_user_subscription(user.npub,
+                            await update_user_subscription(user.npub,
                                                      int(subscription_status["validUntil"]),
                                                      self.client, self.dvm_config)
 
@@ -265,11 +270,10 @@ class DVM:
                               p_tag_str == self.dvm_config.PUBLIC_KEY and user_has_active_subscription)):
 
                     if not user_has_active_subscription:
-                        balance = max(user.balance - int(amount), 0)
-                        update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
-                                         iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
-                                         nip05=user.nip05, lud16=user.lud16, name=user.name,
-                                         lastactive=Timestamp.now().as_secs(), subscribed=user.subscribed)
+                        balance = debit_user_balance(self.dvm_config.DB, user.npub, amount)
+                        if balance is None:
+                            print("Insufficient balance; task was not charged")
+                            return
 
                         print(
                             "[" + self.dvm_config.NIP89.NAME + "] Using user's balance for task: " + task +
@@ -296,9 +300,9 @@ class DVM:
                         #                               dvm_config=self.dvm_config)
                     else:
                         bid = 0
-                        for tag in nip90_event.tags().to_vec():
-                            if tag.as_vec()[0] == 'bid':
-                                bid = int(tag.as_vec()[1])
+                        for tag in nip90_event.tags():
+                            if tag.to_vec()[0] == 'bid':
+                                bid = int(tag.to_vec()[1])
 
                         print(
                             "[" + self.dvm_config.NIP89.NAME + "] Payment required: New Nostr " + task + " Job event: "
@@ -349,9 +353,9 @@ class DVM:
                     user = await get_or_add_user(db=self.dvm_config.DB, npub=sender, client=self.client,
                                                  config=self.dvm_config)
                     zapped_event = None
-                    for tag in nut_zap_event.tags().to_vec():
-                        if tag.as_vec()[0] == 'e':
-                            zapped_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
+                    for tag in nut_zap_event.tags():
+                        if tag.to_vec()[0] == 'e':
+                            zapped_event = await get_event_by_id(tag.to_vec()[1], client=self.client,
                                                                  config=self.dvm_config)
 
                     if zapped_event is not None:
@@ -360,11 +364,11 @@ class DVM:
                             job_event = None
                             p_tag_str = ""
                             status = ""
-                            for tag in zapped_event.tags().to_vec():
-                                if tag.as_vec()[0] == 'amount':
-                                    amount = int(float(tag.as_vec()[1]) / 1000)
-                                elif tag.as_vec()[0] == 'e':
-                                    job_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
+                            for tag in zapped_event.tags():
+                                if tag.to_vec()[0] == 'amount':
+                                    amount = int(float(tag.to_vec()[1]) / 1000)
+                                elif tag.to_vec()[0] == 'e':
+                                    job_event = await get_event_by_id(tag.to_vec()[1], client=self.client,
                                                                       config=self.dvm_config)
                                     if job_event is not None:
                                         job_event, use_legacy_encryption = check_and_decrypt_tags(job_event, self.dvm_config)
@@ -372,8 +376,8 @@ class DVM:
                                             return
                                     else:
                                         return
-                                elif tag.as_vec()[0] == 'status':
-                                    status = tag.as_vec()[1]
+                                elif tag.to_vec()[0] == 'status':
+                                    status = tag.to_vec()[1]
 
                                 # if a reaction by us got zapped
                             print(status)
@@ -442,11 +446,11 @@ class DVM:
                         job_event = None
                         p_tag_str = ""
                         status = ""
-                        for tag in zapped_event.tags().to_vec():
-                            if tag.as_vec()[0] == 'amount':
-                                amount = int(float(tag.as_vec()[1]) / 1000)
-                            elif tag.as_vec()[0] == 'e':
-                                job_event = await get_event_by_id(tag.as_vec()[1], client=self.client,
+                        for tag in zapped_event.tags():
+                            if tag.to_vec()[0] == 'amount':
+                                amount = int(float(tag.to_vec()[1]) / 1000)
+                            elif tag.to_vec()[0] == 'e':
+                                job_event = await get_event_by_id(tag.to_vec()[1], client=self.client,
                                                                   config=self.dvm_config)
                                 if job_event is not None:
                                     job_event, use_legacy_encryption = check_and_decrypt_tags(job_event, self.dvm_config)
@@ -454,8 +458,8 @@ class DVM:
                                         return
                                 else:
                                     return
-                            elif tag.as_vec()[0] == 'status':
-                                status = tag.as_vec()[1]
+                            elif tag.to_vec()[0] == 'status':
+                                status = tag.to_vec()[1]
                                 print(status)
 
                             # if a reaction by us got zapped
@@ -527,14 +531,14 @@ class DVM:
             if not task_supported:
                 return False
 
-            for tag in nevent.tags().to_vec():
-                if tag.as_vec()[0] == 'i':
-                    if len(tag.as_vec()) < 3:
+            for tag in nevent.tags():
+                if tag.to_vec()[0] == 'i':
+                    if len(tag.to_vec()) < 3:
                         print("Job Event missing/malformed i tag, skipping..")
                         return False
                     else:
-                        input = tag.as_vec()[1]
-                        input_type = tag.as_vec()[2]
+                        input = tag.to_vec()[1]
+                        input_type = tag.to_vec()[2]
                         if input_type == "job":
                             evt = await get_referenced_event_by_id(event_id=input, client=client,
                                                                    kinds=EventDefinitions.ANY_RESULT,
@@ -600,7 +604,7 @@ class DVM:
                                     print("Receiver has no Lightning address, can't zap back.")
                                     return
                                 try:
-                                    payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
+                                    payment_hash = await asyncio.to_thread(pay_bolt11_ln_bits, bolt11, self.dvm_config)
                                 except Exception as e:
                                     print(e)
 
@@ -615,11 +619,11 @@ class DVM:
             reply_tags = [request_tag, e_tag, p_tag, alt_tag, status_tag]
 
             relay_tag = None
-            for tag in original_event.tags().to_vec():
-                if tag.as_vec()[0] == "relays":
+            for tag in original_event.tags():
+                if tag.to_vec()[0] == "relays":
                     relay_tag = tag
-                if tag.as_vec()[0] == "client":
-                    client = tag.as_vec()[1]
+                if tag.to_vec()[0] == "client":
+                    client = tag.to_vec()[1]
                     reply_tags.append(Tag.parse(["client", client]))
             if relay_tag is not None:
                 reply_tags.append(relay_tag)
@@ -627,18 +631,18 @@ class DVM:
             encrypted = False
             is_legacy_encryption = False
             encryption_tags = []
-            for tag in original_event.tags().to_vec():
+            for tag in original_event.tags():
 
 
-                if tag.as_vec()[0] == "encrypted":
+                if tag.to_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
                     encryption_tags.append(encrypted_tag)
                     #_, is_legacy_encryption = check_and_decrypt_tags(original_event, dvm_config)
 
 
-            for tag in original_event.tags().to_vec():
-                if tag.as_vec()[0] == "i":
+            for tag in original_event.tags():
+                if tag.to_vec()[0] == "i":
                     if not encrypted:
                         reply_tags.append(tag)
 
@@ -667,7 +671,7 @@ class DVM:
                 reply_tags = encryption_tags
 
 
-            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content)).tags(reply_tags).sign_with_keys(
+            reply_event = EventBuilder(Kind(original_event.kind().as_u16() + 1000), str(content)).tags(reply_tags).finalize(
                 self.keys)
             #print(reply_event)
             # send_event(reply_event, client=self.client, dvm_config=self.dvm_config)
@@ -702,8 +706,8 @@ class DVM:
             reply_tags = [e_tag, alt_tag, status_tag]
 
             relay_tag = None
-            for tag in original_event.tags().to_vec():
-                if tag.as_vec()[0] == "relays":
+            for tag in original_event.tags():
+                if tag.to_vec()[0] == "relays":
                     relay_tag = tag
                     break
             if relay_tag is not None:
@@ -713,8 +717,8 @@ class DVM:
 
             encrypted = False
             is_legacy_encryption = False
-            for tag in original_event.tags().to_vec():
-                if tag.as_vec()[0] == "encrypted":
+            for tag in original_event.tags():
+                if tag.to_vec()[0] == "encrypted":
                     encrypted = True
                     encrypted_tag = Tag.parse(["encrypted"])
                     encryption_tags.append(encrypted_tag)
@@ -741,7 +745,7 @@ class DVM:
                     status == "processing" and not is_paid):
                 if dvm_config.LNBITS_INVOICE_KEY != "" and dvm_config.PROVIDE_INVOICE:
                     try:
-                        bolt11, payment_hash = create_bolt11_ln_bits(amount, dvm_config)
+                        bolt11, payment_hash = await asyncio.to_thread(create_bolt11_ln_bits, amount, dvm_config)
                     except Exception as e:
                         print(e)
                         try:
@@ -784,7 +788,7 @@ class DVM:
                 reply_tags.append(content_tag)
                 str_tags = []
                 for element in reply_tags:
-                    str_tags.append(element.as_vec())
+                    str_tags.append(element.to_vec())
 
                 content = json.dumps(str_tags)
                 if is_legacy_encryption:
@@ -805,7 +809,7 @@ class DVM:
             reply_tags.append(expiration_tag)
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).finalize(keys)
             # send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             response_status = await send_event_outbox(reaction_event, client=self.client, dvm_config=self.dvm_config)
             if response_status is not None:
@@ -936,13 +940,13 @@ class DVM:
                                 print("Receiver has no Lightning address, can't zap back.")
                                 return
                             try:
-                                payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
+                                payment_hash = await asyncio.to_thread(pay_bolt11_ln_bits, bolt11, self.dvm_config)
                             except Exception as e:
                                 print(e)
 
                         return
 
-        asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
+        asyncio.create_task(handle_notifications(self.client, NotificationHandler()))
 
         try:
             heartbeatsignal = 0
@@ -956,7 +960,7 @@ class DVM:
 
                 for job in self.job_list:
                     if job.bolt11 != "" and job.payment_hash != "" and not job.payment_hash is None and not job.is_paid:
-                        ispaid = check_bolt11_ln_bits_is_paid(job.payment_hash, self.dvm_config)
+                        ispaid = await asyncio.to_thread(check_bolt11_ln_bits_is_paid, job.payment_hash, self.dvm_config)
                         if ispaid and job.is_paid is False:
                             print("is paid")
                             job.is_paid = True
@@ -993,4 +997,3 @@ class DVM:
             print("end")
 
         print("and now my watch has ended.")
-

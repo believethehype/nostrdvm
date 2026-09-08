@@ -11,8 +11,10 @@ from nostr_dvm.utils.definitions import relay_timeout
 
 warnings.filterwarnings('ignore')
 
-from nostr_sdk import Keys, NostrSigner, Filter, PublicKey, Kind, \
-    SyncOptions, SyncDirection, ClientBuilder, NostrDatabase, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, NostrLmdb, PublicKey, RelayUrl, ReqTarget,
+    SignerAuthenticator, SyncDirection, SyncOptions,
+)
 
 
 # init_logger(LogLevel.INFO)
@@ -25,14 +27,14 @@ async def getmetadata(npub):
     except:
         return "", "", ""
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
-    client = ClientBuilder().signer(NostrSigner.keys(keys)).build()
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     #await client.add_relay(RelayUrl.parse("wss://relay.primal.net"))
     await client.add_relay(RelayUrl.parse("wss://purplepag.es"))
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
-    event_struct = await client.fetch_events(profile_filter, relay_timeout)
-    events = event_struct.to_vec()
+    event_struct = await client.fetch_events(ReqTarget.auto([profile_filter]), relay_timeout)
+    events = event_struct
     if len(events) > 0:
         try:
             profile = json.loads(events[0].content())
@@ -50,8 +52,8 @@ async def getmetadata(npub):
 
 async def sync_db():
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
-    database = NostrDatabase.lmdb("db/nostr_followlists.db")
-    cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+    database = await NostrLmdb.open("db/nostr_followlists.db")
+    cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).build()
     # await cli.add_relay(RelayUrl.parse("wss://relay.primal.net"))  # TODO ADD MORE
     await cli.connect()
 
@@ -60,7 +62,7 @@ async def sync_db():
     # filter = Filter().author(keys.public_key())
     print("Syncing Profile Database.. this might take a while..")
     dbopts = SyncOptions().direction(SyncDirection.DOWN)
-    await cli.sync(filter1, dbopts)
+    await cli.sync(filter1, opts=dbopts)
     print("Done Syncing Profile Database.")
     await cli.shutdown()
 
@@ -77,17 +79,17 @@ async def analyse_users(user_ids=None):
                 print(npub)
                 print(e)
 
-        database = NostrDatabase.lmdb("db/nostr_followlists.db")
+        database = await NostrLmdb.open("db/nostr_followlists.db")
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query(followers_filter)
         allfriends = []
-        followers_vec = followers.to_vec()
+        followers_vec = followers
         if len(followers_vec) > 0:
             for follower in followers_vec:
                 frens = []
-                for tag in follower.tags().to_vec():
-                    if tag.as_vec()[0] == "p":
-                        frens.append(tag.as_vec()[1])
+                for tag in follower.tags():
+                    if tag.to_vec()[0] == "p":
+                        frens.append(tag.to_vec()[1])
                 allfriends.append(Friend(follower.author().to_hex(), frens))
 
             return allfriends

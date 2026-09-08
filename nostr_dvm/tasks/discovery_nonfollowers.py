@@ -4,8 +4,12 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import RelayUrl, Client, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, ClientBuilder, RelayUrl
+from nostr_sdk import (
+    Client, ClientBuilder, Keys, Kind, PublicKey, RelayLimits, RelayUrl, ReqTarget, SecretKey,
+    SignerAuthenticator, Tag,
+)
+
+from nostr_dvm.utils.sdk_utils import merge_events
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -46,11 +50,11 @@ class DiscoverNonFollowers(DVMTaskInterface):
 
         # default values
         user = event.author().to_hex()
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "user":  # check for param type
-                    user = tag.as_vec()[2]
+                    user = tag.to_vec()[2]
 
         options = {
             "user": user,
@@ -63,12 +67,9 @@ class DiscoverNonFollowers(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
         relaylimits = RelayLimits.disable()
-        opts = (
-            ClientOptions().relay_limits(
-                relaylimits))
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli= ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
+        cli= ClientBuilder().authenticator(SignerAuthenticator(keys)).relay_limits(relaylimits).build()
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(RelayUrl.parse(relay))
         # add nostr band, too.
@@ -79,14 +80,13 @@ class DiscoverNonFollowers(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.fetch_events(followers_filter, relay_timeout)
+        followers = await cli.fetch_events(ReqTarget.auto([followers_filter]), relay_timeout)
 
-        followers_vec = followers.to_vec()
-        if len(followers_vec) > 0:
+        if len(followers) > 0:
             result_list = []
             newest = 0
-            best_entry = followers_vec[0]
-            for entry in followers_vec:
+            best_entry = followers[0]
+            for entry in followers:
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
@@ -94,9 +94,9 @@ class DiscoverNonFollowers(DVMTaskInterface):
             print(best_entry.as_json())
             followings = []
             ns.dic = {}
-            for tag in best_entry.tags().to_vec():
-                if tag.as_vec()[0] == "p":
-                    following = tag.as_vec()[1]
+            for tag in best_entry.tags():
+                if tag.to_vec()[0] == "p":
+                    following = tag.to_vec()[1]
                     followings.append(following)
                     ns.dic[following] = "True"
             print("Followings: " + str(len(followings)))
@@ -104,32 +104,32 @@ class DiscoverNonFollowers(DVMTaskInterface):
             async def scanList(users, instance, i, st):
                 from nostr_sdk import Filter
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
-                cli = Client(NostrSigner.keys(keys))
+                cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
                 for relay in self.dvm_config.RELAY_LIST:
                     await cli.add_relay(RelayUrl.parse(relay))
                 await cli.connect()
 
                 filter1 = Filter().author(PublicKey.parse(users[i])).kind(Kind(3))
-                followers = await cli.fetch_events(filter1, relay_timeout)
+                followers = await cli.fetch_events(ReqTarget.auto([filter1]), relay_timeout)
                 for i in range(i+1, i + st):
                     filter1 = Filter().author(PublicKey.parse(users[i])).kind(Kind(3))
-                    follower = await cli.fetch_events(filter1, relay_timeout)
-                    followers = followers.merge(follower)
+                    follower = await cli.fetch_events(ReqTarget.auto([filter1]), relay_timeout)
+                    followers = merge_events(followers, follower)
 
-                    if len(followers_vec) > 0:
+                    if len(followers) > 0:
                         result_list = []
                         newest = 0
-                        best_entry = followers_vec[0]
-                        for entry in followers_vec:
+                        best_entry = followers[0]
+                        for entry in followers:
                             if entry.created_at().as_secs() > newest:
                                 newest = entry.created_at().as_secs()
                                 best_entry = entry
 
                         foundfollower = False
-                        for tag in best_entry.tags().to_vec():
-                            if tag.as_vec()[0] == "p":
-                                if len(tag.as_vec()) > 1:
-                                    if tag.as_vec()[1] == options["user"]:
+                        for tag in best_entry.tags():
+                            if tag.to_vec()[0] == "p":
+                                if len(tag.to_vec()) > 1:
+                                    if tag.to_vec()[1] == options["user"]:
                                         foundfollower = True
                                         break
 
@@ -168,15 +168,15 @@ class DiscoverNonFollowers(DVMTaskInterface):
             print("Non backfollowing accounts found: " + str(len(result)))
             for k in result:
                 p_tag = Tag.parse(["p", k])
-                result_list.append(p_tag.as_vec())
+                result_list.append(p_tag.to_vec())
 
             return json.dumps(result_list)
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_users(result)
 

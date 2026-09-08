@@ -18,10 +18,10 @@ async def input_data_file_duration(event, dvm_config, client, start=0, end=0):
     input_value = ""
     input_type = ""
     count = 0
-    for tag in event.tags().to_vec():
-        if tag.as_vec()[0] == 'i':
-            input_value = tag.as_vec()[1]
-            input_type = tag.as_vec()[2]
+    for tag in event.tags():
+        if tag.to_vec()[0] == 'i':
+            input_value = tag.to_vec()[1]
+            input_type = tag.to_vec()[2]
             count = count + 1
 
     if input_type == "text":
@@ -70,7 +70,7 @@ async def organize_input_media_data(input_value, input_type, start, end, dvm_con
     if input_type == "url":
         source_type = check_source_type(input_value)
         audio_only = True
-        if media_format.split('/')[0] == "video":
+        if media_format.split('/')[0] == "video" or media_format.split('/')[1] == "gif":
             audio_only = False
 
         filename, start, end, type = get_file_start_end_type(input_value, source_type, start, end, audio_only)
@@ -90,9 +90,7 @@ async def organize_input_media_data(input_value, input_type, start, end, dvm_con
         except Exception as e:
             print(e)
             try:
-                from moviepy.editor import VideoFileClip
-                clip = VideoFileClip(filename)
-                duration = clip.duration
+                duration = ffmpegio.probe.video_streams_basic(filename, index=0)["duration"]
             except Exception as e:
                 print(e)
                 return ""
@@ -117,10 +115,8 @@ async def organize_input_media_data(input_value, input_type, start, end, dvm_con
                 print("Converting Video from " + str(start_time) + " until " + str(end_time))
                 ffmpegio.transcode(filename, final_filename, overwrite=True, show_log=True)
             elif media_format.split('/')[1] == "gif":
-                from moviepy.editor import VideoFileClip
                 print("Converting Video from " + str(start_time) + " until " + str(end_time))
-                videoClip = VideoFileClip(filename)
-                videoClip.write_gif(final_filename, program="ffmpeg")
+                ffmpegio.transcode(filename, final_filename, overwrite=True, ss_in=start_time, t=new_duration)
             print(final_filename)
             return final_filename
         else:
@@ -132,10 +128,10 @@ def check_nip94_event_for_media(evt, input_value, input_type):
     input_type = "text"
     input_value = evt.content()
     if evt.kind() == 1063:
-        for tag in evt.tags().to_vec():
-            if tag.as_vec()[0] == 'url':
+        for tag in evt.tags():
+            if tag.to_vec()[0] == 'url':
                 input_type = "url"
-                input_value = tag.as_vec()[1]
+                input_value = tag.to_vec()[1]
                 return input_value, input_type
 
     return input_value, input_type

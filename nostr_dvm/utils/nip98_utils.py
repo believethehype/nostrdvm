@@ -1,7 +1,7 @@
 import base64
 import hashlib
 
-from nostr_sdk import EventBuilder, Tag, Kind, Keys
+from nostr_sdk import EventBuilder, Keys, Kind, Tag
 
 
 def sha256sum(filename):
@@ -39,7 +39,7 @@ async def generate_nip98_header(pkeys_hex, url="", kind="POST", filepath=""):
         payloadtag = Tag.parse(["payload", sha256sum(filepath)])
         tags.append(payloadtag)
     eb = EventBuilder(Kind(27235), "").tags(tags)
-    event  = eb.sign_with_keys(keys)
+    event  = eb.finalize(keys)
 
     encoded_nip98_event = base64.b64encode(event.as_json().encode('utf-8')).decode('utf-8')
 
