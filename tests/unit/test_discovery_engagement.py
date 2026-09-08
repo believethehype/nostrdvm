@@ -77,7 +77,7 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         authors = [Keys.generate().public_key() for _ in range(1001)]
         filters = discovery_sync_filters(self.since, authors)
         decoded = [json.loads(event_filter.as_json()) for event_filter in filters]
-        self.assertEqual([len(event_filter["authors"]) for event_filter in decoded], [500, 500, 1])
+        self.assertEqual([len(event_filter["authors"]) for event_filter in decoded], [200, 200, 200, 200, 200, 1])
         self.assertEqual({author for event_filter in decoded for author in event_filter["authors"]},
                          {author.to_hex() for author in authors})
         for event_filter in decoded:
