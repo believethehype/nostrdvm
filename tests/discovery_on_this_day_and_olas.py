@@ -38,10 +38,12 @@ RELAY_LIST = ["wss://relay.nostrdvm.com",
               "wss://nostr.oxtr.dev"
               ]
 
-SYNC_DB_RELAY_LIST = ["wss://relay.primal.net",
+SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
+                      "wss://purplerelay.com",
+                      "wss://nostr.bitcoiner.social",
                       "wss://nostr.oxtr.dev",
-                      "wss://relay.nostrplebs.com",
-                      ]
+                      "wss://relay.nostr.net",
+                      "wss://relay.damus.io"]
 
 SYNC_DB_RELAY_LIST_OLAS = ["wss://relay.primal.net",
                       "wss://relay.olas.app"

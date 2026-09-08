@@ -11,7 +11,7 @@ def engagement_kinds():
             EventDefinitions.KIND_REACTION, EventDefinitions.KIND_REPOST, EventDefinitions.KIND_ZAP]
 
 
-def discovery_sync_filters(since, authors=None, batch_size=500):
+def discovery_sync_filters(since, authors=None, batch_size=200):
     if batch_size < 1:
         raise ValueError("Author batch size must be positive")
     if authors is None:
@@ -39,7 +39,8 @@ async def sync_discovery_database(client, event_filter, label, unsupported_relay
     try:
         if sync_relays is None or sync_relays:
             summary = await client.sync(event_filter, _with=sync_relays,
-                                        opts=SyncOptions().direction(SyncDirection.DOWN))
+                                        opts=SyncOptions().direction(SyncDirection.DOWN)
+                                        .initial_timeout(timedelta(seconds=30)))
             for relay, error in summary.failed.items():
                 print(f"[{label}] Sync failed for {relay}: {error}")
                 if "negentropy not supported" in error.lower():

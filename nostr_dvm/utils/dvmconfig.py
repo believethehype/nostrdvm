@@ -21,10 +21,12 @@ class DVMConfig:
     RELAY_LIST = ["wss://relay.nostrdvm.com",  "wss://nostr.oxtr.dev"
                   ]
     # DBs to sync with
-    SYNC_DB_RELAY_LIST = ["wss://nostr.oxtr.dev",
-                          "wss://nostr.mom",
-                          "wss://nos.lol",
-                          "wss://relay.ditto.pub",
+    SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
+                          "wss://purplerelay.com",
+                          "wss://nostr.bitcoiner.social",
+                          "wss://nostr.oxtr.dev",
+                          "wss://relay.nostr.net",
+                          "wss://relay.damus.io",
                          ]
     # announce inbox relays, dm relays and NIP89 announcement to
     ANNOUNCE_RELAY_LIST = ["wss://relay.primal.net",
