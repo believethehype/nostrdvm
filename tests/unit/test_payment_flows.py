@@ -45,3 +45,7 @@ class PaymentFlowTests(unittest.TestCase):
                 self.assertIs(zap_utils.check_bolt11_ln_bits_is_paid("test-hash", self.config), paid)
         with patch.object(zap_utils.requests, "get", side_effect=requests.Timeout("test timeout")):
             self.assertIsNone(zap_utils.check_bolt11_ln_bits_is_paid("test-hash", self.config))
+
+
+if __name__ == "__main__":
+    unittest.main()

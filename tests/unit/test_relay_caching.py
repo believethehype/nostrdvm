@@ -59,3 +59,7 @@ class RelayCachingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await nostr_utils.fetch_relay_metadata(client, Filter()), [])
         self.assertEqual(await nostr_utils.fetch_relay_metadata(client, Filter()), [])
         client.fetch_events.assert_awaited_once()
+
+
+if __name__ == "__main__":
+    unittest.main()

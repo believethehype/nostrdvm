@@ -64,3 +64,7 @@ class MediaConversionTests(unittest.TestCase):
                 "https://example.com/video.mp4", "url", 0, 0, None, None, process=False,
             ))
         self.assertEqual(output, str(self.video))
+
+
+if __name__ == "__main__":
+    unittest.main()

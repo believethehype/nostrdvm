@@ -207,3 +207,7 @@ class WotRequestTests(unittest.IsolatedAsyncioTestCase):
                 client.connect.assert_awaited_once_with(timedelta(seconds=3))
                 self.assertEqual(client.fetch_events.call_args.args[1], timedelta(seconds=3))
                 client.shutdown.assert_awaited_once()
+
+
+if __name__ == "__main__":
+    unittest.main()

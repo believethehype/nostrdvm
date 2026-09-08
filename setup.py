@@ -21,6 +21,7 @@ setup(
                       "python-dotenv==1.2.3",
                       "emoji==2.12.1",
                       "ffmpegio==0.9.1",
+                      "ffmpegio-core==0.10.0",
                       "pillow==12.3.0",
                       "PyUpload==0.1.4",
                       "pandas==2.2.2",
@@ -30,12 +31,14 @@ setup(
                       "networkx==3.3",
                       "scipy==1.13.1",
                       "typer==0.15.1",
-                      "beautifulsoup4==4.12.3"
+                      "beautifulsoup4==4.12.3",
+                      "tqdm==4.66.6"
                       ],
     extras_require={"openai": ["openai>=1.55.3,<2"]},
     keywords=['nostr', 'nip90', 'dvm', 'data vending machine'],
     url="https://github.com/believethehype/nostrdvm",
     license="MIT",
+    python_requires='>=3.10',
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Education",
