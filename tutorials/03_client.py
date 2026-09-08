@@ -9,8 +9,12 @@ from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.print_utils import bcolors
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    NostrSigner, Event, Kind, PublicKey
+from nostr_sdk import (
+    ClientBuilder, Event, EventBuilder, Filter, Keys, Kind, PublicKey, ReqTarget,
+    SignerAuthenticator, Tag, Timestamp, nip04_decrypt,
+)
+
+from nostr_dvm.utils.sdk_utils import handle_notifications
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key, print_send_result
 from nostr_dvm.utils.definitions import EventDefinitions
 
@@ -36,10 +40,10 @@ async def nostr_client_generic_test(ptag):
 
     # We now send a 5050 Request (for Text Generation) with our tags. The content is optional.
     event = EventBuilder(Kind(5050), "This is a test",
-                         ).tags(tags).sign_with_keys(keys)
+                         ).tags(tags).finalize(keys)
 
     # We create a signer with some random keys
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -57,7 +61,7 @@ async def nostr_client(target_dvm_npub):
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
@@ -72,8 +76,8 @@ async def nostr_client(target_dvm_npub):
             kinds.append(Kind(kind))
 
     dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()).pubkey(pk))
-    await client.subscribe(dm_zap_filter, None)
-    await client.subscribe(dvm_filter, None)
+    await client.subscribe(ReqTarget.auto([dm_zap_filter]), None)
+    await client.subscribe(ReqTarget.auto([dvm_filter]), None)
 
 
 
@@ -82,7 +86,7 @@ async def nostr_client(target_dvm_npub):
     await nostr_client_generic_test(target_dvm_npub)
 
     # We listen to
-    class NotificationHandler(HandleNotification):
+    class NotificationHandler:
         last_event_time = 0
         async def handle(self, relay_url, subscription_id, event: Event):
 
@@ -92,11 +96,11 @@ async def nostr_client(target_dvm_npub):
                 print(bcolors.YELLOW + "[Nostr Client]: " + event.content() + bcolors.ENDC)
                 amount_sats = 0
                 status = ""
-                for tag in event.tags().to_vec():
-                    if tag.as_vec()[0] == "amount":
-                        amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
-                    if tag.as_vec()[0] == "status":
-                       status = tag.as_vec()[1]
+                for tag in event.tags():
+                    if tag.to_vec()[0] == "amount":
+                        amount_sats = int(int(tag.to_vec()[1]) / 1000) # millisats
+                    if tag.to_vec()[0] == "status":
+                       status = tag.to_vec()[1]
 
             elif 6000 < event.kind().as_u16() < 6999:
                 print(bcolors.GREEN + "[Nostr Client]: " +  event.content() + bcolors.ENDC)
@@ -112,7 +116,7 @@ async def nostr_client(target_dvm_npub):
         async def handle_msg(self, relay_url, msg):
             return
 
-    asyncio.create_task(client.handle_notifications(NotificationHandler()))
+    asyncio.create_task(handle_notifications(client, NotificationHandler()))
     # await client.handle_notifications(NotificationHandler())
     while True:
         await asyncio.sleep(2)

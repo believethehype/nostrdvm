@@ -2,8 +2,10 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Tag, Kind, init_logger, LogLevel, Filter, Client, NostrSigner, Keys, \
-    SecretKey, ClientOptions, SingleLetterTag, Alphabet, PublicKey, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, PublicKey, RelayUrl, ReqTarget, SecretKey,
+    SignerAuthenticator, SingleLetterTag, Tag, init_logger,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -41,9 +43,9 @@ class TrendingNotesGleasonator(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -52,13 +54,13 @@ class TrendingNotesGleasonator(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
         max_results = 200
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "max_results": max_results,
@@ -72,27 +74,27 @@ class TrendingNotesGleasonator(DVMTaskInterface):
 
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = Client(NostrSigner.keys(keys))
+        cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
         await cli.add_relay(RelayUrl.parse(options["relay"]))
         await cli.connect()
 
         ltags = ["#e", "pub.ditto.trends"]
         authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
-        notes_filter = Filter().authors(authors).kind(Kind(1985)).custom_tags(SingleLetterTag.lowercase(Alphabet.L),
+        notes_filter = Filter().authors(authors).kind(Kind(1985)).custom_tags(SingleLetterTag.from_byte(ord('l')),
                                                                              ltags)
 
-        events = await cli.fetch_events(notes_filter, relay_timeout_long)
+        events = await cli.fetch_events(ReqTarget.auto([notes_filter]), relay_timeout_long)
 
         result_list = []
-        events_vec = events.to_vec()
+        events_vec = events
         if len(events_vec) > 0:
             event = events_vec[0]
             print(event)
-            for tag in event.tags().to_vec():
-                if tag.as_vec()[0] == "e":
-                    e_tag = Tag.parse(["e", tag.as_vec()[1], tag.as_vec()[2]])
-                    result_list.append(e_tag.as_vec())
+            for tag in event.tags():
+                if tag.to_vec()[0] == "e":
+                    e_tag = Tag.parse(["e", tag.to_vec()[1], tag.to_vec()[2]])
+                    result_list.append(e_tag.to_vec())
 
         else:
             print("Nothing found")
@@ -104,9 +106,9 @@ class TrendingNotesGleasonator(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 

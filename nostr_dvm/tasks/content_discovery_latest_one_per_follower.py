@@ -4,7 +4,12 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayLimits, ClientBuilder, RelayUrl
+from nostr_sdk import (
+    Client, ClientBuilder, Keys, Kind, PublicKey, RelayLimits, RelayUrl, ReqTarget, SecretKey,
+    SignerAuthenticator, Tag, Timestamp,
+)
+
+from nostr_dvm.utils.sdk_utils import merge_events
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -48,13 +53,13 @@ class Discoverlatestperfollower(DVMTaskInterface):
         since_days = 30
         max_results = 200
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "user":  # check for param type
-                    user = tag.as_vec()[2]
+                    user = tag.to_vec()[2]
                 elif param == "since_days":  # check for param type
-                    since_days = int(tag.as_vec()[2])
+                    since_days = int(tag.to_vec()[2])
 
         options = {
             "user": user,
@@ -74,9 +79,8 @@ class Discoverlatestperfollower(DVMTaskInterface):
 
         relaylimits = RelayLimits.disable()
 
-        opts = ClientOptions().relay_limits(relaylimits)
 
-        cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
+        cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).relay_limits(relaylimits).build()
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(RelayUrl.parse(relay))
         # ropts = RelayOptions().ping(False)
@@ -87,15 +91,15 @@ class Discoverlatestperfollower(DVMTaskInterface):
         step = 20
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
-        followers = await cli.fetch_events(followers_filter, relay_timeout)
+        followers = await cli.fetch_events(ReqTarget.auto([followers_filter]), relay_timeout)
 
-        followers_vec = followers.to_vec()
+        followers_vec = followers
         if len(followers_vec) > 0:
             result_list = []
             newest = 0
             best_entry = followers_vec[0]
             for entry in followers_vec:
-                print(len(best_entry.tags().to_vec()))
+                print(len(best_entry.tags()))
                 print(best_entry.created_at().as_secs())
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
@@ -104,10 +108,10 @@ class Discoverlatestperfollower(DVMTaskInterface):
             followings = []
             ns.dic = {}
             tagcount = 0
-            for tag in best_entry.tags().to_vec():
+            for tag in best_entry.tags():
                 tagcount += 1
-                if tag.as_vec()[0] == "p":
-                    following = tag.as_vec()[1]
+                if tag.to_vec()[0] == "p":
+                    following = tag.to_vec()[1]
                     followings.append(following)
                     ns.dic[following] = None
             print("Followings: " + str(len(followings)) + " Tags: " + str(tagcount))
@@ -123,7 +127,7 @@ class Discoverlatestperfollower(DVMTaskInterface):
                 from nostr_sdk import Filter
 
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
-                cli = Client(NostrSigner.keys(keys))
+                cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
                 for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                     await cli.add_relay(RelayUrl.parse(relay))
                 await cli.connect()
@@ -131,19 +135,19 @@ class Discoverlatestperfollower(DVMTaskInterface):
                 user = PublicKey.parse(users[i])
                 filter1 = (Filter().author(user).kind(Kind(1))
                            .limit(1))
-                event_from_authors = await cli.fetch_events(filter1, relay_timeout_long)
+                event_from_authors = await cli.fetch_events(ReqTarget.auto([filter1]), relay_timeout_long)
 
                 for i in range(i+1, i + st):
                     try:
                         user = PublicKey.parse(users[i])
                         filter1 = (Filter().author(user).kind(Kind(1))
                                    .limit(1))
-                        events = await cli.fetch_events(filter1, relay_timeout_long)
-                        event_from_authors = event_from_authors.merge(events)
+                        events = await cli.fetch_events(ReqTarget.auto([filter1]), relay_timeout_long)
+                        event_from_authors = merge_events(event_from_authors, events)
                     except Exception as e:
                         print(e)
 
-                for author in event_from_authors.to_vec():
+                for author in event_from_authors:
                     if instance.dic[author.author().to_hex()] is None:
                         instance.dic[author.author().to_hex()] = author
                 print(str(i) + "/" + str(len(users)))
@@ -183,15 +187,15 @@ class Discoverlatestperfollower(DVMTaskInterface):
             print("events found: " + str(len(new_res)))
             for v in new_res:
                 e_tag = Tag.parse(["e", v.id().to_hex()])
-                result_list.append(e_tag.as_vec())
+                result_list.append(e_tag.to_vec())
 
             return json.dumps(result_list)
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 

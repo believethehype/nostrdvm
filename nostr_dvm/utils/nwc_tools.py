@@ -2,7 +2,7 @@ import json
 import os
 
 import requests
-from nostr_sdk import Keys, PublicKey, NostrWalletConnectUri, Nwc
+from nostr_sdk import Keys, NostrWalletConnect, NostrWalletConnectUri, PayInvoiceRequest, PublicKey
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -13,17 +13,17 @@ async def nwc_zap(connectionstr, bolt11, keys, externalrelay=None):
     uri = NostrWalletConnectUri.parse(connectionstr)
 
     # Initialize NWC client
-    nwc = Nwc(uri)
-
-    info = await nwc.get_info()
-    print(info)
-
-    balance = await nwc.get_balance()
-    print(f"Balance: {balance} MilliSats")
-
-    event_id = await nwc.pay_invoice(bolt11)
-    print("NWC event: " + event_id)
-    return event_id
+    nwc = NostrWalletConnect(uri)
+    try:
+        info = await nwc.get_info()
+        print(info)
+        balance = await nwc.get_balance()
+        print(f"Balance: {balance.balance} MilliSats")
+        response = await nwc.pay_invoice(PayInvoiceRequest(id=None, invoice=bolt11, amount=None))
+        print("NWC payment completed")
+        return response.preimage
+    finally:
+        await nwc.client().shutdown()
 
 
 def parse_connection_str(connectionstring):

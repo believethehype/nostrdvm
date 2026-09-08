@@ -1,11 +1,17 @@
 import asyncio
+from nostr_dvm.utils.database_utils import debit_user_balance
 import json
 import os
 import signal
 
-from nostr_sdk import (RelayUrl, Keys, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey,
-                       ClientOptions, Tag, Event, EventId, Nip19Event, Kind, NostrSigner, nip44_encrypt, Nip44Version,
-                       UnsignedEvent, UnwrappedGift, KindStandard, ClientBuilder, make_private_msg)
+from nostr_sdk import (
+    ClientBuilder, Event, EventBuilder, EventId, Filter, Keys, Kind, KindStandard, Nip19Event,
+    Nip44Version, NostrGossip, PublicKey, RelayUrl, ReqTarget, SignerAuthenticator, Tag, Timestamp,
+    UnsignedEvent, UnwrappedGift, nip04_decrypt, nip17_make_private_msg_async, nip44_decrypt,
+    nip44_encrypt,
+)
+
+from nostr_dvm.utils.sdk_utils import ensure_sdk_callback_loop, handle_notifications
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates
 from nostr_dvm.utils.cashu_utils import redeem_cashu
@@ -34,11 +40,11 @@ class Bot:
 
         self.client = None
         asyncio.run(self.run_bot(dvm_config, admin_config))
-        #uniffi_set_event_loop(asyncio.get_running_loop())
 
         # add_sql_table_column(dvm_config.DB)
 
     async def run_bot(self, dvm_config, admin_config):
+        ensure_sdk_callback_loop()
         self.NAME = "Bot"
         dvm_config.DB = "db/" + self.NAME + ".db"
         self.dvm_config = dvm_config
@@ -47,11 +53,10 @@ class Bot:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        self.signer = NostrSigner.keys(self.keys)
+        self.signer = self.keys
         self.CHATBOT = False
 
-        opts = ClientOptions().gossip(True)
-        self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
+        self.client = ClientBuilder().authenticator(SignerAuthenticator(self.keys)).gossip(NostrGossip.in_memory()).build()
         self.invoice_list = []
 
         pk = self.keys.public_key()
@@ -82,15 +87,15 @@ class Bot:
             kinds.append(Kind(6050))
         dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()))
 
-        await self.client.subscribe(zap_filter, None)
-        await self.client.subscribe(dm_filter, None)
-        await self.client.subscribe(nip59_filter, None)
-        await self.client.subscribe(dvm_filter, None)
+        await self.client.subscribe(ReqTarget.auto([zap_filter]), None)
+        await self.client.subscribe(ReqTarget.auto([dm_filter]), None)
+        await self.client.subscribe(ReqTarget.auto([nip59_filter]), None)
+        await self.client.subscribe(ReqTarget.auto([dvm_filter]), None)
 
         create_sql_table(self.dvm_config.DB)
         await admin_make_database_updates(adminconfig=self.admin_config, dvmconfig=self.dvm_config, client=self.client)
 
-        class NotificationHandler(HandleNotification):
+        class NotificationHandler:
             client = self.client
             dvm_config = self.dvm_config
             keys = self.keys
@@ -129,12 +134,12 @@ class Bot:
             try:
                 sealed = " "
                 if giftwrap:
-                    signer = NostrSigner.keys(self.keys)
+                    signer = self.keys
                     if nostr_event.kind().as_std() == KindStandard.GIFT_WRAP:
                         print("Decrypting NIP59 event")
                         try:
                             # Extract rumor
-                            unwrapped_gift = await UnwrappedGift.from_gift_wrap(signer, nostr_event)
+                            unwrapped_gift = await UnwrappedGift.from_gift_wrap_async(signer, nostr_event)
                             sender = unwrapped_gift.sender().to_hex()
                             rumor: UnsignedEvent = unwrapped_gift.rumor()
 
@@ -188,7 +193,7 @@ class Bot:
                                     if self.dvm_config.SUPPORTED_DVMS[index].SUPPORTS_ENCRYPTION:
                                         tags_str = []
                                         for tag in tags:
-                                            tags_str.append(tag.as_vec())
+                                            tags_str.append(tag.to_vec())
                                         params_as_str = json.dumps(tags_str)
                                         print(params_as_str)
                                         #  and encrypt them
@@ -202,13 +207,13 @@ class Bot:
                                         #  add the encrypted params to the content
                                         nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
                                                                      encrypted_params).tags([p_tag, encrypted_tag]).
-                                                        sign_with_keys(self.keys))
+                                                        finalize(self.keys))
                                     else:
                                         tags.append(p_tag)
 
                                         nip90request = (EventBuilder(self.dvm_config.SUPPORTED_DVMS[index].KIND,
                                                                      "").tags(tags).
-                                                        sign_with_keys(self.keys))
+                                                        finalize(self.keys))
 
                                     # remember in the job_list that we have made an event, if anybody asks for payment,
                                     # we know we actually sent the request
@@ -234,7 +239,7 @@ class Bot:
                             except:
                                 amount = 100
 
-                            invoice, hash = create_bolt11_ln_bits(amount, self.dvm_config)
+                            invoice, hash = await asyncio.to_thread(create_bolt11_ln_bits, amount, self.dvm_config)
                             expires = nostr_event.created_at().as_secs() + (60 * 60 * 24)
                             qr_code = "https://qrcode.tec-it.com/API/QRCode?data=" + invoice + "&backcolor=%23ffffff&size=small&quietzone=1&errorcorrection=H"
 
@@ -247,7 +252,7 @@ class Bot:
                             else:
                                 message = invoice
                             if giftwrap:
-                                event = await make_private_msg(self.signer, PublicKey.parse(sender), message,
+                                event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(sender), message,
                                                                None)
                                 await self.client.send_event(event)
 
@@ -269,7 +274,7 @@ class Bot:
                                                                                         "100 sats (or any other amount) "
                                                                                         "to top up your balance")
                             if giftwrap:
-                                event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                                event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(sender), message)
                                 await self.client.send_event(event)
                             else:
                                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
@@ -287,7 +292,7 @@ class Bot:
                                 message = "Error: " + cashu_message + ". Token has not been redeemed."
 
                                 if giftwrap:
-                                    event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                                    event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(sender), message)
                                     await self.client.send_event(event)
                                 else:
                                     await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
@@ -295,7 +300,7 @@ class Bot:
                             await asyncio.sleep(2.0)
                             message = "No, there is no second best.\n\nhttps://cdn.nostr.build/p/mYLv.mp4"
                             if giftwrap:
-                                event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                                event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(sender), message)
                                 await self.client.send_event(event)
                             else:
                                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
@@ -325,7 +330,7 @@ class Bot:
 
                         nip90request = (EventBuilder(Kind(kind),
                                                      "").tags(tags).
-                                        sign_with_keys(self.keys))
+                                        finalize(self.keys))
 
                         entry = {"npub": user.npub, "event_id": nip90request.id().to_hex(),
                                  "dvm_key": self.DVM_KEY, "is_paid": False,
@@ -346,16 +351,16 @@ class Bot:
                 etag = ""
                 ptag = ""
                 content = nostr_event.content()
-                for tag in nostr_event.tags().to_vec():
-                    if tag.as_vec()[0] == "status":
-                        status = tag.as_vec()[1]
-                        if len(tag.as_vec()) > 2:
-                            content = tag.as_vec()[2]
-                    elif tag.as_vec()[0] == "e":
-                        etag = tag.as_vec()[1]
-                    elif tag.as_vec()[0] == "p":
-                        ptag = tag.as_vec()[1]
-                    elif tag.as_vec()[0] == "encrypted":
+                for tag in nostr_event.tags():
+                    if tag.to_vec()[0] == "status":
+                        status = tag.to_vec()[1]
+                        if len(tag.to_vec()) > 2:
+                            content = tag.to_vec()[2]
+                    elif tag.to_vec()[0] == "e":
+                        etag = tag.to_vec()[1]
+                    elif tag.to_vec()[0] == "p":
+                        ptag = tag.to_vec()[1]
+                    elif tag.to_vec()[0] == "encrypted":
                         is_encrypted = True
 
                 if is_encrypted:
@@ -368,22 +373,22 @@ class Bot:
                                                      nostr_event.author(), nostr_event.content())
 
                         params = json.loads(tags_str)
-                        params.append(Tag.parse(["p", ptag]).as_vec())
-                        params.append(Tag.parse(["encrypted"]).as_vec())
+                        params.append(Tag.parse(["p", ptag]).to_vec())
+                        params.append(Tag.parse(["encrypted"]).to_vec())
                         event_as_json = json.loads(nostr_event.as_json())
                         event_as_json['tags'] = params
                         event_as_json['content'] = ""
                         nostr_event = Event.from_json(json.dumps(event_as_json))
 
-                        for tag in nostr_event.tags().to_vec():
-                            if tag.as_vec()[0] == "status":
-                                status = tag.as_vec()[1]
-                                if len(tag.as_vec()) > 2:
-                                    content = tag.as_vec()[2]
-                            elif tag.as_vec()[0] == "e":
-                                etag = tag.as_vec()[1]
-                            elif tag.as_vec()[0] == "content":
-                                content = tag.as_vec()[1]
+                        for tag in nostr_event.tags():
+                            if tag.to_vec()[0] == "status":
+                                status = tag.to_vec()[1]
+                                if len(tag.to_vec()) > 2:
+                                    content = tag.to_vec()[2]
+                            elif tag.to_vec()[0] == "e":
+                                etag = tag.to_vec()[1]
+                            elif tag.to_vec()[0] == "content":
+                                content = tag.to_vec()[1]
 
                     else:
                         return
@@ -395,7 +400,7 @@ class Bot:
                                                      client=self.client, config=self.dvm_config)
                         await asyncio.sleep(2.0)
                         if entry["giftwrap"]:
-                            event = await make_private_msg(self.signer, PublicKey.parse(entry["npub"]), content)
+                            event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(entry["npub"]), content)
                             await self.client.send_event(event)
                         else:
                             await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']), self.dvm_config)
@@ -404,9 +409,9 @@ class Bot:
                             "[" + self.NAME + "] Received reaction from " + nostr_event.author().to_hex() + " message to orignal sender " + user.name)
 
                 elif status == "payment-required" or status == "partial":
-                    for tag in nostr_event.tags().to_vec():
-                        if tag.as_vec()[0] == "amount":
-                            amount_msats = int(tag.as_vec()[1])
+                    for tag in nostr_event.tags():
+                        if tag.to_vec()[0] == "amount":
+                            amount_msats = int(tag.to_vec()[1])
                             amount = int(amount_msats / 1000)
                             entry = next((x for x in self.job_list if x['event_id'] == etag), None)
                             if entry is not None and entry['is_paid'] is False and entry[
@@ -415,17 +420,16 @@ class Bot:
                                 user = await get_or_add_user(db=self.dvm_config.DB, npub=entry["npub"],
                                                              client=self.client, config=self.dvm_config)
                                 if user.balance >= amount:
-                                    balance = max(user.balance - amount, 0)
-                                    update_sql_table(db=self.dvm_config.DB, npub=user.npub, balance=balance,
-                                                     iswhitelisted=user.iswhitelisted, isblacklisted=user.isblacklisted,
-                                                     nip05=user.nip05, lud16=user.lud16, name=user.name,
-                                                     lastactive=Timestamp.now().as_secs(), subscribed=user.subscribed)
+                                    balance = debit_user_balance(self.dvm_config.DB, user.npub, amount)
+                                    if balance is None:
+                                        print("Insufficient balance; task was not charged")
+                                        continue
 
                                     message = "Paid " + str(
                                         amount) + " Sats from balance to DVM. New balance is " + str(
                                         balance) + " Sats.\n"
                                     if entry["giftwrap"]:
-                                        event = await make_private_msg(self.signer, PublicKey.parse(entry["npub"]), message)
+                                        event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(entry["npub"]), message)
                                         await self.client.send_event(event)
                                     else:
                                         await send_nip04_dm(self.client, content, PublicKey.parse(entry['npub']),
@@ -441,15 +445,15 @@ class Bot:
                                         int(amount - user.balance)) + " Sats, then try again."
 
                                     if entry["giftwrap"]:
-                                        event = await make_private_msg(self.signer, PublicKey.parse(entry["npub"]), message)
+                                        event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(entry["npub"]), message)
                                         await self.client.send_event(event)
                                     else:
                                         await send_nip04_dm(self.client, message, PublicKey.parse(entry['npub']),
                                                             self.dvm_config)
                                     return
 
-                                if len(tag.as_vec()) > 2:
-                                    bolt11 = tag.as_vec()[2]
+                                if len(tag.to_vec()) > 2:
+                                    bolt11 = tag.to_vec()[2]
                                 # else we create a zap
                                 else:
                                     user = await get_or_add_user(db=self.dvm_config.DB,
@@ -466,7 +470,7 @@ class Bot:
                                         return
                                 try:
                                     print(bolt11)
-                                    payment_hash = pay_bolt11_ln_bits(bolt11, self.dvm_config)
+                                    payment_hash = await asyncio.to_thread(pay_bolt11_ln_bits, bolt11, self.dvm_config)
                                     self.job_list[self.job_list.index(entry)]['is_paid'] = True
                                     print("[" + self.NAME + "] payment_hash: " + payment_hash +
                                           " Forwarding payment of " + str(amount) + " Sats to DVM")
@@ -483,12 +487,12 @@ class Bot:
                 ptag = ""
                 etag = ""
                 is_encrypted = False
-                for tag in nostr_event.tags().to_vec():
-                    if tag.as_vec()[0] == "e":
-                        etag = tag.as_vec()[1]
-                    elif tag.as_vec()[0] == "p":
-                        ptag = tag.as_vec()[1]
-                    elif tag.as_vec()[0] == "encrypted":
+                for tag in nostr_event.tags():
+                    if tag.to_vec()[0] == "e":
+                        etag = tag.to_vec()[1]
+                    elif tag.to_vec()[0] == "p":
+                        ptag = tag.to_vec()[1]
+                    elif tag.to_vec()[0] == "encrypted":
                         is_encrypted = True
 
                 entry = next((x for x in self.job_list if x['event_id'] == etag), None)
@@ -522,7 +526,7 @@ class Bot:
                     print("[" + self.NAME + "] Received results, message to orignal sender " + user.name)
                     await asyncio.sleep(2.0)
                     if entry["giftwrap"]:
-                        event = await make_private_msg(self.signer, PublicKey.parse(user.npub), content)
+                        event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(user.npub), content)
 
                         await self.client.send_event(event)
                     else:
@@ -541,9 +545,9 @@ class Bot:
 
                 etag = ""
                 if zapped_event is not None:
-                    for tag in zapped_event.tags().to_vec():
-                        if tag.as_vec()[0] == "e":
-                            etag = tag.as_vec()[1]
+                    for tag in zapped_event.tags():
+                        if tag.to_vec()[0] == "e":
+                            etag = tag.to_vec()[1]
 
                 user = await get_or_add_user(self.dvm_config.DB, sender, client=self.client, config=self.dvm_config)
 
@@ -590,7 +594,7 @@ class Bot:
 
             text = message + "\nSelect an Index and provide an input (e.g. \"2 A purple ostrich\")\nType \"index info\" to learn more about each DVM. (e.g. \"2 info\")\n\n Type \"balance\" to see your current balance"
             if giftwrap:
-                event = await make_private_msg(self.signer, PublicKey.parse(sender), text)
+                event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(sender), text)
                 await self.client.send_event(event)
             else:
                 await send_nip04_dm(self.client, text, PublicKey.parse(sender), self.dvm_config)
@@ -598,7 +602,7 @@ class Bot:
         async def answer_blacklisted(nostr_event, giftwrap, sender):
             message = "Your are currently blocked from this service."
             if giftwrap:
-                event = await make_private_msg(self.signer, PublicKey.parse(sender), message)
+                event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(sender), message)
                 await self.client.send_event(event)
             else:
                 await send_nip04_dm(self.client, message, PublicKey.parse(sender), self.dvm_config)
@@ -610,7 +614,7 @@ class Bot:
             await asyncio.sleep(2.0)
 
             if giftwrap:
-                event = await make_private_msg(self.signer, PublicKey.parse(sender), info)
+                event = await nip17_make_private_msg_async(self.signer, PublicKey.parse(sender), info)
                 await self.client.send_event(event)
             else:
                 await send_nip04_dm(self.client, info, PublicKey.parse(sender), self.dvm_config)
@@ -726,7 +730,7 @@ class Bot:
                                             value.replace("@", "").replace("nostr:", "")).to_hex()
                                 tag = Tag.parse(["param", param, value])
                             tags.append(tag)
-                            print("Added params: " + str(tag.as_vec()))
+                            print("Added params: " + str(tag.to_vec()))
                     except Exception as e:
                         print(e)
                         print("Couldn't add " + str(i))
@@ -772,13 +776,13 @@ class Bot:
 
 
 
-        asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
+        asyncio.create_task(handle_notifications(self.client, NotificationHandler()))
 
         try:
             while True:
                 for invoice in self.invoice_list:
                     if invoice.bolt11 != "" and invoice.payment_hash != "" and not invoice.payment_hash is None and not invoice.is_paid:
-                        ispaid = check_bolt11_ln_bits_is_paid(invoice.payment_hash, self.dvm_config)
+                        ispaid = await asyncio.to_thread(check_bolt11_ln_bits_is_paid, invoice.payment_hash, self.dvm_config)
                         if ispaid and invoice.is_paid is False:
                             print("is paid")
                             invoice.is_paid = True
@@ -799,6 +803,3 @@ class Bot:
         except KeyboardInterrupt:
             print('Stay weird!')
             os.kill(os.getpid(), signal.SIGTERM)
-
-
-

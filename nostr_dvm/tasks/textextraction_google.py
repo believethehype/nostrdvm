@@ -35,14 +35,14 @@ class SpeechToTextGoogle(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "url":
                     return False
 
-            elif tag.as_vec()[0] == 'output':
-                output = tag.as_vec()[1]
+            elif tag.to_vec()[0] == 'output':
+                output = tag.to_vec()[1]
                 if output == "" or not (output == "text/plain"):
                     print("Output format not supported, skipping..")
                     return False
@@ -59,39 +59,39 @@ class SpeechToTextGoogle(DVMTaskInterface):
         media_format = "audio/wav"
         language = "en-US"
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "url":
-                    url = tag.as_vec()[1]
+                    url = tag.to_vec()[1]
 
-            elif tag.as_vec()[0] == 'param':
-                print("Param: " + tag.as_vec()[1] + ": " + tag.as_vec()[2])
-                if tag.as_vec()[1] == "language":
-                    language = tag.as_vec()[2]
-                elif tag.as_vec()[1] == "range":
+            elif tag.to_vec()[0] == 'param':
+                print("Param: " + tag.to_vec()[1] + ": " + tag.to_vec()[2])
+                if tag.to_vec()[1] == "language":
+                    language = tag.to_vec()[2]
+                elif tag.to_vec()[1] == "range":
                     try:
-                        t = time.strptime(tag.as_vec()[2], "%H:%M:%S")
+                        t = time.strptime(tag.to_vec()[2], "%H:%M:%S")
                         seconds = t.tm_hour * 60 * 60 + t.tm_min * 60 + t.tm_sec
                         start_time = float(seconds)
                     except:
                         try:
-                            t = time.strptime(tag.as_vec()[2], "%M:%S")
+                            t = time.strptime(tag.to_vec()[2], "%M:%S")
                             seconds = t.tm_min * 60 + t.tm_sec
                             start_time = float(seconds)
                         except:
-                            start_time = tag.as_vec()[2]
+                            start_time = tag.to_vec()[2]
                             try:
-                                t = time.strptime(tag.as_vec()[3], "%H:%M:%S")
+                                t = time.strptime(tag.to_vec()[3], "%H:%M:%S")
                                 seconds = t.tm_hour * 60 * 60 + t.tm_min * 60 + t.tm_sec
                                 end_time = float(seconds)
                             except:
                                 try:
-                                    t = time.strptime(tag.as_vec()[3], "%M:%S")
+                                    t = time.strptime(tag.to_vec()[3], "%M:%S")
                                     seconds = t.tm_min * 60 + t.tm_sec
                                     end_time = float(seconds)
                                 except:
-                                    end_time = float(tag.as_vec()[3])
+                                    end_time = float(tag.to_vec()[3])
 
         filepath = await organize_input_media_data(url, input_type, start_time, end_time, dvm_config, client, True,
                                                    media_format)

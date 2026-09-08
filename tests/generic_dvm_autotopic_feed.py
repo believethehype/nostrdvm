@@ -5,11 +5,16 @@ from pathlib import Path
 
 import dotenv
 from duck_chat import ModelType
-from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, ClientOptions, ClientBuilder, Tag, \
-    LogLevel, Timestamp, NostrDatabase
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, NostrLmdb, PublicKey, RelayLimits, ReqTarget,
+    SecretKey, SignerAuthenticator, Tag, Timestamp,
+)
+
+from nostr_dvm.utils.sdk_utils import merge_events
 
 from nostr_dvm.framework import DVMFramework
 from nostr_dvm.tasks.generic_dvm import GenericDVM
+from nostr_dvm.utils.discovery_utils import query_engagement
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import relay_timeout
@@ -148,9 +153,8 @@ def playground(announce=False):
         keys = Keys.parse(sk.to_hex())
         relaylimits = RelayLimits.disable()
 
-        opts = ClientOptions().relay_limits(relaylimits)
-        signer = NostrSigner.keys(keys)
-        cli = ClientBuilder().signer(signer).opts(opts).build()
+        signer = keys
+        cli = ClientBuilder().authenticator(SignerAuthenticator(signer)).relay_limits(relaylimits).build()
         for relay in dvm.dvm_config.ANNOUNCE_RELAY_LIST:
             await cli.add_relay(RelayUrl.parse(relay))
         # ropts = RelayOptions().ping(False)
@@ -160,10 +164,10 @@ def playground(announce=False):
         author = PublicKey.parse(options["request_event_author"])
         filterauth = Filter().kind(definitions.EventDefinitions.KIND_NOTE).author(author).limit(100)
 
-        event_struct = await cli.fetch_events(filterauth, relay_timeout)
+        event_struct = await cli.fetch_events(ReqTarget.auto([filterauth]), relay_timeout)
         text = ""
 
-        event_struct_vec = event_struct.to_vec()
+        event_struct_vec = event_struct
         if len(event_struct_vec) == 0:
             #raise Exception("No Notes found")
             print("No Notes found")
@@ -193,7 +197,7 @@ def playground(announce=False):
         from types import SimpleNamespace
         ns = SimpleNamespace()
 
-        database = NostrDatabase.lmdb("db/nostr_recent_notes.db")
+        database = await NostrLmdb.open("db/nostr_recent_notes.db")
 
         timestamp_since = Timestamp.now().as_secs() -   since
         since = Timestamp.from_secs(timestamp_since)
@@ -209,12 +213,12 @@ def playground(announce=False):
         for keyword in keywords[1:]:
             filter = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since).search(" " + keyword.lstrip().rstrip() + " ")
             evts = await database.query(filter)
-            events = events.merge(evts)
+            events = merge_events(events, evts)
 
 
 
 
-        events_vec = events.to_vec()
+        events_vec = events
         print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
         ns.finallist = {}
         #search_list = result.split(',')
@@ -222,12 +226,8 @@ def playground(announce=False):
         for event in events_vec:
             #if all(ele in event.content().lower() for ele in []):
                     #if not any(ele in event.content().lower() for ele in []):
-            filt = Filter().kinds(
-                [definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REACTION,
-                 definitions.EventDefinitions.KIND_REPOST,
-                 definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
-            reactions = await database.query(filt)
-            reactions_vec = reactions.to_vec()
+            reactions = await query_engagement(database, event.id(), since)
+            reactions_vec = reactions
             if len(reactions_vec) >= 1:
                 ns.finallist[event.id().to_hex()] = len(reactions_vec)
 
@@ -236,7 +236,7 @@ def playground(announce=False):
         for entry in finallist_sorted:
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
-            result_list.append(e_tag.as_vec())
+            result_list.append(e_tag.to_vec())
         if dvm.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + dvm.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")

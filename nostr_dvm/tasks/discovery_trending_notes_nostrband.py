@@ -1,7 +1,7 @@
 import json
 import os
 
-from nostr_sdk import Tag, Kind, init_logger, LogLevel
+from nostr_sdk import Kind, LogLevel, Tag, init_logger
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -39,9 +39,9 @@ class TrendingNotesNostrBand(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -52,13 +52,13 @@ class TrendingNotesNostrBand(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex()}
         max_results = 200
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "max_results": max_results,
@@ -82,8 +82,8 @@ class TrendingNotesNostrBand(DVMTaskInterface):
                     i += 1
                     if i < int(options["max_results"]):
                         e_tag = Tag.parse(["e", note["id"]])
-                        # print(e_tag.as_vec())
-                        result_list.append(e_tag.as_vec())
+                        # print(e_tag.to_vec())
+                        result_list.append(e_tag.to_vec())
                     else:
                         break
 
@@ -95,9 +95,9 @@ class TrendingNotesNostrBand(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 

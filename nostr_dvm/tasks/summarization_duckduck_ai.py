@@ -2,7 +2,7 @@ import json
 import os
 import re
 
-from nostr_sdk import Tag, Kind
+from nostr_sdk import Kind, Tag
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -33,10 +33,10 @@ class SummarizationDuckDuck(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                print(tag.as_vec())
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                print(tag.to_vec())
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "event" and input_type != "job" and input_type != "text":
                     return False
 
@@ -48,17 +48,17 @@ class SummarizationDuckDuck(DVMTaskInterface):
         collect_events = []
         nostr_mode = True
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    prompt += tag.as_vec()[1] + "\n"
+                    prompt += tag.to_vec()[1] + "\n"
                 elif input_type == "event":
-                    collect_events.append(tag.as_vec()[1])
-                    # evt = get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    collect_events.append(tag.to_vec()[1])
+                    # evt = get_event_by_id(tag.to_vec()[1], client=client, config=dvm_config)
                     # prompt += evt.content() + "\n"
                 elif input_type == "job":
-                    evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
+                    evt = await get_referenced_event_by_id(event_id=tag.to_vec()[1], client=client,
                                                            kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                                                                   EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
                                                                   EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
@@ -73,7 +73,7 @@ class SummarizationDuckDuck(DVMTaskInterface):
                         prompt = ""
                         for tag in result_list:
                             e_tag = Tag.parse(tag)
-                            evt = await get_event_by_id(e_tag.as_vec()[1], client=client, config=dvm_config)
+                            evt = await get_event_by_id(e_tag.to_vec()[1], client=client, config=dvm_config)
                             prompt += evt.content() + "\n"
 
                     else:

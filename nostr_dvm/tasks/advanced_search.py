@@ -2,7 +2,10 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Keys, Kind, PublicKey, RelayUrl, ReqTarget, SecretKey, SignerAuthenticator, Tag,
+    Timestamp,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -32,9 +35,9 @@ class AdvancedSearch(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -51,24 +54,25 @@ class AdvancedSearch(DVMTaskInterface):
         until_seconds = Timestamp.now().as_secs()
         search = ""
         max_results = 100
-        relay = for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        relay = self.options.get("relay", "wss://relay.nostr.band")
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    search = tag.as_vec()[1]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+                    search = tag.to_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "user":  # check for param type
-                    # user = tag.as_vec()[2]
-                    users.append(Tag.parse(["p", tag.as_vec()[2]]))
+                    # user = tag.to_vec()[2]
+                    users.append(Tag.parse(["p", tag.to_vec()[2]]))
                 elif param == "users":  # check for param type
-                    users = json.loads(tag.as_vec()[2])
+                    users = json.loads(tag.to_vec()[2])
                 elif param == "since":  # check for param type
-                    since_seconds = int(tag.as_vec()[2])
+                    since_seconds = int(tag.to_vec()[2])
                 elif param == "until":  # check for param type
-                    until_seconds = min(int(tag.as_vec()[2]), until_seconds)
+                    until_seconds = min(int(tag.to_vec()[2]), until_seconds)
                 elif param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "search": search,
@@ -87,7 +91,7 @@ class AdvancedSearch(DVMTaskInterface):
 
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = Client(NostrSigner.keys(keys))
+        cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
         await cli.add_relay(RelayUrl.parse(options["relay"]))
 
@@ -105,7 +109,7 @@ class AdvancedSearch(DVMTaskInterface):
         userkeys = []
         for user in options["users"]:
             tag = Tag.parse(user)
-            user = tag.as_vec()[1]
+            user = tag.to_vec()[1]
             # user = user[1]
             user = str(user).lstrip("@")
             userkey = PublicKey.parse(user)
@@ -122,24 +126,24 @@ class AdvancedSearch(DVMTaskInterface):
             notes_filter = Filter().kind(Kind(1)).authors(userkeys).search(options["search"]).since(
                 search_since).until(search_until).limit(options["max_results"])
 
-        events = await cli.fetch_events(notes_filter, relay_timeout)
+        events = await cli.fetch_events(ReqTarget.auto([notes_filter]), relay_timeout)
 
         result_list = []
-        events_vec = events.to_vec()
+        events_vec = events
         if len(events_vec) > 0:
 
             for event in events_vec:
                 e_tag = Tag.parse(["e", event.id().to_hex()])
-                result_list.append(e_tag.as_vec())
+                result_list.append(e_tag.to_vec())
 
         await cli.shutdown()
         return json.dumps(result_list)
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 
@@ -188,7 +192,7 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": }
+    options = {"relay": "wss://relay.nostr.band"}
 
     return AdvancedSearch(name=name, dvm_config=dvm_config, nip89config=nip89config,
                           admin_config=admin_config, options=options)

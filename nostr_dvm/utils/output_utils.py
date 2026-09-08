@@ -7,7 +7,7 @@ from types import NoneType
 import emoji
 import pandas
 import requests
-from nostr_sdk import Tag, PublicKey, EventId, Keys, EventBuilder, LogLevel
+from nostr_sdk import EventBuilder, EventId, Keys, LogLevel, PublicKey, Tag
 from pyupload.uploader import CatboxUploader
 
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -33,9 +33,9 @@ def post_process_result(anno, original_event):
         has_output_tag = False
         output_format = "text/plain"
 
-        for tag in original_event.tags().to_vec():
-            if tag.as_vec()[0] == "output":
-                output_format = tag.as_vec()[1]
+        for tag in original_event.tags():
+            if tag.to_vec()[0] == "output":
+                output_format = tag.to_vec()[1]
                 has_output_tag = True
                 print("requested output is " + str(output_format) + "...")
 
@@ -107,7 +107,7 @@ def post_process_list_to_events(result):
     for tag in result_list:
         try:
             e_tag = Tag.parse(tag)
-            id = EventId.parse(e_tag.as_vec()[1]).to_bech32()
+            id = EventId.parse(e_tag.to_vec()[1]).to_bech32()
             result_str = result_str + "nostr:" + id + "\n"
         except Exception as e:
             print(e)
@@ -122,7 +122,7 @@ def post_process_list_to_users(result):
     for tag in result_list:
         try:
             p_tag = Tag.parse(tag)
-            key =  PublicKey.parse(p_tag.as_vec()[1]).to_bech32()
+            key =  PublicKey.parse(p_tag.to_vec()[1]).to_bech32()
             result_str = result_str + "nostr:" + key + "\n"
         except Exception as e:
             print(e)
@@ -320,7 +320,7 @@ async def send_job_status_reaction(original_event_id_hex, original_event_author_
     content = reaction
 
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
-    reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
+    reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).finalize(keys)
     await send_event_outbox(reaction_event, client=client, dvm_config=dvm_config)
 
     if dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:

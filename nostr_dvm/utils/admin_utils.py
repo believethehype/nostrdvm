@@ -2,7 +2,7 @@
 
 from nostr_sdk import Keys, PublicKey, Client, EventId
 
-from nostr_dvm.utils.database_utils import get_from_sql_table, list_db, delete_from_sql_table, update_sql_table, \
+from nostr_dvm.utils.database_utils import get_from_sql_table, list_db, delete_from_sql_table, update_user_fields, \
     get_or_add_user, clean_db
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nip65_utils import nip65_announce_relays
@@ -65,20 +65,17 @@ async def admin_make_database_updates(adminconfig: AdminConfig = None, dvmconfig
 
         if adminconfig.WHITELISTUSER:
             user = await get_or_add_user(db, publickey, client=client, config=dvmconfig)
-            update_sql_table(db, user.npub, user.balance, True, False, user.nip05, user.lud16, user.name,
-                             user.lastactive, user.subscribed)
+            update_user_fields(db, user.npub, iswhitelisted=True, isblacklisted=False)
             user = get_from_sql_table(db, publickey)
             print(str(user.name) + " is whitelisted: " + str(user.iswhitelisted))
 
         if adminconfig.UNWHITELISTUSER:
             user = get_from_sql_table(db, publickey)
-            update_sql_table(db, user.npub, user.balance, False, False, user.nip05, user.lud16, user.name,
-                             user.lastactive, user.subscribed)
+            update_user_fields(db, user.npub, iswhitelisted=False, isblacklisted=False)
 
         if adminconfig.BLACKLISTUSER:
             user = get_from_sql_table(db, publickey)
-            update_sql_table(db, user.npub, user.balance, False, True, user.nip05, user.lud16, user.name,
-                             user.lastactive, user.subscribed)
+            update_user_fields(db, user.npub, iswhitelisted=False, isblacklisted=True)
 
         if adminconfig.DELETEUSER:
             delete_from_sql_table(db, publickey)

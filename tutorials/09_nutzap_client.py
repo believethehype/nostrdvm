@@ -8,8 +8,12 @@
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import PublicKey, Client, NostrSigner, EventBuilder, Kind, Tag, Keys, Timestamp, HandleNotification, \
-    Filter, Event
+from nostr_sdk import (
+    ClientBuilder, Event, EventBuilder, Filter, Keys, Kind, PublicKey, ReqTarget,
+    SignerAuthenticator, Tag, Timestamp,
+)
+
+from nostr_dvm.utils.sdk_utils import handle_notifications
 
 import asyncio
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -30,9 +34,9 @@ async def nostr_client_generic_test(ptag):
     pTag = Tag.parse(["p", PublicKey.parse(ptag).to_hex()])
     tags = [relaysTag, alttag, pTag, paramTag]
     event = EventBuilder(Kind(5050), "This is a test",
-                         ).tags(tags).sign_with_keys(keys)
+                         ).tags(tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -45,7 +49,7 @@ async def nostr_client(target_dvm_npub):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
@@ -58,24 +62,24 @@ async def nostr_client(target_dvm_npub):
             kinds.append(Kind(kind))
 
     dvm_filter = (Filter().kinds(kinds).since(Timestamp.now()).pubkey(pk))
-    await client.subscribe(dvm_filter, None)
+    await client.subscribe(ReqTarget.auto([dvm_filter]), None)
 
     # This will send a request to the DVM
     await nostr_client_generic_test(target_dvm_npub)
 
     # We listen to
-    class NotificationHandler(HandleNotification):
+    class NotificationHandler:
         last_event_time = 0
         async def handle(self, relay_url, subscription_id, event: Event):
             if event.kind().as_u16() == 7000:
                 print(bcolors.YELLOW + "[Nostr Client]: " + event.content() + bcolors.ENDC)
                 amount_sats = 0
                 status = ""
-                for tag in event.tags().to_vec():
-                    if tag.as_vec()[0] == "amount":
-                        amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
-                    if tag.as_vec()[0] == "status":
-                       status = tag.as_vec()[1]
+                for tag in event.tags():
+                    if tag.to_vec()[0] == "amount":
+                        amount_sats = int(int(tag.to_vec()[1]) / 1000) # millisats
+                    if tag.to_vec()[0] == "status":
+                       status = tag.to_vec()[1]
 
                 if status == "payment-required":
                     print("do a nutzap of " + str(amount_sats) +" sats here")
@@ -108,7 +112,7 @@ async def nostr_client(target_dvm_npub):
         async def handle_msg(self, relay_url, msg):
             return
 
-    asyncio.create_task(client.handle_notifications(NotificationHandler()))
+    asyncio.create_task(handle_notifications(client, NotificationHandler()))
     # await client.handle_notifications(NotificationHandler())
     while True:
         await asyncio.sleep(2)

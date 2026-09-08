@@ -3,8 +3,10 @@ import os
 from datetime import timedelta
 from itertools import islice
 
-from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind, PublicKey, RelayLimits, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, NostrLmdb, PublicKey, RelayLimits, RelayUrl, SecretKey,
+    SignerAuthenticator, SyncDirection, SyncOptions, Tag, Timestamp,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -41,9 +43,9 @@ class SearchUser(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -58,15 +60,15 @@ class SearchUser(DVMTaskInterface):
         search = ""
         max_results = 100
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    search = tag.as_vec()[1]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+                    search = tag.to_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "search": search,
@@ -81,8 +83,8 @@ class SearchUser(DVMTaskInterface):
 
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
+        database = await NostrLmdb.open(self.db_name)
+        cli = ClientBuilder().database(database).authenticator(SignerAuthenticator(keys)).build()
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(RelayUrl.parse(relay))
@@ -97,7 +99,7 @@ class SearchUser(DVMTaskInterface):
         events = await cli.database().query(filter1)
 
         result_list = []
-        events_vec = events.to_vec()
+        events_vec = events
         print("Events: " + str(len(events_vec)))
         index = 0
         if len(events_vec) > 0:
@@ -109,7 +111,7 @@ class SearchUser(DVMTaskInterface):
                         if options["search"].lower() in event.content().lower():
                             p_tag = Tag.parse(["p", event.author().to_hex()])
                             #print(event.as_json())
-                            result_list.append(p_tag.as_vec())
+                            result_list.append(p_tag.to_vec())
                             index += 1
                     except Exception as exp:
                         print(str(exp) + " " + event.author().to_hex())
@@ -121,9 +123,9 @@ class SearchUser(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_users(result)
 
@@ -143,10 +145,9 @@ class SearchUser(DVMTaskInterface):
     async def sync_db(self):
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        database = NostrDatabase.lmdb(self.db_name)
+        database = await NostrLmdb.open(self.db_name)
         relaylimits = RelayLimits.disable()
-        opts = (ClientOptions().relay_limits(relaylimits))
-        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).opts(opts).build()
+        cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).relay_limits(relaylimits).build()
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(RelayUrl.parse(relay))
@@ -176,7 +177,7 @@ class SearchUser(DVMTaskInterface):
         print("Syncing Profile Database.. this might take a while..")
         try:
             dbopts = SyncOptions().direction(SyncDirection.DOWN)
-            await cli.sync(filter1, dbopts)
+            await cli.sync(filter1, opts=dbopts)
             print("Done Syncing Profile Database.")
         except Exception as exp:
             print(str(exp))

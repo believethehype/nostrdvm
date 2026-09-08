@@ -33,9 +33,9 @@ class TranslationGoogle(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "event" and input_type != "job" and input_type != "text":
                     return False
                 if input_type != "text" and len(input_value) > 4999:
@@ -47,26 +47,26 @@ class TranslationGoogle(DVMTaskInterface):
         text = ""
         translation_lang = "en"
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "event":
-                    evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    evt = await get_event_by_id(tag.to_vec()[1], client=client, config=dvm_config)
                     text = evt.content()
                 elif input_type == "text":
-                    text = tag.as_vec()[1]
+                    text = tag.to_vec()[1]
                 elif input_type == "job":
-                    evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
+                    evt = await get_referenced_event_by_id(event_id=tag.to_vec()[1], client=client,
                                                            kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                                                                   EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
                                                                   EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
                                                            dvm_config=dvm_config)
                     text = evt.content()
 
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "language":  # check for param type
-                    translation_lang = str(tag.as_vec()[2]).split('-')[0]
+                    translation_lang = str(tag.to_vec()[2]).split('-')[0]
 
         options = {
             "text": text,

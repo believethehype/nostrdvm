@@ -3,8 +3,12 @@ import json
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-                       nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, RelayOptions, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Event, EventBuilder, Filter, Keys, Kind, Nip44Version, RelayOptions, RelayUrl,
+    ReqTarget, SignerAuthenticator, Tag, Timestamp, nip04_decrypt, nip44_encrypt,
+)
+
+from nostr_dvm.utils.sdk_utils import handle_notifications
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -27,12 +31,12 @@ async def nostr_client_test_translation(input, kind, lang, sats, satsmax):
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_TRANSLATE_TEXT, str("Translate the given input.")).tags(
-                         [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
+                         [iTag, paramTag1, bidTag, relaysTag, alttag]).finalize(keys)
 
     relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -48,12 +52,12 @@ async def nostr_client_test_search_profile(input):
     iTag = Tag.parse(["i", input, "text"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_USER_SEARCH, str("Search for user")).tags(
-                         [iTag, alttag]).sign_with_keys(keys)
+                         [iTag, alttag]).finalize(keys)
 
     relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -70,11 +74,11 @@ async def nostr_client_test_mcp(command="list-tools"):
     cTag = Tag.parse(["c", command])
     alttag = Tag.parse(["alt", "This is a NIP90 Request to contact MCP server"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_MCP, str("MCP request")).tags(
-                         [outTag, alttag, cTag]).sign_with_keys(keys)
+                         [outTag, alttag, cTag]).finalize(keys)
 
     relay_list = ["wss://relay.nostr.oxtr.dev", "wss://relay.nostrdvm.com"]
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -95,9 +99,9 @@ async def nostr_client_test_image(prompt):
     relaysTag = Tag.parse(['relays', "wss://relay.primal.net", "wss://nostr.oxtr.dev"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate an Image from a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, str("Generate an Image.")).tags(
-                         [iTag, outTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
+                         [iTag, outTag, paramTag1, bidTag, relaysTag, alttag]).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in DVMConfig().RELAY_LIST:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -123,9 +127,9 @@ async def nostr_client_test_censor_filter(users):
         tags.append(iTag)
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me bad actors")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -148,9 +152,9 @@ async def nostr_client_test_inactive_filter(user):
     tags = [relaysTag, alttag, paramTag, paramTag2]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me inactive users")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -170,12 +174,12 @@ async def nostr_client_test_tts(prompt):
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTSt"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File.")).tags(
-                         [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
+                         [iTag, paramTag1, bidTag, relaysTag, alttag]).finalize(keys)
 
     relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org" "wss://dvms.f7z.io",
                   ]
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -199,9 +203,9 @@ async def nostr_client_test_discovery(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag, expiration_tag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
 
@@ -235,9 +239,9 @@ async def nostr_client_custom_discovery(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag]# paramTagSearch, paramTagMust, paramTagAvoid]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me content")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
 
@@ -261,9 +265,9 @@ async def nostr_client_generic_test(ptag):
     tags = [relaysTag, alttag, pTag]
 
     event = EventBuilder(Kind(5050), str("Give me content")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -287,9 +291,9 @@ async def nostr_client_duckduck_test(ptag, query):
     tags = [relaysTag, alttag, pTag, iTag]
 
     event = EventBuilder(Kind(5050), str("Give me content")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -311,9 +315,9 @@ async def nostr_client_flux_schnell(ptag, query):
     tags = [relaysTag, alttag, pTag, iTag]
 
     event = EventBuilder(Kind(5100), str("Give me image")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     ropts = RelayOptions().ping(False)
@@ -339,9 +343,9 @@ async def nostr_client_test_discovery_user(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_PEOPLE_DISCOVERY, str("Give me people")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -364,9 +368,9 @@ async def nostr_client_test_discovery_gallery(user, ptag):
     tags = [relaysTag, alttag, paramTag, pTag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_CONTENT_DISCOVERY, str("Give me visuals")).tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -389,9 +393,9 @@ async def dvm_ping(ptag):
     tags = [relaysTag, alttag, pTag]
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_PING, "ping").tags(
-                         tags).sign_with_keys(keys)
+                         tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -418,17 +422,17 @@ async def nostr_client_test_image_private(prompt, cashutoken):
     alt_tag = Tag.parse(["alt", "Super secret test"])
     cashu_tag = Tag.parse(["cashu", cashutoken])
 
-    encrypted_params_string = json.dumps([i_tag.as_vec(), outTag.as_vec(), paramTag1.as_vec(), bid_tag.as_vec(),
-                                          relays_tag.as_vec(), alt_tag.as_vec(), cashu_tag.as_vec()])
+    encrypted_params_string = json.dumps([i_tag.to_vec(), outTag.to_vec(), paramTag1.to_vec(), bid_tag.to_vec(),
+                                          relays_tag.to_vec(), alt_tag.to_vec(), cashu_tag.to_vec()])
 
     encrypted_params = nip44_encrypt(keys.secret_key(), receiver_keys.public_key(),
                                      encrypted_params_string, Nip44Version.V2)
 
     encrypted_tag = Tag.parse(['encrypted'])
     nip90request = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_IMAGE, encrypted_params).tags(
-                                [pTag, encrypted_tag]).sign_with_keys(keys)
+                                [pTag, encrypted_tag]).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
@@ -442,7 +446,7 @@ async def nostr_client():
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.SYNC_DB_RELAY_LIST:
@@ -462,7 +466,7 @@ async def nostr_client():
             kinds.append(Kind(kind))
     dvm_filter = Filter().pubkey(pk).kinds(kinds).since(Timestamp.now())
     #await client.subscribe(dm_zap_filter, None)
-    await client.subscribe(dvm_filter, None)
+    await client.subscribe(ReqTarget.auto([dvm_filter]), None)
 
     await dvm_ping("f0abaefb4ca4a30411d6e28fa1219330426a73f486dee090a5198103c45d6817")
 
@@ -519,7 +523,7 @@ async def nostr_client():
 
 
 
-    class NotificationHandler(HandleNotification):
+    class NotificationHandler:
         last_event_time = 0
         async def handle(self, relay_url, subscription_id, event: Event):
 
@@ -529,11 +533,11 @@ async def nostr_client():
                 print("[Nostr Client]: " + event.as_json())
                 amount_sats = 0
                 status = ""
-                for tag in event.tags().to_vec():
-                    if tag.as_vec()[0] == "amount":
-                        amount_sats = int(int(tag.as_vec()[1]) / 1000) # millisats
-                    if tag.as_vec()[0] == "status":
-                       status = tag.as_vec()[1]
+                for tag in event.tags():
+                    if tag.to_vec()[0] == "amount":
+                        amount_sats = int(int(tag.to_vec()[1]) / 1000) # millisats
+                    if tag.to_vec()[0] == "status":
+                       status = tag.to_vec()[1]
                        if status == "pong":
                            print(status)
 
@@ -567,7 +571,7 @@ async def nostr_client():
         async def handle_msg(self, relay_url, msg):
             return
 
-    asyncio.create_task(client.handle_notifications(NotificationHandler()))
+    asyncio.create_task(handle_notifications(client, NotificationHandler()))
     # await client.handle_notifications(NotificationHandler())
     while True:
         await asyncio.sleep(2)
