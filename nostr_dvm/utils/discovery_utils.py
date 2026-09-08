@@ -11,7 +11,7 @@ def engagement_kinds():
             EventDefinitions.KIND_REACTION, EventDefinitions.KIND_REPOST, EventDefinitions.KIND_ZAP]
 
 
-def discovery_sync_filters(since, authors=None, batch_size=200):
+def discovery_sync_filters(since, authors=None, batch_size=500):
     if batch_size < 1:
         raise ValueError("Author batch size must be positive")
     if authors is None:
