@@ -18,7 +18,7 @@ async def test():
     client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
     await test_referred_events(client, "c70fbd4dbaad22c427d4359981d3bdddd3971ed1a38227ca2f8e5e760f58103c",
@@ -54,7 +54,8 @@ async def test_referred_events(client, event_id, kinds=None):
         job_id_filter = Filter().event(EventId.parse(event_id))
 
     event_struct = await client.fetch_events(job_id_filter, relay_timeout)
-    events = event_struct.to_vec()
+    event_struct_vec = event_struct.to_vec()
+    events = event_struct_vec
 
     if len(events) > 0:
         for event in events:
@@ -72,7 +73,7 @@ async def test_gallery():
     client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     dvm_config = DVMConfig()
     dvm_config.NIP89 = NIP89Config()
@@ -130,7 +131,7 @@ async def test_search_by_user_since_days(client, pubkey, days, prompt):
 
     filterts = Filter().search(prompt).author(pubkey).kinds([Kind(1)]).since(since)
     event_struct = await client.fetch_events(filterts, relay_timeout)
-    events = event_struct.to_vec()
+    events = event_struct_vec
 
     if len(events) > 0:
         for event in events:

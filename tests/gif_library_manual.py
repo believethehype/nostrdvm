@@ -100,7 +100,7 @@ async def create_gif_collection(keys, title, dtag):
     client = Client(NostrSigner.keys(keys))
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().ANNOUNCE_RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     # We connect the client
     await client.connect()
 
@@ -121,7 +121,7 @@ async def delete_gif_collection(keys, eid: str, dtag: str):
     client = Client(NostrSigner.keys(keys))
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     # We connect the client
     await client.connect()
 

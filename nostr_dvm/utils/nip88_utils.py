@@ -38,10 +38,11 @@ async def fetch_nip88_parameters_for_deletion(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
     nip88events = await client.fetch_events(idfilter, relay_timeout)
     d_tag = ""
-    if len(nip88events.to_vec()) == 0:
+    nip88events_vec = nip88events.to_vec()
+    if len(nip88events_vec) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip88events.to_vec():
+    for event in nip88events_vec:
         print(event.as_json())
         for tag in event.tags().to_vec():
             if tag.as_vec()[0] == "d":
@@ -61,10 +62,10 @@ async def fetch_nip88_event(keys, eventid, client, dvmconfig):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
     nip88events = await client.fetch_events(idfilter, relay_timeout)
     d_tag = ""
-    if len(nip88events.to_vec()) == 0:
+    if len(nip88events_vec) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip88events.to_vec():
+    for event in nip88events_vec:
 
         for tag in event.tags().to_vec():
             if tag.as_vec()[0] == "d":
@@ -100,10 +101,11 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
         PublicKey.parse(receiver_public_key_hex)).custom_tags(SingleLetterTag.uppercase(Alphabet.P),
                                                              [user.to_hex()]).limit(1)
     evts = await client.fetch_events(subscriptionfilter, relay_timeout)
-    if len(evts.to_vec()) > 0:
-        print(evts.to_vec()[0].as_json())
+    evts_vec = evts.to_vec()
+    if len(evts_vec) > 0:
+        print(evts_vec[0].as_json())
         matchesdtag = False
-        for tag in evts.to_vec()[0].tags().to_vec():
+        for tag in evts_vec[0].tags().to_vec():
             if tag.as_vec()[0] == "valid":
                 subscription_status["validUntil"] = int(tag.as_vec()[2])
             elif tag.as_vec()[0] == "e":
@@ -121,8 +123,9 @@ async def nip88_has_active_subscription(user: PublicKey, tiereventdtag, client: 
                 user).pubkey(PublicKey.parse(receiver_public_key_hex)).event(
                 EventId.parse(subscription_status["subscriptionId"])).limit(1)
             cancel_events = await client.fetch_events(cancel_filter, relay_timeout)
-            if len(cancel_events.to_vec()) > 0:
-                if cancel_events.to_vec()[0].created_at().as_secs() > evts[0].created_at().as_secs():
+            cancel_events_vec = cancel_events.to_vec()
+            if len(cancel_events_vec) > 0:
+                if cancel_events_vec[0].created_at().as_secs() > evts[0].created_at().as_secs():
                     subscription_status["expires"] = True
 
     return subscription_status
@@ -139,12 +142,12 @@ async def nip88_announce_tier(dvm_config, client):
     # 5% go to NostrDVM developers
     # 5% go to NostrSDK developers
     # 10% optionally go to clients that support this subscription DVM
-    zaptag1 = Tag.parse(["zap", dvm_config.PUBLIC_KEY, "wss://damus.io", "16"])
+    zaptag1 = Tag.parse(["zap", dvm_config.PUBLIC_KEY, "wss://relay.primal.net", "16"])
     zaptag2 = Tag.parse(
-        ["zap", "npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8", "wss://damus.io", "1"])  # NostrDVM
+        ["zap", "npub1nxa4tywfz9nqp7z9zp7nr7d4nchhclsf58lcqt5y782rmf2hefjquaa6q8", "wss://relay.primal.net", "1"])  # NostrDVM
     zaptag3 = Tag.parse(
-        ["zap", "npub1drvpzev3syqt0kjrls50050uzf25gehpz9vgdw08hvex7e0vgfeq0eseet", "wss://damus.io", "1"])  # NostrSDK
-    zaptag4 = Tag.parse(["zap", "", "wss://damus.io", "2"])  # Client might use this for splits
+        ["zap", "npub1drvpzev3syqt0kjrls50050uzf25gehpz9vgdw08hvex7e0vgfeq0eseet", "wss://relay.primal.net", "1"])  # NostrSDK
+    zaptag4 = Tag.parse(["zap", "", "wss://relay.primal.net", "2"])  # Client might use this for splits
     p_tag = Tag.parse(["p", dvm_config.NIP88.PAYMENT_VERIFIER_PUBKEY])
 
     tags = [title_tag, image_tag, zaptag1, zaptag2, zaptag3, zaptag4, d_tag, p_tag]

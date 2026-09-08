@@ -4,7 +4,7 @@ from pathlib import Path
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, RelayOptions
+                       nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, RelayOptions, RelayUrl
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -23,19 +23,19 @@ async def nostr_client_test_translation(input, kind, lang, sats, satsmax):
     paramTag1 = Tag.parse(["param", "language", lang])
 
     bidTag = Tag.parse(['bid', str(sats * 1000), str(satsmax * 1000)])
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relaysTag = Tag.parse(['relays', "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to translate a given Input"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_TRANSLATE_TEXT, str("Translate the given input.")).tags(
                          [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
     client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -50,13 +50,13 @@ async def nostr_client_test_search_profile(input):
     event = EventBuilder(EventDefinitions.KIND_NIP90_USER_SEARCH, str("Search for user")).tags(
                          [iTag, alttag]).sign_with_keys(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
     client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -77,7 +77,7 @@ async def nostr_client_test_mcp(command="list-tools"):
     client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -99,7 +99,7 @@ async def nostr_client_test_image(prompt):
 
     client = Client(NostrSigner.keys(keys))
     for relay in DVMConfig().RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     #config.NIP89.PK = keys.secret_key().to_hex()
@@ -111,7 +111,7 @@ async def nostr_client_test_image(prompt):
 async def nostr_client_test_censor_filter(users):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   ]
 
     relaysTag = Tag.parse(relay_list)
@@ -127,7 +127,7 @@ async def nostr_client_test_censor_filter(users):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -137,7 +137,7 @@ async def nostr_client_test_censor_filter(users):
 async def nostr_client_test_inactive_filter(user):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz",
+    relay_list = ["wss://blastr.f7z.xyz",
                   ]
 
     relaysTag = Tag.parse(relay_list)
@@ -152,8 +152,7 @@ async def nostr_client_test_inactive_filter(user):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
-    await client.add_relay("wss://nostr.band")
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -167,18 +166,18 @@ async def nostr_client_test_tts(prompt):
     paramTag1 = Tag.parse(["param", "language", "en"])
 
     bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relaysTag = Tag.parse(['relays', "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTSt"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File.")).tags(
                          [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org" "wss://dvms.f7z.io",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org" "wss://dvms.f7z.io",
                   ]
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -204,7 +203,7 @@ async def nostr_client_test_discovery(user, ptag):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
 
     await client.connect()
     config = DVMConfig
@@ -240,7 +239,7 @@ async def nostr_client_custom_discovery(user, ptag):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
 
     await client.connect()
     config = DVMConfig
@@ -266,7 +265,7 @@ async def nostr_client_generic_test(ptag):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -292,7 +291,7 @@ async def nostr_client_duckduck_test(ptag, query):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -316,7 +315,7 @@ async def nostr_client_flux_schnell(ptag, query):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     ropts = RelayOptions().ping(False)
     await client.connect()
     config = DVMConfig
@@ -344,7 +343,7 @@ async def nostr_client_test_discovery_user(user, ptag):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -354,7 +353,7 @@ async def nostr_client_test_discovery_user(user, ptag):
 async def nostr_client_test_discovery_gallery(user, ptag):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
-    relay_list = ["wss://relay.damus.io", "wss://dvms.f7z.io",
+    relay_list = ["wss://dvms.f7z.io",
                   ]
 
     relaysTag = Tag.parse(relay_list)
@@ -369,7 +368,7 @@ async def nostr_client_test_discovery_gallery(user, ptag):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -380,7 +379,7 @@ async def nostr_client_test_discovery_gallery(user, ptag):
 async def dvm_ping(ptag):
     keys = Keys.parse(check_and_set_private_key("test_client5"))
 
-    relay_list = ["wss://relay.damus.io", "wss://dvms.f7z.io", "wss://nostr.oxtr.dev",
+    relay_list = ["wss://dvms.f7z.io", "wss://nostr.oxtr.dev",
                   ]
 
     relaysTag = Tag.parse(relay_list)
@@ -394,7 +393,7 @@ async def dvm_ping(ptag):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -406,7 +405,7 @@ async def nostr_client_test_image_private(prompt, cashutoken):
     keys = Keys.parse(check_and_set_private_key("test_client"))
     receiver_keys = Keys.parse(check_and_set_private_key("replicate_sdxl"))
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
     i_tag = Tag.parse(["i", prompt, "text"])
     outTag = Tag.parse(["output", "image/png;format=url"])
@@ -431,7 +430,7 @@ async def nostr_client_test_image_private(prompt, cashutoken):
 
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(nip90request, client=client, dvm_config=config)
@@ -447,9 +446,9 @@ async def nostr_client():
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.SYNC_DB_RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     for relay in dvmconfig.RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM,

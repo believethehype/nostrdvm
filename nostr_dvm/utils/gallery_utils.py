@@ -10,7 +10,7 @@ import os
 
 from PIL import Image
 import numpy
-from nostr_sdk import Keys, EventBuilder, Kind, Client, NostrSigner, Filter, EventId, Tag, PublicKey
+from nostr_sdk import Keys, EventBuilder, Kind, Client, NostrSigner, Filter, EventId, Tag, PublicKey, RelayUrl
 from blurhash import  encode
 import requests
 from urllib.parse import urlparse
@@ -38,7 +38,7 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
     
     client = Client(NostrSigner.keys(keys))
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
     nip93_filter = Filter().kind(Kind(1163)).author(PublicKey.parse(user_to_import_npub))
@@ -76,13 +76,14 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
                 if len(tag.as_vec()) == 3:
                     relay_hint = tag.as_vec()[2]
                     try:
-                        await client.connect_relay(relay_hint)
+                        await client.connect_relay(RelayUrl.parse(relay_hint))
                     except Exception as e:
                         print(relay_hint)
                 e_filter = Filter().id(EventId.parse(eventid)).limit(1)
                 content_events = await client.fetch_events(e_filter, timedelta(5))
-                if len(content_events.to_vec()) > 0:
-                    content_event = content_events.to_vec()[0]
+                content_events_vec = content_events.to_vec()
+                if len(content_events_vec) > 0:
+                    content_event = content_events_vec[0]
                     content =  re.sub(r'^https?:\/\/.*[\r\n]*', '', content_event.content(), flags=re.MULTILINE).rstrip()
 
         var = input("Convert and post this image? (y(es)/n(o)/d(elete): " + image_url + " Content: " + content + "\n")
@@ -152,11 +153,9 @@ if __name__ == '__main__':
     private_key = "nsec..."
 
     RELAY_LIST = ["wss://relay.primal.net",
-                  "wss://relay.damus.io",
                   "wss://relay.nostrplebs.com",
                   "wss://nostr.mom",
                   "wss://nostr.oxtr.dev",
-                  "wss://relay.nostr.band"
                   ]
     startindex = 0
     asyncio.run(convert_nip93_to_nip68(private_key, RELAY_LIST, startindex))

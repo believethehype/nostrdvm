@@ -1,6 +1,6 @@
 import asyncio
 
-from nostr_sdk import Tag, Keys, EventBuilder, Kind, NostrSigner, Client
+from nostr_sdk import Tag, Keys, EventBuilder, Kind, NostrSigner, Client, RelayUrl
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -26,7 +26,7 @@ async def create_reaction(keys, title, dtag):
     client = Client(NostrSigner.keys(keys))
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     # We connect the client
     await client.connect()
 
@@ -47,7 +47,7 @@ async def delete_reaction(keys, eid: str, dtag: str):
     client = Client(NostrSigner.keys(keys))
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     # We connect the client
     await client.connect()
 

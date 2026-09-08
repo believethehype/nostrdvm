@@ -2,7 +2,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayLimits, ClientBuilder
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayLimits, ClientBuilder, RelayUrl
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -70,15 +70,13 @@ class DiscoverReports(DVMTaskInterface):
         ns = SimpleNamespace()
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().relay_limits(relaylimits))
+            ClientOptions().relay_limits(relaylimits))
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
-        # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
-            await cli.add_relay(relay)
+            await cli.add_relay(RelayUrl.parse(relay))
         # add nostr band, too.
-        await cli.add_relay("wss://nostr.band")
 
         await cli.connect()
 
@@ -94,11 +92,12 @@ class DiscoverReports(DVMTaskInterface):
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
             followers = await cli.fetch_events(followers_filter, relay_timeout)
 
-            if len(followers.to_vec()) > 0:
+            followers_vec = followers.to_vec()
+            if len(followers_vec) > 0:
                 result_list = []
                 newest = 0
-                best_entry = followers.to_vec()[0]
-                for entry in followers.to_vec():
+                best_entry = followers_vec[0]
+                for entry in followers_vec:
                     print(len(best_entry.tags().to_vec()))
                     print(best_entry.created_at().as_secs())
                     if entry.created_at().as_secs() > newest:
@@ -119,12 +118,13 @@ class DiscoverReports(DVMTaskInterface):
         ns.dic = {}
         reasons = ["spam", "illegal", "impersonation"]
         # init
-        for report in reports.to_vec():
+        reports_vec = reports.to_vec()
+        for report in reports_vec:
             for tag in report.tags().to_vec():
                 if tag.as_vec()[0] == "p":
                     ns.dic[tag.as_vec()[1]] = 0
 
-        for report in reports.to_vec():
+        for report in reports_vec:
             # print(report.as_json())
             for tag in report.tags().to_vec():
                 if tag.as_vec()[0] == "p":

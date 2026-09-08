@@ -21,13 +21,13 @@ async def nostr_client_test_tts(prompt):
 
 
     bidTag = Tag.parse(['bid', str(1000 * 1000), str(1000 * 1000)])
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relaysTag = Tag.parse(['relays', "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTS"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_TEXT_TO_SPEECH, str("Generate an Audio File.")).tags(
                          [iTag, paramTag1, bidTag, relaysTag, alttag]).sign_with_keys(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
 

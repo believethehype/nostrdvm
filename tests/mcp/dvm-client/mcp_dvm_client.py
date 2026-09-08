@@ -4,7 +4,7 @@ from pathlib import Path
 
 import dotenv
 from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, init_logger, LogLevel
+    nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, init_logger, LogLevel, RelayUrl
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nip89_utils import nip89_fetch_all_dvms_by_kind
@@ -29,7 +29,7 @@ async def nostr_client_test_mcp_get_tools(dvm_pubkey):
     client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
 
     await client.connect()
 
@@ -58,7 +58,7 @@ async def nostr_client_test_mcp_execute_tool(tool_name, tool_parameters, dvm_pub
     client = Client(NostrSigner.keys(keys))
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
 
     await client.connect()
 
@@ -80,11 +80,9 @@ async def nostr_client():
 
     signer = NostrSigner.keys(keys)
     client = Client(signer)
-
-    await client.add_relay("wss://relay.damus.io")
-    await client.add_relay("wss://nostr.mom")
-    await client.add_relay("wss://nostr.oxtr.dev")
-    await client.add_relay("wss://relay.nostrdvm.com")
+    await client.add_relay(RelayUrl.parse("wss://nostr.mom"))
+    await client.add_relay(RelayUrl.parse("wss://nostr.oxtr.dev"))
+    await client.add_relay(RelayUrl.parse("wss://relay.nostrdvm.com"))
     await client.connect()
 
     now = Timestamp.now()

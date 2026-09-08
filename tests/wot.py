@@ -12,7 +12,7 @@ from nostr_dvm.utils.definitions import relay_timeout
 warnings.filterwarnings('ignore')
 
 from nostr_sdk import Keys, NostrSigner, Filter, PublicKey, Kind, \
-    SyncOptions, SyncDirection, ClientBuilder, NostrDatabase
+    SyncOptions, SyncDirection, ClientBuilder, NostrDatabase, RelayUrl
 
 
 # init_logger(LogLevel.INFO)
@@ -26,9 +26,8 @@ async def getmetadata(npub):
         return "", "", ""
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
     client = ClientBuilder().signer(NostrSigner.keys(keys)).build()
-    await client.add_relay("wss://relay.damus.io")
-    #await client.add_relay("wss://relay.primal.net")
-    await client.add_relay("wss://purplepag.es")
+    #await client.add_relay(RelayUrl.parse("wss://relay.primal.net"))
+    await client.add_relay(RelayUrl.parse("wss://purplepag.es"))
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
@@ -53,9 +52,7 @@ async def sync_db():
     keys = Keys.parse("nsec1zmzllu40a7mr7ztl78uwfwslnp0pn0pww868adl05x52d4la237s6m8qfj")
     database = NostrDatabase.lmdb("db/nostr_followlists.db")
     cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
-
-    await cli.add_relay("wss://relay.damus.io")  # TODO ADD MORE
-    # await cli.add_relay("wss://relay.primal.net")  # TODO ADD MORE
+    # await cli.add_relay(RelayUrl.parse("wss://relay.primal.net"))  # TODO ADD MORE
     await cli.connect()
 
     filter1 = Filter().kind(Kind(3))
@@ -84,8 +81,9 @@ async def analyse_users(user_ids=None):
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query(followers_filter)
         allfriends = []
-        if len(followers.to_vec()) > 0:
-            for follower in followers.to_vec():
+        followers_vec = followers.to_vec()
+        if len(followers_vec) > 0:
+            for follower in followers_vec:
                 frens = []
                 for tag in follower.tags().to_vec():
                     if tag.as_vec()[0] == "p":

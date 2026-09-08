@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from nostr_sdk import NostrSigner, Keys, Client, Alphabet, SingleLetterTag, Filter, \
-    PublicKey, init_logger, LogLevel, Tag
+    PublicKey, init_logger, LogLevel, Tag, RelayUrl
 
 from nostr_dvm.utils.definitions import relay_timeout_long
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -18,7 +18,7 @@ async def main():
     keys = Keys.parse(check_and_set_private_key("test_client"))
     cli = Client(NostrSigner.keys(keys))
 
-    await cli.add_relay(options["relay"])
+    await cli.add_relay(RelayUrl.parse(options["relay"]))
     await cli.connect()
 
     ltags = ["#e", "pub.ditto.trends"]

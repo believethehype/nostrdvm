@@ -9,7 +9,7 @@
 import asyncio
 from datetime import timedelta
 
-from nostr_sdk import Keys, Client, NostrSigner, Filter
+from nostr_sdk import Keys, Client, NostrSigner, Filter, RelayUrl
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig
@@ -22,16 +22,17 @@ async def delete_nip_89(private_key, relay_list, pow=True):
     dvm_config.RELAY_LIST = relay_list
     client = Client(NostrSigner.keys(keys))
     for relay in dvm_config.RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(keys.public_key())
     events = await client.fetch_events(filter, timedelta(seconds=5))
     
-    if len(events.to_vec()) == 0:
+    events_vec = events.to_vec()
+    if len(events_vec) == 0:
         print("Couldn't find note on relays. Seems they are gone.")
         return
     
-    for event in events.to_vec():
+    for event in events_vec:
         print(event)
         await fetch_nip89_parameters_for_deletion(keys, event.id().to_hex(), client, dvm_config, pow)
 
@@ -55,12 +56,10 @@ if __name__ == '__main__':
     # And finally set the relay list you want to send the deletion request to. Ideally, you use the same relays that you use
     # in your DVM's config. Maybe announcements also got propagated to other relays, so you might need to play around a bit until it's gone everywhere.
     RELAY_LIST = ["wss://relay.primal.net",
-                  "wss://relay.damus.io",
                   "wss://relay.nostrplebs.com",
                   "wss://promenade.fiatjaf.com",
                   "wss://nostr.mom",
                   "wss://nostr.oxtr.dev",
-                  "wss://relay.nostr.band"
                   ]
 
     # That's it. Once you entered the info, run the script and if your private key matches the ID and the event can be found it should be deleted.

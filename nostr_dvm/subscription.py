@@ -5,8 +5,8 @@ import os
 import signal
 from datetime import timedelta
 
-from nostr_sdk import (Keys, Client, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey, 
-                       Options, Tag, Event, nip44_encrypt, NostrSigner, EventId, uniffi_set_event_loop, make_private_msg, Nip44Version)
+from nostr_sdk import (RelayUrl, Keys, Client, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey, 
+                       ClientOptions, Tag, Event, nip44_encrypt, NostrSigner, EventId, uniffi_set_event_loop, make_private_msg, Nip44Version)
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -50,7 +50,7 @@ class Subscription:
 
 
         for relay in self.dvm_config.RELAY_LIST:
-            await self.client.add_relay(relay)
+            await self.client.add_relay(RelayUrl.parse(relay))
         await self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP]).since(Timestamp.now())
@@ -217,7 +217,7 @@ class Subscription:
             dvmconfig = DVMConfig()
             client = Client(self.keys)
             for relay in dvmconfig.RELAY_LIST:
-                await client.add_relay(relay)
+                await client.add_relay(RelayUrl.parse(relay))
             await client.connect()
             recipe = await client.send_event(event)
             recipe_id = recipe.id
@@ -251,9 +251,10 @@ class Subscription:
                     subscriptionfilter = Filter().kind(EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT).author(
                         PublicKey.parse(subscriber)).limit(1)
                     evts = await self.client.fetch_events(subscriptionfilter, relay_timeout)
-                    if len(evts.to_vec()) > 0:
-                        event7001id = evts.to_vec()[0].id().to_hex()
-                        print(evts.to_vec()[0].as_json())
+                    evts_vec = evts.to_vec()
+                    if len(evts_vec) > 0:
+                        event7001id = evts_vec[0].id().to_hex()
+                        print(evts_vec[0].as_json())
                         tier_dtag = ""
                         recipient = ""
                         cadence = ""
@@ -262,7 +263,7 @@ class Subscription:
                         tier = "DVM"
                         overall_amount = 0
                         subscription_event_id = ""
-                        for tag in evts.to_vec()[0].tags().to_vec():
+                        for tag in evts_vec[0].tags().to_vec():
                             if tag.as_vec()[0] == "amount":
                                 overall_amount = int(tag.as_vec()[1])
 
@@ -288,7 +289,7 @@ class Subscription:
                         if tier_dtag == "" or len(zaps) == 0:
                             tierfilter = Filter().id(EventId.parse(subscription_event_id))
                             evts = await self.client.fetch_events(tierfilter, relay_timeout)
-                            if len(evts.to_vec()) > 0:
+                            if len(evts_vec) > 0:
                                 for tag in evts[0].tags().to_vec():
                                     if tag.as_vec()[0] == "d":
                                         tier_dtag = tag.as_vec()[0]

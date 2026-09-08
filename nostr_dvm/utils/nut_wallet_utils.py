@@ -5,7 +5,7 @@ from collections import namedtuple
 from datetime import timedelta
 
 import requests
-from nostr_sdk import Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
+from nostr_sdk import RelayUrl, Tag, Keys, nip44_encrypt, nip44_decrypt, Nip44Version, EventBuilder, Client, Filter, Kind, \
     EventId, nip04_decrypt, nip04_encrypt, PublicKey, Metadata, NostrSigner
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
@@ -54,7 +54,7 @@ class NutZapWallet:
 
         client = Client(NostrSigner.keys(keys))
         for relay in relay_list:
-            await client.add_relay(relay)
+            await client.add_relay(RelayUrl.parse(relay))
         await client.connect()
         return client
 
@@ -118,13 +118,14 @@ class NutZapWallet:
         # relay_timeout = EventSource.relays(timedelta(seconds=10))
         wallets = await client.fetch_events(wallet_filter, timedelta(seconds=10))
 
-        if len(wallets.to_vec()) > 0:
+        wallets_vec = wallets.to_vec()
+        if len(wallets_vec) > 0:
 
             nut_wallet = NutWallet()
 
             latest = 0
             best_wallet = None
-            for wallet_event in wallets.to_vec():
+            for wallet_event in wallets_vec:
 
                 isdeleted = False
                 for tag in wallet_event.tags().to_vec():
@@ -194,12 +195,13 @@ class NutZapWallet:
 
             latest_proof_sec = 0
             latest_proof_event_id = EventId
-            for proof_event in proof_events.to_vec():
+            proof_events_vec = proof_events.to_vec()
+            for proof_event in proof_events_vec:
                 if proof_event.created_at().as_secs() > latest_proof_sec:
                     latest_proof_sec = proof_event.created_at().as_secs()
                     latest_proof_event_id = proof_event.id()
 
-            for proof_event in proof_events.to_vec():
+            for proof_event in proof_events_vec:
                 try:
                     content = nip44_decrypt(keys.secret_key(), keys.public_key(), proof_event.content())
                 except:
@@ -448,8 +450,9 @@ class NutZapWallet:
         relays = []
         pubkey = ""
 
-        if len(preferences.to_vec()) > 0:
-            preference = preferences.to_vec()[0]
+        preferences_vec = preferences.to_vec()
+        if len(preferences_vec) > 0:
+            preference = preferences_vec[0]
 
             for tag in preference.tags().to_vec():
                 if tag.as_vec()[0] == "pubkey":

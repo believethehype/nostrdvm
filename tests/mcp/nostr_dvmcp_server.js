@@ -49,8 +49,7 @@ const config = {
         [   "wss://relay.nostrdvm.com",
             "wss://nostr.mom",
             "wss://nostr.oxtr.dev",
-            "wss://relay.damus.io",
-        ];
+            ];
 
 // replace private key with a unique one (it doesn't matter as much, we just do the requests)
 // both hex and nsec are supported
