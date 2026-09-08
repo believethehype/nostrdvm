@@ -44,7 +44,12 @@ if use_logger:
 
 
 
-SYNC_DB_RELAY_LIST = [ "wss://relay.nostr.net", "wss://relay.nostr.bg", "wss://nostr.oxtr.dev"]
+SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
+                      "wss://purplerelay.com",
+                      "wss://nostr.bitcoiner.social",
+                      "wss://nostr.oxtr.dev",
+                      "wss://relay.nostr.net",
+                      "wss://relay.damus.io"]
 RELAY_LIST = ["wss://relay.primal.net",
               "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
@@ -513,7 +518,12 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.SCHEDULE_UPDATES_SECONDS = update_rate  # Every 10 minutes
     dvm_config.UPDATE_DATABASE = update_db
     dvm_config.RELAY_LIST = RELAY_LIST
-    dvm_config.SYNC_DB_RELAY_LIST = ["wss://nfrelay.app/?user=activitypub"]
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
+                      "wss://purplerelay.com",
+                      "wss://nostr.bitcoiner.social",
+                      "wss://nostr.oxtr.dev",
+                      "wss://relay.nostr.net",
+                      "wss://relay.damus.io"]
 
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
