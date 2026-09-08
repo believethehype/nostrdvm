@@ -33,7 +33,7 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
-rebroadcast_NIP89 = False  # Announce NIP89 on startup Only do this if you know what you're doing.
+rebroadcast_NIP89 = True  # Announce NIP89 on startup Only do this if you know what you're doing.
 rebroadcast_NIP65_Relay_List = True
 update_profile = False
 delete_announcement_on_shutdown = False
@@ -1208,8 +1208,36 @@ def playground():
                                             database=DATABASE)
 
     framework.add(discovery_tweets)
-    
-    
+
+    # Nostr Vlogs
+    options = {
+        "search_list": ["vlog", "vlogging", "#vlog"],
+        "avoid_list": ["porn", "nsfw"],
+        "must_list": ["http"],
+        "any_of_list": [".mp4", ".mov"],
+        "db_name": "db/nostr_recent_notes.db",
+        "db_since": 24 * 60 * 60,  # 48h since gmt,
+        "personalized": False,
+        "logger": False}
+
+    image = "https://cdn.nostrcheck.me/99bb5591c9116600f845107d31f9b59e2f7c7e09a1ff802e84f1d43da557ca64/665e36b0e9d71f7856f15ebdad4786a731df1f9c7e65fc05e22d232f97318a24.webp"
+    description = "I show vlogs"
+
+    custom_processing_msg = ["Looking for #vlogs"]
+    cost = 0
+    update_db = False  # we use the DB scheduler above for a shared database. Or don't use it and let the DVM manage it
+    discovery_vlogs = build_example_topic("Nostr Vlogs",
+                                          "discovery_content_vlogs",
+                                          admin_config, options,
+                                          image=image,
+                                          description=description,
+                                          update_rate=global_update_rate,
+                                          cost=cost,
+                                          processing_msg=custom_processing_msg,
+                                          update_db=update_db,
+                                          database=DATABASE)
+
+    framework.add(discovery_vlogs)
 
     # Popular Global
     admin_config_global_popular = AdminConfig()
@@ -1306,7 +1334,7 @@ def playground():
     sub_admin_config = AdminConfig()
     # sub_admin_config.USERNPUBS = ["7782f93c5762538e1f7ccc5af83cd8018a528b9cd965048386ca1b75335f24c6"] #Add npubs of services that can contact the subscription handler
 
-    x = threading.Thread(target=Subscription, args=(Subscription(subscription_config, sub_admin_config),))
+    x = threading.Thread(target=Subscription, args=(subscription_config, sub_admin_config))
     x.start()
     # make sure the last thing joins, either here by calling x.join() or in a call a dvm with .run(True)
     x.join()
