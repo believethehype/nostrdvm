@@ -3,6 +3,7 @@ import os
 from nostr_sdk import Keys, LogLevel
 
 from nostr_dvm.utils import outbox_utils
+from nostr_dvm.utils.env_utils import load_env
 from nostr_dvm.utils.nip88_utils import NIP88Config
 from nostr_dvm.utils.nip89_utils import NIP89Config
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -89,6 +90,7 @@ class DVMConfig:
 
 
 def build_default_config(identifier):
+    load_env()
     dvm_config = DVMConfig()
     dvm_config.PRIVATE_KEY = check_and_set_private_key(identifier)
     dvm_config.IDENTIFIER = identifier

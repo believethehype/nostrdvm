@@ -5,8 +5,13 @@ import os
 import signal
 from datetime import timedelta
 
-from nostr_sdk import (RelayUrl, Keys, Client, Timestamp, Filter, nip04_decrypt, nip44_decrypt, HandleNotification, EventBuilder, PublicKey, 
-                       ClientOptions, Tag, Event, nip44_encrypt, NostrSigner, EventId, uniffi_set_event_loop, make_private_msg, Nip44Version)
+from nostr_sdk import (
+    ClientBuilder, Event, EventBuilder, EventId, Filter, Keys, Nip44Version, PublicKey, RelayUrl,
+    ReqTarget, SignerAuthenticator, Tag, Timestamp, nip04_decrypt, nip17_make_private_msg_async,
+    nip44_decrypt, nip44_encrypt,
+)
+
+from nostr_dvm.utils.sdk_utils import ensure_sdk_callback_loop, format_timestamp, handle_notifications
 
 from nostr_dvm.utils.database_utils import fetch_user_metadata
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
@@ -28,9 +33,9 @@ class Subscription:
     # This is a simple list just to keep track which events we created and manage, so we don't pay for other requests
     def __init__(self, dvm_config, admin_config=None):
         asyncio.run(self.run_subscription(dvm_config, admin_config))
-        uniffi_set_event_loop(asyncio.get_running_loop())
 
     async def run_subscription(self, dvm_config, admin_config):
+        ensure_sdk_callback_loop()
 
         self.NAME = "Subscription Handler"
         dvm_config.DB = "db/" + "subscriptions" + ".db"
@@ -40,7 +45,7 @@ class Subscription:
         self.dvm_config.NIP89 = nip89config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        self.client = Client(NostrSigner.keys(self.keys))
+        self.client = ClientBuilder().authenticator(SignerAuthenticator(self.keys)).build()
 
         pk = self.keys.public_key()
 
@@ -70,13 +75,13 @@ class Subscription:
                 [EventDefinitions.KIND_NIP90_DVM_SUBSCRIPTION]).since(
                 Timestamp.now())
 
-        await self.client.subscribe(zap_filter, None)
-        await self.client.subscribe(dvm_filter, None)
-        await self.client.subscribe(cancel_subscription_filter, None)
+        await self.client.subscribe(ReqTarget.auto([zap_filter]), None)
+        await self.client.subscribe(ReqTarget.auto([dvm_filter]), None)
+        await self.client.subscribe(ReqTarget.auto([cancel_subscription_filter]), None)
 
         create_subscription_sql_table(dvm_config.DB)
 
-        class NotificationHandler(HandleNotification):
+        class NotificationHandler:
             client = self.client
             dvm_config = self.dvm_config
             keys = self.keys
@@ -98,11 +103,11 @@ class Subscription:
             if sender == self.keys.public_key().to_hex():
                 return
 
-            for tag in nostr_event.tags().to_vec():
-                if tag.as_vec()[0] == "p":
-                    recipient = tag.as_vec()[1]
-                elif tag.as_vec()[0] == "e":
-                    kind7001eventid = tag.as_vec()[1]
+            for tag in nostr_event.tags():
+                if tag.to_vec()[0] == "p":
+                    recipient = tag.to_vec()[1]
+                elif tag.to_vec()[0] == "e":
+                    kind7001eventid = tag.to_vec()[1]
 
             if kind7001eventid != "":
                 subscription = get_from_subscription_sql_table(dvm_config.DB, kind7001eventid)
@@ -146,7 +151,7 @@ class Subscription:
 
             str_tags = []
             for element in reply_tags:
-                str_tags.append(element.as_vec())
+                str_tags.append(element.to_vec())
 
             content = json.dumps(str_tags)
             content = nip44_encrypt(self.keys.secret_key(), PublicKey.parse(original_event.author().to_hex()),
@@ -154,7 +159,7 @@ class Subscription:
             reply_tags = encryption_tags
 
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
-            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).sign_with_keys(keys)
+            reaction_event = EventBuilder(EventDefinitions.KIND_FEEDBACK, str(content)).tags(reply_tags).finalize(keys)
             await send_event(reaction_event, client=self.client, dvm_config=self.dvm_config)
             print("[" + self.dvm_config.NIP89.NAME + "]" + ": Sent Kind " + str(
                 EventDefinitions.KIND_FEEDBACK.as_u16()) + " Reaction: " + "success" + " " + reaction_event.as_json())
@@ -212,10 +217,10 @@ class Subscription:
             tags = [pTag, PTag, eTag, validTag, tierTag, alttag]
 
             event = EventBuilder(EventDefinitions.KIND_NIP88_PAYMENT_RECIPE,
-                                 message).tags(tags).sign_with_keys(self.keys)
+                                 message).tags(tags).finalize(self.keys)
 
             dvmconfig = DVMConfig()
-            client = Client(self.keys)
+            client = ClientBuilder().authenticator(SignerAuthenticator(self.keys)).build()
             for relay in dvmconfig.RELAY_LIST:
                 await client.add_relay(RelayUrl.parse(relay))
             await client.connect()
@@ -250,8 +255,8 @@ class Subscription:
 
                     subscriptionfilter = Filter().kind(EventDefinitions.KIND_NIP88_SUBSCRIBE_EVENT).author(
                         PublicKey.parse(subscriber)).limit(1)
-                    evts = await self.client.fetch_events(subscriptionfilter, relay_timeout)
-                    evts_vec = evts.to_vec()
+                    evts = await self.client.fetch_events(ReqTarget.auto([subscriptionfilter]), relay_timeout)
+                    evts_vec = evts
                     if len(evts_vec) > 0:
                         event7001id = evts_vec[0].id().to_hex()
                         print(evts_vec[0].as_json())
@@ -263,36 +268,36 @@ class Subscription:
                         tier = "DVM"
                         overall_amount = 0
                         subscription_event_id = ""
-                        for tag in evts_vec[0].tags().to_vec():
-                            if tag.as_vec()[0] == "amount":
-                                overall_amount = int(tag.as_vec()[1])
+                        for tag in evts_vec[0].tags():
+                            if tag.to_vec()[0] == "amount":
+                                overall_amount = int(tag.to_vec()[1])
 
-                                unit = tag.as_vec()[2]
-                                cadence = tag.as_vec()[3]
+                                unit = tag.to_vec()[2]
+                                cadence = tag.to_vec()[3]
                                 print(str(overall_amount) + " " + unit + " " + cadence)
-                            elif tag.as_vec()[0] == "p":
-                                recipient = tag.as_vec()[1]
-                            elif tag.as_vec()[0] == "e":
-                                subscription_event_id = tag.as_vec()[1]
-                            elif tag.as_vec()[0] == "event":
-                                jsonevent = json.loads(tag.as_vec()[1])
+                            elif tag.to_vec()[0] == "p":
+                                recipient = tag.to_vec()[1]
+                            elif tag.to_vec()[0] == "e":
+                                subscription_event_id = tag.to_vec()[1]
+                            elif tag.to_vec()[0] == "event":
+                                jsonevent = json.loads(tag.to_vec()[1])
                                 subscription_event = Event.from_json(jsonevent)
 
-                                for tag in subscription_event.tags().to_vec():
-                                    if tag.as_vec()[0] == "d":
-                                        tier_dtag = tag.as_vec()[1]
-                                    elif tag.as_vec()[0] == "zap":
-                                        zaps.append(tag.as_vec())
-                                    elif tag.as_vec()[0] == "title":
-                                        tier = tag.as_vec()[1]
+                                for tag in subscription_event.tags():
+                                    if tag.to_vec()[0] == "d":
+                                        tier_dtag = tag.to_vec()[1]
+                                    elif tag.to_vec()[0] == "zap":
+                                        zaps.append(tag.to_vec())
+                                    elif tag.to_vec()[0] == "title":
+                                        tier = tag.to_vec()[1]
 
                         if tier_dtag == "" or len(zaps) == 0:
                             tierfilter = Filter().id(EventId.parse(subscription_event_id))
-                            evts = await self.client.fetch_events(tierfilter, relay_timeout)
+                            evts = await self.client.fetch_events(ReqTarget.auto([tierfilter]), relay_timeout)
                             if len(evts_vec) > 0:
-                                for tag in evts[0].tags().to_vec():
-                                    if tag.as_vec()[0] == "d":
-                                        tier_dtag = tag.as_vec()[0]
+                                for tag in evts[0].tags():
+                                    if tag.to_vec()[0] == "d":
+                                        tier_dtag = tag.to_vec()[0]
 
                         isactivesubscription = False
                         recipe = ""
@@ -354,10 +359,10 @@ class Subscription:
                             await send_status_success(nostr_event, "noogle.lol")
 
                             message = ("Subscribed to DVM " + tier + ". Renewing on: " + str(
-                                Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
+                                format_timestamp(Timestamp.from_secs(end)).replace("Z", " ").replace("T",
                                                                                                        " ") + " GMT"))
 
-                            event = await make_private_msg(NostrSigner.keys(self.keys), PublicKey.parse(subscriber), message)
+                            event = await nip17_make_private_msg_async(self.keys, PublicKey.parse(subscriber), message)
                             await self.client.send_event(event)
 
 
@@ -414,10 +419,10 @@ class Subscription:
             keys = Keys.parse(dvm_config.PRIVATE_KEY)
             message = (
                     "Renewed Subscription to DVM " + subscription.tier + ". Next renewal: " + str(
-                Timestamp.from_secs(end).to_human_datetime().replace("Z", " ").replace("T",
+                format_timestamp(Timestamp.from_secs(end)).replace("Z", " ").replace("T",
                                                                                        " ")))
             # await self.client.send_direct_msg(PublicKey.parse(subscription.subscriber), message, None)
-            event = await make_private_msg(NostrSigner.keys(self.keys), PublicKey.parse(subscription.subscriber), message)
+            event = await nip17_make_private_msg_async(self.keys, PublicKey.parse(subscription.subscriber), message)
             await self.client.send_event(event)
 
         async def check_subscriptions():
@@ -459,7 +464,7 @@ class Subscription:
             except Exception as e:
                 print(e)
 
-        asyncio.create_task(self.client.handle_notifications(NotificationHandler()))
+        asyncio.create_task(handle_notifications(self.client, NotificationHandler()))
 
         try:
             while True:

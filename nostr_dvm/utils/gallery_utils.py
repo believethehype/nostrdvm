@@ -10,7 +10,10 @@ import os
 
 from PIL import Image
 import numpy
-from nostr_sdk import Keys, EventBuilder, Kind, Client, NostrSigner, Filter, EventId, Tag, PublicKey, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, EventBuilder, EventId, Filter, Keys, Kind, PublicKey, RelayUrl, ReqTarget,
+    SignerAuthenticator, Tag,
+)
 from blurhash import  encode
 import requests
 from urllib.parse import urlparse
@@ -23,7 +26,7 @@ from nostr_dvm.utils.print_utils import bcolors
 async def gallery_announce_list(tags, dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = ""
-    event = EventBuilder(Kind(10011), content).tags(tags).sign_with_keys(keys)
+    event = EventBuilder(Kind(10011), content).tags(tags).finalize(keys)
     eventid = await send_event(event, client=client, dvm_config=dvm_config)
 
     print(
@@ -36,16 +39,16 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
     if user_to_import_npub is None:
         user_to_import_npub = keys.public_key().to_hex()
     
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
     nip93_filter = Filter().kind(Kind(1163)).author(PublicKey.parse(user_to_import_npub))
 
-    events =  await client.fetch_events(nip93_filter, timedelta(5))
+    events =  await client.fetch_events(ReqTarget.auto([nip93_filter]), timedelta(5))
 
-    events_vec = events.to_vec()
+    events_vec = events
     reversed_events_vec = reversed(events_vec)
     counter = -1
     for event in reversed_events_vec:
@@ -60,35 +63,35 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
         dim = ""
         blurhash = ""
         size = ""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == "url":
-                image_url = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "m":
-                m = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "x":
-                x = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "dim":
-                dim = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "blurhash":
-                blurhash = tag.as_vec()[1]
-            elif tag.as_vec()[0] == "e":
-                eventid = tag.as_vec()[1]
-                if len(tag.as_vec()) == 3:
-                    relay_hint = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == "url":
+                image_url = tag.to_vec()[1]
+            elif tag.to_vec()[0] == "m":
+                m = tag.to_vec()[1]
+            elif tag.to_vec()[0] == "x":
+                x = tag.to_vec()[1]
+            elif tag.to_vec()[0] == "dim":
+                dim = tag.to_vec()[1]
+            elif tag.to_vec()[0] == "blurhash":
+                blurhash = tag.to_vec()[1]
+            elif tag.to_vec()[0] == "e":
+                eventid = tag.to_vec()[1]
+                if len(tag.to_vec()) == 3:
+                    relay_hint = tag.to_vec()[2]
                     try:
                         await client.connect_relay(RelayUrl.parse(relay_hint))
                     except Exception as e:
                         print(relay_hint)
                 e_filter = Filter().id(EventId.parse(eventid)).limit(1)
-                content_events = await client.fetch_events(e_filter, timedelta(5))
-                content_events_vec = content_events.to_vec()
+                content_events = await client.fetch_events(ReqTarget.auto([e_filter]), timedelta(5))
+                content_events_vec = content_events
                 if len(content_events_vec) > 0:
                     content_event = content_events_vec[0]
                     content =  re.sub(r'^https?:\/\/.*[\r\n]*', '', content_event.content(), flags=re.MULTILINE).rstrip()
 
         var = input("Convert and post this image? (y(es)/n(o)/d(elete): " + image_url + " Content: " + content + "\n")
         if var == "d" or var == "delete":
-            delete_event = EventBuilder.delete([event.id()]).sign_with_keys(keys)
+            delete_event = EventBuilder(Kind(5), "").tags([Tag.event(event.id())]).finalize(keys)
             response_status = await client.send_event(delete_event)
             print_send_result(response_status)
 
@@ -141,7 +144,7 @@ async def convert_nip93_to_nip68(private_key, relay_list, user_to_import_npub=No
             alt_tag = Tag.parse(["alt", "List of pictures"])
             m_tag = Tag.parse(["m", m])
             tags = [alt_tag, imeta_tag, x_tag, m_tag]
-            nip68event = EventBuilder(Kind(20), content).tags(tags).sign_with_keys(keys)
+            nip68event = EventBuilder(Kind(20), content).tags(tags).finalize(keys)
             print(nip68event)
 
             await client.send_event(nip68event)

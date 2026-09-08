@@ -1,18 +1,20 @@
+import asyncio
 import json
 import json
 import os
 from datetime import timedelta
-from itertools import islice
 
-from nostr_sdk import RelayUrl, Timestamp, PublicKey, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind, \
-    RelayLimits
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, PublicKey, RelayLimits, RelayUrl, SecretKey,
+    SignerAuthenticator, SyncDirection, SyncOptions, Timestamp, init_logger,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.discovery_utils import discovery_sync_filters, sync_discovery_database
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
@@ -77,9 +79,9 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -92,13 +94,13 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
         # default values
         max_results = 200
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "max_results": max_results,
@@ -112,9 +114,9 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 
@@ -132,21 +134,19 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
+        cli = None
         try:
             relaylimits = RelayLimits.disable()
-            opts = (ClientOptions().relay_limits(relaylimits))
             sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             if self.database is None:
-                self.database = await init_db(self.db_name, True, self.max_db_size)
-                #self.database = NostrDatabase.lmdb(self.db_name)
+                self.database = await init_db(self.db_name, print_filesize=False)
+                #self.database = await NostrLmdb.open(self.db_name)
 
-            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(self.database).opts(opts).build()
+            cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(self.database).relay_limits(relaylimits).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(RelayUrl.parse(relay))
-
-            await cli.connect()
 
             if self.dvm_config.WOT_FILTERING and self.wot_counter == 0:
                 print("Calculating WOT for " + str(self.dvm_config.WOT_BASED_ON_NPUBS))
@@ -154,12 +154,10 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                                                        depth=self.dvm_config.WOT_DEPTH, max_batch=500,
                                                        max_time_request=10, dvm_config=self.dvm_config)
 
-                self.wot_pubkeys = []
-                for item in islice(G, len(G)):
-                    key = next((pubkey for pubkey, id in index_map.items() if id == item),
-                               None)
-                    if key:
-                        self.wot_pubkeys.append(PublicKey.parse(key))
+                def collect_pubkeys():
+                    return [PublicKey.parse(pubkey) for pubkey, node_id in index_map.items() if node_id in G]
+
+                self.wot_pubkeys = await asyncio.to_thread(collect_pubkeys)
             self.wot_counter += 1
             if self.wot_counter >= 10:
                 self.wot_counter = 0
@@ -167,26 +165,37 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds(
-                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                 definitions.EventDefinitions.KIND_ZAP]).since(since)
-            if self.dvm_config.WOT_FILTERING and hasattr(self, 'wot_pubkeys') and self.wot_pubkeys:
-                filter1 = filter1.authors(self.wot_pubkeys)
+            authors = getattr(self, "wot_pubkeys", []) if self.dvm_config.WOT_FILTERING else None
+            filters = discovery_sync_filters(since, authors)
+            print(f"[{self.dvm_config.IDENTIFIER}] Syncing {len(authors) if authors is not None else 'all'} "
+                  f"authors in {len(filters)} batch(es)")
+            await cli.connect(timedelta(seconds=15))
 
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            dbopts = SyncOptions().direction(SyncDirection.DOWN)
-            await cli.sync(filter1, dbopts)
-            await cli.database().delete(Filter().until(Timestamp.from_secs(
+            failed_batches = 0
+            unsupported_relays = set()
+            for batch_index, event_filter in enumerate(filters, start=1):
+                label = f"{self.dvm_config.IDENTIFIER} batch {batch_index}/{len(filters)}"
+                try:
+                    await sync_discovery_database(cli, event_filter, label, unsupported_relays)
+                except Exception as error:
+                    failed_batches += 1
+                    print(f"[{label}] {error}")
+            if failed_batches:
+                raise RuntimeError(f"{failed_batches} database sync batches failed; skipping pruning")
+            await cli.database().delete_events(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-            await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
                     "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(
                         self.db_since) + " seconds..")
         except Exception as e:
-            print(e)
+            print(f"[{self.dvm_config.IDENTIFIER}] Database update failed: {e}")
+        finally:
+            if cli is not None:
+                await cli.shutdown()
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

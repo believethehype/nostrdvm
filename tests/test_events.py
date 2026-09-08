@@ -2,8 +2,10 @@ import asyncio
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, Filter, Timestamp, \
-    EventId, PublicKey, NostrSigner, Nip19Event, Kind
+from nostr_sdk import (
+    ClientBuilder, EventId, Filter, Keys, Kind, Nip19Event, PublicKey, ReqTarget,
+    SignerAuthenticator, Tag, Timestamp,
+)
 
 from nostr_dvm.utils import definitions, dvmconfig
 from nostr_dvm.utils.definitions import relay_timeout
@@ -15,7 +17,7 @@ from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 async def test():
     relay_list = dvmconfig.DVMConfig.RELAY_LIST
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -53,9 +55,9 @@ async def test_referred_events(client, event_id, kinds=None):
     else:
         job_id_filter = Filter().event(EventId.parse(event_id))
 
-    event_struct = await client.fetch_events(job_id_filter, relay_timeout)
-    event_struct_vec = event_struct.to_vec()
-    events = event_struct_vec
+    event_struct = await client.fetch_events(ReqTarget.auto([job_id_filter]), relay_timeout)
+
+    events = event_struct
 
     if len(events) > 0:
         for event in events:
@@ -70,7 +72,7 @@ async def test_gallery():
     relay_list = dvmconfig.DVMConfig.RELAY_LIST
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -110,7 +112,7 @@ async def test_gallery():
     # await gallery_announce_list(tags, dvm_config, client)
 
     #evt =  EventBuilder.delete([EventId.parse("721ac7c7d9309b6d3e6728a7274f5a1f10096b4ab17068233bcfa05cb233e84a")],
-    #                          reason="deleted").sign_with_keys(keys)
+    #                          reason="deleted").finalize(keys)
     #await client.send_event(evt)
 
     #key1 = Keys.parse("3e99f38a8e8c59ff3683cdc0942e26471c1aae9b225eb34dd410cb9d6dde93a6")
@@ -130,8 +132,8 @@ async def test_search_by_user_since_days(client, pubkey, days, prompt):
     since = Timestamp.from_secs(dif)
 
     filterts = Filter().search(prompt).author(pubkey).kinds([Kind(1)]).since(since)
-    event_struct = await client.fetch_events(filterts, relay_timeout)
-    events = event_struct_vec
+    event_struct = await client.fetch_events(ReqTarget.auto([filterts]), relay_timeout)
+    events = event_struct
 
     if len(events) > 0:
         for event in events:
@@ -151,4 +153,3 @@ if __name__ == '__main__':
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
     asyncio.run(test_gallery())
-

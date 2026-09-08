@@ -9,7 +9,7 @@ from tests.mcp.dvm.mcpbridge import MCPBridge
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.dvmconfig import build_default_config
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag
-from nostr_sdk import  Tag
+from nostr_sdk import Tag
 
 
 async def get_tools(config_path, server_names):

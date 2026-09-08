@@ -31,9 +31,9 @@ class TextGenerationLLMLite(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
 
@@ -51,11 +51,11 @@ class TextGenerationLLMLite(DVMTaskInterface):
         else:
             server = "http://localhost:11434"  # default ollama server. This will only be used for ollama models.
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    prompt = tag.as_vec()[1]
+                    prompt = tag.to_vec()[1]
 
         options = {
             "prompt": prompt,

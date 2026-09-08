@@ -5,8 +5,12 @@ from pathlib import Path
 from threading import Thread
 
 import dotenv
-from nostr_sdk import Keys, Client, NostrSigner, Tag, EventBuilder, Filter, HandleNotification, Timestamp, \
-    nip04_decrypt, Event
+from nostr_sdk import (
+    ClientBuilder, Event, EventBuilder, Filter, Keys, RelayUrl, ReqTarget, SignerAuthenticator, Tag,
+    Timestamp, nip04_decrypt,
+)
+
+from nostr_dvm.utils.sdk_utils import handle_notifications
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -21,15 +25,15 @@ async def nostr_client_test_llm(prompt):
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTSt"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_TEXT, str("Generate an Audio File.")).tags(
-                         [iTag, relaysTag, alttag]).sign_with_keys(keys)
+                         [iTag, relaysTag, alttag]).finalize(keys)
 
     relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     config = DVMConfig
     await send_event(event, client=client, dvm_config=config)
@@ -40,10 +44,10 @@ async def nostr_client():
     sk = keys.secret_key()
     pk = keys.public_key()
     print(f"Nostr Test Client public key: {pk.to_bech32()}, Hex: {pk.to_hex()} ")
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM,
@@ -51,8 +55,8 @@ async def nostr_client():
         Timestamp.now())  # events to us specific
     dvm_filter = (Filter().kinds([EventDefinitions.KIND_NIP90_RESULT_GENERATE_TEXT,
                                   EventDefinitions.KIND_FEEDBACK]).since(Timestamp.now()))  # public events
-    await client.subscribe(dm_zap_filter)
-    await client.subscribe(dvm_filter)
+    await client.subscribe(ReqTarget.auto([dm_zap_filter]))
+    await client.subscribe(ReqTarget.auto([dvm_filter]))
 
 
     await nostr_client_test_llm("Tell me a joke about a purple Ostrich!")
@@ -60,7 +64,7 @@ async def nostr_client():
 
 
     #nostr_client_test_image_private("a beautiful ostrich watching the sunset")
-    class NotificationHandler(HandleNotification):
+    class NotificationHandler:
         async def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
             if event.kind() == 7000:
@@ -80,7 +84,7 @@ async def nostr_client():
         async def handle_msg(self, relay_url, msg):
             return
 
-    asyncio.create_task(client.handle_notifications(NotificationHandler()))
+    asyncio.create_task(handle_notifications(client, NotificationHandler()))
     while True:
         await asyncio.sleep(5.0)
 
@@ -95,4 +99,3 @@ if __name__ == '__main__':
         raise FileNotFoundError(f'.env file not found at {env_path} ')
 
     asyncio.run(nostr_client())
-

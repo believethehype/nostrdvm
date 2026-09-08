@@ -13,24 +13,24 @@ from nostr_dvm.utils.nostr_utils import get_event_by_id, get_referenced_event_by
 async def get_task(event, client, dvm_config):
     try:
         if event.kind() == EventDefinitions.KIND_NIP90_GENERIC:  # use this for events that have no id yet, inclufr j tag
-            for tag in event.tags().to_vec():
-                if tag.as_vec()[0] == 'j':
-                    return tag.as_vec()[1]
+            for tag in event.tags():
+                if tag.to_vec()[0] == 'j':
+                    return tag.to_vec()[1]
             else:
                 return "unknown job: " + event.as_json()
         elif event.kind() == EventDefinitions.KIND_DM:  # dm
-            for tag in event.tags().to_vec():
-                if tag.as_vec()[0] == 'j':
-                    return tag.as_vec()[1]
+            for tag in event.tags():
+                if tag.to_vec()[0] == 'j':
+                    return tag.to_vec()[1]
             else:
                 return "unknown job: " + event.as_json()
 
         # This looks a bit more complicated, but we do several tasks for text-extraction in the future
         elif event.kind() == EventDefinitions.KIND_NIP90_EXTRACT_TEXT:
-            for tag in event.tags().to_vec():
-                if tag.as_vec()[0] == "i":
-                    if tag.as_vec()[2] == "url":
-                        file_type = check_url_is_readable(tag.as_vec()[1])
+            for tag in event.tags():
+                if tag.to_vec()[0] == "i":
+                    if tag.to_vec()[2] == "url":
+                        file_type = check_url_is_readable(tag.to_vec()[1])
                         print(file_type)
                         if file_type == "pdf":
                             return "pdf-to-text"
@@ -40,13 +40,13 @@ async def get_task(event, client, dvm_config):
                             return "image-to-text"
                         else:
                             return "unknown job"
-                    elif tag.as_vec()[2] == "event":
-                        evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    elif tag.to_vec()[2] == "event":
+                        evt = await get_event_by_id(tag.to_vec()[1], client=client, config=dvm_config)
                         if evt is not None:
                             if evt.kind() == 1063:
-                                for tg in evt.tags().to_vec():
-                                    if tg.as_vec()[0] == 'url':
-                                        file_type = check_url_is_readable(tg.as_vec()[1])
+                                for tg in evt.tags():
+                                    if tg.to_vec()[0] == 'url':
+                                        file_type = check_url_is_readable(tg.to_vec()[1])
                                         if file_type == "pdf":
                                             return "pdf-to-text"
                                         elif file_type == "audio" or file_type == "video":
@@ -60,15 +60,15 @@ async def get_task(event, client, dvm_config):
         elif event.kind() == EventDefinitions.KIND_NIP90_GENERATE_IMAGE:
             has_image_tag = False
             has_text_tag = False
-            for tag in event.tags().to_vec():
-                if tag.as_vec()[0] == "i":
-                    if tag.as_vec()[2] == "url":
-                        file_type = check_url_is_readable(tag.as_vec()[1])
+            for tag in event.tags():
+                if tag.to_vec()[0] == "i":
+                    if tag.to_vec()[2] == "url":
+                        file_type = check_url_is_readable(tag.to_vec()[1])
                         if file_type == "image":
                             has_image_tag = True
                             print("found image tag")
-                    elif tag.as_vec()[2] == "job":
-                        evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], kinds=
+                    elif tag.to_vec()[2] == "job":
+                        evt = await get_referenced_event_by_id(event_id=tag.to_vec()[1], kinds=
                         [EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                          EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT,
                          EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT],
@@ -78,7 +78,7 @@ async def get_task(event, client, dvm_config):
                             file_type = check_url_is_readable(evt.content())
                             if file_type == "image":
                                 has_image_tag = True
-                    elif tag.as_vec()[2] == "text":
+                    elif tag.to_vec()[2] == "text":
                         has_text_tag = True
 
             if has_image_tag:
@@ -104,13 +104,13 @@ def is_input_supported_generic(tags, client, dvm_config) -> bool:
     # Handle malformed tags, missing events etc here.
     try:
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                if len(tag.as_vec()) < 3:
+            if tag.to_vec()[0] == 'i':
+                if len(tag.to_vec()) < 3:
                     print("Job Event missing/malformed i tag, skipping..")
                     return False
                 else:
-                    input_value = tag.as_vec()[1]
-                    input_type = tag.as_vec()[2]
+                    input_value = tag.to_vec()[1]
+                    input_type = tag.to_vec()[2]
                     # if input_type == "event":
                     #    evt = get_event_by_id(input_value, client=client, config=dvm_config)
                     #    if evt is None:
@@ -130,7 +130,7 @@ async def check_task_is_supported(event: Event, client, config=None):
     try:
         dvm_config = config
         # Check for generic issues, event maformed, referenced event not found etc..
-        if not is_input_supported_generic(event.tags().to_vec(), client, dvm_config):
+        if not is_input_supported_generic(event.tags(), client, dvm_config):
             return False, ""
 
         # See if current dvm supports the task
@@ -140,7 +140,7 @@ async def check_task_is_supported(event: Event, client, config=None):
         # See if current dvm can handle input for given task
         for dvm in dvm_config.SUPPORTED_DVMS:
             if dvm.TASK == task:
-                if not await dvm.is_input_supported(event.tags().to_vec(), client, config):
+                if not await dvm.is_input_supported(event.tags(), client, config):
                     return False, task
         return True, task
 
@@ -191,4 +191,3 @@ def get_amount_per_task(task, dvm_config, duration=1):
         print("[" + dvm_config.SUPPORTED_DVMS[
             0].NAME + "] Task " + task + " is currently not supported by this instance, skipping")
         return None
-

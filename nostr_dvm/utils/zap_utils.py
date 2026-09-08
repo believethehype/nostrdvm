@@ -1,5 +1,6 @@
 # LIGHTNING/ZAP FUNCTIONS
 import json
+import base64
 import os
 import random
 import string
@@ -10,13 +11,14 @@ from pathlib import Path
 import bech32
 import dotenv
 import requests
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
 from bech32 import bech32_decode, convertbits, bech32_encode
-from nostr_sdk import PublicKey, SecretKey, Event, EventBuilder, Tag, Keys, generate_shared_key, Kind, \
-    Timestamp
+from nostr_sdk import (
+    Event, EventBuilder, Keys, Kind, PublicKey, SecretKey, Tag, Timestamp, nip04_decrypt,
+    nip04_encrypt,
+)
 
 from nostr_dvm.utils.nostr_utils import get_event_by_id, check_and_decrypt_own_tags, update_profile_lnaddress
+from nostr_dvm.utils.env_utils import load_env, set_env_key
 
 
 # tor connection to lnbits
@@ -34,24 +36,24 @@ async def parse_zap_event_tags(zap_event, keys, name, client, config):
     anon = False
     message = ""
     sender = zap_event.author()
-    for tag in zap_event.tags().to_vec():
-        if tag.as_vec()[0] == 'bolt11':
-            invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
-        elif tag.as_vec()[0] == 'e':
-            zapped_event = await get_event_by_id(tag.as_vec()[1], client=client, config=config)
+    for tag in zap_event.tags():
+        if tag.to_vec()[0] == 'bolt11':
+            invoice_amount = parse_amount_from_bolt11_invoice(tag.to_vec()[1])
+        elif tag.to_vec()[0] == 'e':
+            zapped_event = await get_event_by_id(tag.to_vec()[1], client=client, config=config)
             if zapped_event is not None:
                 zapped_event = check_and_decrypt_own_tags(zapped_event, config)
-        elif tag.as_vec()[0] == 'p':
-            p_tag = tag.as_vec()[1]
-        elif tag.as_vec()[0] == 'description':
-            zap_request_event = Event.from_json(tag.as_vec()[1])
+        elif tag.to_vec()[0] == 'p':
+            p_tag = tag.to_vec()[1]
+        elif tag.to_vec()[0] == 'description':
+            zap_request_event = Event.from_json(tag.to_vec()[1])
             sender = check_for_zapplepay(zap_request_event.author().to_hex(),
                                          zap_request_event.content())
-            for z_tag in zap_request_event.tags().to_vec():
-                if z_tag.as_vec()[0] == 'anon':
-                    if len(z_tag.as_vec()) > 1:
+            for z_tag in zap_request_event.tags():
+                if z_tag.to_vec()[0] == 'anon':
+                    if len(z_tag.to_vec()) > 1:
                         # print("[" + name + "] Private Zap received.")
-                        decrypted_content = decrypt_private_zap_message(z_tag.as_vec()[1],
+                        decrypted_content = decrypt_private_zap_message(z_tag.to_vec()[1],
                                                                         keys.secret_key(),
                                                                         zap_request_event.author())
                         decrypted_private_event = Event.from_json(decrypted_content)
@@ -102,7 +104,7 @@ def create_bolt11_ln_bits(sats: int, config) -> (str, str):
     data = {'out': False, 'amount': sats, 'memo': "Nostr-DVM " + config.NIP89.NAME}
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
-        res = requests.post(url, json=data, headers=headers)
+        res = requests.post(url, json=data, headers=headers, timeout=(5, 30))
         obj = json.loads(res.text)
         if obj.get("payment_request") and obj.get("payment_hash"):
             return obj["payment_request"], obj["payment_hash"]  #
@@ -124,10 +126,10 @@ def create_bolt11_lud16(lud16, amount):
         return None
     try:
         print(url)
-        response = requests.get(url)
+        response = requests.get(url, timeout=(5, 30))
         ob = json.loads(response.content)
         callback = ob["callback"]
-        response = requests.get(callback + "?amount=" + str(int(amount) * 1000))
+        response = requests.get(callback + "?amount=" + str(int(amount) * 1000), timeout=(5, 30))
         ob = json.loads(response.content)
         return ob["pr"]
     except Exception as e:
@@ -168,9 +170,8 @@ def create_lnbits_user(name, privkey):
     url = os.getenv("LNBITS_HOST") + '/users/api/v1/user?usr=' + usr
     print(url)
     headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
-    r = requests.post(url, data=json_object, headers=headers, proxies=proxies)
+    r = requests.post(url, data=json_object, headers=headers, proxies=proxies, timeout=(5, 30))
     walletjson = json.loads(r.text)
-    print(walletjson)
 
 
 def create_lnbits_wallet(name):
@@ -184,16 +185,13 @@ def create_lnbits_wallet(name):
         url = os.getenv("LNBITS_HOST") + '/api/v1/wallet'
         print(url)
         headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
-        r = requests.post(url, json=data, headers=headers, proxies=proxies)
-        print(r.text)
+        r = requests.post(url, json=data, headers=headers, proxies=proxies, timeout=(5, 30))
         walletjson = json.loads(r.text)
-        print(walletjson)
 
         return walletjson['inkey'],  walletjson['adminkey'], walletjson['id'], "success"
 
-    except Exception as e:
-        print(e)
-        print("error creating wallet")
+    except Exception:
+        print("LNbits wallet creation failed")
         return "", "", "", "failed"
 
 
@@ -211,9 +209,8 @@ def create_lnbits_account(name):
         url = os.getenv("LNBITS_HOST") + '/usermanager/api/v1/users'
         print(url)
         headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
-        r = requests.post(url, data=json_object, headers=headers, proxies=proxies)
+        r = requests.post(url, data=json_object, headers=headers, proxies=proxies, timeout=(5, 30))
         walletjson = json.loads(r.text)
-        print(walletjson)
         if walletjson.get("wallets"):
             return walletjson['wallets'][0]['inkey'], walletjson['wallets'][0]['adminkey'], walletjson['wallets'][0][
                 'id'], walletjson['id'], "success"
@@ -226,7 +223,7 @@ def check_bolt11_ln_bits_is_paid(payment_hash: str, config):
     url = config.LNBITS_URL + "/api/v1/payments/" + payment_hash
     headers = {'X-API-Key': config.LNBITS_INVOICE_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
-        res = requests.get(url, headers=headers, proxies=proxies)
+        res = requests.get(url, headers=headers, proxies=proxies, timeout=(5, 30))
         obj = json.loads(res.text)
         if obj.get("paid"):
             return obj["paid"]
@@ -241,7 +238,7 @@ def pay_bolt11_ln_bits(bolt11: str, config):
     data = {'out': True, 'bolt11': bolt11}
     headers = {'X-API-Key': config.LNBITS_ADMIN_KEY, 'Content-Type': 'application/json', 'charset': 'UTF-8'}
     try:
-        res = requests.post(url, json=data, headers=headers)
+        res = requests.post(url, json=data, headers=headers, timeout=(5, 30))
         obj = json.loads(res.text)
         if obj.get("payment_hash"):
             return obj["payment_hash"]
@@ -268,25 +265,15 @@ def check_for_zapplepay(pubkey_hex: str, content: str):
 
 
 def enrypt_private_zap_message(message, privatekey, publickey):
-    # Generate a random IV
-    shared_secret = generate_shared_key(privatekey, publickey)
-    iv = os.urandom(16)
-
-    # Encrypt the message
-    cipher = AES.new(bytearray(shared_secret), AES.MODE_CBC, bytearray(iv))
-    utf8message = message.encode('utf-8')
-    padded_message = pad(utf8message, AES.block_size)
-    encrypted_msg = cipher.encrypt(padded_message)
-
+    encrypted, encoded_iv = nip04_encrypt(privatekey, publickey, message).split("?iv=", 1)
+    encrypted_msg = base64.b64decode(encrypted)
+    iv = base64.b64decode(encoded_iv)
     encrypted_msg_bech32 = bech32_encode("pzap", convertbits(encrypted_msg, 8, 5, True))
     iv_bech32 = bech32_encode("iv", convertbits(iv, 8, 5, True))
     return encrypted_msg_bech32 + "_" + iv_bech32
 
 
 def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey):
-    shared_secret = generate_shared_key(privkey, pubkey)
-    if len(shared_secret) != 16 and len(shared_secret) != 32:
-        return "invalid shared secret size"
     parts = msg.split("_")
     if len(parts) != 2:
         return "invalid message format"
@@ -298,11 +285,9 @@ def decrypt_private_zap_message(msg: str, privkey: SecretKey, pubkey: PublicKey)
     except Exception as e:
         return e
     try:
-        cipher = AES.new(bytearray(shared_secret), AES.MODE_CBC, bytearray(iv_bytes))
-        decrypted_bytes = cipher.decrypt(bytearray(encrypted_bytes))
-        plaintext = decrypted_bytes.decode("utf-8")
-        decoded = plaintext.rsplit("}", 1)[0] + "}"  # weird symbols at the end
-        return decoded
+        encrypted = base64.b64encode(bytes(encrypted_bytes)).decode("ascii")
+        encoded_iv = base64.b64encode(bytes(iv_bytes)).decode("ascii")
+        return nip04_decrypt(privkey, pubkey, encrypted + "?iv=" + encoded_iv)
     except Exception as ex:
         return str(ex)
 
@@ -334,7 +319,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
     else:  # No lud16 set or format invalid
         return None
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=(5, 30))
         ob = json.loads(response.content)
         callback = ob["callback"]
         print(ob["callback"])
@@ -367,7 +352,7 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             tags = [p_tag]
             if zapped_event is not None:
                 tags.append(e_tag)
-            zap_request = EventBuilder(Kind(9733), content).tags(tags).sign_with_keys(keys).as_json()
+            zap_request = EventBuilder(Kind(9733), content).tags(tags).finalize(keys).as_json()
             keys = Keys.parse(encryption_key)
             if zapped_event is not None:
                 encrypted_content = enrypt_private_zap_message(zap_request, keys.secret_key(), zapped_event.author())
@@ -378,9 +363,9 @@ def zaprequest(lud16: str, amount: int, content, zapped_event, zapped_user, keys
             tags.append(anon_tag)
             content = ""
 
-        zap_request = EventBuilder(Kind(9734), content).tags(tags).sign_with_keys(keys).as_json()
+        zap_request = EventBuilder(Kind(9734), content).tags(tags).finalize(keys).as_json()
 
-        response = requests.get(callback + "?amount=" + str(int(amount) * 1000) + "&nostr=" + urllib.parse.quote_plus(
+        response = requests.get(callback + "?amount=" + str(int(amount) * 1000, timeout=(5, 30)) + "&nostr=" + urllib.parse.quote_plus(
             zap_request) + "&lnurl=" + encoded_lnurl)
         ob = json.loads(response.content)
         return ob["pr"]
@@ -400,7 +385,7 @@ def get_price_per_sat(currency):
 
         header = {'accept': 'application/json', 'X-API-KEY': os.getenv("COINSTATSOPENAPI_KEY")}
         try:
-            response = requests.get(url, headers=header, params=params)
+            response = requests.get(url, headers=header, params=params, timeout=(5, 30))
             response_json = response.json()
 
             bitcoin_price = response_json["price"]
@@ -433,7 +418,7 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain, newname=" 
     }
     try:
         url = "https://" + nostdressdomain + "/api/easy/"
-        res = requests.post(url, data=data)
+        res = requests.post(url, data=data, timeout=(5, 30))
         print(res.text)
         obj = json.loads(res.text)
 
@@ -445,7 +430,7 @@ def make_ln_address_nostdress(identifier, npub, pin, nostdressdomain, newname=" 
         data["name"] = data["name"] + "_" + randomword(10)
         try:
             url = "https://" + nostdressdomain + "/api/easy/"
-            res = requests.post(url, data=data)
+            res = requests.post(url, data=data, timeout=(5, 30))
             print(res.text)
             obj = json.loads(res.text)
 
@@ -470,7 +455,7 @@ def make_ln_address_nostdress_manual_lnbits(new_name, invoice_key, npub, nostdre
     }
     try:
         url = "https://" + nostdress_domain + "/api/easy/"
-        res = requests.post(url, data=data)
+        res = requests.post(url, data=data, timeout=(5, 30))
         print(res.text)
         obj = json.loads(res.text)
 
@@ -482,7 +467,7 @@ def make_ln_address_nostdress_manual_lnbits(new_name, invoice_key, npub, nostdre
         data["name"] = data["name"] + "_" + randomword(10)
         try:
             url = "https://" + nostdress_domain + "/api/easy/"
-            res = requests.post(url, data=data)
+            res = requests.post(url, data=data, timeout=(5, 30))
             print(res.text)
             obj = json.loads(res.text)
 
@@ -495,11 +480,12 @@ def make_ln_address_nostdress_manual_lnbits(new_name, invoice_key, npub, nostdre
 
 
 def check_and_set_ln_bits_keys(identifier, npub):
+    load_env()
     if not os.getenv("LNBITS_INVOICE_KEY_" + identifier.upper()):
         #invoicekey, adminkey, walletid, walletid, success = create_lnbits_account(identifier)
         invoicekey, adminkey, walletid, success = create_lnbits_wallet(identifier)
-
-
+        if success == "failed":
+            return "", "", "", os.getenv("LNADDRESS_" + identifier.upper(), "")
         add_key_to_env_file("LNBITS_INVOICE_KEY_" + identifier.upper(), invoicekey)
         add_key_to_env_file("LNBITS_ADMIN_KEY_" + identifier.upper(), adminkey)
         add_key_to_env_file("LNBITS_WALLET_ID_" + identifier.upper(), walletid)
@@ -535,7 +521,4 @@ async def change_ln_address(identifier, new_identifier, dvm_config, updateprofil
 
 
 def add_key_to_env_file(value, oskey):
-    env_path = Path('.env')
-    if env_path.is_file():
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-        dotenv.set_key(env_path, value, oskey)
+    set_env_key(value, oskey)

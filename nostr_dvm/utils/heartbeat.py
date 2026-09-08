@@ -1,7 +1,7 @@
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import send_event
 from nostr_dvm.utils.print_utils import bcolors
-from nostr_sdk import Tag, Keys, EventBuilder, Timestamp
+from nostr_sdk import EventBuilder, Keys, Tag, Timestamp
 
 
 async def beat(dvm_config, client, frequency=300):
@@ -13,7 +13,7 @@ async def beat(dvm_config, client, frequency=300):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = "Alive and kicking"
 
-    event = EventBuilder(EventDefinitions.KIND_HEARTBEAT, content).tags(tags).sign_with_keys(keys)
+    event = EventBuilder(EventDefinitions.KIND_HEARTBEAT, content).tags(tags).finalize(keys)
 
     response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
 

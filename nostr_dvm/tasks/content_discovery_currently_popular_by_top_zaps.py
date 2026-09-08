@@ -1,10 +1,13 @@
 import json
 from datetime import timedelta
 
-from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, NostrLmdb, RelayUrl, SecretKey,
+    SignerAuthenticator, SyncDirection, SyncOptions, Tag, Timestamp, init_logger,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
+from nostr_dvm.utils.discovery_utils import sync_discovery_database, engagement_kinds
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions
@@ -64,9 +67,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -79,13 +82,13 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         # default values
         max_results = 200
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "max_results": max_results,
@@ -107,14 +110,14 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
-        database = NostrDatabase.lmdb(self.db_name)
+        database = await NostrLmdb.open(self.db_name)
 
         timestamp_hour_ago = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_hour_ago)
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
         events = await database.query(filter1)
-        events_vec = events.to_vec()
+        events_vec = events
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
 
@@ -125,7 +128,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                 zaps = await database.query(filt)
                 invoice_amount = 0
                 event_author = event.author().to_hex()
-                zaps_vec = zaps.to_vec()
+                zaps_vec = zaps
                 if len(zaps_vec) >= self.min_reactions:
                     has_preimage = False
                     has_amount = False
@@ -134,32 +137,32 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                         if event_author == zap.author().to_hex():
                             continue  # Skip self zaps..
                         invoice_amount = 0
-                        for tag in zap.tags().to_vec():
+                        for tag in zap.tags():
 
-                            if tag.as_vec()[0] == 'bolt11':
-                                # print(tag.as_vec()[1])
-                                invoice_amount = parse_amount_from_bolt11_invoice(tag.as_vec()[1])
+                            if tag.to_vec()[0] == 'bolt11':
+                                # print(tag.to_vec()[1])
+                                invoice_amount = parse_amount_from_bolt11_invoice(tag.to_vec()[1])
 
                                 has_amount = True
                                 if has_preimage:
                                     break
                                 # print(invoice_amount)
-                            if tag.as_vec()[0] == 'preimage':
-                                if len(tag.as_vec()) > 1:
-                                    if tag.as_vec()[1] == "":
+                            if tag.to_vec()[0] == 'preimage':
+                                if len(tag.to_vec()) > 1:
+                                    if tag.to_vec()[1] == "":
                                         continue
-                                    elif tag.as_vec()[1] != "":
+                                    elif tag.to_vec()[1] != "":
 
                                         has_preimage = True  # TODO further check preimage
                                         if has_amount:
                                             overall_amount += invoice_amount
                                             break
-                            # elif tag.as_vec()[0] == 'description':
+                            # elif tag.to_vec()[0] == 'description':
                             #    try:
-                            #        event = Event.from_json(tag.as_vec()[1])
-                            #        for tag in event.tags().to_vec():
-                            #            if tag.as_vec()[0] == "amount":
-                            #                invoice_amount = tag.as_vec()[1]
+                            #        event = Event.from_json(tag.to_vec()[1])
+                            #        for tag in event.tags():
+                            #            if tag.to_vec()[0] == "amount":
+                            #                invoice_amount = tag.to_vec()[1]
                             #                overall_amount += invoice_amount
 
                             #               has_amount = True
@@ -178,7 +181,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
         for entry in finallist_sorted:
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["e", entry[0]])
-            result_list.append(e_tag.as_vec())
+            result_list.append(e_tag.to_vec())
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
                 len(result_list)) + " fitting events.")
@@ -189,9 +192,9 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 
@@ -214,39 +217,39 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
+        cli = None
         try:
             sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
-            database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+            database = await NostrLmdb.open(self.db_name)
+            cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(RelayUrl.parse(relay))
 
-            await cli.connect()
+            await cli.connect(timedelta(seconds=15))
 
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
-            filter1 = Filter().kinds(
-                [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+            filter1 = Filter().kinds(engagement_kinds()).since(since)  # Notes, reactions, zaps
 
             # filter = Filter().author(keys.public_key())
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            dbopts = SyncOptions().direction(SyncDirection.DOWN)
-            await cli.sync(filter1, dbopts)
-            await cli.database().delete(Filter().until(Timestamp.from_secs(
+            await sync_discovery_database(cli, filter1, self.dvm_config.NIP89.NAME)
+            await cli.database().delete_events(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-            await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
                     "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
                         self.db_since) + " seconds..")
         except Exception as e:
             print(e)
+        finally:
+            if cli is not None:
+                await cli.shutdown()
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

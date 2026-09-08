@@ -25,6 +25,7 @@ from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpd
 from nostr_dvm.tasks.discovery_trending_notes_nostrband import TrendingNotesNostrBand
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.database_utils import init_db
+from nostr_dvm.utils.env_utils import get_env_path, load_env
 from nostr_dvm.utils.dvmconfig import build_default_config, DVMConfig
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import create_amount_tag, NIP89Config, check_and_set_d_tag
@@ -681,7 +682,7 @@ def playground():
     main_db = "db/nostr_recent_notes.db"
     main_db_limit = 1024 # in mb
 
-    DATABASE = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
+    DATABASE = asyncio.run(init_db(main_db, wipe=False, limit=main_db_limit, print_filesize=True))
     # DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler = AdminConfig()
     options_db = {
@@ -1312,14 +1313,14 @@ def playground():
 
 
 if __name__ == '__main__':
-    env_path = Path('.env')
+    env_path = get_env_path()
     if not env_path.is_file():
-        with open('.env', 'w') as f:
+        with env_path.open('w') as f:
             print("Writing new .env file")
             f.write('')
     if env_path.is_file():
         print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
+        load_env()
     else:
         raise FileNotFoundError(f'.env file not found at {env_path} ')
     playground()

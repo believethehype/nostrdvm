@@ -1,8 +1,10 @@
 import asyncio
 import json
 
-from nostr_sdk import NostrSigner, Keys, Client, Alphabet, SingleLetterTag, Filter, \
-    PublicKey, init_logger, LogLevel, Tag, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, LogLevel, PublicKey, RelayUrl, ReqTarget, SignerAuthenticator,
+    SingleLetterTag, Tag, init_logger,
+)
 
 from nostr_dvm.utils.definitions import relay_timeout_long
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
@@ -16,18 +18,18 @@ async def main():
     }
 
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    cli = Client(NostrSigner.keys(keys))
+    cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     await cli.add_relay(RelayUrl.parse(options["relay"]))
     await cli.connect()
 
     ltags = ["#e", "pub.ditto.trends"]
-    itags = [str(SingleLetterTag.lowercase(Alphabet.E))]
+    itags = [str(SingleLetterTag.from_byte(ord('e')))]
     authors = [PublicKey.parse("db0e60d10b9555a39050c258d460c5c461f6d18f467aa9f62de1a728b8a891a4")]
-    notes_filter = Filter().authors(authors).custom_tags(SingleLetterTag.lowercase(Alphabet.L), ltags)
+    notes_filter = Filter().authors(authors).custom_tags(SingleLetterTag.from_byte(ord('l')), ltags)
 
-    events_struct = await cli.fetch_events(notes_filter, relay_timeout_long)
-    events = events_struct.to_vec()
+    events_struct = await cli.fetch_events(ReqTarget.auto([notes_filter]), relay_timeout_long)
+    events = events_struct
 
 
     result_list = []
@@ -35,12 +37,12 @@ async def main():
         event = events[0]
         print(event)
         result_list = []
-        for tag in event.tags().to_vec():
-            print(tag.as_vec())
-            if tag.as_vec()[0] == "e":
+        for tag in event.tags():
+            print(tag.to_vec())
+            if tag.to_vec()[0] == "e":
 
-                e_tag = Tag.parse(["e", tag.as_vec()[1], tag.as_vec()[2]])
-                result_list.append(e_tag.as_vec())
+                e_tag = Tag.parse(["e", tag.to_vec()[1], tag.to_vec()[2]])
+                result_list.append(e_tag.to_vec())
 
     else:
         print("Nothing found")

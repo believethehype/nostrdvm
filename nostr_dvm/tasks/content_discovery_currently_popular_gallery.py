@@ -3,14 +3,19 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, EventId, Kind, \
-    RelayLimits, SingleLetterTag, Alphabet
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, NostrLmdb, RelayLimits, RelayUrl, ReqTarget,
+    SecretKey, SignerAuthenticator, SingleLetterTag, SyncDirection, SyncOptions, Tag, Timestamp,
+    init_logger,
+)
+
+from nostr_dvm.utils.sdk_utils import merge_events
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
 from nostr_dvm.utils.admin_utils import AdminConfig
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
+from nostr_dvm.utils.discovery_utils import sync_discovery_database, query_engagement
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
@@ -65,9 +70,9 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -81,13 +86,13 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         search = ""
         max_results = 200
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "max_results": max_results,
@@ -109,7 +114,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         ns = SimpleNamespace()
 
         options = self.set_options(request_form)
-        databasegallery = NostrDatabase.lmdb(self.db_name)
+        databasegallery = await NostrLmdb.open(self.db_name)
 
         timestamp_since = Timestamp.now().as_secs() - self.db_since
         since = Timestamp.from_secs(timestamp_since)
@@ -117,107 +122,100 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NIP68_IMAGEEVENT).since(since)
 
         ge_events = await databasegallery.query(filter1)
+        ge_events_vec = ge_events
         
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            ge_events_vec = ge_events.to_vec()
+            ge_events_vec = ge_events
             print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events_vec)) + " Events")
         ns.finallist = {}
 
         ids = []
         relays = []
         if len(ge_events_vec) == 0:
-            return []
+            return "[]"
 
         for ge_event in ge_events_vec:
             ids.append(ge_event.id())
               
 
         relaylimits = RelayLimits.disable()
-        opts = (ClientOptions().relay_limits(relaylimits))
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
 
-        cli = ClientBuilder().database(databasegallery).signer(NostrSigner.keys(keys)).opts(opts).build()
-        for relay in relays:
-            await cli.add_relay(RelayUrl.parse(relay))
-
-        for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            if relay not in relays:
+        cli = ClientBuilder().database(databasegallery).authenticator(SignerAuthenticator(keys)).relay_limits(relaylimits).build()
+        try:
+            for relay in relays:
                 await cli.add_relay(RelayUrl.parse(relay))
 
-        await cli.connect()
+            for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
+                if relay not in relays:
+                    await cli.add_relay(RelayUrl.parse(relay))
 
-        filtreactions = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
-                                        definitions.EventDefinitions.KIND_REACTION,
-                                        definitions.EventDefinitions.KIND_DELETION,
-                                        definitions.EventDefinitions.KIND_NOTE]).events(ids).since(since)
+            await cli.connect(timedelta(seconds=15))
 
-        ids_str = []
-        for id in ids:
-            ids_str.append(id.to_hex())
+            filtreactions = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
+                                            definitions.EventDefinitions.KIND_REACTION,
+                                            definitions.EventDefinitions.KIND_DELETION,
+                                            definitions.EventDefinitions.KIND_NOTE, EventDefinitions.KIND_NIP22_COMMENT]).events(ids).since(since)
 
-        filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tags(SingleLetterTag.uppercase(Alphabet.E),
-                                                                             ids_str).since(since)
+            ids_str = []
+            for id in ids:
+                ids_str.append(id.to_hex())
 
-        dbopts = SyncOptions().direction(SyncDirection.DOWN)
-        await cli.sync(filtreactions, dbopts)
-        await cli.sync(filter_nip22, dbopts)
+            filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tags(SingleLetterTag.from_byte(ord('E')),
+                                                                                 ids_str).since(since)
 
-        filter2 = Filter().ids(ids)
-        events = await cli.fetch_events(filter2, relay_timeout)
-        
+            await sync_discovery_database(cli, filtreactions, self.dvm_config.NIP89.NAME)
+            await sync_discovery_database(cli, filter_nip22, self.dvm_config.NIP89.NAME)
+
+            filter2 = Filter().ids(ids)
+            events = await cli.fetch_events(ReqTarget.auto([filter2]), relay_timeout)
 
 
-        for event in events.to_vec():
-            if event.created_at().as_secs() > timestamp_since:
-                filt1 = Filter().kinds([definitions.EventDefinitions.KIND_DELETION]).event(event.id()).limit(1)
-                deletions = await databasegallery.query(filt1)
-                if len(deletions.to_vec()) > 0:
-                    print("Deleted event, skipping")
-                    continue
 
-                filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP, definitions.EventDefinitions.KIND_REPOST,
-                                       definitions.EventDefinitions.KIND_REACTION,
-                                       definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
+            for event in events:
+                if event.created_at().as_secs() > timestamp_since:
+                    filt1 = Filter().kinds([definitions.EventDefinitions.KIND_DELETION]).event(event.id()).limit(1)
+                    deletions = await databasegallery.query(filt1)
+                    if len(deletions) > 0:
+                        print("Deleted event, skipping")
+                        continue
 
-                filter_nip22 = Filter().kinds([definitions.EventDefinitions.KIND_NIP22_COMMENT]).custom_tags(
-                    SingleLetterTag.uppercase(Alphabet.E),
-                    [event.id().to_hex()])
+                    reactions = await query_engagement(databasegallery, event.id(), since)
 
-                reactions = await databasegallery.query(filt)
-                reactions2 = await databasegallery.query(filter_nip22)
-                reactions = reactions.merge(reactions2)
 
-                
-                reactions_vec = reactions.to_vec()
-                #print("Reactions:" + str(len(reactions_vec)))
-                if len(reactions_vec) >= self.min_reactions:
-                    for ge_event in ge_events.to_vec():
-                        if event.id().to_hex() == ge_event.id().to_hex():
-                            ns.finallist[ge_event.id().to_hex()] = len(reactions_vec)
-                            break
-                     
-        if len(ns.finallist) == 0:
-            return self.result
+                    reactions_vec = reactions
+                    #print("Reactions:" + str(len(reactions_vec)))
+                    if len(reactions_vec) >= self.min_reactions:
+                        for ge_event in ge_events:
+                            if event.id().to_hex() == ge_event.id().to_hex():
+                                ns.finallist[ge_event.id().to_hex()] = len(reactions_vec)
+                                break
 
-        result_list = []
-        finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
-        for entry in finallist_sorted:
-            #print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
-            e_tag = Tag.parse(["e", entry[0]])
-            result_list.append(e_tag.as_vec())
-        if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
-                len(result_list)) + " fitting events.")
-        # await cli.shutdown()
-        
-        return json.dumps(result_list)
+            if len(ns.finallist) == 0:
+                return self.result
+
+            result_list = []
+            finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
+            for entry in finallist_sorted:
+                #print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
+                e_tag = Tag.parse(["e", entry[0]])
+                result_list.append(e_tag.to_vec())
+            if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
+                print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
+                    len(result_list)) + " fitting events.")
+            # await cli.shutdown()
+
+            return json.dumps(result_list)
+
+        finally:
+            await cli.shutdown()
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 
@@ -238,16 +236,17 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                 return 0
 
     async def sync_db(self):
+        cli = None
         try:
             sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
-            database = NostrDatabase.lmdb(self.db_name)
-            cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+            database = await NostrLmdb.open(self.db_name)
+            cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
                 await cli.add_relay(RelayUrl.parse(relay))
 
-            await cli.connect()
+            await cli.connect(timedelta(seconds=15))
 
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
@@ -259,17 +258,18 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                     self.db_since) + " seconds.. this might take a while..")
-            dbopts = SyncOptions().direction(SyncDirection.DOWN)
-            await cli.sync(filter1, dbopts)
-            await cli.database().delete(Filter().until(Timestamp.from_secs(
+            await sync_discovery_database(cli, filter1, self.dvm_config.NIP89.NAME)
+            await cli.database().delete_events(Filter().until(Timestamp.from_secs(
                 Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
-            await cli.shutdown()
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print(
                     "[" + self.dvm_config.NIP89.NAME + "] Done Syncing Notes of the last " + str(
                         self.db_since) + " seconds..")
         except Exception as e:
             print(e)
+        finally:
+            if cli is not None:
+                await cli.shutdown()
 
 
 # We build an example here that we can call by either calling this file directly from the main directory,

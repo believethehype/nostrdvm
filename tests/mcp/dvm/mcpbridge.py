@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind
+from nostr_sdk import Kind, Tag
 
 from nostr_dvm.backends.mcp import config
 from nostr_dvm.backends.mcp.config import load_config
@@ -49,9 +49,9 @@ class MCPBridge(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -71,9 +71,9 @@ class MCPBridge(DVMTaskInterface):
             self.server_names = (self.options.get("server_names"))
 
         c = "execute-tool"
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == "c":
-                c = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == "c":
+                c = tag.to_vec()[1]
                 print(c)
 
         content = event.content()
@@ -125,9 +125,9 @@ class MCPBridge(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 

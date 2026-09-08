@@ -1,41 +1,73 @@
 import json
 import os
+import asyncio
+import time
+from collections import OrderedDict
+from threading import Lock
+from weakref import WeakKeyDictionary
+
+from nostr_dvm.utils.env_utils import load_env, set_env_key
 from datetime import timedelta
 from pathlib import Path
 from typing import List
 
 import dotenv
-from nostr_sdk import RelayUrl, Filter, Client, Alphabet, EventId, Event, PublicKey, Tag, Keys, nip04_decrypt, nip44_decrypt, Metadata, ClientOptions, \
-    Nip19Event, SingleLetterTag, RelayLimits, SecretKey, Connection, ConnectionTarget, \
-    EventBuilder, Kind, ClientBuilder, SendEventOutput, NostrSigner
+from nostr_sdk import (
+    Client, ClientBuilder, Event, EventBuilder, EventId, Filter, Keys, Kind, Metadata, Nip19Event,
+    Proxy, PublicKey, RelayLimits, RelayUrl, ReqTarget, SecretKey, SendEventOutput,
+    SignerAuthenticator, SingleLetterTag, Tag, nip04_decrypt, nip44_decrypt,
+)
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
+
+
+_relay_lookup_cache = WeakKeyDictionary()
+_relay_lookup_lock = Lock()
+
+
+async def fetch_relay_metadata(client, event_filter):
+    cache_key = event_filter.as_json()
+    with _relay_lookup_lock:
+        cache = _relay_lookup_cache.setdefault(client, OrderedDict())
+        cached = cache.get(cache_key)
+        if cached is not None and cached[0] > time.monotonic():
+            return list(cached[1])
+    try:
+        events = await asyncio.wait_for(
+            client.fetch_events(ReqTarget.auto([event_filter]), timedelta(seconds=5)), timeout=5)
+    except Exception:
+        events = []
+    with _relay_lookup_lock:
+        cache[cache_key] = (time.monotonic() + (300 if events else 30), list(events))
+        cache.move_to_end(cache_key)
+        while len(cache) > 128:
+            cache.popitem(last=False)
+    return events
 
 
 async def get_event_by_id(event_id_str: str, client: Client, config=None) -> Event | None:
     split = event_id_str.split(":")
     if len(split) == 3:
         pk = PublicKey.parse(split[1])
-        id_filter = Filter().author(pk).custom_tags(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-        events = await client.fetch_events(id_filter, relay_timeout)
+        id_filter = Filter().author(pk).custom_tags(SingleLetterTag.from_byte(ord('d')), [split[2]])
+        events = await client.fetch_events(ReqTarget.auto([id_filter]), relay_timeout)
     else:
         event_id = EventId.parse(event_id_str)
 
         id_filter = Filter().id(event_id).limit(1)
 
-        events = await client.fetch_events(id_filter, relay_timeout)
+        events = await client.fetch_events(ReqTarget.auto([id_filter]), relay_timeout)
 
-    events_vec = events.to_vec()
-    if len(events_vec) > 0:
-        return events_vec[0]
+    if len(events) > 0:
+        return events[0]
     else:
         print("Event not found")
         return None
 
 
 async def get_events_async(client, filter1, timeout):
-    events = await client.fetch_events(filter1, timedelta(seconds=timeout))
-    return events.to_vec()
+    events = await client.fetch_events(ReqTarget.auto([filter1]), timedelta(seconds=timeout))
+    return events
 
 
 async def get_events_by_ids(event_ids, client: Client, config=None) -> List | None:
@@ -45,8 +77,8 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
         split = event_id.split(":")
         if len(split) == 3:
             pk = PublicKey.parse(split[1])
-            id_filter = Filter().author(pk).custom_tags(SingleLetterTag.lowercase(Alphabet.D), [split[2]])
-            events = await client.fetch_events(id_filter, relay_timeout)
+            id_filter = Filter().author(pk).custom_tags(SingleLetterTag.from_byte(ord('d')), [split[2]])
+            events = await client.fetch_events(ReqTarget.auto([id_filter]), relay_timeout)
         else:
 
             if str(event_id).startswith("nevent"):
@@ -58,10 +90,10 @@ async def get_events_by_ids(event_ids, client: Client, config=None) -> List | No
             search_ids.append(event_id)
 
             id_filter = Filter().ids(search_ids)
-            events = await client.fetch_events(id_filter, relay_timeout)
+            events = await client.fetch_events(ReqTarget.auto([id_filter]), relay_timeout)
 
-    if len(events_vec) > 0:
-        return events_vec
+    if len(events) > 0:
+        return events
     else:
         return None
 
@@ -70,9 +102,9 @@ async def get_events_by_id(event_ids: list, client: Client, config=None) -> list
 
     id_filter = Filter().ids(event_ids)
     # events = asyncio.run(get_events_async(client, id_filter, config.RELAY_TIMEOUT))
-    events = await client.fetch_events(id_filter, relay_timeout)
-    if len(events_vec) > 0:
-        return events_vec
+    events = await client.fetch_events(ReqTarget.auto([id_filter]), relay_timeout)
+    if len(events) > 0:
+        return events
     else:
         return None
 
@@ -91,32 +123,35 @@ async def get_referenced_event_by_id(event_id, client, dvm_config, kinds) -> Eve
         job_id_filter = Filter().kinds(kinds).event(event_id).limit(1)
     else:
         job_id_filter = Filter().event(event_id).limit(1)
-    events = await client.fetch_events(job_id_filter, relay_timeout)
+    events = await client.fetch_events(ReqTarget.auto([job_id_filter]), relay_timeout)
 
-    if len(events_vec) > 0:
-        return events_vec[0]
+    if len(events) > 0:
+        return events[0]
     else:
         return None
 
 
 async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
-    for tag in event_to_send.tags().to_vec():
-        if tag.as_vec()[0] == 'p':
-            ptag = PublicKey.parse(tag.as_vec()[1])
+    for tag in event_to_send.tags():
+        if tag.to_vec()[0] == 'p':
+            ptag = PublicKey.parse(tag.to_vec()[1])
             ptags.append(ptag)
 
+    if not ptags:
+        return []
+
     filter1 = Filter().kinds([EventDefinitions.KIND_RELAY_ANNOUNCEMENT]).authors(ptags)
-    events = await client.fetch_events(filter1, relay_timeout)
-    if len(events_vec) == 0:
+    events = await fetch_relay_metadata(client, filter1)
+    if len(events) == 0:
         return []
     else:
-        nip65event = events_vec[0]
+        nip65event = events[0]
         relays = []
-        for tag in nip65event.tags().to_vec():
-            if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
-                    or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
-                rtag = tag.as_vec()[1]
+        for tag in nip65event.tags():
+            if ((tag.to_vec()[0] == 'r' and len(tag.to_vec()) == 2)
+                    or ((tag.to_vec()[0] == 'r' and len(tag.to_vec()) == 3) and tag.to_vec()[2] == "read")):
+                rtag = tag.to_vec()[1]
                 if rtag.rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                     if rtag.startswith("ws") and " " not in rtag:
                         relays.append(rtag)
@@ -125,22 +160,25 @@ async def get_inbox_relays(event_to_send: Event, client: Client, dvm_config):
 
 async def get_dm_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
-    for tag in event_to_send.tags().to_vec():
-        if tag.as_vec()[0] == 'p':
-            ptag = PublicKey.parse(tag.as_vec()[1])
+    for tag in event_to_send.tags():
+        if tag.to_vec()[0] == 'p':
+            ptag = PublicKey.parse(tag.to_vec()[1])
             ptags.append(ptag)
 
+    if not ptags:
+        return []
+
     filter1 = Filter().kinds([Kind(10050)]).authors(ptags)
-    events = await client.fetch_events(filter1, relay_timeout)
-    if len(events_vec) == 0:
+    events = await fetch_relay_metadata(client, filter1)
+    if len(events) == 0:
         return []
     else:
-        nip65event = events_vec[0]
+        nip65event = events[0]
         relays = []
-        for tag in nip65event.tags().to_vec():
-            if ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 2)
-                    or ((tag.as_vec()[0] == 'r' and len(tag.as_vec()) == 3) and tag.as_vec()[2] == "read")):
-                rtag = tag.as_vec()[1]
+        for tag in nip65event.tags():
+            if ((tag.to_vec()[0] == 'r' and len(tag.to_vec()) == 2)
+                    or ((tag.to_vec()[0] == 'r' and len(tag.to_vec()) == 3) and tag.to_vec()[2] == "read")):
+                rtag = tag.to_vec()[1]
                 if rtag.rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                     if rtag.startswith("ws") and " " not in rtag:
                         relays.append(rtag)
@@ -149,9 +187,9 @@ async def get_dm_relays(event_to_send: Event, client: Client, dvm_config):
 
 async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
     ptags = []
-    for tag in event_to_send.tags().to_vec():
-        if tag.as_vec()[0] == 'p':
-            ptag = PublicKey.parse(tag.as_vec()[1])
+    for tag in event_to_send.tags():
+        if tag.to_vec()[0] == 'p':
+            ptag = PublicKey.parse(tag.to_vec()[1])
             ptags.append(ptag)
 
     if len(await client.relays()) == 0:
@@ -159,12 +197,15 @@ async def get_main_relays(event_to_send: Event, client: Client, dvm_config):
             await client.add_relay(RelayUrl.parse(relay))
 
     await client.connect()
+    if not ptags:
+        return []
+
     filter1 = Filter().kinds([EventDefinitions.KIND_FOLLOW_LIST]).authors(ptags)
-    events = await client.fetch_events(filter1, relay_timeout)
-    if len(events_vec) == 0:
+    events = await fetch_relay_metadata(client, filter1)
+    if len(events) == 0:
         return []
     else:
-        followlist = events_vec[0]
+        followlist = events[0]
         try:
             content = json.loads(followlist.content())
             relays = []
@@ -180,16 +221,16 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
     # 1. OK, Let's overcomplicate things.
     # 2. If our event has a relays tag, we just send the event to these relay in the classical way.
     relays = dvm_config.RELAY_LIST
-    for tag in event.tags().to_vec():
-        if tag.as_vec()[0] == 'relays':
-            for index, param in enumerate(tag.as_vec()):
+    for tag in event.tags():
+        if tag.to_vec()[0] == 'relays':
+            for index, param in enumerate(tag.to_vec()):
                 if index != 0:
-                    if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
+                    if tag.to_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                         try:
-                            if tag.as_vec()[index].rstrip("/")  not in relays and tag.as_vec()[index] not in relays:
-                                relays = list(set(relays + [tag.as_vec()[index]]))
+                            if tag.to_vec()[index].rstrip("/")  not in relays and tag.to_vec()[index] not in relays:
+                                relays = list(set(relays + [tag.to_vec()[index]]))
                         except:
-                            print("[" + dvm_config.NIP89.NAME + "] " + tag.as_vec()[
+                            print("[" + dvm_config.NIP89.NAME + "] " + tag.to_vec()[
                                 index] + " couldn't be added to outbox relays")
             break
 
@@ -205,7 +246,7 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
    # print(relays)
     #print(dvm_config.RELAY_LIST)
     # 4. If we don't find inbox relays (e.g. because the user didn't announce them, we just send to our default relays
-    if relays == dvm_config.RELAY_LIST and dvm_config != inbox_relays:
+    if relays == dvm_config.RELAY_LIST and not inbox_relays:
         print("[" + dvm_config.NIP89.NAME + "] No Inbox found, replying to generic relays")
         main_relays = await get_main_relays(event, client, dvm_config)
         relays = list(set(relays + main_relays))
@@ -213,11 +254,9 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
 
         # 5. Otherwise, we create a new Outbox client with the inbox relays and send the event there
     relaylimits = RelayLimits.disable()
-    connection = Connection().addr("127.0.0.1:9050").target(ConnectionTarget.ONION)
-    opts = ClientOptions().relay_limits(relaylimits).connection(connection)
     sk = SecretKey.parse(dvm_config.PRIVATE_KEY)
     keys = Keys.parse(sk.to_hex())
-    outboxclient = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
+    outboxclient = ClientBuilder().authenticator(SignerAuthenticator(keys)).relay_limits(relaylimits).proxy(Proxy.onion("127.0.0.1:9050")).build()
     #print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
     for relay in relays[:5]:
@@ -267,15 +306,15 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
 async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
     try:
         relays = []
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'relays':
-                for index, param in enumerate(tag.as_vec()):
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'relays':
+                for index, param in enumerate(tag.to_vec()):
                     if index != 0:
-                        if tag.as_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
+                        if tag.to_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                             try:
-                                relays.append(tag.as_vec()[index])
+                                relays.append(tag.to_vec()[index])
                             except:
-                                print("[" + dvm_config.NIP89.NAME + "] " + tag.as_vec()[
+                                print("[" + dvm_config.NIP89.NAME + "] " + tag.to_vec()[
                                     index] + " couldn't be added to outbox relays")
                 break
 
@@ -304,7 +343,7 @@ async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
-                await client.force_remove_relay(RelayUrl.parse(relay))
+                await client.remove_relay(RelayUrl.parse(relay), force=True)
         return response_status
     except Exception as e:
         print(e)
@@ -321,11 +360,11 @@ def check_and_decrypt_tags(event, dvm_config):
 
     try:
         p = ""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'encrypted':
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'encrypted':
                 is_encrypted = True
-            elif tag.as_vec()[0] == 'p':
-                p = tag.as_vec()[1]
+            elif tag.to_vec()[0] == 'p':
+                p = tag.to_vec()[1]
 
         if is_encrypted:
             if p != dvm_config.PUBLIC_KEY:
@@ -347,8 +386,8 @@ def check_and_decrypt_tags(event, dvm_config):
                     use_legacy_encryption = True
 
                 params = json.loads(tags_str)
-                params.append(Tag.parse(["p", p]).as_vec())
-                params.append(Tag.parse(["encrypted"]).as_vec())
+                params.append(Tag.parse(["p", p]).to_vec())
+                params.append(Tag.parse(["encrypted"]).to_vec())
                 event_as_json = json.loads(event.as_json())
                 event_as_json['tags'] = params
                 event_as_json['content'] = ""
@@ -363,11 +402,11 @@ def check_and_decrypt_own_tags(event, dvm_config):
     try:
         is_encrypted = False
         p = ""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'encrypted':
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'encrypted':
                 is_encrypted = True
-            elif tag.as_vec()[0] == 'p':
-                p = tag.as_vec()[1]
+            elif tag.to_vec()[0] == 'p':
+                p = tag.to_vec()[1]
 
         if is_encrypted:
             if dvm_config.PUBLIC_KEY != event.author().to_hex():
@@ -383,8 +422,8 @@ def check_and_decrypt_own_tags(event, dvm_config):
                     tags_str = nip04_decrypt(Keys.parse(dvm_config.PRIVATE_KEY).secret_key(),
                                              PublicKey.parse(p), event.content())
                 params = json.loads(tags_str)
-                params.append(Tag.parse(["p", p]).as_vec())
-                params.append(Tag.parse(["encrypted"]).as_vec())
+                params.append(Tag.parse(["p", p]).to_vec())
+                params.append(Tag.parse(["encrypted"]).to_vec())
                 event_as_json = json.loads(event.as_json())
                 event_as_json['tags'] = params
                 event_as_json['content'] = ""
@@ -397,16 +436,16 @@ def check_and_decrypt_own_tags(event, dvm_config):
 
 async def update_profile_lnaddress(private_key, dvm_config, lud16="", ):
     keys = Keys.parse(private_key)
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in dvm_config.RELAY_LIST:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
-    metadata = Metadata() \
-        .set_lud16(lud16) \
-        .set_nip05(lud16)
-
-    await client.set_metadata(metadata)
+    metadata = Metadata.from_json(json.dumps({"lud16": lud16, "nip05": lud16}))
+    try:
+        await client.send_event(metadata.finalize(keys))
+    finally:
+        await client.shutdown()
 
 
 async def update_profile(dvm_config, client, lud16="", broadcast=True):
@@ -418,20 +457,15 @@ async def update_profile(dvm_config, client, lud16="", broadcast=True):
         image = nip89content.get("picture")
 
         # Set metadata
-        metadata = Metadata() \
-            .set_name(name) \
-            .set_display_name(name) \
-            .set_about(about) \
-            .set_picture(image) \
-            .set_lud16(lud16) \
-            .set_nip05(lud16)
+        metadata = Metadata.from_json(json.dumps({
+            "name": name, "display_name": name, "about": about,
+            "picture": image, "lud16": lud16, "nip05": lud16,
+        }))
         # .set_banner("https://example.com/banner.png") \
 
 
     except:
-        metadata = Metadata() \
-            .set_lud16(lud16) \
-            .set_nip05(lud16)
+        metadata = Metadata.from_json(json.dumps({"lud16": lud16, "nip05": lud16}))
 
     print("[" + dvm_config.NIP89.NAME + "] Setting profile metadata for " + keys.public_key().to_bech32() + "...")
     print(metadata.as_json())
@@ -440,15 +474,15 @@ async def update_profile(dvm_config, client, lud16="", broadcast=True):
            await client.add_relay(RelayUrl.parse(relay))
        await client.connect()
 
-    return await client.set_metadata(metadata)
+    return await client.send_event(metadata.finalize(keys))
 
 
 async def send_nip04_dm(client: Client, msg, receiver: PublicKey, dvm_config):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
-    signer = NostrSigner.keys(keys)
-    content = await signer.nip04_encrypt(receiver, msg)
+    signer = keys
+    content = await signer.nip04_encrypt_async(receiver, msg)
     ptag = Tag.parse(["p", receiver.to_hex()])
-    event = EventBuilder(Kind(4), content).tags([ptag]).sign_with_keys(Keys.parse(dvm_config.PRIVATE_KEY))
+    event = EventBuilder(Kind(4), content).tags([ptag]).finalize(Keys.parse(dvm_config.PRIVATE_KEY))
     await client.send_event(event)
 
     # relays = await get_dm_relays(event, client, dvm_config)
@@ -472,6 +506,7 @@ async def send_nip04_dm(client: Client, msg, receiver: PublicKey, dvm_config):
 
 
 def check_and_set_private_key(identifier):
+    load_env()
     if not os.getenv("DVM_PRIVATE_KEY_" + identifier.upper()):
         pk = Keys.generate().secret_key().to_hex()
         add_pk_to_env_file("DVM_PRIVATE_KEY_" + identifier.upper(), pk)
@@ -481,8 +516,4 @@ def check_and_set_private_key(identifier):
 
 
 def add_pk_to_env_file(dtag, oskey):
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-        dotenv.set_key(env_path, dtag, oskey)
+    set_env_key(dtag, oskey)

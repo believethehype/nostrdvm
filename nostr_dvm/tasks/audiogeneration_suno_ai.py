@@ -34,9 +34,9 @@ class AudioGenerationSonoAI(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -45,11 +45,11 @@ class AudioGenerationSonoAI(DVMTaskInterface):
         request_form = {"jobID": event.id().to_hex() + "_" + self.NAME.replace(" ", "")}
 
         prompt = "A popular heavy metal song about a purple Ostrich, Nostr, sung by a deep-voiced male singer, slowly and melodiously. The lyrics depict hope for a better future."
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    prompt = str(tag.as_vec()[1])
+                    prompt = str(tag.to_vec()[1])
         # TODO add params as defined above
 
         options = {
