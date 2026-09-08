@@ -53,14 +53,14 @@ def run_dvm(identifier, announce):
     dvm_config.PER_UNIT_COST = 0
 
     # You can overwrite the default relay list (see utils/dvmconfig.py) with relays of your choice
-    dvm_config.RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev"]
+    dvm_config.RELAY_LIST = ["wss://nostr.oxtr.dev"]
 
     # Some DVMs, especially content based ones or filter ones used NENGENTROPY reconciliation.
     # This basically means it syncronizes local databases with relays. Not all relays support that,
     # but if they do, you can select which ones should be used to sync to your local database.
     # This example doesn't use reconciliation, but you might want to take a look at tasks/content_discovery_currently.popular.py for example.
 
-    dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.damus.io", "wss://nostr.oxtr.dev",
+    dvm_config.SYNC_DB_RELAY_LIST = ["wss://nostr.oxtr.dev",
                                "wss://relay.nostr.net", "wss://relay.primal.net"]
 
     # related to that  dvm_config.UPDATE_DATABASE can be used to signal if the dvm should update it's own database at all.

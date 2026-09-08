@@ -4,7 +4,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind
 
 from nostr_dvm.backends.mcp import config
 from nostr_dvm.backends.mcp.config import load_config

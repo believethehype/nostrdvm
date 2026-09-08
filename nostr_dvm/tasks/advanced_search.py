@@ -2,7 +2,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind
+from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayUrl
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -51,9 +51,7 @@ class AdvancedSearch(DVMTaskInterface):
         until_seconds = Timestamp.now().as_secs()
         search = ""
         max_results = 100
-        relay = "wss://relay.nostr.band"
-
-        for tag in event.tags().to_vec():
+        relay = for tag in event.tags().to_vec():
             if tag.as_vec()[0] == 'i':
                 input_type = tag.as_vec()[2]
                 if input_type == "text":
@@ -91,7 +89,7 @@ class AdvancedSearch(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         cli = Client(NostrSigner.keys(keys))
 
-        await cli.add_relay(options["relay"])
+        await cli.add_relay(RelayUrl.parse(options["relay"]))
 
         await cli.connect()
 
@@ -127,9 +125,10 @@ class AdvancedSearch(DVMTaskInterface):
         events = await cli.fetch_events(notes_filter, relay_timeout)
 
         result_list = []
-        if len(events.to_vec()) > 0:
+        events_vec = events.to_vec()
+        if len(events_vec) > 0:
 
-            for event in events.to_vec():
+            for event in events_vec:
                 e_tag = Tag.parse(["e", event.id().to_hex()])
                 result_list.append(e_tag.as_vec())
 
@@ -157,8 +156,8 @@ def build_example(name, identifier, admin_config):
     # Add NIP89
     nip89info = {
         "name": name,
-        "picture": "https://nostr.band/android-chrome-192x192.png",
-        "about": "I search notes on Nostr.band.",
+        "picture": "",
+        "about": "I search notes",
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {
@@ -189,7 +188,7 @@ def build_example(name, identifier, admin_config):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": "wss://relay.nostr.band"}
+    options = {"relay": }
 
     return AdvancedSearch(name=name, dvm_config=dvm_config, nip89config=nip89config,
                           admin_config=admin_config, options=options)

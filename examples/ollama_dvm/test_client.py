@@ -17,13 +17,13 @@ async def nostr_client_test_llm(prompt):
     keys = Keys.parse(check_and_set_private_key("test_client"))
 
     iTag = Tag.parse(["i", prompt, "text"])
-    relaysTag = Tag.parse(['relays', "wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relaysTag = Tag.parse(['relays', "wss://blastr.f7z.xyz", "wss://relayable.org",
                            "wss://nostr-pub.wellorder.net"])
     alttag = Tag.parse(["alt", "This is a NIP90 DVM AI task to generate TTSt"])
     event = EventBuilder(EventDefinitions.KIND_NIP90_GENERATE_TEXT, str("Generate an Audio File.")).tags(
                          [iTag, relaysTag, alttag]).sign_with_keys(keys)
 
-    relay_list = ["wss://relay.damus.io", "wss://blastr.f7z.xyz", "wss://relayable.org",
+    relay_list = ["wss://blastr.f7z.xyz", "wss://relayable.org",
                   "wss://nostr-pub.wellorder.net"]
 
     client = Client(NostrSigner.keys(keys))

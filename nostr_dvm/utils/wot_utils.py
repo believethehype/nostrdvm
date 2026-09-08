@@ -9,7 +9,7 @@ from itertools import islice
 import networkx as nx
 import nostr_sdk
 import numpy as np
-from nostr_sdk import Options, Keys, NostrSigner, ClientBuilder, Kind, PublicKey, Filter
+from nostr_sdk import ClientOptions, Keys, NostrSigner, ClientBuilder, Kind, PublicKey, Filter, RelayUrl
 from scipy.sparse import lil_matrix, isspmatrix_csr
 
 from nostr_dvm.utils.definitions import relay_timeout
@@ -49,24 +49,25 @@ async def get_following(pks, max_time_request=10, newer_than_time=None, dvm_conf
     cli = ClientBuilder().signer(NostrSigner.keys(keys)).build()
 
     for relay in dvm_config.SYNC_DB_RELAY_LIST:
-        await cli.add_relay(relay)
+        await cli.add_relay(RelayUrl.parse(relay))
 
     await cli.connect()
 
     events = await cli.fetch_events(filter, relay_timeout)
 
     for relay in dvm_config.SYNC_DB_RELAY_LIST:
-        await cli.force_remove_relay(relay)
+        await cli.force_remove_relay(RelayUrl.parse(relay))
 
     await cli.shutdown()
     # initializing the graph structure
     following = nx.DiGraph()
     following.add_nodes_from(pks)
 
-    if not events.to_vec():
+    events_vec = events.to_vec()
+    if not events_vec:
         return following
 
-    for event in events.to_vec():
+    for event in events_vec:
 
         author = event.author().to_hex()
 
@@ -590,8 +591,7 @@ async def get_metadata(npub):
         return "", "", ""
     keys = Keys.parse(check_and_set_private_key("test_client"))
     client = ClientBuilder().signer(NostrSigner.keys(keys)).build()
-    await client.add_relay("wss://relay.damus.io")
-    await client.add_relay("wss://purplepag.es")
+    await client.add_relay(RelayUrl.parse("wss://purplepag.es"))
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)

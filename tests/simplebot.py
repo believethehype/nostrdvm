@@ -1,7 +1,7 @@
 import asyncio
 
 from nostr_sdk import Client, NostrSigner, Keys, Event, UnsignedEvent, Filter, \
-    HandleNotification, Timestamp, nip04_decrypt, UnwrappedGift, init_logger, LogLevel, Kind, KindEnum
+    HandleNotification, Timestamp, nip04_decrypt, UnwrappedGift, init_logger, LogLevel, Kind, KindEnum, RelayUrl
 
 from nostr_dvm.utils.nostr_utils import send_nip04_dm
 
@@ -19,10 +19,8 @@ async def test():
     print(f"Bot public key: {pk.to_bech32()}")
 
     client = Client(NostrSigner.keys(keys))
-
-    await client.add_relay("wss://relay.damus.io")
-    await client.add_relay("wss://nostr.mom")
-    await client.add_relay("wss://nostr.oxtr.dev")
+    await client.add_relay(RelayUrl.parse("wss://nostr.mom"))
+    await client.add_relay(RelayUrl.parse("wss://nostr.oxtr.dev"))
     await client.connect()
 
     now = Timestamp.now()

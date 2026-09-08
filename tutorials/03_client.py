@@ -42,7 +42,7 @@ async def nostr_client_generic_test(ptag):
     client = Client(NostrSigner.keys(keys))
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     # We connect the client
     await client.connect()
     # and send the Event.
@@ -61,7 +61,7 @@ async def nostr_client(target_dvm_npub):
 
     dvmconfig = DVMConfig()
     for relay in dvmconfig.RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
 
     dm_zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_DM,

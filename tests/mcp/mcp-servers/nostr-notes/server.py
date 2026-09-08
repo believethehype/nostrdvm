@@ -7,18 +7,17 @@ mcp = FastMCP("Nostr", description="Get notes from Nostr for a given key", depen
 
 @mcp.tool()
 async def get_nostr_notes(npub: str, limit: int) -> str:
-    from nostr_sdk import Client, Keys, NostrSigner, Filter, Kind, PublicKey
+    from nostr_sdk import Client, Keys, NostrSigner, Filter, Kind, PublicKey, RelayUrl
 
     keys = Keys.parse("e318cb3e6ac163814dd297c2c7d745faacfbc2a826eb4f6d6c81430426a83c2b")
     client = Client(NostrSigner.keys(keys))
 
-    relay_list = ["wss://relay.damus.io",
-                  "wss://nostr.oxtr.dev",
+    relay_list = ["wss://nostr.oxtr.dev",
                   "wss://relay.primal.net",
                   ]
 
     for relay in relay_list:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
 
 
     await client.connect()

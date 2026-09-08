@@ -3,7 +3,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, EventId, Kind, \
     RelayLimits, SingleLetterTag, Alphabet
 
@@ -119,30 +119,31 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
         ge_events = await databasegallery.query(filter1)
         
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events.to_vec())) + " Events")
+            ge_events_vec = ge_events.to_vec()
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(ge_events_vec)) + " Events")
         ns.finallist = {}
 
         ids = []
         relays = []
-        if len(ge_events.to_vec()) == 0:
+        if len(ge_events_vec) == 0:
             return []
 
-        for ge_event in ge_events.to_vec():
+        for ge_event in ge_events_vec:
             ids.append(ge_event.id())
               
 
         relaylimits = RelayLimits.disable()
-        opts = (Options().relay_limits(relaylimits))
+        opts = (ClientOptions().relay_limits(relaylimits))
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
 
         cli = ClientBuilder().database(databasegallery).signer(NostrSigner.keys(keys)).opts(opts).build()
         for relay in relays:
-            await cli.add_relay(relay)
+            await cli.add_relay(RelayUrl.parse(relay))
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             if relay not in relays:
-                await cli.add_relay(relay)
+                await cli.add_relay(RelayUrl.parse(relay))
 
         await cli.connect()
 
@@ -188,11 +189,12 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                 reactions = reactions.merge(reactions2)
 
                 
-                #print("Reactions:" + str(len(reactions.to_vec())))
-                if len(reactions.to_vec()) >= self.min_reactions:
+                reactions_vec = reactions.to_vec()
+                #print("Reactions:" + str(len(reactions_vec)))
+                if len(reactions_vec) >= self.min_reactions:
                     for ge_event in ge_events.to_vec():
                         if event.id().to_hex() == ge_event.id().to_hex():
-                            ns.finallist[ge_event.id().to_hex()] = len(reactions.to_vec())
+                            ns.finallist[ge_event.id().to_hex()] = len(reactions_vec)
                             break
                      
         if len(ns.finallist) == 0:
@@ -243,7 +245,7 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-                await cli.add_relay(relay)
+                await cli.add_relay(RelayUrl.parse(relay))
 
             await cli.connect()
 

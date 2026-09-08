@@ -4,8 +4,8 @@ import os
 import sys
 from sys import platform
 
-from nostr_sdk import PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
-    LogLevel, Options, nip04_encrypt, nip44_encrypt, Nip44Version, Kind, RelayLimits, uniffi_set_event_loop, ClientBuilder, NostrSigner
+from nostr_sdk import RelayUrl, PublicKey, Keys, Client, Tag, Event, EventBuilder, Filter, HandleNotification, Timestamp, \
+    LogLevel, ClientOptions, nip04_encrypt, nip44_encrypt, Nip44Version, Kind, RelayLimits, uniffi_set_event_loop, ClientBuilder, NostrSigner
 
 
 from nostr_dvm.utils.admin_utils import admin_make_database_updates, AdminConfig
@@ -55,7 +55,7 @@ class DVM:
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
         self.heartbeat_frequency = 300
         relaylimits = RelayLimits.disable()
-        opts = Options().relay_limits(relaylimits) #.difficulty(28)
+        opts = ClientOptions().relay_limits(relaylimits) #.difficulty(28)
 
         #self.client = Client(self.keys)
         self.client = ClientBuilder().signer(NostrSigner.keys(self.keys)).opts(opts).build()
@@ -68,7 +68,7 @@ class DVM:
               ', '.join(p.NAME + ":" + p.TASK for p in self.dvm_config.SUPPORTED_DVMS) + bcolors.ENDC)
 
         for relay in self.dvm_config.RELAY_LIST:
-            await self.client.add_relay(relay)
+            await self.client.add_relay(RelayUrl.parse(relay))
         await self.client.connect()
 
         zap_filter = Filter().pubkey(pk).kinds([EventDefinitions.KIND_ZAP, EventDefinitions.KIND_NIP61_NUT_ZAP]).since(

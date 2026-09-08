@@ -3,8 +3,8 @@ import json
 import os
 from threading import Thread
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, ClientBuilder
+from nostr_sdk import RelayUrl, Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayOptions, \
+    RelayLimits, ClientBuilder, RelayUrl
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -74,12 +74,11 @@ class DiscoverInactiveFollows(DVMTaskInterface):
         # relaylimits.event_max_size(None)
         relaylimits = RelayLimits.disable()
 
-        opts = (Options().relay_limits(relaylimits))
+        opts = (ClientOptions().relay_limits(relaylimits))
 
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            await cli.add_relay(relay)
-        await cli.add_relay("wss://nostr.band")
+            await cli.add_relay(RelayUrl.parse(relay))
 
         await cli.connect()
 
@@ -88,11 +87,12 @@ class DiscoverInactiveFollows(DVMTaskInterface):
 
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
         followers = await cli.fetch_events(followers_filter, relay_timeout)
-        if len(followers.to_vec()) > 0:
+        followers_vec = followers.to_vec()
+        if len(followers_vec) > 0:
             result_list = []
             newest = 0
-            best_entry = followers.to_vec()[0]
-            for entry in followers.to_vec():
+            best_entry = followers_vec[0]
+            for entry in followers_vec:
                 print(len(best_entry.tags().to_vec()))
                 print(best_entry.created_at().as_secs())
                 if entry.created_at().as_secs() > newest:
@@ -120,7 +120,7 @@ class DiscoverInactiveFollows(DVMTaskInterface):
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
                 cli = Client(NostrSigner.keys(keys))
                 for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-                    await cli.add_relay(relay)
+                    await cli.add_relay(RelayUrl.parse(relay))
                 await cli.connect()
                 filter1 = Filter().author(PublicKey.parse(users[i])).since(notactivesince).limit(1)
                 event_from_authors = await cli.fetch_events(filter1, relay_timeout_long)

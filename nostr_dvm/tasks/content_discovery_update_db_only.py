@@ -4,9 +4,9 @@ import os
 from datetime import timedelta
 from itertools import islice
 
-from nostr_sdk import Timestamp, PublicKey, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+from nostr_sdk import RelayUrl, Timestamp, PublicKey, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind, \
-    RelayLimits, RelayFilteringMode
+    RelayLimits
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils import definitions
@@ -134,9 +134,7 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     async def sync_db(self):
         try:
             relaylimits = RelayLimits.disable()
-            opts = (Options().relay_limits(relaylimits))
-            if self.dvm_config.WOT_FILTERING:
-                opts = opts.filtering_mode(RelayFilteringMode.WHITELIST)
+            opts = (ClientOptions().relay_limits(relaylimits))
             sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             if self.database is None:
@@ -146,45 +144,34 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(self.database).opts(opts).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-                await cli.add_relay(relay)
+                await cli.add_relay(RelayUrl.parse(relay))
 
             await cli.connect()
 
             if self.dvm_config.WOT_FILTERING and self.wot_counter == 0:
                 print("Calculating WOT for " + str(self.dvm_config.WOT_BASED_ON_NPUBS))
-                filtering = cli.filtering()
                 index_map, G = await build_wot_network(self.dvm_config.WOT_BASED_ON_NPUBS,
                                                        depth=self.dvm_config.WOT_DEPTH, max_batch=500,
                                                        max_time_request=10, dvm_config=self.dvm_config)
 
-                # Do we actually need pagerank here?
-                # print('computing global pagerank...')
-                # tic = time.time()
-                # p_G = nx.pagerank(G, tol=1e-12)
-                # print("network after pagerank: " + str(len(p_G)))
-
-                wot_keys = []
+                self.wot_pubkeys = []
                 for item in islice(G, len(G)):
-                    key = next((PublicKey.parse(pubkey) for pubkey, id in index_map.items() if id == item),
+                    key = next((pubkey for pubkey, id in index_map.items() if id == item),
                                None)
-                    wot_keys.append(key)
-
-                # toc = time.time()
-                # print(f'finished in {toc - tic} seconds')
-                await filtering.add_public_keys(wot_keys)
+                    if key:
+                        self.wot_pubkeys.append(PublicKey.parse(key))
             self.wot_counter += 1
-            # only calculate wot every 10th call
             if self.wot_counter >= 10:
                 self.wot_counter = 0
-            # Mute public key
-            # await cli. (self.dvm_config.MUTE)
 
             timestamp_since = Timestamp.now().as_secs() - self.db_since
             since = Timestamp.from_secs(timestamp_since)
 
             filter1 = Filter().kinds(
                 [definitions.EventDefinitions.KIND_NOTE, definitions.EventDefinitions.KIND_REACTION,
-                 definitions.EventDefinitions.KIND_ZAP]).since(since)  # Notes, reactions, zaps
+                 definitions.EventDefinitions.KIND_ZAP]).since(since)
+            if self.dvm_config.WOT_FILTERING and hasattr(self, 'wot_pubkeys') and self.wot_pubkeys:
+                filter1 = filter1.authors(self.wot_pubkeys)
 
             if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
                 print("[" + self.dvm_config.IDENTIFIER + "] Syncing notes of the last " + str(

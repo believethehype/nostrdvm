@@ -30,8 +30,7 @@ use_logger = True
 log_level = LogLevel.ERROR
 
 
-SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
-                      #"wss://relay.primal.net",
+SYNC_DB_RELAY_LIST = [#"wss://relay.primal.net",
                       "wss://nostr.oxtr.dev"]
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
@@ -303,7 +302,7 @@ def build_botfarms(name, identifier, announce):
     nip89config.DTAG = check_and_set_d_tag(identifier, name, dvm_config.PRIVATE_KEY, nip89info["picture"])
     nip89config.CONTENT = json.dumps(nip89info)
 
-    options = {"relay": "wss://relay.damus.io"}
+    options = {}
 
     return DiscoveryBotFarms(name=name, dvm_config=dvm_config, nip89config=nip89config,
                              admin_config=admin_config, options=options)

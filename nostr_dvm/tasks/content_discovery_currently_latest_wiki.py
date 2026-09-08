@@ -2,7 +2,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind, \
     RelayLimits
 
@@ -122,11 +122,12 @@ class DicoverContentLatestWiki(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_WIKI).since(since)
         events = await cli.database().query(filter1)
+        events_vec = events.to_vec()
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
         ns.finallist = {}
         index = options["max_results"]
-        for event in events.to_vec():
+        for event in events_vec:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 ns.finallist[event.id().to_hex()] = index
                 index = index - 1
@@ -171,14 +172,14 @@ class DicoverContentLatestWiki(DVMTaskInterface):
     async def sync_db(self):
         try:
             relaylimits = RelayLimits.disable()
-            opts = (Options().relay_limits(relaylimits))
+            opts = (ClientOptions().relay_limits(relaylimits))
             sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
             keys = Keys.parse(sk.to_hex())
             database = NostrDatabase.lmdb(self.db_name)
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).opts(opts).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-                await cli.add_relay(relay)
+                await cli.add_relay(RelayUrl.parse(relay))
 
             await cli.connect()
 

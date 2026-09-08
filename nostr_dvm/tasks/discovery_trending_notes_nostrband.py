@@ -71,7 +71,7 @@ class TrendingNotesNostrBand(DVMTaskInterface):
 
         import requests
 
-        url = "https://api.nostr.band/v0/trending/notes"
+        url = ""
         try:
             response = requests.get(url)
             response_json = response.json()
@@ -117,8 +117,8 @@ def build_example(name, identifier, admin_config, custom_processing_msg):
 
     nip89info = {
         "name": name,
-        "picture": "https://nostr.band/android-chrome-192x192.png",
-        "about": "I show trending notes from nostr.band",
+        "picture": "",
+        "about": "I show trending notes",
         "amount": "Free",
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
