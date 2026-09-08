@@ -1,4 +1,4 @@
-from nostr_sdk import Tag, Keys, EventBuilder, Kind
+from nostr_sdk import EventBuilder, Keys, Kind, Tag
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nostr_utils import send_event
@@ -15,7 +15,7 @@ async def announce_dm_relays(dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = ""
 
-    event = EventBuilder(Kind(10050), content).tags(tags).sign_with_keys(keys)
+    event = EventBuilder(Kind(10050), content).tags(tags).finalize(keys)
     response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
     if response_status is not None:
         print(
@@ -40,7 +40,7 @@ async def nip65_announce_relays(dvm_config, client):
     keys = Keys.parse(dvm_config.NIP89.PK)
     content = ""
 
-    event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content).tags(tags).sign_with_keys(keys)
+    event = EventBuilder(EventDefinitions.KIND_RELAY_ANNOUNCEMENT, content).tags(tags).finalize(keys)
     response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
     if response_status is not None:
         print(

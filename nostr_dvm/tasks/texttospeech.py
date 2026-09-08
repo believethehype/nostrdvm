@@ -41,21 +41,21 @@ class TextToSpeech(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "event" and input_type != "job" and input_type != "text":
                     return False
                 # if input_type == "text" and len(input_value) > 250:
                 #    return False
                 if input_type == "event":
-                    evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    evt = await get_event_by_id(tag.to_vec()[1], client=client, config=dvm_config)
                     # if len(evt.content()) > 250:
                     #    return False
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "language":  # check for param type
-                    if tag.as_vec()[2] != "en":  # todo add other available languages
+                    if tag.to_vec()[2] != "en":  # todo add other available languages
                         return False
 
         return True
@@ -70,12 +70,12 @@ class TextToSpeech(DVMTaskInterface):
 
         language = "en"
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "event":
 
-                    evt = await get_event_by_id(tag.as_vec()[1], client=client, config=dvm_config)
+                    evt = await get_event_by_id(tag.to_vec()[1], client=client, config=dvm_config)
 
                     if evt is not None:
                         prompt = evt.content()
@@ -84,23 +84,23 @@ class TextToSpeech(DVMTaskInterface):
 
 
                 elif input_type == "text":
-                    prompt = tag.as_vec()[1]
+                    prompt = tag.to_vec()[1]
                 elif input_type == "job":
 
-                    evt = await get_referenced_event_by_id(event_id=tag.as_vec()[1], client=client,
+                    evt = await get_referenced_event_by_id(event_id=tag.to_vec()[1], client=client,
                                                            kinds=[EventDefinitions.KIND_NIP90_RESULT_EXTRACT_TEXT,
                                                                   EventDefinitions.KIND_NIP90_RESULT_SUMMARIZE_TEXT,
                                                                   EventDefinitions.KIND_NIP90_RESULT_TRANSLATE_TEXT],
                                                            dvm_config=dvm_config)
                     prompt = evt.content()
                 if input_type == "url":
-                    input_file = tag.as_vec()[1]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+                    input_file = tag.to_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "language":  # check for param type
-                    language = tag.as_vec()[2]
+                    language = tag.to_vec()[2]
                 elif param == "voice":  # check for param type
-                    input_file = "cache/" + tag.as_vec()[2] + ".wav"
+                    input_file = "cache/" + tag.to_vec()[2] + ".wav"
 
         if not Path.exists(Path(input_file)):
             input_file_url = "https://media.nostr.build/av/de104e3260be636533a56fd4468b905c1eb22b226143a997aa936b011122af8a.wav"

@@ -1,10 +1,15 @@
 import os
+
+from nostr_dvm.utils.env_utils import set_env_key
 from datetime import timedelta
 from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind, NostrSigner, RelayUrl
+from nostr_sdk import (
+    Client, ClientBuilder, EventBuilder, EventId, Filter, Keys, Kind, PublicKey, RelayUrl,
+    ReqTarget, SignerAuthenticator, SingleLetterTag, Tag,
+)
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.nostr_utils import send_event, print_send_result
@@ -36,7 +41,7 @@ async def nip89_announce_tasks(dvm_config, client):
 
     tags += dvm_config.NIP89.EXTRA_TAGS
 
-    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags(tags).sign_with_keys(keys)
+    event = EventBuilder(EventDefinitions.KIND_ANNOUNCEMENT, content).tags(tags).finalize(keys)
 
     response_status = await send_event(event, client=client, dvm_config=dvm_config, broadcast=True)
 
@@ -47,17 +52,17 @@ async def nip89_announce_tasks(dvm_config, client):
 
 async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, pow=False):
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
-    nip89events = await client.fetch_events(idfilter, relay_timeout)
+    nip89events = await client.fetch_events(ReqTarget.auto([idfilter]), relay_timeout)
     d_tag = ""
-    nip89events_vec = nip89events.to_vec()
+    nip89events_vec = nip89events
     if len(nip89events_vec) == 0:
         print("Event not found. Potentially gone.")
 
     for event in nip89events_vec:
         print(event.as_json())
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == "d":
-                d_tag = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == "d":
+                d_tag = tag.to_vec()[1]
         if d_tag == "":
             print("No dtag found")
             return
@@ -78,7 +83,7 @@ async def nip89_delete_announcement(eid: str, keys: Keys, dtag: str, client: Cli
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).sign_with_keys(keys)
+    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).finalize(keys)
     print(f"Deletion event: {event.as_json()}")
 
 
@@ -89,7 +94,11 @@ async def nip89_delete_announcement_pow(eid: str, keys: Keys, dtag: str, client:
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", str(EventDefinitions.KIND_ANNOUNCEMENT.as_u16()) + ":" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).pow(28).sign_with_keys(keys)
+    from nostr_sdk import MultiThreadPow
+
+    unsigned = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).finalize_unsigned(keys.public_key())
+    mined = await unsigned.mine_async(MultiThreadPow(), 28)
+    event = mined.sign(keys)
     print(f"POW event: {event.as_json()}")
     await send_event(event, client, config, broadcast=True)
 
@@ -99,28 +108,28 @@ async def nip89_fetch_all_dvms(client):
     for i in range(5000, 5999):
         ktags.append(str(i))
 
-    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags)
-    events = await client.fetch_events(filter, relay_timeout)
-    events_vec = events.to_vec()
-    for event in events_vec:
+    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.from_byte(ord('k')), ktags)
+    events = await client.fetch_events(ReqTarget.auto([filter]), relay_timeout)
+
+    for event in events:
         print(event.as_json())
 
 async def nip89_fetch_all_dvms_by_kind(client, kind):
     ktags = [str(kind)]
-    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags)
-    events = await client.fetch_events(filter, relay_timeout)
-    return events_vec
+    filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.from_byte(ord('k')), ktags)
+    events = await client.fetch_events(ReqTarget.auto([filter]), relay_timeout)
+    return events
 
 
 
 async def nip89_fetch_events_pubkey(client, pubkey, kind):
     ktags = [str(kind.as_u16())]
     nip89filter = (Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(PublicKey.parse(pubkey)).
-                   custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags))
-    events = await client.fetch_events(nip89filter, relay_timeout)
+                   custom_tags(SingleLetterTag.from_byte(ord('k')), ktags))
+    events = await client.fetch_events(ReqTarget.auto([nip89filter]), relay_timeout)
 
     dvms = {}
-    for event in events_vec:
+    for event in events:
         if dvms.get(event.author().to_hex()):
             if dvms.get(event.author().to_hex()).created_at().as_secs() < event.created_at().as_secs():
                 dvms[event.author().to_hex()] = event
@@ -144,11 +153,7 @@ def check_and_set_d_tag(identifier, name, pk, imageurl):
 
 
 def nip89_add_dtag_to_env_file(dtag, oskey):
-    env_path = Path('.env')
-    if env_path.is_file():
-        print(f'loading environment from {env_path.resolve()}')
-        dotenv.load_dotenv(env_path, verbose=True, override=True)
-        dotenv.set_key(env_path, dtag, oskey)
+    set_env_key(dtag, oskey)
 
 
 def create_amount_tag(cost=None):
@@ -162,16 +167,15 @@ def create_amount_tag(cost=None):
 
 async def delete_nip_89(dvm_config, pow=True):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     for relay in dvm_config.RELAY_LIST:
         await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(keys.public_key())
-    events = await client.fetch_events(filter, timedelta(seconds=5))
+    events = await client.fetch_events(ReqTarget.auto([filter]), timedelta(seconds=5))
 
-    if len(events_vec) == 0:
+    if len(events) == 0:
         print("Couldn't find note on relays. Seems they are gone.")
         return
-    for event in events_vec:
+    for event in events:
         await fetch_nip89_parameters_for_deletion(keys, event.id().to_hex(), client, dvm_config, pow)
-

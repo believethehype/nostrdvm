@@ -9,7 +9,7 @@ from itertools import islice
 import networkx as nx
 import nostr_sdk
 import numpy as np
-from nostr_sdk import ClientOptions, Keys, NostrSigner, ClientBuilder, Kind, PublicKey, Filter, RelayUrl
+from nostr_sdk import ClientBuilder, Filter, Keys, Kind, PublicKey, RelayUrl, ReqTarget, SignerAuthenticator
 from scipy.sparse import lil_matrix, isspmatrix_csr
 
 from nostr_dvm.utils.definitions import relay_timeout
@@ -41,29 +41,27 @@ async def get_following(pks, max_time_request=10, newer_than_time=None, dvm_conf
 
     else:
         newer_than_time = round(newer_than_time)
-        ts = nostr_sdk.Timestamp().from_secs(newer_than_time)
+        ts = nostr_sdk.Timestamp.from_secs(newer_than_time)
         filter = Filter().authors(list_pk).kind(Kind(3)).since(ts)
 
     # fetching events
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    cli = ClientBuilder().signer(NostrSigner.keys(keys)).build()
+    cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
-    for relay in dvm_config.SYNC_DB_RELAY_LIST:
-        await cli.add_relay(RelayUrl.parse(relay))
+    try:
+        for relay in dvm_config.SYNC_DB_RELAY_LIST:
+            await cli.add_relay(RelayUrl.parse(relay))
 
-    await cli.connect()
-
-    events = await cli.fetch_events(filter, relay_timeout)
-
-    for relay in dvm_config.SYNC_DB_RELAY_LIST:
-        await cli.force_remove_relay(RelayUrl.parse(relay))
-
-    await cli.shutdown()
+        timeout = datetime.timedelta(seconds=max_time_request)
+        await cli.connect(timeout)
+        events = await cli.fetch_events(ReqTarget.auto([filter]), timeout)
+    finally:
+        await cli.shutdown()
     # initializing the graph structure
     following = nx.DiGraph()
     following.add_nodes_from(pks)
 
-    events_vec = events.to_vec()
+    events_vec = events
     if not events_vec:
         return following
 
@@ -76,7 +74,14 @@ async def get_following(pks, max_time_request=10, newer_than_time=None, dvm_conf
 
         if event.verify() and author in following.nodes() and 'timestamp' not in following.nodes[author]:
             # updating the nodes and edges
-            nodes = event.tags().public_keys() # TODO
+            nodes = []
+            for tag in event.tags():
+                values = tag.to_vec()
+                if len(values) >= 2 and values[0] == "p":
+                    try:
+                        nodes.append(PublicKey.parse(values[1]))
+                    except Exception:
+                        continue
 
             # converting to hex and removing self-following
             nodes = [pk.to_hex() for pk in nodes if pk.to_hex() != author]
@@ -590,14 +595,14 @@ async def get_metadata(npub):
     except:
         return "", "", ""
     keys = Keys.parse(check_and_set_private_key("test_client"))
-    client = ClientBuilder().signer(NostrSigner.keys(keys)).build()
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     await client.add_relay(RelayUrl.parse("wss://purplepag.es"))
     await client.connect()
 
     profile_filter = Filter().kind(Kind(0)).author(pk).limit(1)
 
-    events_struct = await client.fetch_events(profile_filter, relay_timeout)
-    events = events_struct.to_vec()
+    events_struct = await client.fetch_events(ReqTarget.auto([profile_filter]), relay_timeout)
+    events = events_struct
     if len(events) > 0:
         try:
             profile = json.loads(events[0].content())

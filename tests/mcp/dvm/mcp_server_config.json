@@ -17,7 +17,7 @@
         "--with",
         "mcp[cli]",
         "--with",
-        "nostr_sdk==0.39.0",
+        "nostr_sdk==0.45.1",
         "mcp",
         "run",
         "tests/mcp/mcp-servers/nostr-notes/server.py"

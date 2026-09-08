@@ -2,7 +2,10 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Client, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayLimits, ClientBuilder, RelayUrl
+from nostr_sdk import (
+    Client, ClientBuilder, Keys, Kind, PublicKey, RelayLimits, RelayUrl, ReqTarget, SecretKey,
+    SignerAuthenticator, Tag, Timestamp,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -46,15 +49,15 @@ class DiscoverReports(DVMTaskInterface):
         since_days = 90
         # users.append(event.author().to_hex())
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                users.append(tag.as_vec()[1])
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                users.append(tag.to_vec()[1])
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "since_days":  # check for param type
-                    since_days = int(tag.as_vec()[2])
+                    since_days = int(tag.to_vec()[2])
                 if param == "user":  # check for param type
-                    sender = tag.as_vec()[2]
+                    sender = tag.to_vec()[2]
 
         options = {
             "users": users,
@@ -69,11 +72,9 @@ class DiscoverReports(DVMTaskInterface):
         from types import SimpleNamespace
         ns = SimpleNamespace()
         relaylimits = RelayLimits.disable()
-        opts = (
-            ClientOptions().relay_limits(relaylimits))
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        cli = ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
+        cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).relay_limits(relaylimits).build()
         for relay in self.dvm_config.RELAY_LIST:
             await cli.add_relay(RelayUrl.parse(relay))
         # add nostr band, too.
@@ -90,46 +91,46 @@ class DiscoverReports(DVMTaskInterface):
         # if we don't add users, e.g. by a wot, we check all our followers.
         if len(pubkeys) == 0:
             followers_filter = Filter().author(PublicKey.parse(options["sender"])).kind(Kind(3))
-            followers = await cli.fetch_events(followers_filter, relay_timeout)
+            followers = await cli.fetch_events(ReqTarget.auto([followers_filter]), relay_timeout)
 
-            followers_vec = followers.to_vec()
+            followers_vec = followers
             if len(followers_vec) > 0:
                 result_list = []
                 newest = 0
                 best_entry = followers_vec[0]
                 for entry in followers_vec:
-                    print(len(best_entry.tags().to_vec()))
+                    print(len(best_entry.tags()))
                     print(best_entry.created_at().as_secs())
                     if entry.created_at().as_secs() > newest:
                         newest = entry.created_at().as_secs()
                         best_entry = entry
-                for tag in best_entry.tags().to_vec():
-                    if tag.as_vec()[0] == "p":
-                        following = PublicKey.parse(tag.as_vec()[1])
+                for tag in best_entry.tags():
+                    if tag.to_vec()[0] == "p":
+                        following = PublicKey.parse(tag.to_vec()[1])
                         pubkeys.append(following)
 
         ago = Timestamp.now().as_secs() - 60 * 60 * 24 * int(
             options["since_days"])  # TODO make this an option, 180 days for now
         since = Timestamp.from_secs(ago)
         kind1984_filter = Filter().authors(pubkeys).kind(Kind(1984)).since(since)
-        reports = await cli.fetch_events(kind1984_filter, relay_timeout)
+        reports = await cli.fetch_events(ReqTarget.auto([kind1984_filter]), relay_timeout)
 
         bad_actors = []
         ns.dic = {}
         reasons = ["spam", "illegal", "impersonation"]
         # init
-        reports_vec = reports.to_vec()
+        reports_vec = reports
         for report in reports_vec:
-            for tag in report.tags().to_vec():
-                if tag.as_vec()[0] == "p":
-                    ns.dic[tag.as_vec()[1]] = 0
+            for tag in report.tags():
+                if tag.to_vec()[0] == "p":
+                    ns.dic[tag.to_vec()[1]] = 0
 
         for report in reports_vec:
             # print(report.as_json())
-            for tag in report.tags().to_vec():
-                if tag.as_vec()[0] == "p":
-                    if len(tag.as_vec()) > 2 and tag.as_vec()[2] in reasons or len(tag.as_vec()) <= 2:
-                        ns.dic[tag.as_vec()[1]] += 1
+            for tag in report.tags():
+                if tag.to_vec()[0] == "p":
+                    if len(tag.to_vec()) > 2 and tag.to_vec()[2] in reasons or len(tag.to_vec()) <= 2:
+                        ns.dic[tag.to_vec()[1]] += 1
 
         # print(ns.dic.items())
         # result = {k for (k, v) in ns.dic.items() if v > 0}
@@ -141,7 +142,7 @@ class DiscoverReports(DVMTaskInterface):
             print(k)
             try:
                 p_tag = Tag.parse(["p", k, str(v)])
-                bad_actors.append(p_tag.as_vec())
+                bad_actors.append(p_tag.to_vec())
             except Exception as e:
                 print(e)
 
@@ -151,9 +152,9 @@ class DiscoverReports(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_users(result)
 

@@ -2,7 +2,7 @@ import json
 import os
 
 import requests
-from nostr_sdk import Timestamp, PublicKey, Tag, Kind
+from nostr_sdk import Kind, PublicKey, Tag, Timestamp
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -32,9 +32,9 @@ class AdvancedSearchWine(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -52,23 +52,23 @@ class AdvancedSearchWine(DVMTaskInterface):
         search = ""
         max_results = 100
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    search = tag.as_vec()[1]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+                    search = tag.to_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "user":  # check for param type
-                    user = tag.as_vec()[2]
+                    user = tag.to_vec()[2]
                 elif param == "users":  # check for param type
-                    users = json.loads(tag.as_vec()[2])
+                    users = json.loads(tag.to_vec()[2])
                 elif param == "since":  # check for param type
-                    since_seconds = int(tag.as_vec()[2])
+                    since_seconds = int(tag.to_vec()[2])
                 elif param == "until":  # check for param type
-                    until_seconds = int(tag.as_vec()[2])
+                    until_seconds = int(tag.to_vec()[2])
                 elif param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
 
         options = {
             "search": search,
@@ -87,7 +87,7 @@ class AdvancedSearchWine(DVMTaskInterface):
         userkeys = []
         for user in options["users"]:
             tag = Tag.parse(user)
-            user = tag.as_vec()[1]
+            user = tag.to_vec()[1]
             user = str(user).lstrip("@")
             userkey = PublicKey.parse(user)
 
@@ -113,7 +113,7 @@ class AdvancedSearchWine(DVMTaskInterface):
             for el in data:
                 try:
                     e_tag = Tag.parse(["e", el['id']])
-                    result_list.append(e_tag.as_vec())
+                    result_list.append(e_tag.to_vec())
                 except Exception as e:
                     print("ERROR: " + str(e))
         except Exception as e:
@@ -123,9 +123,9 @@ class AdvancedSearchWine(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_events(result)
 

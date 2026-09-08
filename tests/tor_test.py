@@ -1,5 +1,8 @@
 import asyncio
-from nostr_sdk import Keys, ClientBuilder, ClientOptions, EventBuilder, Connection, ConnectionTarget, init_logger, LogLevel, NostrSigner, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, EventBuilder, Keys, Kind, LogLevel, Proxy, RelayUrl, SignerAuthenticator,
+    init_logger,
+)
 
 
 async def main():
@@ -8,22 +11,19 @@ async def main():
     keys = Keys.generate()
     print(keys.public_key().to_bech32())
 
-    # Configure client to use embedded tor for `.onion` relays
-    connection = Connection().embedded_tor().target(ConnectionTarget.ONION)
-    opts = ClientOptions().connection(connection)
-    signer = NostrSigner.keys(keys)
-    client = ClientBuilder().signer(signer).opts(opts).build()
+    signer = keys
+    client = ClientBuilder().authenticator(SignerAuthenticator(signer)).proxy(Proxy.onion("127.0.0.1:9050")).build()
     await client.add_relay(RelayUrl.parse("ws://oxtrdevav64z64yb7x6rjg4ntzqjhedm5b5zjqulugknhzr46ny2qbad.onion"))
     await client.add_relay(RelayUrl.parse("ws://2jsnlhfnelig5acq6iacydmzdbdmg7xwunm4xl6qwbvzacw4lwrjmlyd.onion"))
     await client.connect()
 
-    event = EventBuilder.text_note("Hello from rust-nostr Python bindings!")
-    res = await client.send_event_builder(event)
+    event = EventBuilder(Kind(1), "Hello from rust-nostr Python bindings!").finalize(keys)
+    res = await client.send_event(event)
     print("Event sent:")
     print(f" hex:    {res.id.to_hex()}")
     print(f" bech32: {res.id.to_bech32()}")
-    print(f" Successfully sent to:    {res.output.success}")
-    print(f" Failed to send to: {res.output.failed}")
+    print(f" Successfully sent to:    {res.success}")
+    print(f" Failed to send to: {res.failed}")
 
 
 if __name__ == '__main__':

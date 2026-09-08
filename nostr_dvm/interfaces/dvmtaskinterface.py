@@ -11,6 +11,7 @@ from threading import Thread
 from venv import create
 
 from nostr_sdk import Keys, Kind, LogLevel
+from nostr_dvm.utils.sdk_utils import ensure_sdk_callback_loop
 
 from nostr_dvm.dvm import DVM
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -75,6 +76,7 @@ class DVMTaskInterface:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
 
+        ensure_sdk_callback_loop()
         asyncio.run(self.init_dvm(name, dvm_config, nip89config, nip88config,
                                   admin_config, options))
 
@@ -197,7 +199,6 @@ def dvm_shutdown(dvm_config):
     if dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN:
         print(dvm_config.NIP89.NAME)
         asyncio.run(delete_nip_89(dvm_config, dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN_POW))
-
 
 
 

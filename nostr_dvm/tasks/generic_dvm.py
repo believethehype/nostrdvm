@@ -38,16 +38,16 @@ class GenericDVM(DVMTaskInterface):
         print(self.dvm_config.PRIVATE_KEY)
         prompt = ""
         user = event.author().to_hex()
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    prompt = tag.as_vec()[1]
-            elif tag.as_vec()[0] == 'param':
-                if tag.as_vec()[1] == 'user':
-                    user = tag.as_vec()[2]
+                    prompt = tag.to_vec()[1]
+            elif tag.to_vec()[0] == 'param':
+                if tag.to_vec()[1] == 'user':
+                    user = tag.to_vec()[2]
                 else:
-                    self.options[tag.as_vec()[1]] = tag.as_vec()[2]
+                    self.options[tag.to_vec()[1]] = tag.to_vec()[2]
 
         request_form = {"jobID": event.id().to_hex()}
 

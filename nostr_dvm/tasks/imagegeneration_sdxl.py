@@ -33,14 +33,14 @@ class ImageGenerationSDXL(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
 
-            elif tag.as_vec()[0] == 'output':
-                output = tag.as_vec()[1]
+            elif tag.to_vec()[0] == 'output':
+                output = tag.to_vec()[1]
                 if (output == "" or
                         not (output == "image/png" or "image/jpg"
                              or output == "image/png;format=url" or output == "image/jpg;format=url")):
@@ -71,44 +71,44 @@ class ImageGenerationSDXL(DVMTaskInterface):
         lora_weight = ""
         strength = ""
         guidance_scale = ""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
                 if input_type == "text":
-                    prompt = tag.as_vec()[1]
+                    prompt = tag.to_vec()[1]
 
-            elif tag.as_vec()[0] == 'param':
-                print("Param: " + tag.as_vec()[1] + ": " + tag.as_vec()[2])
-                if tag.as_vec()[1] == "negative_prompt":
-                    negative_prompt = tag.as_vec()[2]
-                elif tag.as_vec()[1] == "lora":
-                    lora = tag.as_vec()[2]
-                elif tag.as_vec()[1] == "lora_weight":
-                    lora_weight = tag.as_vec()[2]
-                elif tag.as_vec()[1] == "strength":
-                    strength = float(tag.as_vec()[2])
-                elif tag.as_vec()[1] == "guidance_scale":
-                    guidance_scale = float(tag.as_vec()[2])
-                elif tag.as_vec()[1] == "ratio":
-                    if len(tag.as_vec()) > 3:
-                        ratio_width = (tag.as_vec()[2])
-                        ratio_height = (tag.as_vec()[3])
-                    elif len(tag.as_vec()) == 3:
-                        split = tag.as_vec()[2].split(":")
+            elif tag.to_vec()[0] == 'param':
+                print("Param: " + tag.to_vec()[1] + ": " + tag.to_vec()[2])
+                if tag.to_vec()[1] == "negative_prompt":
+                    negative_prompt = tag.to_vec()[2]
+                elif tag.to_vec()[1] == "lora":
+                    lora = tag.to_vec()[2]
+                elif tag.to_vec()[1] == "lora_weight":
+                    lora_weight = tag.to_vec()[2]
+                elif tag.to_vec()[1] == "strength":
+                    strength = float(tag.to_vec()[2])
+                elif tag.to_vec()[1] == "guidance_scale":
+                    guidance_scale = float(tag.to_vec()[2])
+                elif tag.to_vec()[1] == "ratio":
+                    if len(tag.to_vec()) > 3:
+                        ratio_width = (tag.to_vec()[2])
+                        ratio_height = (tag.to_vec()[3])
+                    elif len(tag.to_vec()) == 3:
+                        split = tag.to_vec()[2].split(":")
                         ratio_width = split[0]
                         ratio_height = split[1]
                     # if size is set it will overwrite ratio.
-                elif tag.as_vec()[1] == "size":
-                    if len(tag.as_vec()) > 3:
-                        width = (tag.as_vec()[2])
-                        height = (tag.as_vec()[3])
-                    elif len(tag.as_vec()) == 3:
-                        split = tag.as_vec()[2].split("x")
+                elif tag.to_vec()[1] == "size":
+                    if len(tag.to_vec()) > 3:
+                        width = (tag.to_vec()[2])
+                        height = (tag.to_vec()[3])
+                    elif len(tag.to_vec()) == 3:
+                        split = tag.to_vec()[2].split("x")
                         if len(split) > 1:
                             width = split[0]
                             height = split[1]
-                elif tag.as_vec()[1] == "model":
-                    model = tag.as_vec()[2]
+                elif tag.to_vec()[1] == "model":
+                    model = tag.to_vec()[2]
 
         io_input = {
             "id": "input_prompt",

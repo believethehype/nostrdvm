@@ -4,8 +4,10 @@ import os
 import time
 
 import networkx as nx
-from nostr_sdk import RelayUrl, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
+from nostr_sdk import (
+    ClientBuilder, Filter, Keys, Kind, LogLevel, NostrLmdb, PublicKey, RelayUrl, SecretKey,
+    SignerAuthenticator, SyncDirection, SyncOptions, Tag, Timestamp, init_logger,
+)
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.tasks.people_discovery_wot import DiscoverPeopleWOT
@@ -65,9 +67,9 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
 
     async def is_input_supported(self, tags, client=None, dvm_config=None):
         for tag in tags:
-            if tag.as_vec()[0] == 'i':
-                input_value = tag.as_vec()[1]
-                input_type = tag.as_vec()[2]
+            if tag.to_vec()[0] == 'i':
+                input_value = tag.to_vec()[1]
+                input_type = tag.to_vec()[2]
                 if input_type != "text":
                     return False
         return True
@@ -84,21 +86,21 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         hops = 2
         dunbar = 1000
 
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'i':
-                input_type = tag.as_vec()[2]
-            elif tag.as_vec()[0] == 'param':
-                param = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'i':
+                input_type = tag.to_vec()[2]
+            elif tag.to_vec()[0] == 'param':
+                param = tag.to_vec()[1]
                 if param == "max_results":  # check for param type
-                    max_results = int(tag.as_vec()[2])
+                    max_results = int(tag.to_vec()[2])
                 elif param == "user":  # check for param type
-                    user = tag.as_vec()[2]
+                    user = tag.to_vec()[2]
                     print(user)
                 elif param == "hops":  # check for param type
-                    hops = int(tag.as_vec()[2])
+                    hops = int(tag.to_vec()[2])
                     print(hops)
                 elif param == "dunbar":  # check for param type
-                    dunbar = int(tag.as_vec()[2])
+                    dunbar = int(tag.to_vec()[2])
                     print(dunbar)
 
         options = {
@@ -171,7 +173,7 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         for entry in result.items():
             # print(EventId.parse(entry[0]).to_bech32() + "/" + EventId.parse(entry[0]).to_hex() + ": " + str(entry[1]))
             e_tag = Tag.parse(["p", str(entry[0]), str(entry[1])])
-            result_list.append(e_tag.as_vec())
+            result_list.append(e_tag.to_vec())
 
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
             print("[" + self.dvm_config.NIP89.NAME + "] Filtered " + str(
@@ -180,9 +182,9 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""
-        for tag in event.tags().to_vec():
-            if tag.as_vec()[0] == 'output':
-                format = tag.as_vec()[1]
+        for tag in event.tags():
+            if tag.to_vec()[0] == 'output':
+                format = tag.to_vec()[1]
                 if format == "text/plain":  # check for output type
                     result = post_process_list_to_users(result)
 
@@ -205,8 +207,8 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
 
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
-        database = NostrDatabase.lmdb(self.db_name)
-        cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
+        database = await NostrLmdb.open(self.db_name)
+        cli = ClientBuilder().authenticator(SignerAuthenticator(keys)).database(database).build()
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
             await cli.add_relay(RelayUrl.parse(relay))
@@ -223,8 +225,8 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
             print("[" + self.dvm_config.NIP89.NAME + "] Syncing notes of the last " + str(
                 self.db_since) + " seconds.. this might take a while..")
         dbopts = SyncOptions().direction(SyncDirection.DOWN)
-        await cli.sync(filter1, dbopts)
-        await cli.database().delete(Filter().until(Timestamp.from_secs(
+        await cli.sync(filter1, opts=dbopts)
+        await cli.database().delete_events(Filter().until(Timestamp.from_secs(
             Timestamp.now().as_secs() - self.db_since)))  # Clear old events so db doesn't get too full.
         await cli.shutdown()
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
@@ -245,22 +247,22 @@ async def analyse_users(user_ids=None, dunbar=100000000):
                 print(npub)
                 print(e)
 
-        database = NostrDatabase.lmdb("db/nostr_followlists.db")
+        database = await NostrLmdb.open("db/nostr_followlists.db")
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query(followers_filter)
         allfriends = []
-        followers_vec = followers.to_vec()
+        followers_vec = followers
         if len(followers_vec) > 0:
             for follower in followers_vec:
                 frens = []
-                if len(follower.tags().to_vec()) < dunbar:
-                    for tag in follower.tags().to_vec():
-                        if tag.as_vec()[0] == "p":
-                            frens.append(tag.as_vec()[1])
+                if len(follower.tags()) < dunbar:
+                    for tag in follower.tags():
+                        if tag.to_vec()[0] == "p":
+                            frens.append(tag.to_vec()[1])
                     allfriends.append(Friend(follower.author().to_hex(), frens))
                 else:
                     print("Skipping friend: " + follower.author().to_hex() + "Following: " + str(
-                        len(follower.tags().to_vec())) + " npubs")
+                        len(follower.tags())) + " npubs")
 
             return allfriends
         else:

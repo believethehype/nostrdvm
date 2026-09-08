@@ -1,6 +1,5 @@
-LPimport asyncio
+import asyncio
 
-from nostr_sdk import Tag, Keys, EventBuilder, Kind, NostrSigner, Client
 
 from nostr_dvm.utils.dvmconfig import DVMConfig
 from nostr_dvm.utils.nostr_utils import send_event, check_and_set_private_key
@@ -8,8 +7,7 @@ from nostr_dvm.utils.print_utils import bcolors
 
 import json, requests
 from datetime import timedelta
-from nostr_sdk import Client, Kind, Alphabet, SingleLetterTag, Filter, init_logger, LogLevel, \
-    NostrDatabase, ClientBuilder, SyncOptions, SyncDirection
+from nostr_sdk import ClientBuilder, EventBuilder, Keys, Kind, LogLevel, SignerAuthenticator, Tag, init_logger
 
 init_logger(LogLevel.ERROR)
 
@@ -95,9 +93,9 @@ async def create_gif_collection(keys, title, dtag):
 
 
     keys = Keys.parse(keys)
-    event = EventBuilder(Kind(30030), "").tags([d_tag, title_tag] + emoji_tags).sign_with_keys(keys)
+    event = EventBuilder(Kind(30030), "").tags([d_tag, title_tag] + emoji_tags).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().ANNOUNCE_RELAY_LIST:
         await client.add_relay(RelayUrl.parse(relay))
@@ -116,9 +114,9 @@ async def delete_gif_collection(keys, eid: str, dtag: str):
     e_tag = Tag.parse(["e", eid])
     a_tag = Tag.parse(
         ["a", "30030:" + keys.public_key().to_hex() + ":" + dtag])
-    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).sign_with_keys(keys)
+    event = EventBuilder(Kind(5), "").tags([e_tag, a_tag]).finalize(keys)
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
     # We add the relays we defined above and told our DVM we would want to receive events to.
     for relay in DVMConfig().RELAY_LIST:
         await client.add_relay(RelayUrl.parse(relay))

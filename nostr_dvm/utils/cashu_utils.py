@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 
@@ -45,7 +46,7 @@ async def redeem_cashu(cashu, config, client, required_amount=0, update_self=Fal
     # Not sure if this the best way to go, we first create an invoice that we send to the mint, we catch the fees
     # for that invoice, and create another invoice with the amount without fees to melt.
     if config.LNBITS_INVOICE_KEY != "":
-        invoice, paymenthash = create_bolt11_ln_bits(estimated_redeem_invoice_amount, config)
+        invoice, paymenthash = await asyncio.to_thread(create_bolt11_ln_bits, estimated_redeem_invoice_amount, config)
     else:
 
         user = await get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,
@@ -72,7 +73,7 @@ async def redeem_cashu(cashu, config, client, required_amount=0, update_self=Fal
         return False, err, 0, 0
 
     if config.LNBITS_INVOICE_KEY != "":
-        invoice, paymenthash = create_bolt11_ln_bits(redeem_invoice_amount, config)
+        invoice, paymenthash = await asyncio.to_thread(create_bolt11_ln_bits, redeem_invoice_amount, config)
     else:
 
         user = await get_or_add_user(db=config.DB, npub=config.PUBLIC_KEY,

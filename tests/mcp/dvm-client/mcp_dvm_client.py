@@ -3,8 +3,12 @@ import json
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Keys, Client, Tag, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, \
-    nip44_encrypt, Nip44Version, NostrSigner, Event, Kind, init_logger, LogLevel, RelayUrl
+from nostr_sdk import (
+    ClientBuilder, Event, EventBuilder, Filter, Keys, Kind, LogLevel, RelayUrl, ReqTarget,
+    SignerAuthenticator, Tag, Timestamp, init_logger,
+)
+
+from nostr_dvm.utils.sdk_utils import handle_notifications
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.nip89_utils import nip89_fetch_all_dvms_by_kind
@@ -23,10 +27,10 @@ async def nostr_client_test_mcp_get_tools(dvm_pubkey):
     ptag = Tag.parse(["p", dvm_pubkey])
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_MCP, str("MCP request")).tags(
-                         [ptag, outTag, alttag, cTag, relaysTag]).sign_with_keys(keys)
+                         [ptag, outTag, alttag, cTag, relaysTag]).finalize(keys)
 
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -52,10 +56,10 @@ async def nostr_client_test_mcp_execute_tool(tool_name, tool_parameters, dvm_pub
                }
 
     event = EventBuilder(EventDefinitions.KIND_NIP90_MCP, json.dumps(payload)).tags(
-                         [ptag, outTag, alttag, cTag, relaysTag]).sign_with_keys(keys)
+                         [ptag, outTag, alttag, cTag, relaysTag]).finalize(keys)
 
 
-    client = Client(NostrSigner.keys(keys))
+    client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
 
     for relay in relay_list:
         await client.add_relay(RelayUrl.parse(relay))
@@ -78,8 +82,8 @@ async def nostr_client():
     pk = keys.public_key()
     print(f"Bot public key: {pk.to_bech32()}")
 
-    signer = NostrSigner.keys(keys)
-    client = Client(signer)
+    signer = keys
+    client = ClientBuilder().authenticator(SignerAuthenticator(signer)).build()
     await client.add_relay(RelayUrl.parse("wss://nostr.mom"))
     await client.add_relay(RelayUrl.parse("wss://nostr.oxtr.dev"))
     await client.add_relay(RelayUrl.parse("wss://relay.nostrdvm.com"))
@@ -88,7 +92,7 @@ async def nostr_client():
     now = Timestamp.now()
 
     mcp_filter = Filter().pubkey(pk).kind(Kind(6910)).limit(0)
-    await client.subscribe(mcp_filter, None)
+    await client.subscribe(ReqTarget.auto([mcp_filter]), None)
 
     print("Existing MCP DVMS:")
     nip89s = await nip89_fetch_all_dvms_by_kind(client, 5910)
@@ -108,7 +112,7 @@ async def nostr_client():
     #await nostr_client_test_mcp_execute_tool(tool_name="extract", tool_parameters={"url": "https://en.wikipedia.org/wiki/Nostr"}, dvm_pubkey=dvm_pubkey)
 
 
-    class NotificationHandler(HandleNotification):
+    class NotificationHandler:
         async def handle(self, relay_url, subscription_id, event: Event):
             print(f"Received new event from {relay_url}: {event.as_json()}")
 
@@ -120,7 +124,7 @@ async def nostr_client():
         async def handle_msg(self, relay_url, msg):
             _var = None
 
-    await client.handle_notifications(NotificationHandler())
+    await handle_notifications(client, NotificationHandler())
 
 
 if __name__ == '__main__':

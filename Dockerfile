@@ -10,7 +10,7 @@ RUN pip install setuptools
 COPY . .
 
 #RUN pip install nostr-dvm
-RUN python setup.py install
+RUN pip install --no-cache-dir .
 
 # Specify the command to run your application
 CMD ["python3", "-u", "main.py"]
