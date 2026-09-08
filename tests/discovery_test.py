@@ -48,8 +48,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://purplerelay.com",
                       "wss://nostr.bitcoiner.social",
                       "wss://nostr.oxtr.dev",
-                      "wss://relay.nostr.net",
-                      "wss://relay.damus.io"]
+                      "wss://relay.nostr.net"]
 RELAY_LIST = ["wss://relay.primal.net",
               "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
@@ -522,8 +521,7 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
                       "wss://purplerelay.com",
                       "wss://nostr.bitcoiner.social",
                       "wss://nostr.oxtr.dev",
-                      "wss://relay.nostr.net",
-                      "wss://relay.damus.io"]
+                      "wss://relay.nostr.net"]
 
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
