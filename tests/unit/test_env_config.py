@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from dotenv import dotenv_values
 
+from nostr_dvm.utils import env_utils
 from nostr_dvm.utils.env_utils import get_env_path, load_env, set_env_key
 from nostr_dvm.utils.nostr_utils import check_and_set_private_key
 from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
@@ -13,7 +14,7 @@ from nostr_dvm.utils.zap_utils import check_and_set_ln_bits_keys
 
 class EnvironmentConfigTests(unittest.TestCase):
     def test_path_does_not_depend_on_working_directory(self):
-        expected = Path(__file__).resolve().parents[2] / ".env"
+        expected = Path(env_utils.__file__).resolve().parents[2] / ".env"
         original = Path.cwd()
         with tempfile.TemporaryDirectory() as directory:
             try:
