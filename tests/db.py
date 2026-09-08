@@ -1,6 +1,6 @@
 from threading import Thread
 
-from nostr_sdk import Keys, Filter, ClientBuilder, NostrDatabase, SyncOptions, init_logger, LogLevel
+from nostr_sdk import Keys, Filter, ClientBuilder, NostrDatabase, SyncOptions, init_logger, LogLevel, RelayUrl
 
 init_logger(LogLevel.INFO)
 keys = Keys.parse("nsec1ufnus6pju578ste3v90xd5m2decpuzpql2295m3sknqcjzyys9ls0qlc85")
@@ -17,9 +17,7 @@ async def reconcile_db():
     # database = NostrDatabase.ndb("ndb")
 
     client = ClientBuilder().database(database).build()
-
-    await client.add_relay("wss://relay.damus.io")
-    await client.add_relay("wss://atl.purplerelay.com")
+    await client.add_relay(RelayUrl.parse("wss://atl.purplerelay.com"))
     await client.connect()
 
     # Negentropy reconciliation

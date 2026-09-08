@@ -3,8 +3,8 @@ import os
 from datetime import timedelta
 from itertools import islice
 
-from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
-    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind, PublicKey, RelayFilteringMode, RelayLimits
+from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
+    ClientBuilder, Filter, SyncOptions, SyncDirection, Kind, PublicKey, RelayLimits, RelayUrl
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -85,8 +85,8 @@ class SearchUser(DVMTaskInterface):
         cli = ClientBuilder().database(database).signer(NostrSigner.keys(keys)).build()
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            await cli.add_relay(relay)
-        # cli.add_relay("wss://atl.purplerelay.com")
+            await cli.add_relay(RelayUrl.parse(relay))
+        # cli.add_relay(RelayUrl.parse("wss://atl.purplerelay.com"))
         await cli.connect()
 
         # Negentropy reconciliation
@@ -97,11 +97,12 @@ class SearchUser(DVMTaskInterface):
         events = await cli.database().query(filter1)
 
         result_list = []
-        print("Events: " + str(len(events.to_vec())))
+        events_vec = events.to_vec()
+        print("Events: " + str(len(events_vec)))
         index = 0
-        if len(events.to_vec()) > 0:
+        if len(events_vec) > 0:
 
-            for event in events.to_vec():
+            for event in events_vec:
                 if index < options["max_results"]:
                     try:
                         searchterm = " " + options["search"].lower() + " "
@@ -144,43 +145,32 @@ class SearchUser(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         database = NostrDatabase.lmdb(self.db_name)
         relaylimits = RelayLimits.disable()
-        opts = (Options().relay_limits(relaylimits))
-        if self.dvm_config.WOT_FILTERING:
-            opts = opts.filtering_mode(RelayFilteringMode.WHITELIST)
+        opts = (ClientOptions().relay_limits(relaylimits))
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).opts(opts).build()
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            await cli.add_relay(relay)
+            await cli.add_relay(RelayUrl.parse(relay))
         await cli.connect()
         if self.dvm_config.WOT_FILTERING and self.wot_counter == 0:
             print("Calculating WOT for " + str(self.dvm_config.WOT_BASED_ON_NPUBS))
-            filtering = cli.filtering()
             index_map, G = await build_wot_network(self.dvm_config.WOT_BASED_ON_NPUBS,
                                                    depth=self.dvm_config.WOT_DEPTH, max_batch=500,
                                                    max_time_request=10, dvm_config=self.dvm_config)
 
-            # Do we actually need pagerank here?
-            # print('computing global pagerank...')
-            # tic = time.time()
-            # p_G = nx.pagerank(G, tol=1e-12)
-            # print("network after pagerank: " + str(len(p_G)))
-
-            wot_keys = []
+            self.wot_pubkeys = []
             for item in islice(G, len(G)):
-                key = next((PublicKey.parse(pubkey) for pubkey, id in index_map.items() if id == item),
+                key = next((pubkey for pubkey, id in index_map.items() if id == item),
                            None)
-                wot_keys.append(key)
-
-            # toc = time.time()
-            # print(f'finished in {toc - tic} seconds')
-            await filtering.add_public_keys(wot_keys)
+                if key:
+                    self.wot_pubkeys.append(PublicKey.parse(key))
 
         self.wot_counter += 1
-        # only calculate wot every 10th call
         if self.wot_counter >= 10:
             self.wot_counter = 0
 
         filter1 = Filter().kind(Kind(0))
+        if self.dvm_config.WOT_FILTERING and hasattr(self, 'wot_pubkeys') and self.wot_pubkeys:
+            filter1 = filter1.authors(self.wot_pubkeys)
 
         # filter = Filter().author(keys.public_key())
         print("Syncing Profile Database.. this might take a while..")

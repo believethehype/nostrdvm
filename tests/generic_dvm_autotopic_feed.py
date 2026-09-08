@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 from duck_chat import ModelType
-from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, Options, ClientBuilder, Tag, \
+from nostr_sdk import Kind, Filter, PublicKey, SecretKey, Keys, NostrSigner, RelayLimits, ClientOptions, ClientBuilder, Tag, \
     LogLevel, Timestamp, NostrDatabase
 
 from nostr_dvm.framework import DVMFramework
@@ -24,8 +24,7 @@ RELAY_LIST = ["wss://relay.nostrdvm.com",
               #"wss://relay.nostr.net"
               ]
 
-SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
-                      "wss://relay.primal.net",
+SYNC_DB_RELAY_LIST = ["wss://relay.primal.net",
                       "wss://nostr.oxtr.dev"]
 
 
@@ -149,13 +148,12 @@ def playground(announce=False):
         keys = Keys.parse(sk.to_hex())
         relaylimits = RelayLimits.disable()
 
-        opts = Options().relay_limits(relaylimits)
+        opts = ClientOptions().relay_limits(relaylimits)
         signer = NostrSigner.keys(keys)
         cli = ClientBuilder().signer(signer).opts(opts).build()
         for relay in dvm.dvm_config.ANNOUNCE_RELAY_LIST:
-            await cli.add_relay(relay)
+            await cli.add_relay(RelayUrl.parse(relay))
         # ropts = RelayOptions().ping(False)
-        # await cli.add_relay_with_opts("wss://nostr.band", ropts)
 
         await cli.connect()
         #pip install -U https://github.com/mrgick/duckduckgo-chat-ai/archive/master.zip
@@ -165,12 +163,13 @@ def playground(announce=False):
         event_struct = await cli.fetch_events(filterauth, relay_timeout)
         text = ""
 
-        if len(event_struct.to_vec()) == 0:
+        event_struct_vec = event_struct.to_vec()
+        if len(event_struct_vec) == 0:
             #raise Exception("No Notes found")
             print("No Notes found")
             return json.dumps([])
 
-        for event in event_struct.to_vec():
+        for event in event_struct_vec:
             text = text + event.content() + ";"
 
 
@@ -215,11 +214,12 @@ def playground(announce=False):
 
 
 
-        print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
+        events_vec = events.to_vec()
+        print("[" + dvm.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
         ns.finallist = {}
         #search_list = result.split(',')
 
-        for event in events.to_vec():
+        for event in events_vec:
             #if all(ele in event.content().lower() for ele in []):
                     #if not any(ele in event.content().lower() for ele in []):
             filt = Filter().kinds(
@@ -227,8 +227,9 @@ def playground(announce=False):
                  definitions.EventDefinitions.KIND_REPOST,
                  definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
             reactions = await database.query(filt)
-            if len(reactions.to_vec()) >= 1:
-                ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
+            reactions_vec = reactions.to_vec()
+            if len(reactions_vec) >= 1:
+                ns.finallist[event.id().to_hex()] = len(reactions_vec)
 
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(200)]

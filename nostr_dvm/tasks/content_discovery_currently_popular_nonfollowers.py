@@ -3,7 +3,7 @@ import json
 import os
 from datetime import timedelta
 
-from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+from nostr_sdk import RelayUrl, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind, \
     RelayLimits
 
@@ -141,7 +141,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
         options = self.set_options(request_form)
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().relay_limits(relaylimits))
+            ClientOptions().relay_limits(relaylimits))
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         if self.database is None:
@@ -149,19 +149,19 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
 
         cli = ClientBuilder().database(self.database).signer(NostrSigner.keys(keys)).opts(opts).build()
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            await cli.add_relay(relay)
+            await cli.add_relay(RelayUrl.parse(relay))
 
         # ropts = RelayOptions().ping(False)
-        # cli.add_relay_with_opts("wss://nostr.band", ropts)
 
         await cli.connect()
         user = PublicKey.parse(options["user"])
         followers_filter = Filter().author(user).kinds([Kind(3)])
         followers = await cli.fetch_events(followers_filter, relay_timeout)
-        if len(followers.to_vec()) > 0:
+        followers_vec = followers.to_vec()
+        if len(followers_vec) > 0:
             newest = 0
-            best_entry = followers.to_vec()[0]
-            for entry in followers.to_vec():
+            best_entry = followers_vec[0]
+            for entry in followers_vec:
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
@@ -185,10 +185,11 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
 
         events = await self.database.query(filter1)
 
-        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
+        events_vec = events.to_vec()
+        print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
         ns.finallist = {}
 
-        for event in events.to_vec():
+        for event in events_vec:
             if event.author().to_hex() in followings:
                 continue
 
@@ -197,8 +198,9 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
                  definitions.EventDefinitions.KIND_REPOST,
                  definitions.EventDefinitions.KIND_NOTE]).event(event.id()).since(since)
             reactions = await self.database.query(filt)
-            if len(reactions.to_vec()) >= self.min_reactions:
-                ns.finallist[event.id().to_hex()] = len(reactions.to_vec())
+            reactions_vec = reactions.to_vec()
+            if len(reactions_vec) >= self.min_reactions:
+                ns.finallist[event.id().to_hex()] = len(reactions_vec)
 
         print(len(ns.finallist))
         result_list = []
@@ -231,7 +233,7 @@ class DicoverContentCurrentlyPopularNonFollowers(DVMTaskInterface):
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-                await cli.add_relay(relay)
+                await cli.add_relay(RelayUrl.parse(relay))
 
             await cli.connect()
 

@@ -18,7 +18,7 @@ global_update_rate = 1200     # set this high on first sync so db can fully sync
 use_logger = True
 
 
-#SYNC_DB_RELAY_LIST = ["wss://relay.damus.io"]  # , "wss://relay.snort.social"]
+#SYNC_DB_RELAY_LIST = []  # , "wss://relay.snort.social"]
 
 
 if use_logger:

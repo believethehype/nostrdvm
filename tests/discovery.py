@@ -39,12 +39,12 @@ delete_announcement_on_shutdown = False
 
 global_update_rate = 180  # set this high on first sync so db can fully sync before another process trys to.
 use_logger = True
-log_level = LogLevel.ERROR
+log_level = LogLevel.INFO
 max_sync_duration_in_h = 24
 
-SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
-                      "wss://relay.primal.net",
-                      "wss://nostr.oxtr.dev"]
+SYNC_DB_RELAY_LIST = ["wss://nostr.oxtr.dev",
+                      "wss://nostr.mom",
+                      "wss://nos.lol"]
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
               "wss://nostr.oxtr.dev"
@@ -203,8 +203,11 @@ def build_example_nostrband(name, identifier, admin_config, image, about, custom
     dvm_config.RELAY_LIST = RELAY_LIST
     dvm_config.LOGLEVEL = LogLevel.INFO
     dvm_config.SEND_FEEDBACK_EVENTS = False
-    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = delete_announcement_on_shutdown
+    dvm_config.DELETE_ANNOUNCEMENT_ON_SHUTDOWN = True
     admin_config.LUD16 = dvm_config.LN_ADDRESS
+    admin_config.REBROADCAST_NIP89 = False
+    admin_config.DELETE_NIP89 = True
+
     # Add NIP89
 
     nip89info = {
@@ -818,24 +821,24 @@ def playground():
     framework.add(discovery_topzaps)
 
     # Popular NOSTR.band
-    admin_config_trending_nostr_band = AdminConfig()
-    admin_config_trending_nostr_band.REBROADCAST_NIP89 = rebroadcast_NIP89
-    admin_config_trending_nostr_band.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
-    admin_config_trending_nostr_band.UPDATE_PROFILE = update_profile
-    # admin_config_trending_nostr_band.DELETE_NIP89 = True
-    # admin_config_trending_nostr_band.PRIVKEY = ""
-    # admin_config_trending_nostr_band.EVENTID = "e7a7aaa7113f17af94ccbfe86c06e04c27ffce3d2f654d613ce249b68414bdae"
-    # admin_config_trending_nostr_band.POW = True
-    custom_processing_msg = "Looking for trending notes on nostr.band.."
-    image = "https://nostr.band/android-chrome-192x192.png"
-    about = "I show trending notes from nostr.band"
-    trending_nb = build_example_nostrband("Trending Notes on nostr.band",
-                                          "trending_notes_nostrband",
-                                          image=image,
-                                          about=about,
-                                          admin_config=admin_config_trending_nostr_band,
-                                          custom_processing_msg=custom_processing_msg)
-    framework.add(trending_nb)
+    #admin_config_trending_nostr_band = AdminConfig()
+    #admin_config_trending_nostr_band.REBROADCAST_NIP89 = False
+    #admin_config_trending_nostr_band.REBROADCAST_NIP65_RELAY_LIST = rebroadcast_NIP65_Relay_List
+    #admin_config_trending_nostr_band.UPDATE_PROFILE = update_profile
+    #admin_config_trending_nostr_band.DELETE_NIP89 = True
+    #admin_config_trending_nostr_band.PRIVKEY = "c64595e637ba3faf87cdc90eae57c9505c8c39ca91d15ee5087cd6fda32387e4"
+    #admin_config_trending_nostr_band.EVENTID = "e7a7aaa7113f17af94ccbfe86c06e04c27ffce3d2f654d613ce249b68414bdae"
+    #admin_config_trending_nostr_band.POW = False
+    #custom_processing_msg = "Looking for trending notes.."
+    #image = ""
+    #about = "I show trending notes on nostr band"
+    #trending_nb = build_example_nostrband("Trending Notes on Nostr Band",
+    #                                      "trending_notes_nostrband",
+    #                                      image=image,
+    #                                      about=about,
+    #                                      admin_config=admin_config_trending_nostr_band,
+    #                                      custom_processing_msg=custom_processing_msg)
+    #framework.add(trending_nb)
 
     admin_config_mostr = AdminConfig()
     admin_config_mostr.REBROADCAST_NIP89 = rebroadcast_NIP89

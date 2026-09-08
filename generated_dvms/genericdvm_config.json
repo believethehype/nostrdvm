@@ -1,0 +1,12 @@
+{
+  "name": "Generic D V M",
+  "identifier": "genericdvm",
+  "template": "generic_dvm.py",
+  "kind": 5000,
+  "description": "test",
+  "cost": 0.0,
+  "params": {},
+  "options": {},
+  "nip89_picture": "",
+  "announce": false
+}

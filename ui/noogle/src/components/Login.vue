@@ -876,7 +876,6 @@ export default {
         let relayopts = new Options().relayLimits(limits);
         dbclient = new ClientBuilder().signer(signer).database(await db).opts(relayopts).build()
 
-        await dbclient.addRelay("wss://relay.damus.io");
         await dbclient.addRelay("wss://relay.primal.net");
         await dbclient.connect()
 

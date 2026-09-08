@@ -1,7 +1,7 @@
 import json
 from datetime import timedelta
 
-from nostr_sdk import Timestamp, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+from nostr_sdk import RelayUrl, Timestamp, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
@@ -114,21 +114,23 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
 
         filter1 = Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(since)
         events = await database.query(filter1)
+        events_vec = events.to_vec()
         if self.dvm_config.LOGLEVEL.value >= LogLevel.DEBUG.value:
-            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events.to_vec())) + " Events")
+            print("[" + self.dvm_config.NIP89.NAME + "] Considering " + str(len(events_vec)) + " Events")
 
         ns.finallist = {}
-        for event in events.to_vec():
+        for event in events_vec:
             if event.created_at().as_secs() > timestamp_hour_ago:
                 filt = Filter().kinds([definitions.EventDefinitions.KIND_ZAP]).event(event.id()).since(since)
                 zaps = await database.query(filt)
                 invoice_amount = 0
                 event_author = event.author().to_hex()
-                if len(zaps.to_vec()) >= self.min_reactions:
+                zaps_vec = zaps.to_vec()
+                if len(zaps_vec) >= self.min_reactions:
                     has_preimage = False
                     has_amount = False
                     overall_amount = 0
-                    for zap in zaps.to_vec():
+                    for zap in zaps_vec:
                         if event_author == zap.author().to_hex():
                             continue  # Skip self zaps..
                         invoice_amount = 0
@@ -219,7 +221,7 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
             cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
             for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-                await cli.add_relay(relay)
+                await cli.add_relay(RelayUrl.parse(relay))
 
             await cli.connect()
 

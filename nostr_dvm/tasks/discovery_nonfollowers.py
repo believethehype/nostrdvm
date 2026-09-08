@@ -4,8 +4,8 @@ import os
 from datetime import timedelta
 from threading import Thread
 
-from nostr_sdk import Client, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, Kind, RelayOptions, \
-    RelayLimits, ClientBuilder
+from nostr_sdk import RelayUrl, Client, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, Kind, RelayOptions, \
+    RelayLimits, ClientBuilder, RelayUrl
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -64,17 +64,14 @@ class DiscoverNonFollowers(DVMTaskInterface):
         ns = SimpleNamespace()
         relaylimits = RelayLimits.disable()
         opts = (
-            Options().relay_limits(
+            ClientOptions().relay_limits(
                 relaylimits))
         sk = SecretKey.parse(self.dvm_config.PRIVATE_KEY)
         keys = Keys.parse(sk.to_hex())
         cli= ClientBuilder().signer(NostrSigner.keys(keys)).opts(opts).build()
-
-        # cli.add_relay("wss://relay.nostr.band")
         for relay in self.dvm_config.RELAY_LIST:
-            await cli.add_relay(relay)
+            await cli.add_relay(RelayUrl.parse(relay))
         # add nostr band, too.
-        await cli.add_relay("wss://nostr.band")
 
         await cli.connect()
 
@@ -84,11 +81,12 @@ class DiscoverNonFollowers(DVMTaskInterface):
         followers_filter = Filter().author(PublicKey.parse(options["user"])).kind(Kind(3))
         followers = await cli.fetch_events(followers_filter, relay_timeout)
 
-        if len(followers.to_vec()) > 0:
+        followers_vec = followers.to_vec()
+        if len(followers_vec) > 0:
             result_list = []
             newest = 0
-            best_entry = followers.to_vec()[0]
-            for entry in followers.to_vec():
+            best_entry = followers_vec[0]
+            for entry in followers_vec:
                 if entry.created_at().as_secs() > newest:
                     newest = entry.created_at().as_secs()
                     best_entry = entry
@@ -108,7 +106,7 @@ class DiscoverNonFollowers(DVMTaskInterface):
                 keys = Keys.parse(self.dvm_config.PRIVATE_KEY)
                 cli = Client(NostrSigner.keys(keys))
                 for relay in self.dvm_config.RELAY_LIST:
-                    await cli.add_relay(relay)
+                    await cli.add_relay(RelayUrl.parse(relay))
                 await cli.connect()
 
                 filter1 = Filter().author(PublicKey.parse(users[i])).kind(Kind(3))
@@ -118,11 +116,11 @@ class DiscoverNonFollowers(DVMTaskInterface):
                     follower = await cli.fetch_events(filter1, relay_timeout)
                     followers = followers.merge(follower)
 
-                    if len(followers.to_vec()) > 0:
+                    if len(followers_vec) > 0:
                         result_list = []
                         newest = 0
-                        best_entry = followers.to_vec()[0]
-                        for entry in followers.to_vec():
+                        best_entry = followers_vec[0]
+                        for entry in followers_vec:
                             if entry.created_at().as_secs() > newest:
                                 newest = entry.created_at().as_secs()
                                 best_entry = entry

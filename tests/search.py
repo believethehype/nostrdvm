@@ -34,8 +34,7 @@ RELAY_LIST = ["wss://nostr.mom",
               #"wss://relay.nostr.net"
               ]
 
-SYNC_DB_RELAY_LIST = ["wss://relay.damus.io",
-                      #"wss://relay.primal.net",
+SYNC_DB_RELAY_LIST = [#"wss://relay.primal.net",
                       "wss://nostr.oxtr.dev"]
 
 
@@ -62,8 +61,8 @@ def build_advanced_search(name, identifier):
 
     nip89info = {
         "name": name,
-        "picture": "https://nostr.band/android-chrome-192x192.png",
-        "about": "I search notes on nostr.band",
+        "picture": "",
+        "about": "I search notes",
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
         "nip90Params": {

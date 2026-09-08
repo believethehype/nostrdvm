@@ -4,7 +4,7 @@ from hashlib import sha256
 from pathlib import Path
 
 import dotenv
-from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind, NostrSigner
+from nostr_sdk import Tag, Keys, EventBuilder, Filter, Alphabet, PublicKey, Client, EventId, SingleLetterTag, Kind, NostrSigner, RelayUrl
 
 from nostr_dvm.utils.definitions import EventDefinitions, relay_timeout
 from nostr_dvm.utils.nostr_utils import send_event, print_send_result
@@ -49,10 +49,11 @@ async def fetch_nip89_parameters_for_deletion(keys, eventid, client, dvmconfig, 
     idfilter = Filter().id(EventId.parse(eventid)).limit(1)
     nip89events = await client.fetch_events(idfilter, relay_timeout)
     d_tag = ""
-    if len(nip89events.to_vec()) == 0:
+    nip89events_vec = nip89events.to_vec()
+    if len(nip89events_vec) == 0:
         print("Event not found. Potentially gone.")
 
-    for event in nip89events.to_vec():
+    for event in nip89events_vec:
         print(event.as_json())
         for tag in event.tags().to_vec():
             if tag.as_vec()[0] == "d":
@@ -100,14 +101,15 @@ async def nip89_fetch_all_dvms(client):
 
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags)
     events = await client.fetch_events(filter, relay_timeout)
-    for event in events.to_vec():
+    events_vec = events.to_vec()
+    for event in events_vec:
         print(event.as_json())
 
 async def nip89_fetch_all_dvms_by_kind(client, kind):
     ktags = [str(kind)]
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).custom_tags(SingleLetterTag.lowercase(Alphabet.K), ktags)
     events = await client.fetch_events(filter, relay_timeout)
-    return events.to_vec()
+    return events_vec
 
 
 
@@ -118,7 +120,7 @@ async def nip89_fetch_events_pubkey(client, pubkey, kind):
     events = await client.fetch_events(nip89filter, relay_timeout)
 
     dvms = {}
-    for event in events.to_vec():
+    for event in events_vec:
         if dvms.get(event.author().to_hex()):
             if dvms.get(event.author().to_hex()).created_at().as_secs() < event.created_at().as_secs():
                 dvms[event.author().to_hex()] = event
@@ -162,14 +164,14 @@ async def delete_nip_89(dvm_config, pow=True):
     keys = Keys.parse(dvm_config.PRIVATE_KEY)
     client = Client(NostrSigner.keys(keys))
     for relay in dvm_config.RELAY_LIST:
-        await client.add_relay(relay)
+        await client.add_relay(RelayUrl.parse(relay))
     await client.connect()
     filter = Filter().kind(EventDefinitions.KIND_ANNOUNCEMENT).author(keys.public_key())
     events = await client.fetch_events(filter, timedelta(seconds=5))
 
-    if len(events.to_vec()) == 0:
+    if len(events_vec) == 0:
         print("Couldn't find note on relays. Seems they are gone.")
         return
-    for event in events.to_vec():
+    for event in events_vec:
         await fetch_nip89_parameters_for_deletion(keys, event.id().to_hex(), client, dvm_config, pow)
 

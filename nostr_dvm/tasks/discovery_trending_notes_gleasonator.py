@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 from nostr_sdk import Tag, Kind, init_logger, LogLevel, Filter, Client, NostrSigner, Keys, \
-    SecretKey, Options, SingleLetterTag, Alphabet, PublicKey
+    SecretKey, ClientOptions, SingleLetterTag, Alphabet, PublicKey, RelayUrl
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
 from nostr_dvm.utils.admin_utils import AdminConfig
@@ -74,7 +74,7 @@ class TrendingNotesGleasonator(DVMTaskInterface):
         keys = Keys.parse(sk.to_hex())
         cli = Client(NostrSigner.keys(keys))
 
-        await cli.add_relay(options["relay"])
+        await cli.add_relay(RelayUrl.parse(options["relay"]))
         await cli.connect()
 
         ltags = ["#e", "pub.ditto.trends"]
@@ -85,8 +85,9 @@ class TrendingNotesGleasonator(DVMTaskInterface):
         events = await cli.fetch_events(notes_filter, relay_timeout_long)
 
         result_list = []
-        if len(events.to_vec()) > 0:
-            event = events.to_vec()[0]
+        events_vec = events.to_vec()
+        if len(events_vec) > 0:
+            event = events_vec[0]
             print(event)
             for tag in event.tags().to_vec():
                 if tag.as_vec()[0] == "e":

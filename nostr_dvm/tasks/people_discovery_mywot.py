@@ -4,7 +4,7 @@ import os
 import time
 
 import networkx as nx
-from nostr_sdk import Timestamp, PublicKey, Tag, Keys, Options, SecretKey, NostrSigner, NostrDatabase, \
+from nostr_sdk import RelayUrl, Timestamp, PublicKey, Tag, Keys, ClientOptions, SecretKey, NostrSigner, NostrDatabase, \
     ClientBuilder, Filter, SyncOptions, SyncDirection, init_logger, LogLevel, Kind
 
 from nostr_dvm.interfaces.dvmtaskinterface import DVMTaskInterface, process_venv
@@ -209,7 +209,7 @@ class DiscoverPeopleMyWOT(DVMTaskInterface):
         cli = ClientBuilder().signer(NostrSigner.keys(keys)).database(database).build()
 
         for relay in self.dvm_config.SYNC_DB_RELAY_LIST:
-            await cli.add_relay(relay)
+            await cli.add_relay(RelayUrl.parse(relay))
 
         await cli.connect()
 
@@ -249,8 +249,9 @@ async def analyse_users(user_ids=None, dunbar=100000000):
         followers_filter = Filter().authors(user_keys).kind(Kind(3))
         followers = await database.query(followers_filter)
         allfriends = []
-        if len(followers.to_vec()) > 0:
-            for follower in followers.to_vec():
+        followers_vec = followers.to_vec()
+        if len(followers_vec) > 0:
+            for follower in followers_vec:
                 frens = []
                 if len(follower.tags().to_vec()) < dunbar:
                     for tag in follower.tags().to_vec():
