@@ -26,7 +26,6 @@ class DVMConfig:
                           "wss://nostr.bitcoiner.social",
                           "wss://nostr.oxtr.dev",
                           "wss://relay.nostr.net",
-                          "wss://relay.damus.io",
                          ]
     # announce inbox relays, dm relays and NIP89 announcement to
     ANNOUNCE_RELAY_LIST = ["wss://relay.primal.net",
