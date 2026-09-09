@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from nostr_sdk import EventId, Filter, ReqTarget, SingleLetterTag, SyncDirection, SyncOptions, Timestamp
+from nostr_sdk import EventId, Filter, PublicKey, ReqTarget, SingleLetterTag, SyncDirection, SyncOptions, Timestamp
 
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.sdk_utils import merge_events
@@ -22,11 +22,16 @@ def discovery_sync_filters(since, authors=None, batch_size=500):
             for offset in range(0, len(authors), batch_size)]
 
 
-async def query_engagement(database, event_id: EventId, since: Timestamp):
+async def query_engagement(database, event_id: EventId, since: Timestamp,
+                           exclude_author: PublicKey = None):
     parent_filter = Filter().kinds(engagement_kinds()).event(event_id).since(since)
     root_filter = Filter().kind(EventDefinitions.KIND_NIP22_COMMENT).custom_tags(
         SingleLetterTag.from_byte(ord('E')), [event_id.to_hex()]).since(since)
-    return merge_events(await database.query(parent_filter), await database.query(root_filter))
+    events = merge_events(await database.query(parent_filter), await database.query(root_filter))
+    if exclude_author is not None:
+        author_hex = exclude_author.to_hex()
+        events = [event for event in events if event.author().to_hex() != author_hex]
+    return events
 
 
 async def sync_discovery_database(client, event_filter, label, unsupported_relays=None):

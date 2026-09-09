@@ -69,6 +69,7 @@ class DVMConfig:
     SHOW_RESULT_BEFORE_PAYMENT: bool = False  # if this is true show results even when not paid right after autoprocess
     SCHEDULE_UPDATES_SECONDS = 0
     UPDATE_DATABASE = True  # DVMs that use a db manage their db by default. If a dvm should use the same db as another DVM, deactive it for those who do.
+    EXCLUDE_SELF_ENGAGEMENT = True  # Do not count a note author's own reactions/replies/reposts/zaps towards its engagement score
     CUSTOM_PROCESSING_MESSAGE = None
     LOGLEVEL = LogLevel.INFO
     KIND = None
