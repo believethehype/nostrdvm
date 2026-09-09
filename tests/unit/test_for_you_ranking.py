@@ -430,5 +430,104 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(note_one_id, ids)
 
 
+class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.global_db = await init_db(self.directory.name, print_filesize=False)
+        self.now = Timestamp.now().as_secs()
+
+    async def save_global(self, kind, author_keys, tags=(), age_secs=60):
+        event = EventBuilder(Kind(kind), "c").tags([Tag.parse(t) for t in tags]).custom_created_at(
+            Timestamp.from_secs(self.now - age_secs)).finalize(author_keys)
+        await self.global_db.save_event(event)
+        return event
+
+    def make_task(self):
+        from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
+        task = object.__new__(DiscoverContentForYou)
+        task.db_since = 7 * 24 * 3600
+        task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
+                                          NIP89=SimpleNamespace(NAME="For You"))
+        task._engagement_index = None
+        task._engagement_index_built_at = 0
+        return task
+
+    async def test_index_groups_events_dedupes_and_aggregates(self):
+        from nostr_dvm.utils.engagement_profile_utils import weights_from_engager_authors
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=30)
+        note_id = note.id().to_hex()
+        author_hex = author.public_key().to_hex()
+        fan = Keys.generate()
+        await self.save_global(1, fan, tags=[
+            ["e", note_id, "", "root"], ["e", note_id, "", "reply"]], age_secs=20)
+        engager = Keys.generate()
+        await self.save_global(7, engager, tags=[["e", note_id]], age_secs=25)
+
+        task = self.make_task()
+        index = await task._build_engagement_index(self.global_db,
+                                                   Timestamp.from_secs(self.now - 3600))
+        self.assertEqual(len(index["engagement_by_note"][note_id]), 2)  # reply + reaction, deduped tags
+        self.assertIn(fan.public_key().to_hex(), index["engagers_by_author"][author_hex])
+        self.assertAlmostEqual(index["total_by_author"][author_hex], 14.0)
+        self.assertIn(engager.public_key().to_hex(), index["engager_authors"])
+        self.assertIn(author_hex, index["engager_authors"][engager.public_key().to_hex()])
+        # OON weights work straight off the precomputed graph (both fan and engager
+        # engaged with the author; each contributes 1 at overlap threshold 1)
+        weights = weights_from_engager_authors(index["engager_authors"],
+                                               requester_hex="a" * 64,
+                                               liked_authors={author_hex},
+                                               overlap_threshold=1)
+        self.assertEqual(weights.get(author_hex), 2)
+
+    async def test_index_reused_within_ttl_and_rebuilt_after(self):
+        task = self.make_task()
+        calls = {"n": 0}
+        original = type(task)._build_engagement_index
+
+        async def counting(inner, database, graph_since):
+            calls["n"] += 1
+            return await original(inner, database, graph_since)
+
+        with patch.object(type(task), "_build_engagement_index", counting):
+            await task._get_engagement_index(self.global_db, now_secs=self.now)
+            await task._get_engagement_index(self.global_db, now_secs=self.now + 400)  # within 600s TTL
+            self.assertEqual(calls["n"], 1)
+            await task._get_engagement_index(self.global_db, now_secs=self.now + 601)  # expired
+            self.assertEqual(calls["n"], 2)
+
+    async def test_calculate_result_builds_index_once_across_requests(self):
+        from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task = self.make_task()
+        cache = MagicMock()
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {}, "liked_authors": set(),
+            "follows": {author.public_key().to_hex()}, "muted": set(), "keywords": []})
+        task.profile_cache = cache
+
+        calls = {"n": 0}
+        original = type(task)._build_engagement_index
+
+        async def counting(inner, database, graph_since):
+            calls["n"] += 1
+            return await original(inner, database, graph_since)
+
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db, \
+                patch.object(type(task), "_build_engagement_index", counting):
+            open_db.return_value = self.global_db
+            for _ in range(2):
+                result = await task.calculate_result(
+                    {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})})
+            self.assertEqual(calls["n"], 1)  # two requests, one index build
+        self.assertIn(("e", note.id().to_hex()), [tuple(t) for t in json.loads(result)])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -194,14 +194,16 @@ def create_lnbits_wallet(name):
         r = requests.post(url, json=data, headers=headers, proxies=proxies, timeout=(5, 30))
         walletjson = json.loads(r.text)
 
-        if r.status_code not in (200, 201) or 'inkey' not in walletjson:
-            print("LNbits wallet creation failed (HTTP " + str(r.status_code) + "): " + r.text[:200])
+        status = getattr(r, "status_code", 200)
+        if status not in (200, 201) or 'inkey' not in walletjson:
+            # log the status only; response bodies can contain wallet keys
+            print("LNbits wallet creation failed (HTTP " + str(status) + ")")
             return "", "", "", "failed"
 
         return walletjson['inkey'],  walletjson['adminkey'], walletjson['id'], "success"
 
-    except Exception as e:
-        print("LNbits wallet creation failed: " + str(e))
+    except Exception:
+        print("LNbits wallet creation failed")
         return "", "", "", "failed"
 
 
