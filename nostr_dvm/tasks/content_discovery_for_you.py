@@ -52,6 +52,8 @@ class DiscoverContentForYou(DVMTaskInterface):
     _engagement_index = None
     _engagement_index_built_at = 0
     index_ttl_seconds = 600  # rebuild the engagement index at most this often (matches the default sync rate)
+    seen_ttl_seconds = 24 * 3600  # notes served to a user are excluded from their feed for this long
+    _seen_served = None  # {user_hex: {note_id: served_secs}}, in-memory only
     profile_cache = None
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
@@ -119,11 +121,36 @@ class DiscoverContentForYou(DVMTaskInterface):
         user, max_results = self._resolve_user(request_form)
         database = await NostrLmdb.open(self.db_name)
         try:
-            return await self._personalized(database, user, max_results)
+            result = await self._personalized(database, user, max_results)
         except Exception as error:
             print("[" + self.dvm_config.NIP89.NAME + "] Personalized ranking failed, "
                   "falling back to global ranking: " + str(error))
-            return await self._global_fallback(database, max_results)
+            result = await self._global_fallback(database, max_results, user)
+        if user:
+            try:
+                self._mark_served(user, [entry[1] for entry in json.loads(result)],
+                                  Timestamp.now().as_secs())
+            except Exception:
+                pass
+        return result
+
+    def _get_seen(self, user_hex: str, now_secs: float) -> dict:
+        if self._seen_served is None:
+            self._seen_served = {}
+        served = self._seen_served.setdefault(user_hex, {})
+        for note_id, served_secs in list(served.items()):
+            if now_secs - served_secs >= self.seen_ttl_seconds:
+                del served[note_id]
+        return served
+
+    def _mark_served(self, user_hex: str, note_ids: list, now_secs: float):
+        served = self._get_seen(user_hex, now_secs)
+        for note_id in note_ids:
+            served[note_id] = now_secs
+
+    def _unseen(self, user_hex: str, notes: list, now_secs: float) -> list:
+        served = self._get_seen(user_hex, now_secs)
+        return [note for note in notes if note.id().to_hex() not in served]
 
     async def _build_engagement_index(self, database, graph_since):
         """Precompute the per-note engagement groups and per-author aggregates shared by
@@ -230,15 +257,15 @@ class DiscoverContentForYou(DVMTaskInterface):
                                                            note.author().to_hex(), exclude_self=exclude_self)))
         oon = oon[:RANKING_PARAMS["oon_cap"]]
 
-        candidates = in_network + oon
+        candidates = self._unseen(user, in_network + oon, now_secs)
         if not candidates:
-            return await self._global_fallback(database, max_results)
+            return await self._global_fallback(database, max_results, user)
 
         ranked = sorted([(note, note_score(note)) for note in candidates], key=lambda pair: -pair[1])
         selected = apply_author_diversity(ranked, max_results)
         return json.dumps([["e", event.id().to_hex()] for event, score in selected])
 
-    async def _global_fallback(self, database, max_results):
+    async def _global_fallback(self, database, max_results, user=None):
         now_secs = Timestamp.now().as_secs()
         candidate_since = Timestamp.from_secs(now_secs - RANKING_PARAMS["candidate_age_hours"] * 3600)
         notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(candidate_since))
@@ -253,6 +280,12 @@ class DiscoverContentForYou(DVMTaskInterface):
             scored.append((note, note_engagement_base(engagement_by_note.get(note.id().to_hex(), []),
                                                       author, exclude_self=exclude_self)))
         scored.sort(key=lambda pair: -pair[1])
+        if user:
+            unseen = [(event, score) for event, score in scored
+                      if event.id().to_hex() not in self._get_seen(user, now_secs)]
+            if unseen:
+                scored = unseen
+            # everything already served: repeat the best notes rather than return an empty feed
         return json.dumps([["e", event.id().to_hex()] for event, score in scored[:max_results]])
 
     async def post_process(self, result, event):

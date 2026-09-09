@@ -29,11 +29,12 @@ class RankingMathTests(unittest.TestCase):
     def test_action_weights_match_params(self):
         keys = Keys.generate()
         self.assertEqual(event_action_weight(make_event(7, keys)), 0.5)
-        self.assertEqual(event_action_weight(make_event(6, keys)), 1.0)
-        self.assertEqual(event_action_weight(make_event(1, keys)), 2.0)
-        # a typical 100-sat zap outweighs a reply
+        self.assertEqual(event_action_weight(make_event(1, keys)), 1.0)
+        self.assertEqual(event_action_weight(make_event(6, keys)), 2.0)
+        # sharing beats replying; a typical 100-sat zap beats both
         zap100 = make_event(9735, keys, tags=[["bolt11", "lnbc1000n1fake"], ["preimage", "p"]])
-        self.assertGreater(event_action_weight(zap100), event_action_weight(make_event(1, keys)))
+        self.assertGreater(event_action_weight(zap100), event_action_weight(make_event(6, keys)))
+        self.assertGreater(event_action_weight(make_event(6, keys)), event_action_weight(make_event(1, keys)))
 
     def test_zap_weight_is_log_scaled_by_sats(self):
         keys = Keys.generate()
@@ -62,8 +63,10 @@ class RankingMathTests(unittest.TestCase):
         self.assertEqual(affinity("a", {"a": 10 ** 9}), RANKING_PARAMS["affinity_cap"])
 
     def test_credibility_caps_at_one(self):
-        self.assertEqual(credibility(0), 0.0)
+        # never-engaged authors get the floor instead of an invisible 0 score
+        self.assertEqual(credibility(0), RANKING_PARAMS["credibility_floor"])
         self.assertEqual(credibility(10 ** 6), 1.0)
+        self.assertGreater(credibility(10), credibility(1))
 
     def test_new_author_boost_threshold(self):
         self.assertEqual(new_author_boost(4.9), RANKING_PARAMS["boost_factor"])
@@ -123,7 +126,7 @@ class CoEngagementTests(unittest.TestCase):
         replies = [make_event(1, user, tags=[["e", note_hex]]),
                    make_event(7, user, tags=[["e", note_hex]])]
         actions, liked = profile_actions_by_author(replies, {note_hex: note_author_hex}, user.public_key().to_hex())
-        self.assertAlmostEqual(actions.get(note_author_hex), 2.5)
+        self.assertAlmostEqual(actions.get(note_author_hex), 1.5)
         self.assertEqual(liked, {note_author_hex})
 
 
@@ -163,7 +166,7 @@ class ProfileCacheTests(unittest.IsolatedAsyncioTestCase):
             open_db.return_value = self.profile_db
             builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
             profile = await cache.get_profile(user.public_key().to_hex(), {note_hex: note_author_hex})
-        self.assertAlmostEqual(profile["actions_by_author"][note_author_hex], 2.5)
+        self.assertAlmostEqual(profile["actions_by_author"][note_author_hex], 1.5)
         self.assertEqual(profile["liked_authors"], {note_author_hex})
         # second call is a cache hit: sync must not be called again
         with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder:
@@ -473,7 +476,7 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
                                                    Timestamp.from_secs(self.now - 3600))
         self.assertEqual(len(index["engagement_by_note"][note_id]), 2)  # reply + reaction, deduped tags
         self.assertIn(fan.public_key().to_hex(), index["engagers_by_author"][author_hex])
-        self.assertAlmostEqual(index["total_by_author"][author_hex], 2.5)
+        self.assertAlmostEqual(index["total_by_author"][author_hex], 1.5)
         self.assertIn(engager.public_key().to_hex(), index["engager_authors"])
         self.assertIn(author_hex, index["engager_authors"][engager.public_key().to_hex()])
         # OON weights work straight off the precomputed graph (both fan and engager
@@ -530,6 +533,90 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
                     {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})})
             self.assertEqual(calls["n"], 1)  # two requests, one index build
         self.assertIn(("e", note.id().to_hex()), [tuple(t) for t in json.loads(result)])
+
+
+class SeenFilterTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.global_db = await init_db(self.directory.name, print_filesize=False)
+        self.now = Timestamp.now().as_secs()
+
+    async def save_global(self, kind, author_keys, tags=(), age_secs=60):
+        event = EventBuilder(Kind(kind), "c").tags([Tag.parse(t) for t in tags]).custom_created_at(
+            Timestamp.from_secs(self.now - age_secs)).finalize(author_keys)
+        await self.global_db.save_event(event)
+        return event
+
+    async def make_task_with_author(self, author):
+        from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
+        task = object.__new__(DiscoverContentForYou)
+        task.db_since = 7 * 24 * 3600
+        task.seen_ttl_seconds = 24 * 3600
+        task._seen_served = None
+        task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
+                                          NIP89=SimpleNamespace(NAME="For You"))
+        cache = MagicMock()
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {}, "liked_authors": set(),
+            "follows": {author.public_key().to_hex()}, "muted": set(), "keywords": []})
+        task.profile_cache = cache
+        return task
+
+    async def test_served_notes_excluded_on_next_request(self):
+        author = Keys.generate()
+        note_a = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note_a.id().to_hex()]], age_secs=20)
+        await self.save_global(7, Keys.generate(), tags=[["e", note_a.id().to_hex()]], age_secs=20)
+        note_b = await self.save_global(1, author, age_secs=40)
+        await self.save_global(7, Keys.generate(), tags=[["e", note_b.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task = await self.make_task_with_author(author)
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            first = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
+            self.assertEqual(first, [["e", note_a.id().to_hex()]])  # higher engagement first
+            self.assertIn(note_a.id().to_hex(), task._seen_served[user])
+            second = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
+        self.assertEqual(second, [["e", note_b.id().to_hex()]])  # seen note replaced by fresh one
+
+    async def test_seen_notes_return_after_ttl(self):
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task = await self.make_task_with_author(author)
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            first = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 5})}))
+            self.assertEqual(first, [["e", note.id().to_hex()]])
+            # simulate the served mark aging past the 24h TTL
+            task._seen_served[user][note.id().to_hex()] = Timestamp.now().as_secs() - 25 * 3600
+            second = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 5})}))
+        self.assertEqual(second, [["e", note.id().to_hex()]])
+
+    async def test_exhausted_feed_repeats_rather_than_returning_empty(self):
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task = await self.make_task_with_author(author)
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            for expected in (1, 1):  # served once, seen, then repeats instead of "[]"
+                result = json.loads(await task.calculate_result(
+                    {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 5})}))
+                self.assertEqual(len(result), expected)
 
 
 if __name__ == "__main__":
