@@ -180,60 +180,41 @@ class ProfileCache:
     def _is_fresh(self, entry, now_secs) -> bool:
         return entry is not None and (now_secs - entry[0]) < self.ttl_seconds
 
-    async def get_profile(self, user_hex: str, note_author_by_id: dict) -> dict:
-        now_secs = Timestamp.now().as_secs()
-        entry = self._profiles.get(user_hex)
-        if self._is_fresh(entry, now_secs):
-            return entry[1]
-        database = await NostrLmdb.open(self.profile_db_name)
-        cli = await self._get_client(database)
-        try:
-            since = Timestamp.from_secs(now_secs - self.history_days * 24 * 3600)
-            event_filter = Filter().kinds([Kind(k) for k in PROFILE_KINDS]).author(
-                PublicKey.parse(user_hex)).since(since)
-            await sync_discovery_database(cli, event_filter, "profile-sync")
-            events = await database.query(event_filter)
-        finally:
-            await cli.shutdown()
+    def _store(self, cache: dict, user_hex: str, now_secs: int, payload) -> None:
+        for key in [k for k, entry in cache.items()
+                    if k != user_hex and (now_secs - entry[0]) >= self.ttl_seconds]:
+            del cache[key]
+        cache[user_hex] = (now_secs, payload)
+
+    async def _sync_profile(self, user_hex: str, note_author_by_id: dict, cli, database,
+                            now_secs: int) -> dict:
+        since = Timestamp.from_secs(now_secs - self.history_days * 24 * 3600)
+        event_filter = Filter().kinds([Kind(k) for k in PROFILE_KINDS]).author(
+            PublicKey.parse(user_hex)).since(since)
+        await sync_discovery_database(cli, event_filter, "profile-sync")
+        events = await database.query(event_filter)
         actions_by_author, liked_authors = profile_actions_by_author(events, note_author_by_id, user_hex)
-        profile = {"events": events, "actions_by_author": actions_by_author,
-                   "liked_authors": liked_authors}
-        self._profiles[user_hex] = (now_secs, profile)
+        profile = {"actions_by_author": actions_by_author, "liked_authors": liked_authors}
+        self._store(self._profiles, user_hex, now_secs, profile)
         return profile
 
-    async def get_follows(self, user_hex: str) -> set:
-        now_secs = Timestamp.now().as_secs()
-        entry = self._follows.get(user_hex)
-        if self._is_fresh(entry, now_secs):
-            return entry[1]
-        cli = await self._get_client()
-        try:
-            event_filter = Filter().kind(Kind(3)).author(PublicKey.parse(user_hex)).limit(1)
-            events = await cli.fetch_events(ReqTarget.auto([event_filter]), timedelta(seconds=10))
-            events = events.to_vec() if hasattr(events, "to_vec") else events
-        finally:
-            await cli.shutdown()
+    async def _fetch_follows(self, cli, user_hex: str, now_secs: int) -> set:
+        event_filter = Filter().kind(Kind(3)).author(PublicKey.parse(user_hex)).limit(1)
+        events = await cli.fetch_events(ReqTarget.auto([event_filter]), timedelta(seconds=10))
+        events = events.to_vec() if hasattr(events, "to_vec") else events
         follows = set()
         for event in events:
             for tag in event.tags():
                 vec = tag.to_vec()
                 if vec[0] == "p" and len(vec) > 1:
                     follows.add(vec[1])
-        self._follows[user_hex] = (now_secs, follows)
+        self._store(self._follows, user_hex, now_secs, follows)
         return follows
 
-    async def get_mutes(self, user_hex: str) -> tuple:
-        now_secs = Timestamp.now().as_secs()
-        entry = self._mutes.get(user_hex)
-        if self._is_fresh(entry, now_secs):
-            return entry[1]
-        cli = await self._get_client()
-        try:
-            event_filter = Filter().kind(Kind(10000)).author(PublicKey.parse(user_hex)).limit(1)
-            events = await cli.fetch_events(ReqTarget.auto([event_filter]), timedelta(seconds=10))
-            events = events.to_vec() if hasattr(events, "to_vec") else events
-        finally:
-            await cli.shutdown()
+    async def _fetch_mutes(self, cli, user_hex: str, now_secs: int) -> tuple:
+        event_filter = Filter().kind(Kind(10000)).author(PublicKey.parse(user_hex)).limit(1)
+        events = await cli.fetch_events(ReqTarget.auto([event_filter]), timedelta(seconds=10))
+        events = events.to_vec() if hasattr(events, "to_vec") else events
         muted = set()
         keywords = []
         for event in events:
@@ -243,5 +224,64 @@ class ProfileCache:
                     muted.add(vec[1])
                 elif len(vec) > 1 and vec[0] == "t":
                     keywords.append(vec[1].lower())
-        self._mutes[user_hex] = (now_secs, (muted, keywords))
+        self._store(self._mutes, user_hex, now_secs, (muted, keywords))
         return muted, keywords
+
+    async def get_profile(self, user_hex: str, note_author_by_id: dict) -> dict:
+        now_secs = Timestamp.now().as_secs()
+        entry = self._profiles.get(user_hex)
+        if self._is_fresh(entry, now_secs):
+            return entry[1]
+        database = await NostrLmdb.open(self.profile_db_name)
+        cli = await self._get_client(database)
+        try:
+            return await self._sync_profile(user_hex, note_author_by_id, cli, database, now_secs)
+        finally:
+            await cli.shutdown()
+
+    async def get_requester_context(self, user_hex: str, note_author_by_id: dict) -> dict:
+        now_secs = Timestamp.now().as_secs()
+        profile_entry = self._profiles.get(user_hex)
+        follows_entry = self._follows.get(user_hex)
+        mutes_entry = self._mutes.get(user_hex)
+        profile = profile_entry[1] if self._is_fresh(profile_entry, now_secs) else None
+        follows = follows_entry[1] if self._is_fresh(follows_entry, now_secs) else None
+        mutes = mutes_entry[1] if self._is_fresh(mutes_entry, now_secs) else None
+        if profile is None or follows is None or mutes is None:
+            database = await NostrLmdb.open(self.profile_db_name) if profile is None else None
+            cli = await self._get_client(database)
+            try:
+                if profile is None:
+                    profile = await self._sync_profile(user_hex, note_author_by_id, cli, database, now_secs)
+                if follows is None:
+                    follows = await self._fetch_follows(cli, user_hex, now_secs)
+                if mutes is None:
+                    mutes = await self._fetch_mutes(cli, user_hex, now_secs)
+            finally:
+                await cli.shutdown()
+        muted, keywords = mutes
+        return {"actions_by_author": profile["actions_by_author"],
+                "liked_authors": profile["liked_authors"],
+                "follows": follows, "muted": muted, "keywords": keywords}
+
+    async def get_follows(self, user_hex: str) -> set:
+        now_secs = Timestamp.now().as_secs()
+        entry = self._follows.get(user_hex)
+        if self._is_fresh(entry, now_secs):
+            return entry[1]
+        cli = await self._get_client()
+        try:
+            return await self._fetch_follows(cli, user_hex, now_secs)
+        finally:
+            await cli.shutdown()
+
+    async def get_mutes(self, user_hex: str) -> tuple:
+        now_secs = Timestamp.now().as_secs()
+        entry = self._mutes.get(user_hex)
+        if self._is_fresh(entry, now_secs):
+            return entry[1]
+        cli = await self._get_client()
+        try:
+            return await self._fetch_mutes(cli, user_hex, now_secs)
+        finally:
+            await cli.shutdown()

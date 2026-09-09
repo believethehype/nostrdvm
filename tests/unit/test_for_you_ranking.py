@@ -194,6 +194,101 @@ class ProfileCacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(muted, {mute_c})
         self.assertEqual(keywords, ["spam"])
 
+    async def test_get_requester_context_single_connect(self):
+        note_author = Keys.generate()
+        note = EventBuilder(Kind(1), "n").custom_created_at(
+            Timestamp.from_secs(self.now - 120)).finalize(note_author)
+        note_hex = note.id().to_hex()
+        note_author_hex = note_author.public_key().to_hex()
+        user = Keys.generate()
+        await self.save_profile_event(7, user, [["e", note_hex]])
+        follow_a = Keys.generate().public_key().to_hex()
+        follow_b = Keys.generate().public_key().to_hex()
+        mute_c = Keys.generate().public_key().to_hex()
+        contact = EventBuilder(Kind(3), "").tags(
+            [Tag.parse(["p", follow_a]), Tag.parse(["p", follow_b])]).custom_created_at(
+            Timestamp.from_secs(self.now - 60)).finalize(user)
+        mutes = EventBuilder(Kind(10000), "").tags(
+            [Tag.parse(["p", mute_c]), Tag.parse(["t", "spam"])]).custom_created_at(
+            Timestamp.from_secs(self.now - 60)).finalize(user)
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        client = MagicMock()
+        client.sync = AsyncMock(return_value=SimpleNamespace(
+            success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+        client.database.return_value = self.profile_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        client.fetch_events = AsyncMock(side_effect=[[contact], [mutes]])
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder, \
+                patch("nostr_dvm.utils.engagement_profile_utils.NostrLmdb.open",
+                      new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.profile_db
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            context = await cache.get_requester_context(user.public_key().to_hex(),
+                                                        {note_hex: note_author_hex})
+        self.assertEqual(
+            builder.return_value.authenticator.return_value.database.return_value.build.call_count, 1)
+        self.assertEqual(client.connect.await_count, 1)
+        self.assertAlmostEqual(context["actions_by_author"][note_author_hex], 0.5)
+        self.assertEqual(context["liked_authors"], {note_author_hex})
+        self.assertEqual(context["follows"], {follow_a, follow_b})
+        self.assertEqual(context["muted"], {mute_c})
+        self.assertEqual(context["keywords"], ["spam"])
+
+    async def test_cached_profile_payload_excludes_raw_events(self):
+        note_author = Keys.generate()
+        note = EventBuilder(Kind(1), "n").custom_created_at(
+            Timestamp.from_secs(self.now - 120)).finalize(note_author)
+        note_hex = note.id().to_hex()
+        note_author_hex = note_author.public_key().to_hex()
+        user = Keys.generate()
+        await self.save_profile_event(7, user, [["e", note_hex]])
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        client = MagicMock()
+        client.sync = AsyncMock(return_value=SimpleNamespace(
+            success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+        client.database.return_value = self.profile_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder, \
+                patch("nostr_dvm.utils.engagement_profile_utils.NostrLmdb.open",
+                      new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.profile_db
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            profile = await cache.get_profile(user.public_key().to_hex(), {note_hex: note_author_hex})
+        self.assertNotIn("events", profile)
+        stored = cache._profiles[user.public_key().to_hex()][1]
+        self.assertNotIn("events", stored)
+        self.assertAlmostEqual(stored["actions_by_author"][note_author_hex], 0.5)
+        self.assertEqual(stored["liked_authors"], {note_author_hex})
+
+    async def test_profile_write_evicts_expired_other_users(self):
+        user = Keys.generate().public_key().to_hex()
+        stale_user = Keys.generate().public_key().to_hex()
+        fresh_user = Keys.generate().public_key().to_hex()
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        now_secs = Timestamp.now().as_secs()
+        cache._profiles[stale_user] = (now_secs - 3600, {"actions_by_author": {}, "liked_authors": set()})
+        cache._profiles[fresh_user] = (now_secs - 10, {"actions_by_author": {}, "liked_authors": set()})
+        client = MagicMock()
+        client.sync = AsyncMock(return_value=SimpleNamespace(
+            success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+        client.database.return_value = self.profile_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder, \
+                patch("nostr_dvm.utils.engagement_profile_utils.NostrLmdb.open",
+                      new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.profile_db
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            await cache.get_profile(user, {})
+        self.assertNotIn(stale_user, cache._profiles)
+        self.assertIn(fresh_user, cache._profiles)
+        self.assertIn(user, cache._profiles)
+
 
 class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
@@ -215,9 +310,9 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
         task.profile_ttl_seconds = 3600
         task.history_days = 7
         cache = MagicMock()
-        cache.get_profile = AsyncMock(return_value={"events": [], "actions_by_author": {}, "liked_authors": set()})
-        cache.get_follows = AsyncMock(return_value={user})
-        cache.get_mutes = AsyncMock(return_value=(set(), []))
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {}, "liked_authors": set(),
+            "follows": set(), "muted": set(), "keywords": []})
         task.profile_cache = cache
         task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
                                           NIP89=SimpleNamespace(NAME="For You"))
@@ -246,13 +341,13 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
 
         task, cache = self.make_task(requester)
         # the in-network note must actually be followed by the requester
-        cache.get_follows = AsyncMock(return_value={followed_author.public_key().to_hex()})
-        cache.get_profile = AsyncMock(return_value={
-            "events": [],
+        cache.get_requester_context = AsyncMock(return_value={
             "actions_by_author": {oon_author.public_key().to_hex(): 13.5},
             "liked_authors": {oon_author.public_key().to_hex(),
                               author_three.public_key().to_hex(),
-                              liked_extra_keys.public_key().to_hex()}})
+                              liked_extra_keys.public_key().to_hex()},
+            "follows": {followed_author.public_key().to_hex()},
+            "muted": set(), "keywords": []})
         with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
                    new_callable=AsyncMock) as open_db:
             open_db.return_value = self.global_db
@@ -266,13 +361,31 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
         user = Keys.generate().public_key().to_hex()
         await self.save_global(1, Keys.generate(), age_secs=30)
         task, cache = self.make_task(user)
-        cache.get_profile = AsyncMock(side_effect=RuntimeError("relay down"))
+        cache.get_requester_context = AsyncMock(side_effect=RuntimeError("relay down"))
         with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
                    new_callable=AsyncMock) as open_db:
             open_db.return_value = self.global_db
             result = await task.calculate_result(
                 {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})})
         self.assertIsInstance(json.loads(result), list)  # degraded mode ran, no crash
+
+    async def test_empty_candidate_pool_falls_back_to_global_ranking(self):
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+        task, cache = self.make_task(user)
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {}, "liked_authors": set(),
+            "follows": set(), "muted": set(), "keywords": []})
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            result = await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})})
+        entries = [tuple(t) for t in json.loads(result)]
+        self.assertIn(("e", note.id().to_hex()), entries)
+        cache.get_requester_context.assert_awaited_once()
 
 
     async def seed_reply_dedupe_notes(self, with_reply):
@@ -292,9 +405,12 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
         await self.save_global(7, Keys.generate(), tags=[["e", low_note.id().to_hex()]], age_secs=20)
 
         task, cache = self.make_task(requester)
-        cache.get_follows = AsyncMock(return_value={author_one.public_key().to_hex(),
-                                                    author_two.public_key().to_hex(),
-                                                    author_three.public_key().to_hex()})
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {}, "liked_authors": set(),
+            "follows": {author_one.public_key().to_hex(),
+                        author_two.public_key().to_hex(),
+                        author_three.public_key().to_hex()},
+            "muted": set(), "keywords": []})
         with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
                    new_callable=AsyncMock) as open_db:
             open_db.return_value = self.global_db
