@@ -1,12 +1,17 @@
 import math
+import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from nostr_sdk import EventBuilder, Keys, Kind, Tag, Timestamp
 
+from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.engagement_profile_utils import (
-    RANKING_PARAMS, affinity, apply_author_diversity, build_coengagement,
-    credibility, event_action_weight, new_author_boost, note_engagement_base,
-    oon_factor, profile_actions_by_author, recency_factor, score_note, top_level)
+    RANKING_PARAMS, ProfileCache, affinity, apply_author_diversity,
+    build_coengagement, credibility, event_action_weight, new_author_boost,
+    note_engagement_base, oon_factor, profile_actions_by_author, recency_factor,
+    score_note, top_level)
 
 
 def make_event(kind, author_keys, tags=(), age_secs=60):
@@ -115,6 +120,77 @@ class CoEngagementTests(unittest.TestCase):
         actions, liked = profile_actions_by_author(replies, {note_hex: note_author_hex}, user.public_key().to_hex())
         self.assertAlmostEqual(actions.get(note_author_hex), 14.0)
         self.assertEqual(liked, {note_author_hex})
+
+
+class ProfileCacheTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.profile_db = await init_db(self.directory.name, print_filesize=False)
+        self.now = Timestamp.now().as_secs()
+
+    async def save_profile_event(self, kind, author_keys, tags):
+        event = EventBuilder(Kind(kind), "x").tags([Tag.parse(t) for t in tags]).custom_created_at(
+            Timestamp.from_secs(self.now - 60)).finalize(author_keys)
+        await self.profile_db.save_event(event)
+        return event
+
+    async def test_get_profile_builds_actions_and_likes_from_db(self):
+        note_author = Keys.generate()
+        note = EventBuilder(Kind(1), "n").custom_created_at(
+            Timestamp.from_secs(self.now - 120)).finalize(note_author)
+        note_hex = note.id().to_hex()
+        note_author_hex = note_author.public_key().to_hex()
+        user = Keys.generate()
+        await self.save_profile_event(1, user, [["e", note_hex]])
+        await self.save_profile_event(7, user, [["e", note_hex]])
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        client = MagicMock()
+        client.sync = AsyncMock(return_value=SimpleNamespace(
+            success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+        client.database.return_value = self.profile_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder, \
+                patch("nostr_dvm.utils.engagement_profile_utils.NostrLmdb.open",
+                      new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.profile_db
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            profile = await cache.get_profile(user.public_key().to_hex(), {note_hex: note_author_hex})
+        self.assertAlmostEqual(profile["actions_by_author"][note_author_hex], 14.0)
+        self.assertEqual(profile["liked_authors"], {note_author_hex})
+        # second call is a cache hit: sync must not be called again
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder:
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            await cache.get_profile(user.public_key().to_hex(), {note_hex: note_author_hex})
+            client.sync.assert_awaited_once()
+
+    async def test_get_follows_and_mutes_from_fetched_lists(self):
+        user = Keys.generate()
+        follow_a = Keys.generate().public_key().to_hex()
+        follow_b = Keys.generate().public_key().to_hex()
+        mute_c = Keys.generate().public_key().to_hex()
+        contact = EventBuilder(Kind(3), "").tags(
+            [Tag.parse(["p", follow_a]), Tag.parse(["p", follow_b])]).custom_created_at(
+            Timestamp.from_secs(self.now - 60)).finalize(user)
+        mutes = EventBuilder(Kind(10000), "").tags(
+            [Tag.parse(["p", mute_c]), Tag.parse(["t", "spam"])], ).custom_created_at(
+            Timestamp.from_secs(self.now - 60)).finalize(user)
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        client = MagicMock()
+        client.database.return_value = self.profile_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        client.fetch_events = AsyncMock(side_effect=[[contact], [mutes]])
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder:
+            builder.return_value.authenticator.return_value.build.return_value = client
+            follows = await cache.get_follows(user.public_key().to_hex())
+            muted, keywords = await cache.get_mutes(user.public_key().to_hex())
+        self.assertEqual(follows, {follow_a, follow_b})
+        self.assertEqual(muted, {mute_c})
+        self.assertEqual(keywords, ["spam"])
 
 
 if __name__ == "__main__":

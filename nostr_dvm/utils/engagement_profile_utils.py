@@ -1,7 +1,14 @@
 import math
 from collections import defaultdict
+from datetime import timedelta
 
+from nostr_sdk import ClientBuilder, Filter, Kind, Keys, NostrLmdb, PublicKey, RelayUrl, \
+    ReqTarget, SecretKey, SignerAuthenticator, Timestamp
+
+from nostr_dvm.utils.discovery_utils import sync_discovery_database
 from nostr_dvm.utils.zap_utils import parse_amount_from_bolt11_invoice
+
+PROFILE_KINDS = [1, 6, 7, 9735]
 
 RANKING_PARAMS = {
     "action_weights": {"reaction": 0.5, "repost": 1.0, "reply": 13.5},
@@ -145,3 +152,96 @@ def build_coengagement(engagement_events: list, note_author_by_id: dict,
                 continue
             weights[author] = weights.get(author, 0) + contribution
     return weights
+
+
+class ProfileCache:
+    def __init__(self, profile_db_name: str, sync_relay_list: list, ttl_seconds: int = 3600,
+                 history_days: int = 7):
+        self.profile_db_name = profile_db_name
+        self.sync_relay_list = sync_relay_list
+        self.ttl_seconds = ttl_seconds
+        self.history_days = history_days
+        self._profiles = {}
+        self._follows = {}
+        self._mutes = {}
+
+    async def _get_client(self, database=None):
+        sk = SecretKey.generate()
+        keys = Keys.parse(sk.to_hex())
+        builder = ClientBuilder().authenticator(SignerAuthenticator(keys))
+        if database is not None:
+            builder = builder.database(database)
+        cli = builder.build()
+        for relay in self.sync_relay_list:
+            await cli.add_relay(RelayUrl.parse(relay))
+        await cli.connect(timedelta(seconds=15))
+        return cli
+
+    def _is_fresh(self, entry, now_secs) -> bool:
+        return entry is not None and (now_secs - entry[0]) < self.ttl_seconds
+
+    async def get_profile(self, user_hex: str, note_author_by_id: dict) -> dict:
+        now_secs = Timestamp.now().as_secs()
+        entry = self._profiles.get(user_hex)
+        if self._is_fresh(entry, now_secs):
+            return entry[1]
+        database = await NostrLmdb.open(self.profile_db_name)
+        cli = await self._get_client(database)
+        try:
+            since = Timestamp.from_secs(now_secs - self.history_days * 24 * 3600)
+            event_filter = Filter().kinds([Kind(k) for k in PROFILE_KINDS]).author(
+                PublicKey.parse(user_hex)).since(since)
+            await sync_discovery_database(cli, event_filter, "profile-sync")
+            events = await database.query(event_filter)
+        finally:
+            await cli.shutdown()
+        actions_by_author, liked_authors = profile_actions_by_author(events, note_author_by_id, user_hex)
+        profile = {"events": events, "actions_by_author": actions_by_author,
+                   "liked_authors": liked_authors}
+        self._profiles[user_hex] = (now_secs, profile)
+        return profile
+
+    async def get_follows(self, user_hex: str) -> set:
+        now_secs = Timestamp.now().as_secs()
+        entry = self._follows.get(user_hex)
+        if self._is_fresh(entry, now_secs):
+            return entry[1]
+        cli = await self._get_client()
+        try:
+            event_filter = Filter().kind(Kind(3)).author(PublicKey.parse(user_hex)).limit(1)
+            events = await cli.fetch_events(ReqTarget.auto([event_filter]), timedelta(seconds=10))
+            events = events.to_vec() if hasattr(events, "to_vec") else events
+        finally:
+            await cli.shutdown()
+        follows = set()
+        for event in events:
+            for tag in event.tags():
+                vec = tag.to_vec()
+                if vec[0] == "p" and len(vec) > 1:
+                    follows.add(vec[1])
+        self._follows[user_hex] = (now_secs, follows)
+        return follows
+
+    async def get_mutes(self, user_hex: str) -> tuple:
+        now_secs = Timestamp.now().as_secs()
+        entry = self._mutes.get(user_hex)
+        if self._is_fresh(entry, now_secs):
+            return entry[1]
+        cli = await self._get_client()
+        try:
+            event_filter = Filter().kind(Kind(10000)).author(PublicKey.parse(user_hex)).limit(1)
+            events = await cli.fetch_events(ReqTarget.auto([event_filter]), timedelta(seconds=10))
+            events = events.to_vec() if hasattr(events, "to_vec") else events
+        finally:
+            await cli.shutdown()
+        muted = set()
+        keywords = []
+        for event in events:
+            for tag in event.tags():
+                vec = tag.to_vec()
+                if len(vec) > 1 and vec[0] == "p":
+                    muted.add(vec[1])
+                elif len(vec) > 1 and vec[0] == "t":
+                    keywords.append(vec[1].lower())
+        self._mutes[user_hex] = (now_secs, (muted, keywords))
+        return muted, keywords
