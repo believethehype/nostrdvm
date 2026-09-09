@@ -125,6 +125,13 @@ All constants live in one `RANKING_PARAMS` dict in `engagement_profile_utils.py`
 
 ## Ops
 
+- Identifier: `discovery_content_for_you` → env keys `DVM_PRIVATE_KEY_DISCOVERY_CONTENT_FOR_YOU`
+  and `NIP89_DTAG_DISCOVERY_CONTENT_FOR_YOU`.
+- **Key sync:** the first local run generates the private key (and NIP-89 d-tag) via
+  `check_and_set_private_key` / `check_and_set_d_tag` and writes them to the local repo
+  `.env`. Those exact values must then be copied into `/root/dvm/.env` on the VPS
+  **before** first start there, so local and VPS instances share one identity (same
+  pubkey, same d-tag → continuous announcements and request routing).
 - New pm2 process on the VPS alongside the other DVMs (`for_you.py` script building the
   example DVM), NIP-89 announced as "For You" with `max_results` param.
 - Default relays per `build_default_config`; `SYNC_DB_RELAY_LIST` for both DBs.
