@@ -11,11 +11,12 @@ from nostr_dvm.utils.zap_utils import parse_amount_from_bolt11_invoice
 PROFILE_KINDS = [1, 6, 7, 9735]
 
 RANKING_PARAMS = {
-    "action_weights": {"reaction": 0.5, "repost": 1.0, "reply": 2.0},
+    "action_weights": {"reaction": 0.5, "repost": 2.0, "reply": 1.0},
     "zap_base": 1.0,
     "base_floor": 0.1,
     "affinity_cap": 8.0,
     "credibility_denominator": 4.0,
+    "credibility_floor": 0.1,
     "recency_half_life_hours": 24.0,
     "oon_discount": 0.5,
     "boost_threshold": 5.0,
@@ -75,7 +76,10 @@ def affinity(author_hex: str, actions_by_author: dict) -> float:
 
 
 def credibility(distinct_engagers: int) -> float:
-    return min(1.0, math.log(1.0 + max(0, distinct_engagers)) / RANKING_PARAMS["credibility_denominator"])
+    # floor keeps never-engaged authors visible instead of scoring an invisible 0
+    scaled = min(1.0, math.log(1.0 + max(0, distinct_engagers)) / RANKING_PARAMS["credibility_denominator"])
+    floor = RANKING_PARAMS["credibility_floor"]
+    return floor + (1.0 - floor) * scaled
 
 
 def new_author_boost(author_total_weighted_engagement: float) -> float:
