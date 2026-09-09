@@ -22,9 +22,9 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         self.since = Timestamp.from_secs(self.now - 3600)
         self.keys = Keys.generate()
 
-    async def save(self, kind=1, tags=(), age=10):
+    async def save(self, kind=1, tags=(), age=10, keys=None):
         event = EventBuilder(Kind(kind), str(tags)).tags([Tag.parse(tag) for tag in tags]).custom_created_at(
-            Timestamp.from_secs(self.now - age)).finalize(self.keys)
+            Timestamp.from_secs(self.now - age)).finalize(keys or self.keys)
         await self.database.save_event(event)
         return event
 
@@ -90,6 +90,7 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         await self.save(1111, [["E", note.id().to_hex()], ["e", note.id().to_hex()]])
         task = object.__new__(DicoverContentCurrentlyPopular)
         config = SimpleNamespace(DATABASE=self.database, UPDATE_DATABASE=False,
+                                 EXCLUDE_SELF_ENGAGEMENT=False,
                                  LOGLEVEL=LogLevel.ERROR, NIP89=SimpleNamespace(NAME="test"))
         task.dvm_config = config
         task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
@@ -99,6 +100,26 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads(task.result), [["e", note.id().to_hex()]])
         await self.database.delete_events(Filter())
         self.assertEqual(await task.calculate_result(task.request_form), "[]")
+
+    async def test_popular_excludes_author_self_engagement(self):
+        note = await self.save()
+        note_id = note.id().to_hex()
+        await self.save(7, [["e", note_id]])  # self reaction
+        await self.save(1, [["e", note_id]])  # self reply
+        task = object.__new__(DicoverContentCurrentlyPopular)
+        task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
+        # min_reactions is 2; the note has exactly 2 self-engagement events:
+        # excluded when the flag is on (count 0), included when off (count 2).
+        for exclude_self, expected in [(True, []), (False, [["e", note_id]])]:
+            config = SimpleNamespace(DATABASE=self.database, UPDATE_DATABASE=False,
+                                     EXCLUDE_SELF_ENGAGEMENT=exclude_self,
+                                     LOGLEVEL=LogLevel.ERROR, NIP89=SimpleNamespace(NAME="test"))
+            task.dvm_config = config
+            with patch("nostr_dvm.tasks.content_discovery_currently_popular.init_db",
+                       new_callable=AsyncMock) as open_db:
+                await task.init_dvm("test", config, None)
+                open_db.assert_not_awaited()
+            self.assertEqual(json.loads(task.result), expected)
 
     async def test_sync_reports_partial_failure_and_database_count(self):
         client = MagicMock()
