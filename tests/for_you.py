@@ -97,7 +97,7 @@ def playground():
         "profile_ttl_seconds": 3600,
     }
     for_you = build_for_you("For You", "discovery_content_for_you", admin_config, options,
-                            image="https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg",
+                            image="https://blossom.primal.net/7677454a5f9a6b8845c67f2934d0429cb68208be076baa780415f5b210b1b502.jpg",
                             update_rate=global_update_rate,
                             processing_msg=["Ranking your For You feed"],
                             update_db=True, database=database)
