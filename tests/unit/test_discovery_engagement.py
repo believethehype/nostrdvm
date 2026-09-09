@@ -234,23 +234,25 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
             SYNC_DB_RELAY_LIST=["wss://broken"], LOGLEVEL=LogLevel.ERROR,
             NIP89=SimpleNamespace(NAME="test"))
         task.result = ""
-        client = MagicMock()
-        client.database.return_value = self.database
-        client.add_relay = AsyncMock()
-        client.connect = AsyncMock()
-        client.shutdown = AsyncMock()
-        client.sync = AsyncMock(return_value=SimpleNamespace(
-            success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
-        client.fetch_events = AsyncMock(return_value=[])  # relay outage: nothing served for the id filter
-        with patch("nostr_dvm.tasks.content_discovery_currently_popular_gallery.NostrLmdb.open",
-                   new_callable=AsyncMock) as open_db, \
-                patch("nostr_dvm.tasks.content_discovery_currently_popular_gallery.ClientBuilder") as builder:
-            open_db.return_value = self.database
-            builder.return_value.database.return_value.authenticator.return_value.relay_limits.return_value.build.return_value = client
-            result = await task.calculate_result(
-                {"jobID": "generic", "options": json.dumps({"max_results": 200})})
-        self.assertEqual({tuple(tag) for tag in json.loads(result)},
-                         {("e", pic_a.id().to_hex()), ("e", pic_b.id().to_hex())})
+        expected = {("e", pic_a.id().to_hex()), ("e", pic_b.id().to_hex())}
+        for label, fetched in [("empty", []), ("partial", [pic_a])]:
+            with self.subTest(live_fetch=label):
+                client = MagicMock()
+                client.database.return_value = self.database
+                client.add_relay = AsyncMock()
+                client.connect = AsyncMock()
+                client.shutdown = AsyncMock()
+                client.sync = AsyncMock(return_value=SimpleNamespace(
+                    success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+                client.fetch_events = AsyncMock(return_value=fetched)  # relay outage: nothing or only some served
+                with patch("nostr_dvm.tasks.content_discovery_currently_popular_gallery.NostrLmdb.open",
+                           new_callable=AsyncMock) as open_db, \
+                        patch("nostr_dvm.tasks.content_discovery_currently_popular_gallery.ClientBuilder") as builder:
+                    open_db.return_value = self.database
+                    builder.return_value.database.return_value.authenticator.return_value.relay_limits.return_value.build.return_value = client
+                    result = await task.calculate_result(
+                        {"jobID": "generic", "options": json.dumps({"max_results": 200})})
+                self.assertEqual({tuple(tag) for tag in json.loads(result)}, expected)
 
 
 if __name__ == "__main__":
