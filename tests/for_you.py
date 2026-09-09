@@ -99,7 +99,7 @@ def playground():
     for_you = build_for_you("For You", "discovery_content_for_you", admin_config, options,
                             image="https://blossom.primal.net/7b900a794626f480822c55e6da03d636141e6ad1da593a5723971c18f6a4611e.jpg",
                             update_rate=global_update_rate,
-                            processing_msg=["Generating your feed.."],
+                            processing_msg=["Generating your feed.. this can take a minute or two, thanks for your patience!"],
                             update_db=True, database=database)
     framework.add(for_you)
     framework.run()
