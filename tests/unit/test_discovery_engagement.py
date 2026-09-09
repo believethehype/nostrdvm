@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from nostr_sdk import EventBuilder, Filter, Keys, Kind, LogLevel, Tag, Timestamp
 
 from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCurrentlyPopular
+from nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps import DicoverContentCurrentlyPopularZaps
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.discovery_utils import discovery_sync_filters, query_engagement, sync_discovery_database
@@ -120,6 +121,32 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
                 await task.init_dvm("test", config, None)
                 open_db.assert_not_awaited()
             self.assertEqual(json.loads(task.result), expected)
+
+    async def test_top_zaps_gate_excludes_self_zaps(self):
+        note = await self.save()
+        note_id = note.id().to_hex()
+        await self.save(9735, [["e", note_id],
+                               ["bolt11", "lnbc10m1fake"],
+                               ["preimage", "selfpreimage"]])
+        await self.save(9735, [["e", note_id],
+                               ["bolt11", "lnbc2m1fake"],
+                               ["preimage", "otherpreimage"]], keys=Keys.generate())
+        task = object.__new__(DicoverContentCurrentlyPopularZaps)
+        task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
+        task.min_reactions = 2
+        task.result = ""
+        task.request_form = {"jobID": "generic", "options": json.dumps({"max_results": 200})}
+        # min_reactions is 2 and the note has 1 self-zap + 1 genuine zap:
+        # excluded when the flag is on (1 valid zap), included when off (2 zaps).
+        for exclude_self, expected in [(True, []), (False, [["e", note_id]])]:
+            task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=exclude_self,
+                                              LOGLEVEL=LogLevel.ERROR,
+                                              NIP89=SimpleNamespace(NAME="test"))
+            with patch("nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps.NostrLmdb.open",
+                       new_callable=AsyncMock) as open_db:
+                open_db.return_value = self.database
+                result = await task.calculate_result(task.request_form)
+            self.assertEqual(json.loads(result), expected)
 
     async def test_sync_reports_partial_failure_and_database_count(self):
         client = MagicMock()

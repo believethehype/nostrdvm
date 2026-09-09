@@ -129,6 +129,8 @@ class DicoverContentCurrentlyPopularZaps(DVMTaskInterface):
                 invoice_amount = 0
                 event_author = event.author().to_hex()
                 zaps_vec = zaps
+                if self.dvm_config.EXCLUDE_SELF_ENGAGEMENT:
+                    zaps_vec = [zap for zap in zaps_vec if event_author != zap.author().to_hex()]
                 if len(zaps_vec) >= self.min_reactions:
                     has_preimage = False
                     has_amount = False
