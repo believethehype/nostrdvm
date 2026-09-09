@@ -97,7 +97,7 @@ def playground():
         "profile_ttl_seconds": 3600,
     }
     for_you = build_for_you("For You", "discovery_content_for_you", admin_config, options,
-                            image="https://blossom.primal.net/7677454a5f9a6b8845c67f2934d0429cb68208be076baa780415f5b210b1b502.jpg",
+                            image="https://blossom.primal.net/7b900a794626f480822c55e6da03d636141e6ad1da593a5723971c18f6a4611e.jpg",
                             update_rate=global_update_rate,
                             processing_msg=["Generating your feed.."],
                             update_db=True, database=database)

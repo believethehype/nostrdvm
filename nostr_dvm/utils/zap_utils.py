@@ -175,7 +175,7 @@ def create_lnbits_user(name, privkey):
 
 
 def create_lnbits_wallet(name):
-    if  os.getenv("LNBITS_ADMIN_KEY") is None or os.getenv("LNBITS_ADMIN_KEY") == "":
+    if os.getenv("LNBITS_ADMIN_KEY") is None or os.getenv("LNBITS_ADMIN_KEY") == "":
         print("No admin id set, no wallet created.")
         return "", "", "", "failed"
     data = {
@@ -183,15 +183,25 @@ def create_lnbits_wallet(name):
     }
     try:
         url = os.getenv("LNBITS_HOST") + '/api/v1/wallet'
+        headers = {'Content-Type': 'application/json', 'charset': 'UTF-8'}
+        token = os.getenv("LNBITS_ACCESS_TOKEN")
+        if token:
+            # Newer LNbits versions require a user access token to create wallets
+            headers['Authorization'] = 'Bearer ' + token
+        else:
+            headers['X-API-Key'] = os.getenv("LNBITS_ADMIN_KEY")
         print(url)
-        headers = {'X-API-Key': os.getenv("LNBITS_ADMIN_KEY"), 'Content-Type': 'application/json', 'charset': 'UTF-8'}
         r = requests.post(url, json=data, headers=headers, proxies=proxies, timeout=(5, 30))
         walletjson = json.loads(r.text)
 
+        if r.status_code not in (200, 201) or 'inkey' not in walletjson:
+            print("LNbits wallet creation failed (HTTP " + str(r.status_code) + "): " + r.text[:200])
+            return "", "", "", "failed"
+
         return walletjson['inkey'],  walletjson['adminkey'], walletjson['id'], "success"
 
-    except Exception:
-        print("LNbits wallet creation failed")
+    except Exception as e:
+        print("LNbits wallet creation failed: " + str(e))
         return "", "", "", "failed"
 
 
