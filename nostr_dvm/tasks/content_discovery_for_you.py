@@ -3,7 +3,7 @@ import os
 from datetime import timedelta
 
 from nostr_sdk import (
-    ClientBuilder, Filter, Kind, LogLevel, NostrLmdb, PublicKey, RelayUrl, SecretKey,
+    ClientBuilder, Filter, Keys, Kind, LogLevel, NostrLmdb, PublicKey, RelayUrl, SecretKey,
     SignerAuthenticator, Timestamp,
 )
 
