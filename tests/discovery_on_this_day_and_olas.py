@@ -68,7 +68,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     nip89info = {
         "name": name,
         "picture": image,
-        "about": "I show popular pictures from the Olas feed",
+        "about": "I show popular images",
         "lud16": dvm_config.LN_ADDRESS,
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
@@ -146,7 +146,7 @@ def playground():
     main_db = "db/nostr_on_this_day.db"
     main_db_limit = 1024  # in mb
 
-    database = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
+    database = asyncio.run(init_db(main_db, wipe=False, limit=main_db_limit, print_filesize=True))
     last_year = datetime.date.today().year - 1
 
     if last_year % 4 == 0 and (last_year % 100 != 0 or last_year % 400 == 0) and datetime.date.today().month < 3:
@@ -189,7 +189,7 @@ def playground():
     olas_db = "db/nostr_olas.db"
     olas_db_limit = 1024  # in mb
 
-    olas_database = asyncio.run(init_db(olas_db, wipe=True, limit=olas_db_limit, print_filesize=True))
+    olas_database = asyncio.run(init_db(olas_db, wipe=False, limit=olas_db_limit, print_filesize=True))
 
     admin_config_global_gallery = AdminConfig()
     admin_config_global_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89
@@ -206,7 +206,7 @@ def playground():
 
     cost = 0
     image = "https://image.nostr.build/f5901156825ef1d9dad557890020ce9c5d917f52bc31863226b980fa232a9c23.png"
-    discover_olas = build_example_gallery("Popular on Olas",
+    discover_olas = build_example_gallery("Popular Images",
                                       "discovery_gallery_entries",
                                       admin_config=admin_config_global_gallery,
                                       options=options_gallery,
