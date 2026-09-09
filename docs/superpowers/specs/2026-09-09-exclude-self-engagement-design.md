@@ -86,18 +86,19 @@ note author, only when `EXCLUDE_SELF_ENGAGEMENT` is true), then gate on
 `len(valid_zaps) >= self.min_reactions` before summing amounts. Net behavior when the flag is
 on: self-zaps count toward neither the threshold nor the amount. When off: current behavior.
 
-### 5. Test — `tests/discovery_self_engagement.py`
+### 5. Test — extend `tests/unit/test_discovery_engagement.py`
 
-The repo has no pytest infrastructure; `tests/` contains manual scripts. Add a standalone
-script that:
+The repo has unit test infrastructure: `tests/unit/` contains `unittest.IsolatedAsyncioTestCase`
+tests, and CI runs `python -m unittest discover -s tests/unit -t . -v`. Extend the existing
+`test_discovery_engagement.py` (which already covers `query_engagement` with the same temp-LMDB +
+`EventBuilder` pattern) with a self-engagement test that:
 
-1. Opens a temporary LMDB database.
-2. Creates a note (kind 1) by author A.
-3. Creates a self-reaction (kind 7, author A), a self-reply (kind 1, author A), a self-comment
-   (kind 1111, author A), a self-repost (kind 6, author A), a self-zap (kind 9735, author A),
-   and one genuine reaction (kind 7, author B).
-4. Asserts `query_engagement(..., exclude_author=A)` returns 1 event (author B's reaction) and
-   `query_engagement(...)` (no exclude) returns 6 events.
+1. Uses the existing `save()` helper to create a note (kind 1) by author A (the test's own keys).
+2. Adds self-engagement by A: reaction (7), reply (1), comment (1111), repost (6), zap (9735),
+   each tagged with the note id.
+3. Creates one genuine reaction by a second author B (`Keys.generate()`).
+4. Asserts `query_engagement(db, note_id, since, exclude_author=A)` returns only B's reaction,
+   and `query_engagement(db, note_id, since)` returns all 6.
 
 ## Out of scope
 
