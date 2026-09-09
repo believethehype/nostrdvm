@@ -1,11 +1,13 @@
+import json
 import math
 import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from nostr_sdk import EventBuilder, Keys, Kind, Tag, Timestamp
+from nostr_sdk import EventBuilder, Keys, Kind, LogLevel, Tag, Timestamp
 
+from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
 from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.engagement_profile_utils import (
     RANKING_PARAMS, ProfileCache, affinity, apply_author_diversity,
@@ -191,6 +193,86 @@ class ProfileCacheTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(follows, {follow_a, follow_b})
         self.assertEqual(muted, {mute_c})
         self.assertEqual(keywords, ["spam"])
+
+
+class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.global_db = await init_db(self.directory.name, print_filesize=False)
+        self.now = Timestamp.now().as_secs()
+
+    async def save_global(self, kind, author_keys, tags=(), age_secs=60):
+        event = EventBuilder(Kind(kind), "c").tags([Tag.parse(t) for t in tags]).custom_created_at(
+            Timestamp.from_secs(self.now - age_secs)).finalize(author_keys)
+        await self.global_db.save_event(event)
+        return event
+
+    def make_task(self, user):
+        task = object.__new__(DiscoverContentForYou)
+        task.options = {"db_name": "unused.db", "db_since": 7 * 24 * 3600}
+        task.db_since = 7 * 24 * 3600
+        task.profile_ttl_seconds = 3600
+        task.history_days = 7
+        cache = MagicMock()
+        cache.get_profile = AsyncMock(return_value={"events": [], "actions_by_author": {}, "liked_authors": set()})
+        cache.get_follows = AsyncMock(return_value={user})
+        cache.get_mutes = AsyncMock(return_value=(set(), []))
+        task.profile_cache = cache
+        task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
+                                          NIP89=SimpleNamespace(NAME="For You"))
+        return task, cache
+
+    async def test_ranks_oon_with_discount_and_affinity_boost(self):
+        followed_author = Keys.generate()
+        oon_author = Keys.generate()
+        author_three = Keys.generate()
+        engager = Keys.generate()
+        requester = Keys.generate().public_key().to_hex()
+        # in-network note: 1 reaction
+        in_note = await self.save_global(1, followed_author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", in_note.id().to_hex()]], age_secs=20)
+        # OON note: 1 reaction too, but author is co-engaged with the requester
+        oon_note = await self.save_global(1, oon_author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", oon_note.id().to_hex()]], age_secs=20)
+        # the requester's mocked liked set: oon_author + two more; the engager must
+        # engage with notes by >= 3 of the liked authors to become a co-engager
+        author_three_note = await self.save_global(1, author_three, age_secs=3600 * 72)
+        await self.save_global(7, engager, tags=[["e", author_three_note.id().to_hex()]], age_secs=3600 * 72)
+        liked_extra_keys = Keys.generate()
+        liked_extra_note = await self.save_global(1, liked_extra_keys, age_secs=3600 * 72)
+        await self.save_global(7, engager, tags=[["e", liked_extra_note.id().to_hex()]], age_secs=3600 * 72)
+        await self.save_global(7, engager, tags=[["e", oon_note.id().to_hex()]], age_secs=25)
+
+        task, cache = self.make_task(requester)
+        # the in-network note must actually be followed by the requester
+        cache.get_follows = AsyncMock(return_value={followed_author.public_key().to_hex()})
+        cache.get_profile = AsyncMock(return_value={
+            "events": [],
+            "actions_by_author": {oon_author.public_key().to_hex(): 13.5},
+            "liked_authors": {oon_author.public_key().to_hex(),
+                              author_three.public_key().to_hex(),
+                              liked_extra_keys.public_key().to_hex()}})
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            result = await task.calculate_result(
+                {"jobID": "generic", "requester": requester, "options": json.dumps({"max_results": 10})})
+        entries = [tuple(t) for t in json.loads(result)]
+        self.assertIn(("e", in_note.id().to_hex()), entries)
+        self.assertIn(("e", oon_note.id().to_hex()), entries)
+
+    async def test_degrades_on_profile_failure(self):
+        user = Keys.generate().public_key().to_hex()
+        await self.save_global(1, Keys.generate(), age_secs=30)
+        task, cache = self.make_task(user)
+        cache.get_profile = AsyncMock(side_effect=RuntimeError("relay down"))
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            result = await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})})
+        self.assertIsInstance(json.loads(result), list)  # degraded mode ran, no crash
 
 
 if __name__ == "__main__":
