@@ -142,16 +142,23 @@ class DiscoverContentForYou(DVMTaskInterface):
         engagement = await database.query(
             Filter().kinds(engagement_kinds()).since(graph_since))
 
-        # group engagement by tagged note id; compute per-author distinct engagers + totals
+        # group engagement by tagged note id; compute per-author distinct engagers + totals.
+        # an event tagging the same note via multiple tags (e.g. NIP-10 root+reply pointing
+        # at the same id) counts once for that note
         engagement_by_note = {}
         engagers_by_author = {}
         total_by_author = {}
+        seen = set()
         for event in engagement:
             weight = event_action_weight(event)
             engager = event.author().to_hex()
+            event_id = event.id().to_hex()
             for tag in event.tags():
                 vec = tag.to_vec()
                 if vec[0] in ("e", "E") and len(vec) > 1 and vec[1] in note_author_by_id:
+                    if (event_id, vec[1]) in seen:
+                        continue
+                    seen.add((event_id, vec[1]))
                     author = note_author_by_id[vec[1]]
                     engagement_by_note.setdefault(vec[1], []).append(event)
                     engagers_by_author.setdefault(author, set()).add(engager)
@@ -209,10 +216,15 @@ class DiscoverContentForYou(DVMTaskInterface):
         notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(candidate_since))
         engagement = await database.query(Filter().kinds(engagement_kinds()).since(graph_since))
         engagement_by_note = {}
+        seen = set()
         for event in engagement:
+            event_id = event.id().to_hex()
             for tag in event.tags():
                 vec = tag.to_vec()
                 if vec[0] in ("e", "E") and len(vec) > 1:
+                    if (event_id, vec[1]) in seen:
+                        continue
+                    seen.add((event_id, vec[1]))
                     engagement_by_note.setdefault(vec[1], []).append(event)
         exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
         scored = []

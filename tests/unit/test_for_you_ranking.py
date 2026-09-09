@@ -275,5 +275,44 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(json.loads(result), list)  # degraded mode ran, no crash
 
 
+    async def seed_reply_dedupe_notes(self, with_reply):
+        requester = Keys.generate().public_key().to_hex()
+        author_one = Keys.generate()
+        author_two = Keys.generate()
+        author_three = Keys.generate()
+        note_one = await self.save_global(1, author_one, age_secs=30)
+        if with_reply:
+            # NIP-10 reply to a top-level note: root and reply tags carry the same id
+            await self.save_global(1, Keys.generate(), tags=[
+                ["e", note_one.id().to_hex(), "", "root"], ["e", note_one.id().to_hex(), "", "reply"]], age_secs=25)
+        mid_note = await self.save_global(1, author_two, age_secs=30)
+        for _ in range(9):
+            await self.save_global(7, Keys.generate(), tags=[["e", mid_note.id().to_hex()]], age_secs=20)
+        low_note = await self.save_global(1, author_three, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", low_note.id().to_hex()]], age_secs=20)
+
+        task, cache = self.make_task(requester)
+        cache.get_follows = AsyncMock(return_value={author_one.public_key().to_hex(),
+                                                    author_two.public_key().to_hex(),
+                                                    author_three.public_key().to_hex()})
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            result = await task.calculate_result(
+                {"jobID": "generic", "requester": requester, "options": json.dumps({"max_results": 2})})
+        ids = [entry[1] for entry in json.loads(result)]
+        return ids, note_one.id().to_hex(), mid_note.id().to_hex()
+
+    async def test_reply_to_note_counts_once_per_note(self):
+        ids, note_one_id, mid_id = await self.seed_reply_dedupe_notes(with_reply=True)
+        # reply contributes 13.5 once: note_one scores 13.6*ln(2)/4 = 2.36 below mid's 3.18;
+        # double-counted it would score 27.1*ln(2)/4 = 4.70 and take first place
+        self.assertEqual(ids, [mid_id, note_one_id])
+
+    async def test_note_without_reply_stays_out_of_top_results(self):
+        ids, note_one_id, _ = await self.seed_reply_dedupe_notes(with_reply=False)
+        self.assertNotIn(note_one_id, ids)
+
+
 if __name__ == "__main__":
     unittest.main()
