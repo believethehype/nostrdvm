@@ -10,6 +10,7 @@ from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCu
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.discovery_utils import discovery_sync_filters, query_engagement, sync_discovery_database
+from nostr_dvm.utils.dvmconfig import DVMConfig
 
 
 class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
@@ -45,6 +46,43 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual({event.id().to_hex() for event in events},
                          {event.id().to_hex() for event in [legacy, direct, nested, parent_only, reaction, repost, zap]})
         self.assertEqual(len(events), 7)
+
+    def test_dvm_config_excludes_self_engagement_by_default(self):
+        self.assertTrue(DVMConfig.EXCLUDE_SELF_ENGAGEMENT)
+
+    async def test_query_engagement_excludes_note_author_self_engagement(self):
+        author = Keys.generate()
+        other = Keys.generate()
+        note = EventBuilder(Kind(1), "note").custom_created_at(
+            Timestamp.from_secs(self.now - 10)).finalize(author)
+        await self.database.save_event(note)
+        note_id = note.id().to_hex()
+
+        async def save_with(kind, keys, tags):
+            event = EventBuilder(Kind(kind), "engagement").tags(
+                [Tag.parse(tag) for tag in tags]).custom_created_at(
+                Timestamp.from_secs(self.now - 5)).finalize(keys)
+            await self.database.save_event(event)
+            return event
+
+        self_reaction = await save_with(7, author, [["e", note_id]])
+        self_reply = await save_with(1, author, [["e", note_id]])
+        self_comment = await save_with(1111, author,
+                                       [["E", note_id], ["e", note_id], ["K", "1"], ["k", "1"]])
+        self_repost = await save_with(6, author, [["e", note_id]])
+        self_zap = await save_with(9735, author, [["e", note_id]])
+        other_reaction = await save_with(7, other, [["e", note_id]])
+
+        all_events = await query_engagement(self.database, note.id(), self.since)
+        self.assertEqual({event.id().to_hex() for event in all_events},
+                         {event.id().to_hex() for event in
+                          [self_reaction, self_reply, self_comment, self_repost, self_zap, other_reaction]})
+        self.assertEqual(len(all_events), 6)
+
+        filtered = await query_engagement(self.database, note.id(), self.since,
+                                          exclude_author=author.public_key())
+        self.assertEqual([event.id().to_hex() for event in filtered],
+                         [other_reaction.id().to_hex()])
 
     async def test_popular_uses_shared_database_and_counts_both_reply_kinds(self):
         note = await self.save()
