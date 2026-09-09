@@ -98,7 +98,8 @@ All constants live in one `RANKING_PARAMS` dict in `engagement_profile_utils.py`
   (popularity-based, from the same global DB) so the requester always gets a feed.
 - No engagement history (new user) → affinity neutralized to 1 for all authors; if the
   requester also has no follows → global ranking fallback.
-- Empty candidate set → return `"[]"` (existing pattern).
+- Empty candidate set (e.g. requester with no follows and no history) → global ranking
+  fallback from the same global DB.
 - The scoring path reads local DBs only; relay calls happen exclusively on profile
   cache misses, bounded by the sync timeouts in `sync_discovery_database()`.
 

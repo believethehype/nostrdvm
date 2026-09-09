@@ -297,7 +297,7 @@ def build_example(name, identifier, admin_config, options, cost=0, update_rate=6
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
-    image = "https://image.nostr.build/b29b6ec4bf9b6184f69d33cb44862db0d90a2dd9a506532e7ba5698af7d36210.jpg"
+    image = "https://blossom.primal.net/7677454a5f9a6b8845c67f2934d0429cb68208be076baa780415f5b210b1b502.jpg"
     nip89info = {
         "name": name,
         "picture": image,
