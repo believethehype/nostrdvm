@@ -63,8 +63,8 @@ class RankingMathTests(unittest.TestCase):
         self.assertEqual(affinity("a", {"a": 10 ** 9}), RANKING_PARAMS["affinity_cap"])
 
     def test_credibility_caps_at_one(self):
-        # never-engaged authors get the floor instead of an invisible 0 score
-        self.assertEqual(credibility(0), RANKING_PARAMS["credibility_floor"])
+        # never-engaged authors score 0: only notes with real engagement surface
+        self.assertEqual(credibility(0), 0.0)
         self.assertEqual(credibility(10 ** 6), 1.0)
         self.assertGreater(credibility(10), credibility(1))
 
