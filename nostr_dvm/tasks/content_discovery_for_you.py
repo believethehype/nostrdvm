@@ -133,11 +133,12 @@ class DiscoverContentForYou(DVMTaskInterface):
         graph_notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(graph_since))
         note_author_by_id = {note.id().to_hex(): note.author().to_hex() for note in graph_notes}
 
-        profile = await self.profile_cache.get_profile(user, note_author_by_id)
-        follows = await self.profile_cache.get_follows(user)
-        muted, keywords = await self.profile_cache.get_mutes(user)
-        actions_by_author = profile["actions_by_author"]
-        liked_authors = profile["liked_authors"]
+        context = await self.profile_cache.get_requester_context(user, note_author_by_id)
+        follows = context["follows"]
+        muted = context["muted"]
+        keywords = context["keywords"]
+        actions_by_author = context["actions_by_author"]
+        liked_authors = context["liked_authors"]
 
         engagement = await database.query(
             Filter().kinds(engagement_kinds()).since(graph_since))
@@ -203,7 +204,7 @@ class DiscoverContentForYou(DVMTaskInterface):
 
         candidates = in_network + oon
         if not candidates:
-            return "[]"
+            return await self._global_fallback(database, max_results)
 
         ranked = sorted([(note, note_score(note)) for note in candidates], key=lambda pair: -pair[1])
         selected = apply_author_diversity(ranked, max_results)
