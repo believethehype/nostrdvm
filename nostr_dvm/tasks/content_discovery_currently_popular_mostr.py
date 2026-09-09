@@ -133,7 +133,8 @@ class DicoverContentCurrentlyPopularMostr(DVMTaskInterface):
         for event in events_vec:
 
             if event.created_at().as_secs() > timestamp_since:
-                reactions = await query_engagement(database, event.id(), since)
+                exclude = event.author() if self.dvm_config.EXCLUDE_SELF_ENGAGEMENT else None
+                reactions = await query_engagement(database, event.id(), since, exclude_author=exclude)
 
                 reactions_vec = reactions
                 if len(reactions_vec) >= self.min_reactions:

@@ -7,9 +7,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from nostr_sdk import EventBuilder, Filter, Keys, Kind, LogLevel, Tag, Timestamp
 
 from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCurrentlyPopular
+from nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps import DicoverContentCurrentlyPopularZaps
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.discovery_utils import discovery_sync_filters, query_engagement, sync_discovery_database
+from nostr_dvm.utils.dvmconfig import DVMConfig
 
 
 class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
@@ -21,9 +23,9 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         self.since = Timestamp.from_secs(self.now - 3600)
         self.keys = Keys.generate()
 
-    async def save(self, kind=1, tags=(), age=10):
+    async def save(self, kind=1, tags=(), age=10, keys=None):
         event = EventBuilder(Kind(kind), str(tags)).tags([Tag.parse(tag) for tag in tags]).custom_created_at(
-            Timestamp.from_secs(self.now - age)).finalize(self.keys)
+            Timestamp.from_secs(self.now - age)).finalize(keys or self.keys)
         await self.database.save_event(event)
         return event
 
@@ -46,12 +48,50 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
                          {event.id().to_hex() for event in [legacy, direct, nested, parent_only, reaction, repost, zap]})
         self.assertEqual(len(events), 7)
 
+    def test_dvm_config_excludes_self_engagement_by_default(self):
+        self.assertTrue(DVMConfig.EXCLUDE_SELF_ENGAGEMENT)
+
+    async def test_query_engagement_excludes_note_author_self_engagement(self):
+        author = Keys.generate()
+        other = Keys.generate()
+        note = EventBuilder(Kind(1), "note").custom_created_at(
+            Timestamp.from_secs(self.now - 10)).finalize(author)
+        await self.database.save_event(note)
+        note_id = note.id().to_hex()
+
+        async def save_with(kind, keys, tags):
+            event = EventBuilder(Kind(kind), "engagement").tags(
+                [Tag.parse(tag) for tag in tags]).custom_created_at(
+                Timestamp.from_secs(self.now - 5)).finalize(keys)
+            await self.database.save_event(event)
+            return event
+
+        self_reaction = await save_with(7, author, [["e", note_id]])
+        self_reply = await save_with(1, author, [["e", note_id]])
+        self_comment = await save_with(1111, author,
+                                       [["E", note_id], ["e", note_id], ["K", "1"], ["k", "1"]])
+        self_repost = await save_with(6, author, [["e", note_id]])
+        self_zap = await save_with(9735, author, [["e", note_id]])
+        other_reaction = await save_with(7, other, [["e", note_id]])
+
+        all_events = await query_engagement(self.database, note.id(), self.since)
+        self.assertEqual({event.id().to_hex() for event in all_events},
+                         {event.id().to_hex() for event in
+                          [self_reaction, self_reply, self_comment, self_repost, self_zap, other_reaction]})
+        self.assertEqual(len(all_events), 6)
+
+        filtered = await query_engagement(self.database, note.id(), self.since,
+                                          exclude_author=author.public_key())
+        self.assertEqual([event.id().to_hex() for event in filtered],
+                         [other_reaction.id().to_hex()])
+
     async def test_popular_uses_shared_database_and_counts_both_reply_kinds(self):
         note = await self.save()
         await self.save(tags=[["e", note.id().to_hex()]])
         await self.save(1111, [["E", note.id().to_hex()], ["e", note.id().to_hex()]])
         task = object.__new__(DicoverContentCurrentlyPopular)
         config = SimpleNamespace(DATABASE=self.database, UPDATE_DATABASE=False,
+                                 EXCLUDE_SELF_ENGAGEMENT=False,
                                  LOGLEVEL=LogLevel.ERROR, NIP89=SimpleNamespace(NAME="test"))
         task.dvm_config = config
         task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
@@ -61,6 +101,52 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads(task.result), [["e", note.id().to_hex()]])
         await self.database.delete_events(Filter())
         self.assertEqual(await task.calculate_result(task.request_form), "[]")
+
+    async def test_popular_excludes_author_self_engagement(self):
+        note = await self.save()
+        note_id = note.id().to_hex()
+        await self.save(7, [["e", note_id]])  # self reaction
+        await self.save(1, [["e", note_id]])  # self reply
+        task = object.__new__(DicoverContentCurrentlyPopular)
+        task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
+        # min_reactions is 2; the note has exactly 2 self-engagement events:
+        # excluded when the flag is on (count 0), included when off (count 2).
+        for exclude_self, expected in [(True, []), (False, [["e", note_id]])]:
+            config = SimpleNamespace(DATABASE=self.database, UPDATE_DATABASE=False,
+                                     EXCLUDE_SELF_ENGAGEMENT=exclude_self,
+                                     LOGLEVEL=LogLevel.ERROR, NIP89=SimpleNamespace(NAME="test"))
+            task.dvm_config = config
+            with patch("nostr_dvm.tasks.content_discovery_currently_popular.init_db",
+                       new_callable=AsyncMock) as open_db:
+                await task.init_dvm("test", config, None)
+                open_db.assert_not_awaited()
+            self.assertEqual(json.loads(task.result), expected)
+
+    async def test_top_zaps_gate_excludes_self_zaps(self):
+        note = await self.save()
+        note_id = note.id().to_hex()
+        await self.save(9735, [["e", note_id],
+                               ["bolt11", "lnbc10m1fake"],
+                               ["preimage", "selfpreimage"]])
+        await self.save(9735, [["e", note_id],
+                               ["bolt11", "lnbc2m1fake"],
+                               ["preimage", "otherpreimage"]], keys=Keys.generate())
+        task = object.__new__(DicoverContentCurrentlyPopularZaps)
+        task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
+        task.min_reactions = 2
+        task.result = ""
+        task.request_form = {"jobID": "generic", "options": json.dumps({"max_results": 200})}
+        # min_reactions is 2 and the note has 1 self-zap + 1 genuine zap:
+        # excluded when the flag is on (1 valid zap), included when off (2 zaps).
+        for exclude_self, expected in [(True, []), (False, [["e", note_id]])]:
+            task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=exclude_self,
+                                              LOGLEVEL=LogLevel.ERROR,
+                                              NIP89=SimpleNamespace(NAME="test"))
+            with patch("nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps.NostrLmdb.open",
+                       new_callable=AsyncMock) as open_db:
+                open_db.return_value = self.database
+                result = await task.calculate_result(task.request_form)
+            self.assertEqual(json.loads(result), expected)
 
     async def test_sync_reports_partial_failure_and_database_count(self):
         client = MagicMock()
