@@ -48,7 +48,7 @@ def build_for_you(name, identifier, admin_config, options, image, cost=0, update
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    dvm_config.SEND_FEEDBACK_EVENTS = False
+    dvm_config.SEND_FEEDBACK_EVENTS = True
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     nip89info = {
@@ -99,7 +99,7 @@ def playground():
     for_you = build_for_you("For You", "discovery_content_for_you", admin_config, options,
                             image="https://blossom.primal.net/7677454a5f9a6b8845c67f2934d0429cb68208be076baa780415f5b210b1b502.jpg",
                             update_rate=global_update_rate,
-                            processing_msg=["Ranking your For You feed"],
+                            processing_msg=["Generating your feed.."],
                             update_db=True, database=database)
     framework.add(for_you)
     framework.run()
