@@ -34,7 +34,7 @@ def build_example_gallery(name, identifier, admin_config, options, image, cost=0
     nip89info = {
         "name": name,
         "picture": image,
-        "about": "I show popular pictures from the Olas feed",
+        "about": "I show popular images",
         "lud16": dvm_config.LN_ADDRESS,
         "supportsEncryption": True,
         "acceptsNutZaps": dvm_config.ENABLE_NUTZAP,
@@ -79,7 +79,7 @@ def playground():
 
     cost = 0
     image = "https://image.nostr.build/f5901156825ef1d9dad557890020ce9c5d917f52bc31863226b980fa232a9c23.png"
-    discover_gallery = build_example_gallery("Popular on Olas",
+    discover_gallery = build_example_gallery("Popular Images",
                                       "discovery_gallery_entries",
                                       admin_config=admin_config_global_gallery,
                                       options=options_gallery,

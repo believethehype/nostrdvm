@@ -8,6 +8,7 @@ from nostr_sdk import EventBuilder, Filter, Keys, Kind, LogLevel, Tag, Timestamp
 
 from nostr_dvm.tasks.content_discovery_currently_popular import DicoverContentCurrentlyPopular
 from nostr_dvm.tasks.content_discovery_currently_popular_by_top_zaps import DicoverContentCurrentlyPopularZaps
+from nostr_dvm.tasks.content_discovery_currently_popular_gallery import DicoverContentCurrentlyPopularGallery
 from nostr_dvm.tasks.content_discovery_update_db_only import DicoverContentDBUpdateScheduler
 from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.discovery_utils import discovery_sync_filters, query_engagement, sync_discovery_database
@@ -212,6 +213,46 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
                 await sync_discovery_database(client, event_filter, "test")
                 self.assertEqual(await self.database.count(event_filter), 1)
                 client.fetch_events.assert_awaited_once()
+
+    async def test_gallery_falls_back_to_database_when_live_fetch_is_empty(self):
+        pic_author_a = Keys.generate()
+        pic_author_b = Keys.generate()
+        fan_a = Keys.generate()
+        fan_b = Keys.generate()
+        pic_a = await self.save(20, [], keys=pic_author_a)
+        pic_b = await self.save(20, [], keys=pic_author_b)
+        await self.save(7, [["e", pic_a.id().to_hex()]], keys=fan_a)
+        await self.save(7, [["e", pic_a.id().to_hex()]], keys=fan_b)
+        await self.save(7, [["e", pic_b.id().to_hex()]], keys=fan_a)
+        await self.save(7, [["e", pic_b.id().to_hex()]], keys=fan_b)
+
+        task = object.__new__(DicoverContentCurrentlyPopularGallery)
+        task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
+        task.dvm_config = SimpleNamespace(
+            DATABASE=self.database, UPDATE_DATABASE=False, EXCLUDE_SELF_ENGAGEMENT=True,
+            PRIVATE_KEY=Keys.generate().secret_key().to_hex(),
+            SYNC_DB_RELAY_LIST=["wss://broken"], LOGLEVEL=LogLevel.ERROR,
+            NIP89=SimpleNamespace(NAME="test"))
+        task.result = ""
+        expected = {("e", pic_a.id().to_hex()), ("e", pic_b.id().to_hex())}
+        for label, fetched in [("empty", []), ("partial", [pic_a])]:
+            with self.subTest(live_fetch=label):
+                client = MagicMock()
+                client.database.return_value = self.database
+                client.add_relay = AsyncMock()
+                client.connect = AsyncMock()
+                client.shutdown = AsyncMock()
+                client.sync = AsyncMock(return_value=SimpleNamespace(
+                    success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+                client.fetch_events = AsyncMock(return_value=fetched)  # relay outage: nothing or only some served
+                with patch("nostr_dvm.tasks.content_discovery_currently_popular_gallery.NostrLmdb.open",
+                           new_callable=AsyncMock) as open_db, \
+                        patch("nostr_dvm.tasks.content_discovery_currently_popular_gallery.ClientBuilder") as builder:
+                    open_db.return_value = self.database
+                    builder.return_value.database.return_value.authenticator.return_value.relay_limits.return_value.build.return_value = client
+                    result = await task.calculate_result(
+                        {"jobID": "generic", "options": json.dumps({"max_results": 200})})
+                self.assertEqual({tuple(tag) for tag in json.loads(result)}, expected)
 
 
 if __name__ == "__main__":
