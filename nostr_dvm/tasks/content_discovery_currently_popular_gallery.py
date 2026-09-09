@@ -171,6 +171,11 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
             filter2 = Filter().ids(ids)
             events = await cli.fetch_events(ReqTarget.auto([filter2]), relay_timeout)
 
+            if not events:
+                print("[" + self.dvm_config.NIP89.NAME + "] Live fetch returned no events; "
+                      "falling back to local database copies")
+                events = ge_events_vec
+
 
 
             for event in events:
