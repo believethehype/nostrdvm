@@ -186,7 +186,8 @@ class DicoverContentCurrentlyPopularbyTopic(DVMTaskInterface):
             if all(ele in event.content().lower() for ele in self.must_list):
                 if any(ele in event.content().lower() for ele in self.any_of_list) or len(self.any_of_list) == 0:
                     if not any(ele in event.content().lower() for ele in self.avoid_list):
-                        reactions = await query_engagement(self.database, event.id(), since)
+                        exclude = event.author() if self.dvm_config.EXCLUDE_SELF_ENGAGEMENT else None
+                        reactions = await query_engagement(self.database, event.id(), since, exclude_author=exclude)
                         reactions_vec = reactions
                         if len(reactions_vec) >= self.min_reactions:
                             ns.finallist[event.id().to_hex()] = len(reactions_vec)

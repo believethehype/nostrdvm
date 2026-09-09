@@ -181,7 +181,8 @@ class DicoverContentCurrentlyPopularGallery(DVMTaskInterface):
                         print("Deleted event, skipping")
                         continue
 
-                    reactions = await query_engagement(databasegallery, event.id(), since)
+                    exclude = event.author() if self.dvm_config.EXCLUDE_SELF_ENGAGEMENT else None
+                    reactions = await query_engagement(databasegallery, event.id(), since, exclude_author=exclude)
 
 
                     reactions_vec = reactions

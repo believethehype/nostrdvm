@@ -161,7 +161,8 @@ class DicoverContentCurrentlyPopularTweets(DVMTaskInterface):
                             is_reply = True
                     if is_reply:
                         continue
-                    reactions = await query_engagement(self.database, event.id(), since)
+                    exclude = event.author() if self.dvm_config.EXCLUDE_SELF_ENGAGEMENT else None
+                    reactions = await query_engagement(self.database, event.id(), since, exclude_author=exclude)
                     reactions_vec = reactions
                     if len(reactions_vec) >= self.min_reactions:
                         ns.finallist[event.id().to_hex()] = len(reactions_vec)
