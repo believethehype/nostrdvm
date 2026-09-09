@@ -129,20 +129,26 @@ def profile_actions_by_author(profile_events: list, note_author_by_id: dict,
     return dict(actions_by_author), liked_authors
 
 
-def build_coengagement(engagement_events: list, note_author_by_id: dict,
-                       requester_hex: str, liked_authors: set,
-                       overlap_threshold: int = RANKING_PARAMS["oon_overlap_threshold"]) -> dict:
+def engager_authors_from_events(engagement_events: list, note_author_by_id: dict,
+                                requester_hex: str = None) -> dict:
     engager_authors = defaultdict(set)
     for event in engagement_events:
         engager = event.author().to_hex()
-        if engager == requester_hex:
+        if requester_hex is not None and engager == requester_hex:
             continue
         for tag in event.tags():
             vec = tag.to_vec()
             if vec[0] in ("e", "E") and len(vec) > 1 and vec[1] in note_author_by_id:
                 engager_authors[engager].add(note_author_by_id[vec[1]])
+    return engager_authors
+
+
+def weights_from_engager_authors(engager_authors: dict, requester_hex: str, liked_authors: set,
+                                 overlap_threshold: int = RANKING_PARAMS["oon_overlap_threshold"]) -> dict:
     weights = {}
     for engager, authors in engager_authors.items():
+        if engager == requester_hex:
+            continue
         overlap = len(authors & liked_authors) if liked_authors else 0
         if liked_authors is not None and overlap < overlap_threshold:
             continue
@@ -152,6 +158,13 @@ def build_coengagement(engagement_events: list, note_author_by_id: dict,
                 continue
             weights[author] = weights.get(author, 0) + contribution
     return weights
+
+
+def build_coengagement(engagement_events: list, note_author_by_id: dict,
+                       requester_hex: str, liked_authors: set,
+                       overlap_threshold: int = RANKING_PARAMS["oon_overlap_threshold"]) -> dict:
+    engager_authors = engager_authors_from_events(engagement_events, note_author_by_id, requester_hex)
+    return weights_from_engager_authors(engager_authors, requester_hex, liked_authors, overlap_threshold)
 
 
 class ProfileCache:

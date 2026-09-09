@@ -15,9 +15,10 @@ from nostr_dvm.utils.discovery_utils import engagement_kinds, sync_discovery_dat
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.engagement_profile_utils import (
-    RANKING_PARAMS, affinity, apply_author_diversity, build_coengagement, credibility,
-    event_action_weight, new_author_boost, note_engagement_base, oon_factor, profile_actions_by_author,
-    recency_factor, score_note, top_level, ProfileCache)
+    RANKING_PARAMS, affinity, apply_author_diversity, credibility,
+    engager_authors_from_events, event_action_weight, new_author_boost, note_engagement_base,
+    oon_factor, profile_actions_by_author, recency_factor, score_note, top_level,
+    weights_from_engager_authors, ProfileCache)
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
@@ -48,6 +49,9 @@ class DiscoverContentForYou(DVMTaskInterface):
     personalized = True
     result = "[]"
     database = None
+    _engagement_index = None
+    _engagement_index_built_at = 0
+    index_ttl_seconds = 600  # rebuild the engagement index at most this often (matches the default sync rate)
     profile_cache = None
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
@@ -121,27 +125,13 @@ class DiscoverContentForYou(DVMTaskInterface):
                   "falling back to global ranking: " + str(error))
             return await self._global_fallback(database, max_results)
 
-    async def _personalized(self, database, user, max_results):
-        now_secs = Timestamp.now().as_secs()
-        candidate_since_secs = now_secs - RANKING_PARAMS["candidate_age_hours"] * 3600
-        candidate_since = Timestamp.from_secs(candidate_since_secs)
-        graph_since = Timestamp.from_secs(now_secs - self.db_since)
-
-        notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(candidate_since))
-        # map note ids to authors across the whole graph window so co-engagement can
-        # credit engagement with liked authors whose notes are older than the candidate window
-        graph_notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(graph_since))
-        note_author_by_id = {note.id().to_hex(): note.author().to_hex() for note in graph_notes}
-
-        context = await self.profile_cache.get_requester_context(user, note_author_by_id)
-        follows = context["follows"]
-        muted = context["muted"]
-        keywords = context["keywords"]
-        actions_by_author = context["actions_by_author"]
-        liked_authors = context["liked_authors"]
-
+    async def _build_engagement_index(self, database, graph_since):
+        """Precompute the per-note engagement groups and per-author aggregates shared by
+        every request. Built once per index_ttl_seconds instead of per request."""
         engagement = await database.query(
             Filter().kinds(engagement_kinds()).since(graph_since))
+        graph_notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(graph_since))
+        note_author_by_id = {note.id().to_hex(): note.author().to_hex() for note in graph_notes}
 
         # group engagement by tagged note id; compute per-author distinct engagers + totals.
         # an event tagging the same note via multiple tags (e.g. NIP-10 root+reply pointing
@@ -164,6 +154,44 @@ class DiscoverContentForYou(DVMTaskInterface):
                     engagement_by_note.setdefault(vec[1], []).append(event)
                     engagers_by_author.setdefault(author, set()).add(engager)
                     total_by_author[author] = total_by_author.get(author, 0.0) + weight
+
+        engager_authors = engager_authors_from_events(engagement, note_author_by_id)
+        return {"engagement_by_note": engagement_by_note,
+                "engagers_by_author": engagers_by_author,
+                "total_by_author": total_by_author,
+                "engager_authors": engager_authors,
+                "note_author_by_id": note_author_by_id}
+
+    async def _get_engagement_index(self, database, now_secs=None):
+        if now_secs is None:
+            now_secs = Timestamp.now().as_secs()
+        if self._engagement_index is None or \
+                (now_secs - self._engagement_index_built_at) >= self.index_ttl_seconds:
+            graph_since = Timestamp.from_secs(now_secs - self.db_since)
+            self._engagement_index = await self._build_engagement_index(database, graph_since)
+            self._engagement_index_built_at = now_secs
+        return self._engagement_index
+
+    async def _personalized(self, database, user, max_results):
+        now_secs = Timestamp.now().as_secs()
+        candidate_since_secs = now_secs - RANKING_PARAMS["candidate_age_hours"] * 3600
+        candidate_since = Timestamp.from_secs(candidate_since_secs)
+
+        notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(candidate_since))
+
+        index = await self._get_engagement_index(database)
+        note_author_by_id = index["note_author_by_id"]
+        engagement_by_note = index["engagement_by_note"]
+        engagers_by_author = index["engagers_by_author"]
+        total_by_author = index["total_by_author"]
+        engager_authors = index["engager_authors"]
+
+        context = await self.profile_cache.get_requester_context(user, note_author_by_id)
+        follows = context["follows"]
+        muted = context["muted"]
+        keywords = context["keywords"]
+        actions_by_author = context["actions_by_author"]
+        liked_authors = context["liked_authors"]
 
         exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
 
@@ -192,7 +220,7 @@ class DiscoverContentForYou(DVMTaskInterface):
         in_network.sort(key=lambda note: -note.created_at().as_secs())
         in_network = in_network[:RANKING_PARAMS["in_network_cap"]]
 
-        author_weights = build_coengagement(engagement, note_author_by_id, user, liked_authors)
+        author_weights = weights_from_engager_authors(engager_authors, user, liked_authors)
         oon_author_set = {author for author in author_weights
                           if author not in follows and author not in muted and author != user}
         oon = [note for note in notes
@@ -213,20 +241,9 @@ class DiscoverContentForYou(DVMTaskInterface):
     async def _global_fallback(self, database, max_results):
         now_secs = Timestamp.now().as_secs()
         candidate_since = Timestamp.from_secs(now_secs - RANKING_PARAMS["candidate_age_hours"] * 3600)
-        graph_since = Timestamp.from_secs(now_secs - self.db_since)
         notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(candidate_since))
-        engagement = await database.query(Filter().kinds(engagement_kinds()).since(graph_since))
-        engagement_by_note = {}
-        seen = set()
-        for event in engagement:
-            event_id = event.id().to_hex()
-            for tag in event.tags():
-                vec = tag.to_vec()
-                if vec[0] in ("e", "E") and len(vec) > 1:
-                    if (event_id, vec[1]) in seen:
-                        continue
-                    seen.add((event_id, vec[1]))
-                    engagement_by_note.setdefault(vec[1], []).append(event)
+        index = await self._get_engagement_index(database)
+        engagement_by_note = index["engagement_by_note"]
         exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
         scored = []
         for note in notes:
