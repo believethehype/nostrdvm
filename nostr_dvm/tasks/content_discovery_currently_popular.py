@@ -15,6 +15,7 @@ from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.discovery_utils import engagement_kinds, query_engagement, sync_discovery_database
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
+from nostr_dvm.utils.engagement_profile_utils import note_engagement_base
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
 from nostr_dvm.utils.nip89_utils import NIP89Config, check_and_set_d_tag, create_amount_tag
 from nostr_dvm.utils.output_utils import post_process_list_to_events
@@ -139,8 +140,11 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
                 reactions = await query_engagement(database, event.id(), since, exclude_author=exclude)
 
                 reactions_vec = reactions
-                if len(reactions_vec) >= self.min_reactions:
-                    ns.finallist[event.id().to_hex()] = len(reactions_vec)
+                # weighted engagement: zaps (log-scaled by sats) > replies > reposts > reactions
+                score = note_engagement_base(reactions_vec, event.author().to_hex(),
+                                             exclude_self=self.dvm_config.EXCLUDE_SELF_ENGAGEMENT)
+                if score >= self.min_reactions:
+                    ns.finallist[event.id().to_hex()] = score
         result_list = []
         finallist_sorted = sorted(ns.finallist.items(), key=lambda x: x[1], reverse=True)[:int(options["max_results"])]
         for entry in finallist_sorted:

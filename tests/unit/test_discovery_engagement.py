@@ -103,6 +103,30 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         await self.database.delete_events(Filter())
         self.assertEqual(await task.calculate_result(task.request_form), "[]")
 
+    async def test_popular_weights_zaps_above_reactions(self):
+        # zapped note: 100k-sat zap (6.0) + one reaction (0.5) -> weighted 6.5 (+0.1 floor)
+        zap_note = await self.save(age=30)
+        other = Keys.generate()
+        await self.save(9735, [["e", zap_note.id().to_hex()], ["bolt11", "lnbc1m1fake"],
+                               ["preimage", "p"]], age=20, keys=other)
+        await self.save(7, [["e", zap_note.id().to_hex()]], age=20, keys=Keys.generate())
+        # liked note: two plain reactions (1.0) -> below the min_reactions gate once weighted
+        liked_note = await self.save(age=25)
+        await self.save(7, [["e", liked_note.id().to_hex()]], age=20, keys=Keys.generate())
+        await self.save(7, [["e", liked_note.id().to_hex()]], age=20, keys=Keys.generate())
+
+        task = object.__new__(DicoverContentCurrentlyPopular)
+        config = SimpleNamespace(DATABASE=self.database, UPDATE_DATABASE=False,
+                                 EXCLUDE_SELF_ENGAGEMENT=True,
+                                 LOGLEVEL=LogLevel.ERROR, NIP89=SimpleNamespace(NAME="test"))
+        task.dvm_config = config
+        task.options = {"db_name": "must-not-open-this-path", "db_since": 3600}
+        with patch("nostr_dvm.tasks.content_discovery_currently_popular.init_db", new_callable=AsyncMock) as open_db:
+            await task.init_dvm("test", config, None)
+            open_db.assert_not_awaited()
+        entries = json.loads(task.result)
+        self.assertEqual(entries, [["e", zap_note.id().to_hex()]])
+
     async def test_popular_excludes_author_self_engagement(self):
         note = await self.save()
         note_id = note.id().to_hex()
