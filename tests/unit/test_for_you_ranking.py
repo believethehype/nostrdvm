@@ -30,7 +30,10 @@ class RankingMathTests(unittest.TestCase):
         keys = Keys.generate()
         self.assertEqual(event_action_weight(make_event(7, keys)), 0.5)
         self.assertEqual(event_action_weight(make_event(6, keys)), 1.0)
-        self.assertEqual(event_action_weight(make_event(1, keys)), 13.5)
+        self.assertEqual(event_action_weight(make_event(1, keys)), 2.0)
+        # a typical 100-sat zap outweighs a reply
+        zap100 = make_event(9735, keys, tags=[["bolt11", "lnbc1000n1fake"], ["preimage", "p"]])
+        self.assertGreater(event_action_weight(zap100), event_action_weight(make_event(1, keys)))
 
     def test_zap_weight_is_log_scaled_by_sats(self):
         keys = Keys.generate()
@@ -120,7 +123,7 @@ class CoEngagementTests(unittest.TestCase):
         replies = [make_event(1, user, tags=[["e", note_hex]]),
                    make_event(7, user, tags=[["e", note_hex]])]
         actions, liked = profile_actions_by_author(replies, {note_hex: note_author_hex}, user.public_key().to_hex())
-        self.assertAlmostEqual(actions.get(note_author_hex), 14.0)
+        self.assertAlmostEqual(actions.get(note_author_hex), 2.5)
         self.assertEqual(liked, {note_author_hex})
 
 
@@ -160,7 +163,7 @@ class ProfileCacheTests(unittest.IsolatedAsyncioTestCase):
             open_db.return_value = self.profile_db
             builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
             profile = await cache.get_profile(user.public_key().to_hex(), {note_hex: note_author_hex})
-        self.assertAlmostEqual(profile["actions_by_author"][note_author_hex], 14.0)
+        self.assertAlmostEqual(profile["actions_by_author"][note_author_hex], 2.5)
         self.assertEqual(profile["liked_authors"], {note_author_hex})
         # second call is a cache hit: sync must not be called again
         with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder:
@@ -470,7 +473,7 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
                                                    Timestamp.from_secs(self.now - 3600))
         self.assertEqual(len(index["engagement_by_note"][note_id]), 2)  # reply + reaction, deduped tags
         self.assertIn(fan.public_key().to_hex(), index["engagers_by_author"][author_hex])
-        self.assertAlmostEqual(index["total_by_author"][author_hex], 14.0)
+        self.assertAlmostEqual(index["total_by_author"][author_hex], 2.5)
         self.assertIn(engager.public_key().to_hex(), index["engager_authors"])
         self.assertIn(author_hex, index["engager_authors"][engager.public_key().to_hex()])
         # OON weights work straight off the precomputed graph (both fan and engager

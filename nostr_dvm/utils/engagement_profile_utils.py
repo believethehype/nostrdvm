@@ -11,7 +11,7 @@ from nostr_dvm.utils.zap_utils import parse_amount_from_bolt11_invoice
 PROFILE_KINDS = [1, 6, 7, 9735]
 
 RANKING_PARAMS = {
-    "action_weights": {"reaction": 0.5, "repost": 1.0, "reply": 13.5},
+    "action_weights": {"reaction": 0.5, "repost": 1.0, "reply": 2.0},
     "zap_base": 1.0,
     "base_floor": 0.1,
     "affinity_cap": 8.0,
