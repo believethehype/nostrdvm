@@ -126,10 +126,15 @@ class DiscoverContentForYou(DVMTaskInterface):
     async def calculate_result(self, request_form):
         user, max_results = self._resolve_user(request_form)
         database = await NostrLmdb.open(self.db_name)
-        if user:
-            cold = not self.profile_cache.has_context(user)
-            await self._send_processing_status(request_form, cold)
+        cold = user is not None and not self.profile_cache.has_context(user)
+        await self._send_processing_status(request_form, cold)
         try:
+            if cold:
+                # first contact: serve the global ranking immediately and build the
+                # graph in the background - the next refresh is personalized
+                index = await self._get_engagement_index(database)
+                self.profile_cache.refresh_context_background(user, index["note_author_by_id"])
+                return await self._global_fallback(database, max_results, user)
             return await self._personalized(database, user, max_results)
         except Exception as error:
             print("[" + self.dvm_config.NIP89.NAME + "] Personalized ranking failed, "

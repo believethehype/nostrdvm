@@ -1,4 +1,5 @@
 import json
+import asyncio
 import math
 import tempfile
 import unittest
@@ -365,17 +366,46 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn(("e", in_note.id().to_hex()), entries)
         self.assertIn(("e", oon_note.id().to_hex()), entries)
 
-    async def test_degrades_on_profile_failure(self):
+    async def test_cold_user_gets_global_feed_and_background_personalization(self):
         user = Keys.generate().public_key().to_hex()
-        await self.save_global(1, Keys.generate(), age_secs=30)
+        author = Keys.generate()
+        global_note = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", global_note.id().to_hex()]], age_secs=20)
+        personal_note = await self.save_global(1, author, age_secs=25)
+        await self.save_global(7, Keys.generate(), tags=[["e", personal_note.id().to_hex()]], age_secs=20)
+
         task, cache = self.make_task(user)
-        cache.get_requester_context = AsyncMock(side_effect=RuntimeError("relay down"))
+        cache.has_context = MagicMock(return_value=False)
+        cache.refresh_context_background = MagicMock()
+
+        async def build_context(user_hex, note_author_by_id):
+            cache._profiles[user_hex] = (Timestamp.now().as_secs(), {"actions_by_author": {}, "liked_authors": set()})
+            cache._follows[user_hex] = (Timestamp.now().as_secs(), {author.public_key().to_hex()})
+            cache._mutes[user_hex] = (Timestamp.now().as_secs(), (set(), []))
+        cache._refresh_context = AsyncMock(side_effect=build_context)
+
         with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
                    new_callable=AsyncMock) as open_db:
             open_db.return_value = self.global_db
-            result = await task.calculate_result(
-                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})})
-        self.assertIsInstance(json.loads(result), list)  # degraded mode ran, no crash
+            first = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})}))
+        # cold: the global ranking is served immediately, the graph builds in the background
+        self.assertIn(("e", global_note.id().to_hex()), [tuple(t) for t in first])
+        cache.refresh_context_background.assert_called_once()
+
+        # background build done -> the next request is personalized
+        cache.has_context = MagicMock(return_value=True)
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {author.public_key().to_hex(): 3.0}, "liked_authors": set(),
+            "follows": {author.public_key().to_hex()}, "muted": set(), "keywords": []})
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            task._seen_served = None  # simulate a restart: the persisted seen-memory loads
+            second = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})}))
+        ids = [entry[1] for entry in second]
+        self.assertIn(personal_note.id().to_hex(), ids)
 
     async def test_empty_candidate_pool_falls_back_to_global_ranking(self):
         author = Keys.generate()
@@ -548,6 +578,30 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
             for running in list(cache._refresh_tasks):
                 await running
             refresh.assert_awaited_once()  # background refresh scheduled and completed
+
+    async def test_missing_context_refreshes_in_background_without_blocking(self):
+        user = Keys.generate().public_key().to_hex()
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        client = MagicMock()
+        client.database.return_value = self.global_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        client.sync = AsyncMock(return_value=SimpleNamespace(
+            success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+        client.fetch_events = AsyncMock(return_value=[])
+        with patch("nostr_dvm.utils.engagement_profile_utils.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db, \
+                patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder, \
+                patch("nostr_dvm.utils.engagement_profile_utils.sync_discovery_database",
+                      new_callable=AsyncMock):
+            open_db.return_value = self.global_db
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            builder.return_value.authenticator.return_value.build.return_value = client
+            self.assertFalse(cache.has_context(user))
+            ctx = await cache.get_requester_context(user, {})  # missing: builds inline (first contact)
+            self.assertIn("actions_by_author", ctx)
+            self.assertTrue(cache.has_context(user))
 
     async def test_calculate_result_builds_index_once_across_requests(self):
         from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
@@ -950,6 +1004,7 @@ class StatusMessageTests(unittest.IsolatedAsyncioTestCase):
             await task.calculate_result(
                 {"jobID": "req1", "requester": user, "options": json.dumps({"max_results": 10})})
             self.assertIn("graph", sends[0])  # cold: building your graph
+            await asyncio.gather(*cache._refresh_tasks)  # background build completes
             await task.calculate_result(
                 {"jobID": "req2", "requester": user, "options": json.dumps({"max_results": 10})})
             self.assertIn("Updating your feed", sends[1])  # warm: building your feed

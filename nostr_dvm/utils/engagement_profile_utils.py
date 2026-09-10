@@ -181,6 +181,7 @@ class ProfileCache:
         self._mutes = {}
         self._author_domains = {}
         self._refresh_tasks = set()
+        self._pending_refreshes = set()
 
     async def _get_client(self, database=None):
         sk = SecretKey.generate()
@@ -294,6 +295,23 @@ class ProfileCache:
                 print("[profile-cache] Could not fetch author profiles: " + str(e))
         return {hex_str: self._author_domains.get(hex_str, "") for hex_str in author_hexes}
 
+    def refresh_context_background(self, user_hex: str, note_author_by_id: dict):
+        """Build the user's context off the request path; deduplicated per user."""
+        if user_hex in self._pending_refreshes:
+            return
+        self._pending_refreshes.add(user_hex)
+        refresh = asyncio.create_task(self._background_refresh(user_hex, note_author_by_id))
+        self._refresh_tasks.add(refresh)
+        refresh.add_done_callback(self._refresh_tasks.discard)
+
+    async def _background_refresh(self, user_hex: str, note_author_by_id: dict):
+        try:
+            await self._refresh_context(user_hex, note_author_by_id)
+        except Exception as e:
+            print("[profile-cache] Background context refresh failed: " + str(e))
+        finally:
+            self._pending_refreshes.discard(user_hex)
+
     async def get_requester_context(self, user_hex: str, note_author_by_id: dict) -> dict:
         now_secs = Timestamp.now().as_secs()
         profile_entry = self._profiles.get(user_hex)
@@ -331,14 +349,19 @@ class ProfileCache:
             database = await NostrLmdb.open(self.profile_db_name) if profile is None else None
             cli = await self._get_client(database)
             try:
+                tasks = []
                 if profile is None:
-                    profile = await self._sync_profile(user_hex, note_author_by_id, cli, database, now_secs)
+                    tasks.append(self._sync_profile(user_hex, note_author_by_id, cli, database, now_secs))
                 if follows is None:
-                    follows = await self._fetch_follows(cli, user_hex, now_secs)
+                    tasks.append(self._fetch_follows(cli, user_hex, now_secs))
                 if mutes is None:
-                    mutes = await self._fetch_mutes(cli, user_hex, now_secs)
+                    tasks.append(self._fetch_mutes(cli, user_hex, now_secs))
+                await asyncio.gather(*tasks)
             finally:
                 await cli.shutdown()
+            profile = self._profiles[user_hex][1]
+            follows = self._follows[user_hex][1]
+            mutes = self._mutes[user_hex][1]
         return {"actions_by_author": profile["actions_by_author"],
                 "liked_authors": profile["liked_authors"],
                 "follows": follows, "muted": mutes[0], "keywords": mutes[1]}
