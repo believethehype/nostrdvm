@@ -27,7 +27,6 @@ RANKING_PARAMS = {
     "in_network_cap": 200,
     "oon_cap": 300,
     "oon_overlap_threshold": 3,
-    "rotation_quality_ratio": 0.5,
 }
 
 

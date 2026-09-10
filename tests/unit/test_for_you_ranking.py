@@ -665,26 +665,32 @@ class SeenFilterTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(len(result), expected)
 
 
-    async def test_rotation_resets_when_quality_drops(self):
+    async def test_rotation_pool_bounds_depth_and_resets(self):
         author = Keys.generate()
         hi = await self.save_global(1, author, age_secs=30)
         for _ in range(10):
             await self.save_global(7, Keys.generate(), tags=[["e", hi.id().to_hex()]], age_secs=20)
         mid = await self.save_global(1, author, age_secs=40)
         await self.save_global(7, Keys.generate(), tags=[["e", mid.id().to_hex()]], age_secs=20)
+        low = await self.save_global(1, author, age_secs=45)
+        await self.save_global(7, Keys.generate(), tags=[["e", low.id().to_hex()]], age_secs=20)
         user = Keys.generate().public_key().to_hex()
 
         task = await self.make_task_with_author(author)
+        task.rotation_pool_size = 2  # pool = the 2 best notes only
         with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
                    new_callable=AsyncMock) as open_db:
             open_db.return_value = self.global_db
             first = json.loads(await task.calculate_result(
                 {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
             self.assertEqual(first, [["e", hi.id().to_hex()]])
-            # the only unseen note is far below the rotation's quality bar -> reset, serve the best again
             second = json.loads(await task.calculate_result(
                 {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
-        self.assertEqual(second, [["e", hi.id().to_hex()]])
+            self.assertEqual(second, [["e", mid.id().to_hex()]])
+            # pool exhausted: fresh rotation from the top instead of dipping below the pool
+            third = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
+        self.assertEqual(third, [["e", hi.id().to_hex()]])
 
     async def test_rotation_survives_an_outlier_top_note(self):
         # one heavily-engaged outlier must not pin the quality bar so high that
