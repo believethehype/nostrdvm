@@ -55,7 +55,6 @@ class DiscoverContentForYou(DVMTaskInterface):
     index_ttl_seconds = 600  # rebuild the engagement index at most this often (matches the default sync rate)
     seen_ttl_seconds = 24 * 3600  # notes served to a user are excluded from their feed for this long
     _seen_served = None  # {user_hex: {note_id: served_secs}}, persisted to disk
-    _rotation_best = None  # {user_hex: best weighted score of the current rotation}
     _seen_loaded = False
     profile_cache = None
 
@@ -131,24 +130,22 @@ class DiscoverContentForYou(DVMTaskInterface):
             return await self._global_fallback(database, max_results, user)
 
     def _select_rotation(self, user, ranked, max_results, now_secs):
-        """Serve unseen notes above the current rotation's quality bar; when the
-        remaining unseen notes fall short, start a new rotation from the top."""
+        """Serve unseen notes down to a quality bar anchored at the bottom of the served
+        window (not the #1 note, which can be an outlier); when the remaining unseen
+        notes fall short, start a new rotation from the top."""
         if user is None:
             return apply_author_diversity(ranked, max_results)
         served = self._get_seen(user, now_secs)
-        best = self._rotation_best.get(user, 0.0)
-        threshold = best * RANKING_PARAMS["rotation_quality_ratio"] if best > 0 else 0.0
+        anchor = ranked[min(max_results, len(ranked)) - 1][1] if ranked else 0.0
+        threshold = anchor * RANKING_PARAMS["rotation_quality_ratio"]
         unseen = [(note, score) for note, score in ranked
-                  if note.id().to_hex() not in served and score >= threshold]
+                  if score >= threshold and note.id().to_hex() not in served]
         if len(unseen) < max_results:
             # quality exhausted for this rotation: restart from the best notes
             served.clear()
-            self._rotation_best[user] = 0.0
-            unseen = ranked
-            best = 0.0
+            self._persist_seen()
+            unseen = [(note, score) for note, score in ranked if score >= threshold]
         selected = apply_author_diversity(unseen, max_results)
-        top_score = max((score for _, score in selected), default=0.0)
-        self._rotation_best[user] = max(best, top_score)
         self._mark_served(user, [note.id().to_hex() for note, _ in selected], now_secs)
         return selected
 
@@ -166,21 +163,17 @@ class DiscoverContentForYou(DVMTaskInterface):
         self._seen_loaded = True
         if self._seen_served is None:
             self._seen_served = {}
-        if self._rotation_best is None:
-            self._rotation_best = {}
         try:
             with open(self._seen_path) as handle:
                 data = json.load(handle)
             for user_hex, state in data.get("users", {}).items():
                 self._seen_served.setdefault(user_hex, {}).update(state.get("notes", {}))
-                if state.get("best"):
-                    self._rotation_best[user_hex] = state["best"]
         except Exception:
             pass
 
     def _persist_seen(self):
         try:
-            data = {"users": {user: {"notes": notes, "best": self._rotation_best.get(user, 0.0)}
+            data = {"users": {user: {"notes": notes}
                               for user, notes in self._seen_served.items()}}
             tmp = self._seen_path + ".tmp"
             with open(tmp, "w") as handle:
@@ -216,8 +209,6 @@ class DiscoverContentForYou(DVMTaskInterface):
         self._load_seen()
         if self._seen_served is None:
             self._seen_served = {}
-        if self._rotation_best is None:
-            self._rotation_best = {}
         served = self._seen_served.setdefault(user_hex, {})
         for note_id, served_secs in list(served.items()):
             if now_secs - served_secs >= self.seen_ttl_seconds:
