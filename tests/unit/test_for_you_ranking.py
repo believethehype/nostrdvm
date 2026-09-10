@@ -686,6 +686,37 @@ class SeenFilterTests(unittest.IsolatedAsyncioTestCase):
                 {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
         self.assertEqual(second, [["e", hi.id().to_hex()]])
 
+    async def test_rotation_survives_an_outlier_top_note(self):
+        # one heavily-engaged outlier must not pin the quality bar so high that
+        # every refresh resets to the same feed
+        author = Keys.generate()
+        outlier = await self.save_global(1, author, age_secs=30)
+        for _ in range(12):
+            await self.save_global(7, Keys.generate(), tags=[["e", outlier.id().to_hex()]], age_secs=20)
+        mid1 = await self.save_global(1, author, age_secs=40)
+        await self.save_global(7, Keys.generate(), tags=[["e", mid1.id().to_hex()]], age_secs=20)
+        mid2 = await self.save_global(1, author, age_secs=45)
+        await self.save_global(7, Keys.generate(), tags=[["e", mid2.id().to_hex()]], age_secs=20)
+        mid3 = await self.save_global(1, author, age_secs=50)
+        await self.save_global(7, Keys.generate(), tags=[["e", mid3.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task = await self.make_task_with_author(author)
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            first = [entry[1] for entry in json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 2})}))]
+            self.assertEqual(first, [outlier.id().to_hex(), mid1.id().to_hex()])
+            second = [entry[1] for entry in json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 2})}))]
+            # refresh 2 rotates to the remaining decent notes instead of repeating the outlier
+            self.assertEqual(second, [mid2.id().to_hex(), mid3.id().to_hex()])
+            # pool exhausted below the quality bar -> fresh rotation from the top
+            third = [entry[1] for entry in json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 2})}))]
+        self.assertEqual(third, first)
+
 
 class PersistenceTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
