@@ -166,12 +166,8 @@ class DiscoverContentForYou(DVMTaskInterface):
         served = self._get_seen(user, now_secs)
         unseen = [(note, score) for note, score in pool
                   if note.id().to_hex() not in served]
-        print("[For You][debug] ranked=" + str(len(ranked)) + " pool=" + str(len(pool))
-              + " served=" + str(len(served)) + " unseen=" + str(len(unseen))
-              + " max_results=" + str(max_results))
         if len(unseen) < max_results:
             # pool exhausted for this cycle: restart from the best notes
-            print("[For You][debug] RESET fired")
             served.clear()
             self._persist_seen()
             unseen = pool
