@@ -54,6 +54,7 @@ class DiscoverContentForYou(DVMTaskInterface):
     _engagement_index_built_at = 0
     index_ttl_seconds = 600  # rebuild the engagement index at most this often (matches the default sync rate)
     rotation_pool_size = 500  # the feed rotates through this many top-ranked notes per user cycle
+    BLOCKED_NIP05_DOMAINS = {"nostrmag.com"}  # bot-farm author domains, excluded from the feed
     seen_ttl_seconds = 24 * 3600  # notes served to a user are excluded from their feed for this long
     _seen_served = None  # {user_hex: {note_id: served_secs}}, persisted to disk
     _seen_loaded = False
@@ -225,6 +226,16 @@ class DiscoverContentForYou(DVMTaskInterface):
         served = self._get_seen(user_hex, now_secs)
         return [note for note in notes if note.id().to_hex() not in served]
 
+    @staticmethod
+    def _domain_allowed(domain: str) -> bool:
+        domain = (domain or "").lower().strip()
+        if not domain:
+            return True
+        for blocked in DiscoverContentForYou.BLOCKED_NIP05_DOMAINS:
+            if domain == blocked or domain.endswith("." + blocked):
+                return False
+        return True
+
     async def _build_engagement_index(self, database, graph_since):
         """Precompute the per-note engagement groups and per-author aggregates shared by
         every request. Full build on startup; afterwards merged incrementally."""
@@ -386,6 +397,13 @@ class DiscoverContentForYou(DVMTaskInterface):
         if not candidates:
             return await self._global_fallback(database, max_results, user)
 
+        domains = await self.profile_cache.get_author_domains(
+            list({note.author().to_hex() for note in candidates}))
+        candidates = [note for note in candidates
+                      if self._domain_allowed(domains.get(note.author().to_hex(), ""))]
+        if not candidates:
+            return await self._global_fallback(database, max_results, user)
+
         ranked = sorted([(note, note_score(note)) for note in candidates], key=lambda pair: -pair[1])
         selected = self._select_rotation(user, ranked, max_results, now_secs)
         return json.dumps([["e", event.id().to_hex()] for event, score in selected])
@@ -403,7 +421,12 @@ class DiscoverContentForYou(DVMTaskInterface):
             scored.append((note, RANKING_PARAMS["base_floor"]
                            + weights_by_note.get(note.id().to_hex(), 0.0)))
         scored.sort(key=lambda pair: -pair[1])
-        selected = self._select_rotation(user, scored, max_results, now_secs)
+        top = scored[:max(self.rotation_pool_size, max_results)]
+        domains = await self.profile_cache.get_author_domains(
+            list({note.author().to_hex() for note, _ in top})) if user else {}
+        top = [(note, score) for note, score in top
+               if self._domain_allowed(domains.get(note.author().to_hex(), ""))]
+        selected = self._select_rotation(user, top, max_results, now_secs)
         return json.dumps([["e", event.id().to_hex()] for event, score in selected])
 
     async def post_process(self, result, event):

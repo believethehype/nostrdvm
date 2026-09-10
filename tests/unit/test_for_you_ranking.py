@@ -320,6 +320,7 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
         cache.get_requester_context = AsyncMock(return_value={
             "actions_by_author": {}, "liked_authors": set(),
             "follows": set(), "muted": set(), "keywords": []})
+        cache.get_author_domains = AsyncMock(return_value={})
         task.profile_cache = cache
         task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
                                           NIP89=SimpleNamespace(NAME="For You"))
@@ -560,6 +561,7 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
         cache.get_requester_context = AsyncMock(return_value={
             "actions_by_author": {}, "liked_authors": set(),
             "follows": {author.public_key().to_hex()}, "muted": set(), "keywords": []})
+        cache.get_author_domains = AsyncMock(return_value={})
         task.profile_cache = cache
 
         calls = {"n": 0}
@@ -606,6 +608,7 @@ class SeenFilterTests(unittest.IsolatedAsyncioTestCase):
         cache.get_requester_context = AsyncMock(return_value={
             "actions_by_author": {}, "liked_authors": set(),
             "follows": {author.public_key().to_hex()}, "muted": set(), "keywords": []})
+        cache.get_author_domains = AsyncMock(return_value={})
         task.profile_cache = cache
         return task
 
@@ -789,6 +792,7 @@ class PersistenceTests(unittest.IsolatedAsyncioTestCase):
         cache.get_requester_context = AsyncMock(return_value={
             "actions_by_author": {}, "liked_authors": set(),
             "follows": {author_hex := author.public_key().to_hex()}, "muted": set(), "keywords": []})
+        cache.get_author_domains = AsyncMock(return_value={})
         task1.profile_cache = cache
         with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
                    new_callable=AsyncMock) as open_db:
@@ -805,6 +809,87 @@ class PersistenceTests(unittest.IsolatedAsyncioTestCase):
             second = json.loads(await task2.calculate_result(
                 {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
         self.assertEqual(second, [["e", note_b.id().to_hex()]])
+
+
+class Nip05BlocklistTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.global_db = await init_db(self.directory.name, print_filesize=False)
+        self.now = Timestamp.now().as_secs()
+
+    async def save_global(self, kind, author_keys, tags=(), age_secs=60):
+        event = EventBuilder(Kind(kind), "c").tags([Tag.parse(t) for t in tags]).custom_created_at(
+            Timestamp.from_secs(self.now - age_secs)).finalize(author_keys)
+        await self.global_db.save_event(event)
+        return event
+
+    async def test_get_author_domains_extracts_and_caches(self):
+        from nostr_dvm.utils.engagement_profile_utils import ProfileCache
+        bot = Keys.generate()
+        human = Keys.generate()
+        unknown = Keys.generate()
+        profile_bot = EventBuilder(Kind(0), json.dumps({"nip05": "spam@NostrMag.com"})).custom_created_at(
+            Timestamp.from_secs(self.now - 60)).finalize(bot)
+        profile_human = EventBuilder(Kind(0), json.dumps({"nip05": "human@example.com"})).custom_created_at(
+            Timestamp.from_secs(self.now - 60)).finalize(human)
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        client = MagicMock()
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        client.fetch_events = AsyncMock(return_value=[profile_bot, profile_human])
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder:
+            builder.return_value.authenticator.return_value.build.return_value = client
+            domains = await cache.get_author_domains(
+                [bot.public_key().to_hex(), human.public_key().to_hex(), unknown.public_key().to_hex()])
+        self.assertEqual(domains[bot.public_key().to_hex()], "nostrmag.com")  # lowercased domain
+        self.assertEqual(domains[human.public_key().to_hex()], "example.com")
+        self.assertEqual(domains[unknown.public_key().to_hex()], "")  # unknown author -> empty domain
+        # second call is a cache hit: no relay fetch
+        client.fetch_events.reset_mock()
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder:
+            builder.return_value.authenticator.return_value.build.return_value = client
+            await cache.get_author_domains([bot.public_key().to_hex()])
+            client.fetch_events.assert_not_awaited()
+
+    async def test_blocked_nip05_domain_authors_excluded(self):
+        bot_author = Keys.generate()
+        human_author = Keys.generate()
+        bot_note = await self.save_global(1, bot_author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", bot_note.id().to_hex()]], age_secs=20)
+        await self.save_global(7, Keys.generate(), tags=[["e", bot_note.id().to_hex()]], age_secs=20)
+        human_note = await self.save_global(1, human_author, age_secs=40)
+        await self.save_global(7, Keys.generate(), tags=[["e", human_note.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
+        task = object.__new__(DiscoverContentForYou)
+        task.db_name = self.directory.name + "/foryou.db"
+        task.db_since = 7 * 24 * 3600
+        task.seen_ttl_seconds = 24 * 3600
+        task._seen_served = None
+        task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
+                                          NIP89=SimpleNamespace(NAME="For You"))
+        cache = MagicMock()
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {}, "liked_authors": set(),
+            "follows": {bot_author.public_key().to_hex(), human_author.public_key().to_hex()},
+            "muted": set(), "keywords": []})
+        cache.get_author_domains = AsyncMock(return_value={
+            bot_author.public_key().to_hex(): "nostrmag.com",
+            human_author.public_key().to_hex(): "example.com"})
+        task.profile_cache = cache
+
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            result = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 10})}))
+        ids = [entry[1] for entry in result]
+        self.assertIn(human_note.id().to_hex(), ids)
+        self.assertNotIn(bot_note.id().to_hex(), ids)
+        cache.get_author_domains.assert_awaited_once()
 
 
 if __name__ == "__main__":

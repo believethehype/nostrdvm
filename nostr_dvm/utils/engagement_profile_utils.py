@@ -1,4 +1,5 @@
 import asyncio
+import json
 import math
 from collections import defaultdict
 from datetime import timedelta
@@ -178,6 +179,7 @@ class ProfileCache:
         self._profiles = {}
         self._follows = {}
         self._mutes = {}
+        self._author_domains = {}
         self._refresh_tasks = set()
 
     async def _get_client(self, database=None):
@@ -253,6 +255,36 @@ class ProfileCache:
             return await self._sync_profile(user_hex, note_author_by_id, cli, database, now_secs)
         finally:
             await cli.shutdown()
+
+    async def get_author_domains(self, author_hexes: list) -> dict:
+        """Batch-fetch kind-0 profiles for the given authors and return their NIP-05
+        domains (lowercased, "" when unknown). Results are cached for the process
+        lifetime; relay failures degrade to empty domains instead of raising."""
+        missing = [hex_str for hex_str in author_hexes if hex_str not in self._author_domains]
+        if missing:
+            try:
+                cli = await self._get_client()
+                try:
+                    for start in range(0, len(missing), 100):
+                        chunk = missing[start:start + 100]
+                        event_filter = Filter().kind(Kind(0)).authors(
+                            [PublicKey.parse(hex_str) for hex_str in chunk])
+                        events = await cli.fetch_events(ReqTarget.auto([event_filter]),
+                                                        timedelta(seconds=10))
+                        events = events.to_vec() if hasattr(events, "to_vec") else events
+                        for event in events:
+                            try:
+                                content = json.loads(event.content())
+                                nip05 = str(content.get("nip05") or "")
+                                domain = nip05.split("@")[-1] if "@" in nip05 else nip05
+                                self._author_domains[event.author().to_hex()] = domain.lower().strip()
+                            except Exception:
+                                continue
+                finally:
+                    await cli.shutdown()
+            except Exception as e:
+                print("[profile-cache] Could not fetch author profiles: " + str(e))
+        return {hex_str: self._author_domains.get(hex_str, "") for hex_str in author_hexes}
 
     async def get_requester_context(self, user_hex: str, note_author_by_id: dict) -> dict:
         now_secs = Timestamp.now().as_secs()
