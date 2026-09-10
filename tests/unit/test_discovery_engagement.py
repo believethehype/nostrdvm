@@ -104,13 +104,13 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await task.calculate_result(task.request_form), "[]")
 
     async def test_popular_weights_zaps_above_reactions(self):
-        # zapped note: 100k-sat zap (6.0) + one reaction (0.5) -> weighted 6.5 (+0.1 floor)
+        # zapped note: 100k-sat zap (3.0) + one reaction (0.5); liked note: two reactions (1.0).
+        # both clear the gate, but the zapped note must rank first
         zap_note = await self.save(age=30)
         other = Keys.generate()
         await self.save(9735, [["e", zap_note.id().to_hex()], ["bolt11", "lnbc1m1fake"],
                                ["preimage", "p"]], age=20, keys=other)
         await self.save(7, [["e", zap_note.id().to_hex()]], age=20, keys=Keys.generate())
-        # liked note: two plain reactions (1.0) -> below the min_reactions gate once weighted
         liked_note = await self.save(age=25)
         await self.save(7, [["e", liked_note.id().to_hex()]], age=20, keys=Keys.generate())
         await self.save(7, [["e", liked_note.id().to_hex()]], age=20, keys=Keys.generate())
@@ -125,7 +125,8 @@ class DiscoveryEngagementTests(unittest.IsolatedAsyncioTestCase):
             await task.init_dvm("test", config, None)
             open_db.assert_not_awaited()
         entries = json.loads(task.result)
-        self.assertEqual(entries, [["e", zap_note.id().to_hex()]])
+        self.assertEqual([entry[1] for entry in entries],
+                         [zap_note.id().to_hex(), liked_note.id().to_hex()])
 
     async def test_popular_excludes_author_self_engagement(self):
         note = await self.save()
