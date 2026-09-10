@@ -154,15 +154,18 @@ class DiscoverContentForYou(DVMTaskInterface):
 
     async def _build_engagement_index(self, database, graph_since):
         """Precompute the per-note engagement groups and per-author aggregates shared by
-        every request. Built once per index_ttl_seconds instead of per request."""
+        every request. Full build on startup; afterwards merged incrementally."""
         engagement = await database.query(
             Filter().kinds(engagement_kinds()).since(graph_since))
         graph_notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(graph_since))
         note_author_by_id = {note.id().to_hex(): note.author().to_hex() for note in graph_notes}
+        indexed_event_ids = {event.id().to_hex() for event in engagement}
 
         # group engagement by tagged note id; compute per-author distinct engagers + totals.
         # an event tagging the same note via multiple tags (e.g. NIP-10 root+reply pointing
-        # at the same id) counts once for that note
+        # at the same id) counts once for that note; self-engagement is skipped here so
+        # the full build and incremental merges stay consistent
+        exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
         engagement_by_note = {}
         engagers_by_author = {}
         total_by_author = {}
@@ -178,6 +181,8 @@ class DiscoverContentForYou(DVMTaskInterface):
                         continue
                     seen.add((event_id, vec[1]))
                     author = note_author_by_id[vec[1]]
+                    if exclude_self and engager == author:
+                        continue
                     engagement_by_note.setdefault(vec[1], []).append(event)
                     engagers_by_author.setdefault(author, set()).add(engager)
                     total_by_author[author] = total_by_author.get(author, 0.0) + weight
@@ -187,17 +192,62 @@ class DiscoverContentForYou(DVMTaskInterface):
                 "engagers_by_author": engagers_by_author,
                 "total_by_author": total_by_author,
                 "engager_authors": engager_authors,
-                "note_author_by_id": note_author_by_id}
+                "note_author_by_id": note_author_by_id,
+                "indexed_event_ids": indexed_event_ids}
 
     async def _get_engagement_index(self, database, now_secs=None):
         if now_secs is None:
             now_secs = Timestamp.now().as_secs()
-        if self._engagement_index is None or \
-                (now_secs - self._engagement_index_built_at) >= self.index_ttl_seconds:
+        if self._engagement_index is None:
             graph_since = Timestamp.from_secs(now_secs - self.db_since)
             self._engagement_index = await self._build_engagement_index(database, graph_since)
             self._engagement_index_built_at = now_secs
+        elif (now_secs - self._engagement_index_built_at) >= self.index_ttl_seconds:
+            # incremental: merge only events newer than the last build (with overlap for
+            # late arrivals) so a refresh never blocks request handling for ~90s
+            merge_since = Timestamp.from_secs(self._engagement_index_built_at - 1800)
+            await self._merge_engagement_index(database, merge_since, self._engagement_index)
+            self._engagement_index_built_at = now_secs
         return self._engagement_index
+
+    async def _merge_engagement_index(self, database, merge_since, index):
+        note_author_by_id = index["note_author_by_id"]
+        engagement_by_note = index["engagement_by_note"]
+        engagers_by_author = index["engagers_by_author"]
+        total_by_author = index["total_by_author"]
+        indexed_event_ids = index["indexed_event_ids"]
+
+        engagement = await database.query(
+            Filter().kinds(engagement_kinds()).since(merge_since))
+        graph_notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(merge_since))
+        for note in graph_notes:
+            note_author_by_id[note.id().to_hex()] = note.author().to_hex()
+
+        fresh = [event for event in engagement
+                 if event.id().to_hex() not in indexed_event_ids]
+        exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
+        for event in fresh:
+            event_id = event.id().to_hex()
+            indexed_event_ids.add(event_id)
+            weight = event_action_weight(event)
+            engager = event.author().to_hex()
+            seen_notes = set()
+            for tag in event.tags():
+                vec = tag.to_vec()
+                if vec[0] in ("e", "E") and len(vec) > 1 and vec[1] in note_author_by_id:
+                    note_id = vec[1]
+                    if note_id in seen_notes:
+                        continue
+                    seen_notes.add(note_id)
+                    author = note_author_by_id[note_id]
+                    if exclude_self and engager == author:
+                        continue
+                    engagement_by_note.setdefault(note_id, []).append(event)
+                    engagers_by_author.setdefault(author, set()).add(engager)
+                    total_by_author[author] = total_by_author.get(author, 0.0) + weight
+        merged_engager_authors = engager_authors_from_events(fresh, note_author_by_id)
+        for engager, authors in merged_engager_authors.items():
+            index["engager_authors"].setdefault(engager, set()).update(authors)
 
     async def _personalized(self, database, user, max_results):
         now_secs = Timestamp.now().as_secs()

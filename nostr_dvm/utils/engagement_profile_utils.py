@@ -1,3 +1,4 @@
+import asyncio
 import math
 from collections import defaultdict
 from datetime import timedelta
@@ -177,6 +178,7 @@ class ProfileCache:
         self._profiles = {}
         self._follows = {}
         self._mutes = {}
+        self._refresh_tasks = set()
 
     async def _get_client(self, database=None):
         sk = SecretKey.generate()
@@ -260,6 +262,31 @@ class ProfileCache:
         profile = profile_entry[1] if self._is_fresh(profile_entry, now_secs) else None
         follows = follows_entry[1] if self._is_fresh(follows_entry, now_secs) else None
         mutes = mutes_entry[1] if self._is_fresh(mutes_entry, now_secs) else None
+        if profile is not None and follows is not None and mutes is not None:
+            return {"actions_by_author": profile["actions_by_author"],
+                    "liked_authors": profile["liked_authors"],
+                    "follows": follows, "muted": mutes[0], "keywords": mutes[1]}
+        if profile_entry is not None and follows_entry is not None and mutes_entry is not None:
+            # stale-while-revalidate: serve the cached context now, refresh off the request path
+            refresh = asyncio.create_task(self._refresh_context(user_hex, note_author_by_id))
+            self._refresh_tasks.add(refresh)
+            refresh.add_done_callback(self._refresh_tasks.discard)
+            profile = profile_entry[1]
+            follows = follows_entry[1]
+            muted, keywords = mutes_entry[1]
+            return {"actions_by_author": profile["actions_by_author"],
+                    "liked_authors": profile["liked_authors"],
+                    "follows": follows, "muted": muted, "keywords": keywords}
+        return await self._refresh_context(user_hex, note_author_by_id)
+
+    async def _refresh_context(self, user_hex: str, note_author_by_id: dict) -> dict:
+        now_secs = Timestamp.now().as_secs()
+        profile_entry = self._profiles.get(user_hex)
+        follows_entry = self._follows.get(user_hex)
+        mutes_entry = self._mutes.get(user_hex)
+        profile = profile_entry[1] if self._is_fresh(profile_entry, now_secs) else None
+        follows = follows_entry[1] if self._is_fresh(follows_entry, now_secs) else None
+        mutes = mutes_entry[1] if self._is_fresh(mutes_entry, now_secs) else None
         if profile is None or follows is None or mutes is None:
             database = await NostrLmdb.open(self.profile_db_name) if profile is None else None
             cli = await self._get_client(database)
@@ -272,10 +299,9 @@ class ProfileCache:
                     mutes = await self._fetch_mutes(cli, user_hex, now_secs)
             finally:
                 await cli.shutdown()
-        muted, keywords = mutes
         return {"actions_by_author": profile["actions_by_author"],
                 "liked_authors": profile["liked_authors"],
-                "follows": follows, "muted": muted, "keywords": keywords}
+                "follows": follows, "muted": mutes[0], "keywords": mutes[1]}
 
     async def get_follows(self, user_hex: str) -> set:
         now_secs = Timestamp.now().as_secs()
