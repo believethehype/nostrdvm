@@ -892,5 +892,69 @@ class Nip05BlocklistTests(unittest.IsolatedAsyncioTestCase):
         cache.get_author_domains.assert_awaited_once()
 
 
+class StatusMessageTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.global_db = await init_db(self.directory.name, print_filesize=False)
+        self.now = Timestamp.now().as_secs()
+
+    async def save_global(self, kind, author_keys, tags=(), age_secs=60):
+        event = EventBuilder(Kind(kind), "c").tags([Tag.parse(t) for t in tags]).custom_created_at(
+            Timestamp.from_secs(self.now - age_secs)).finalize(author_keys)
+        await self.global_db.save_event(event)
+        return event
+
+    async def test_cold_user_gets_graph_message_and_warm_user_feed_message(self):
+        from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
+        from nostr_dvm.utils.engagement_profile_utils import ProfileCache
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task = object.__new__(DiscoverContentForYou)
+        task.db_name = self.directory.name + "/foryou.db"
+        task.db_since = 7 * 24 * 3600
+        task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
+                                          NIP89=SimpleNamespace(NAME="For You"))
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        task.profile_cache = cache
+        self.assertFalse(cache.has_context(user))  # cold before the first request
+
+        client = MagicMock()
+        client.database.return_value = self.global_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        client.fetch_events = AsyncMock(return_value=[])
+        sends = []
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db, \
+                patch("nostr_dvm.utils.engagement_profile_utils.NostrLmdb.open",
+                      new_callable=AsyncMock) as profile_open_db, \
+                patch("nostr_dvm.utils.engagement_profile_utils.sync_discovery_database",
+                      new_callable=AsyncMock), \
+                patch.object(ProfileCache, "_get_client", new_callable=AsyncMock) as get_client, \
+                patch.object(DiscoverContentForYou, "_get_status_client",
+                             new_callable=AsyncMock) as status_client, \
+                patch("nostr_dvm.tasks.content_discovery_for_you.send_job_status_reaction",
+                      new_callable=AsyncMock) as send_status:
+            get_client.return_value = client
+            status_client.return_value = client
+            open_db.return_value = self.global_db
+            profile_open_db.return_value = self.global_db
+            async def capture(*args, **kwargs):
+                sends.append(kwargs.get("content") or (args[3] if len(args) > 3 else None))
+            send_status.side_effect = capture
+            await task.calculate_result(
+                {"jobID": "req1", "requester": user, "options": json.dumps({"max_results": 10})})
+            self.assertIn("graph", sends[0])  # cold: building your graph
+            await task.calculate_result(
+                {"jobID": "req2", "requester": user, "options": json.dumps({"max_results": 10})})
+            self.assertIn("Building your feed", sends[1])  # warm: building your feed
+        self.assertTrue(cache.has_context(user))
+
+
 if __name__ == "__main__":
     unittest.main()

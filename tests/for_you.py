@@ -48,7 +48,7 @@ def build_for_you(name, identifier, admin_config, options, image, cost=0, update
     dvm_config.AVOID_OUTBOX_RELAY_LIST = AVOID_OUTBOX_RELAY_LIST
     dvm_config.SYNC_DB_RELAY_LIST = SYNC_DB_RELAY_LIST
     dvm_config.RELAY_LIST = RELAY_LIST
-    dvm_config.SEND_FEEDBACK_EVENTS = True
+    dvm_config.SEND_FEEDBACK_EVENTS = False
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 
     nip89info = {
