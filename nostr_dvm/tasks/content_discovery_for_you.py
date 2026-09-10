@@ -53,6 +53,7 @@ class DiscoverContentForYou(DVMTaskInterface):
     _engagement_index = None
     _engagement_index_built_at = 0
     index_ttl_seconds = 600  # rebuild the engagement index at most this often (matches the default sync rate)
+    rotation_pool_size = 500  # the feed rotates through this many top-ranked notes per user cycle
     seen_ttl_seconds = 24 * 3600  # notes served to a user are excluded from their feed for this long
     _seen_served = None  # {user_hex: {note_id: served_secs}}, persisted to disk
     _seen_loaded = False
@@ -130,21 +131,20 @@ class DiscoverContentForYou(DVMTaskInterface):
             return await self._global_fallback(database, max_results, user)
 
     def _select_rotation(self, user, ranked, max_results, now_secs):
-        """Serve unseen notes down to a quality bar anchored at the bottom of the served
-        window (not the #1 note, which can be an outlier); when the remaining unseen
-        notes fall short, start a new rotation from the top."""
+        """Rotate unseen notes through the top-ranked pool; when the pool is consumed,
+        start a new rotation from the top instead of serving worse notes."""
         if user is None:
             return apply_author_diversity(ranked, max_results)
+        pool_size = max(self.rotation_pool_size, 2 * max_results)
+        pool = ranked[:pool_size]
         served = self._get_seen(user, now_secs)
-        anchor = ranked[min(max_results, len(ranked)) - 1][1] if ranked else 0.0
-        threshold = anchor * RANKING_PARAMS["rotation_quality_ratio"]
-        unseen = [(note, score) for note, score in ranked
-                  if score >= threshold and note.id().to_hex() not in served]
+        unseen = [(note, score) for note, score in pool
+                  if note.id().to_hex() not in served]
         if len(unseen) < max_results:
-            # quality exhausted for this rotation: restart from the best notes
+            # pool exhausted for this cycle: restart from the best notes
             served.clear()
             self._persist_seen()
-            unseen = [(note, score) for note, score in ranked if score >= threshold]
+            unseen = pool
         selected = apply_author_diversity(unseen, max_results)
         self._mark_served(user, [note.id().to_hex() for note, _ in selected], now_secs)
         return selected
