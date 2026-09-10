@@ -25,7 +25,7 @@ RANKING_PARAMS = {
     "diversity_decay": 0.7,
     "diversity_floor": 0.1,
     "candidate_age_hours": 48,
-    "in_network_cap": 200,
+    "in_network_cap": 300,
     "oon_cap": 300,
     "oon_overlap_threshold": 3,
 }
