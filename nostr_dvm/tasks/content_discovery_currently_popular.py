@@ -37,7 +37,7 @@ class DicoverContentCurrentlyPopular(DVMTaskInterface):
     last_schedule: int
     db_since = 3600
     db_name = "db/nostr_recent_notes.db"
-    min_reactions = 2
+    min_reactions = 1.0  # weighted-score gate: one reply/repost/zap qualifies, a single reaction does not
     personalized = False
     result = "[]"
     database = None
