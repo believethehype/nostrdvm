@@ -15,6 +15,7 @@ from nostr_dvm.utils.database_utils import init_db
 from nostr_dvm.utils.discovery_utils import engagement_kinds, sync_discovery_database
 from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.definitions import EventDefinitions
+from nostr_dvm.utils.output_utils import post_process_list_to_events, send_job_status_reaction
 from nostr_dvm.utils.engagement_profile_utils import (
     RANKING_PARAMS, affinity, apply_author_diversity, credibility,
     engager_authors_from_events, event_action_weight, new_author_boost,
@@ -53,7 +54,8 @@ class DiscoverContentForYou(DVMTaskInterface):
     _engagement_index = None
     _engagement_index_built_at = 0
     index_ttl_seconds = 600  # rebuild the engagement index at most this often (matches the default sync rate)
-    rotation_pool_size = 500  # the feed rotates through this many top-ranked notes per user cycle
+    rotation_pool_size = 600  # the feed rotates through this many top-ranked notes per user cycle
+    _status_client = None
     BLOCKED_NIP05_DOMAINS = {"nostrmag.com"}  # bot-farm author domains, excluded from the feed
     seen_ttl_seconds = 24 * 3600  # notes served to a user are excluded from their feed for this long
     _seen_served = None  # {user_hex: {note_id: served_secs}}, persisted to disk
@@ -124,12 +126,35 @@ class DiscoverContentForYou(DVMTaskInterface):
     async def calculate_result(self, request_form):
         user, max_results = self._resolve_user(request_form)
         database = await NostrLmdb.open(self.db_name)
+        if user:
+            cold = not self.profile_cache.has_context(user)
+            await self._send_processing_status(request_form, cold)
         try:
             return await self._personalized(database, user, max_results)
         except Exception as error:
             print("[" + self.dvm_config.NIP89.NAME + "] Personalized ranking failed, "
                   "falling back to global ranking: " + str(error))
             return await self._global_fallback(database, max_results, user)
+
+    async def _get_status_client(self):
+        if self._status_client is None:
+            keys = Keys.parse(SecretKey.parse(self.dvm_config.PRIVATE_KEY).to_hex())
+            self._status_client = ClientBuilder().authenticator(SignerAuthenticator(keys)).build()
+            for relay in self.dvm_config.RELAY_LIST:
+                await self._status_client.add_relay(RelayUrl.parse(relay))
+            await self._status_client.connect(timedelta(seconds=10))
+        return self._status_client
+
+    async def _send_processing_status(self, request_form, cold):
+        message = ("Building your graph, this might take a minute or two.." if cold
+                   else "Building your feed..")
+        try:
+            client = await self._get_status_client()
+            await send_job_status_reaction(request_form.get("jobID"), request_form.get("requester"),
+                                           client, self.dvm_config, content=message,
+                                           status="processing")
+        except Exception as e:
+            print("[" + self.dvm_config.NIP89.NAME + "] Status send failed: " + str(e))
 
     def _select_rotation(self, user, ranked, max_results, now_secs):
         """Rotate unseen notes through the top-ranked pool; when the pool is consumed,

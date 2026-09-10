@@ -256,6 +256,14 @@ class ProfileCache:
         finally:
             await cli.shutdown()
 
+    def has_context(self, user_hex: str) -> bool:
+        """True when a fresh cached profile/follows/mutes context exists for the user
+        (no relay round-trip needed to serve them)."""
+        now_secs = Timestamp.now().as_secs()
+        return (self._is_fresh(self._profiles.get(user_hex), now_secs)
+                and self._is_fresh(self._follows.get(user_hex), now_secs)
+                and self._is_fresh(self._mutes.get(user_hex), now_secs))
+
     async def get_author_domains(self, author_hexes: list) -> dict:
         """Batch-fetch kind-0 profiles for the given authors and return their NIP-05
         domains (lowercased, "" when unknown). Results are cached for the process
