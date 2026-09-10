@@ -147,7 +147,7 @@ class DiscoverContentForYou(DVMTaskInterface):
 
     async def _send_processing_status(self, request_form, cold):
         message = ("Building your graph, this might take a minute or two.." if cold
-                   else "Building your feed..")
+                   else "Updating your feed..")
         try:
             client = await self._get_status_client()
             await send_job_status_reaction(request_form.get("jobID"), request_form.get("requester"),

@@ -952,7 +952,7 @@ class StatusMessageTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("graph", sends[0])  # cold: building your graph
             await task.calculate_result(
                 {"jobID": "req2", "requester": user, "options": json.dumps({"max_results": 10})})
-            self.assertIn("Building your feed", sends[1])  # warm: building your feed
+            self.assertIn("Updating your feed", sends[1])  # warm: building your feed
         self.assertTrue(cache.has_context(user))
 
 
