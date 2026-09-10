@@ -166,8 +166,12 @@ class DiscoverContentForYou(DVMTaskInterface):
         served = self._get_seen(user, now_secs)
         unseen = [(note, score) for note, score in pool
                   if note.id().to_hex() not in served]
+        print("[For You][debug] ranked=" + str(len(ranked)) + " pool=" + str(len(pool))
+              + " served=" + str(len(served)) + " unseen=" + str(len(unseen))
+              + " max_results=" + str(max_results))
         if len(unseen) < max_results:
             # pool exhausted for this cycle: restart from the best notes
+            print("[For You][debug] RESET fired")
             served.clear()
             self._persist_seen()
             unseen = pool
@@ -403,10 +407,12 @@ class DiscoverContentForYou(DVMTaskInterface):
                               oon_factor(author, follows),
                               new_author_boost(total_by_author.get(author, 0.0)))
 
+        # over-fetch both pools (2x the caps): the NIP-05 blocklist filter then trims
+        # them, and the rotation pool still fills to its full size afterwards
         in_network = [note for note in notes
                       if note.author().to_hex() in follows and passes_filters(note) and top_level(note)]
         in_network.sort(key=lambda note: -note.created_at().as_secs())
-        in_network = in_network[:RANKING_PARAMS["in_network_cap"]]
+        in_network = in_network[:RANKING_PARAMS["in_network_cap"] * 2]
 
         author_weights = weights_from_engager_authors(engager_authors, user, liked_authors)
         oon_author_set = {author for author in author_weights
@@ -416,16 +422,19 @@ class DiscoverContentForYou(DVMTaskInterface):
         oon.sort(key=lambda note: -(author_weights[note.author().to_hex()]
                                     * (RANKING_PARAMS["base_floor"]
                                        + weights_by_note.get(note.id().to_hex(), 0.0))))
-        oon = oon[:RANKING_PARAMS["oon_cap"]]
+        oon = oon[:RANKING_PARAMS["oon_cap"] * 2]
+
+        pool_notes = in_network + oon
+        domains = await self.profile_cache.get_author_domains(
+            list({note.author().to_hex() for note in pool_notes}))
+        pool_notes = [note for note in pool_notes
+                      if self._domain_allowed(domains.get(note.author().to_hex(), ""))]
+        in_network = [note for note in pool_notes
+                      if note.author().to_hex() in follows][:RANKING_PARAMS["in_network_cap"]]
+        oon = [note for note in pool_notes
+               if note.author().to_hex() in oon_author_set][:RANKING_PARAMS["oon_cap"]]
 
         candidates = in_network + oon
-        if not candidates:
-            return await self._global_fallback(database, max_results, user)
-
-        domains = await self.profile_cache.get_author_domains(
-            list({note.author().to_hex() for note in candidates}))
-        candidates = [note for note in candidates
-                      if self._domain_allowed(domains.get(note.author().to_hex(), ""))]
         if not candidates:
             return await self._global_fallback(database, max_results, user)
 
@@ -446,11 +455,12 @@ class DiscoverContentForYou(DVMTaskInterface):
             scored.append((note, RANKING_PARAMS["base_floor"]
                            + weights_by_note.get(note.id().to_hex(), 0.0)))
         scored.sort(key=lambda pair: -pair[1])
-        top = scored[:max(self.rotation_pool_size, max_results)]
-        domains = await self.profile_cache.get_author_domains(
-            list({note.author().to_hex() for note, _ in top})) if user else {}
-        top = [(note, score) for note, score in top
-               if self._domain_allowed(domains.get(note.author().to_hex(), ""))]
+        top = scored[:max(self.rotation_pool_size, max_results) * 2]
+        if user:
+            domains = await self.profile_cache.get_author_domains(
+                list({note.author().to_hex() for note, _ in top}))
+            top = [(note, score) for note, score in top
+                   if self._domain_allowed(domains.get(note.author().to_hex(), ""))]
         selected = self._select_rotation(user, top, max_results, now_secs)
         return json.dumps([["e", event.id().to_hex()] for event, score in selected])
 
