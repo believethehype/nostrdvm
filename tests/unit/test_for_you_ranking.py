@@ -487,21 +487,64 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
                                                overlap_threshold=1)
         self.assertEqual(weights.get(author_hex), 2)
 
-    async def test_index_reused_within_ttl_and_rebuilt_after(self):
+    async def test_index_merges_incrementally_without_double_counting(self):
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=60)
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=50)
         task = self.make_task()
-        calls = {"n": 0}
-        original = type(task)._build_engagement_index
+        task.index_ttl_seconds = 600
 
-        async def counting(inner, database, graph_since):
-            calls["n"] += 1
-            return await original(inner, database, graph_since)
+        index = await task._get_engagement_index(self.global_db, now_secs=self.now)
+        note_id = note.id().to_hex()
+        author_hex = author.public_key().to_hex()
+        self.assertAlmostEqual(index["total_by_author"][author_hex], 0.5)
 
-        with patch.object(type(task), "_build_engagement_index", counting):
-            await task._get_engagement_index(self.global_db, now_secs=self.now)
-            await task._get_engagement_index(self.global_db, now_secs=self.now + 400)  # within 600s TTL
-            self.assertEqual(calls["n"], 1)
-            await task._get_engagement_index(self.global_db, now_secs=self.now + 601)  # expired
-            self.assertEqual(calls["n"], 2)
+        # new engagement arrives after the build
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=5)
+        merged = await task._get_engagement_index(self.global_db, now_secs=self.now + 700)
+        self.assertAlmostEqual(merged["total_by_author"][author_hex], 1.0)  # merged, not rebuilt-from-scratch-only
+        self.assertEqual(len(merged["engagement_by_note"][note_id]), 2)
+        # a second merge inside the overlap window must not double-count the same events
+        merged2 = await task._get_engagement_index(self.global_db, now_secs=self.now + 1300)
+        self.assertEqual(len(merged2["engagement_by_note"][note_id]), 2)
+        self.assertAlmostEqual(merged2["total_by_author"][author_hex], 1.0)
+
+    async def test_stale_profile_served_immediately_and_refresh_scheduled(self):
+        import asyncio
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=60)
+        user = Keys.generate().public_key().to_hex()
+        task = self.make_task()
+        from nostr_dvm.utils.engagement_profile_utils import ProfileCache
+        cache = ProfileCache("unused.db", ["wss://broken"], ttl_seconds=3600, history_days=7)
+        task.profile_cache = cache
+        client = MagicMock()
+        client.database.return_value = self.global_db
+        client.add_relay = AsyncMock()
+        client.connect = AsyncMock()
+        client.shutdown = AsyncMock()
+        client.sync = AsyncMock(return_value=SimpleNamespace(
+            success=["wss://ok"], failed={}, report=SimpleNamespace(received={})))
+        client.fetch_events = AsyncMock(return_value=[])
+        with patch("nostr_dvm.utils.engagement_profile_utils.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db, \
+                patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder:
+            open_db.return_value = self.global_db
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            builder.return_value.authenticator.return_value.build.return_value = client
+            first = await cache.get_requester_context(user, {note.id().to_hex(): author.public_key().to_hex()})
+        self.assertIn("actions_by_author", first)
+
+        # age the entry past the TTL, then request again: stale served instantly, refresh in background
+        cache.ttl_seconds = 0
+        with patch("nostr_dvm.utils.engagement_profile_utils.ClientBuilder") as builder, \
+                patch.object(ProfileCache, "_refresh_context", new_callable=AsyncMock) as refresh:
+            builder.return_value.authenticator.return_value.database.return_value.build.return_value = client
+            stale = await cache.get_requester_context(user, {})
+            self.assertEqual(stale, first)  # served without blocking
+            for running in list(cache._refresh_tasks):
+                await running
+            refresh.assert_awaited_once()  # background refresh scheduled and completed
 
     async def test_calculate_result_builds_index_once_across_requests(self):
         from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
