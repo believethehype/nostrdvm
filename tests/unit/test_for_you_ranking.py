@@ -474,7 +474,7 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
         task = self.make_task()
         index = await task._build_engagement_index(self.global_db,
                                                    Timestamp.from_secs(self.now - 3600))
-        self.assertEqual(len(index["engagement_by_note"][note_id]), 2)  # reply + reaction, deduped tags
+        self.assertAlmostEqual(index["weights_by_note"][note_id], 1.5)  # reply 1.0 + reaction 0.5
         self.assertIn(fan.public_key().to_hex(), index["engagers_by_author"][author_hex])
         self.assertAlmostEqual(index["total_by_author"][author_hex], 1.5)
         self.assertIn(engager.public_key().to_hex(), index["engager_authors"])
@@ -503,11 +503,11 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
         await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=5)
         merged = await task._get_engagement_index(self.global_db, now_secs=self.now + 700)
         self.assertAlmostEqual(merged["total_by_author"][author_hex], 1.0)  # merged, not rebuilt-from-scratch-only
-        self.assertEqual(len(merged["engagement_by_note"][note_id]), 2)
+        self.assertAlmostEqual(merged["weights_by_note"][note_id], 1.0)
         # a second merge inside the overlap window must not double-count the same events
         merged2 = await task._get_engagement_index(self.global_db, now_secs=self.now + 1300)
-        self.assertEqual(len(merged2["engagement_by_note"][note_id]), 2)
         self.assertAlmostEqual(merged2["total_by_author"][author_hex], 1.0)
+        self.assertAlmostEqual(merged2["weights_by_note"][note_id], 1.0)
 
     async def test_stale_profile_served_immediately_and_refresh_scheduled(self):
         import asyncio

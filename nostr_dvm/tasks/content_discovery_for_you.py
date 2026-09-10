@@ -16,7 +16,7 @@ from nostr_dvm.utils.dvmconfig import DVMConfig, build_default_config
 from nostr_dvm.utils.definitions import EventDefinitions
 from nostr_dvm.utils.engagement_profile_utils import (
     RANKING_PARAMS, affinity, apply_author_diversity, credibility,
-    engager_authors_from_events, event_action_weight, new_author_boost, note_engagement_base,
+    engager_authors_from_events, event_action_weight, new_author_boost,
     oon_factor, profile_actions_by_author, recency_factor, score_note, top_level,
     weights_from_engager_authors, ProfileCache)
 from nostr_dvm.utils.nip88_utils import NIP88Config, check_and_set_d_tag_nip88, check_and_set_tiereventid_nip88
@@ -166,7 +166,7 @@ class DiscoverContentForYou(DVMTaskInterface):
         # at the same id) counts once for that note; self-engagement is skipped here so
         # the full build and incremental merges stay consistent
         exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
-        engagement_by_note = {}
+        weights_by_note = {}
         engagers_by_author = {}
         total_by_author = {}
         seen = set()
@@ -183,12 +183,12 @@ class DiscoverContentForYou(DVMTaskInterface):
                     author = note_author_by_id[vec[1]]
                     if exclude_self and engager == author:
                         continue
-                    engagement_by_note.setdefault(vec[1], []).append(event)
+                    weights_by_note[vec[1]] = weights_by_note.get(vec[1], 0.0) + weight
                     engagers_by_author.setdefault(author, set()).add(engager)
                     total_by_author[author] = total_by_author.get(author, 0.0) + weight
 
         engager_authors = engager_authors_from_events(engagement, note_author_by_id)
-        return {"engagement_by_note": engagement_by_note,
+        return {"weights_by_note": weights_by_note,
                 "engagers_by_author": engagers_by_author,
                 "total_by_author": total_by_author,
                 "engager_authors": engager_authors,
@@ -212,7 +212,7 @@ class DiscoverContentForYou(DVMTaskInterface):
 
     async def _merge_engagement_index(self, database, merge_since, index):
         note_author_by_id = index["note_author_by_id"]
-        engagement_by_note = index["engagement_by_note"]
+        weights_by_note = index["weights_by_note"]
         engagers_by_author = index["engagers_by_author"]
         total_by_author = index["total_by_author"]
         indexed_event_ids = index["indexed_event_ids"]
@@ -242,7 +242,7 @@ class DiscoverContentForYou(DVMTaskInterface):
                     author = note_author_by_id[note_id]
                     if exclude_self and engager == author:
                         continue
-                    engagement_by_note.setdefault(note_id, []).append(event)
+                    weights_by_note[note_id] = weights_by_note.get(note_id, 0.0) + weight
                     engagers_by_author.setdefault(author, set()).add(engager)
                     total_by_author[author] = total_by_author.get(author, 0.0) + weight
         merged_engager_authors = engager_authors_from_events(fresh, note_author_by_id)
@@ -258,7 +258,7 @@ class DiscoverContentForYou(DVMTaskInterface):
 
         index = await self._get_engagement_index(database)
         note_author_by_id = index["note_author_by_id"]
-        engagement_by_note = index["engagement_by_note"]
+        weights_by_note = index["weights_by_note"]
         engagers_by_author = index["engagers_by_author"]
         total_by_author = index["total_by_author"]
         engager_authors = index["engager_authors"]
@@ -269,8 +269,6 @@ class DiscoverContentForYou(DVMTaskInterface):
         keywords = context["keywords"]
         actions_by_author = context["actions_by_author"]
         liked_authors = context["liked_authors"]
-
-        exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
 
         def passes_filters(note) -> bool:
             author = note.author().to_hex()
@@ -283,8 +281,8 @@ class DiscoverContentForYou(DVMTaskInterface):
 
         def note_score(note) -> float:
             author = note.author().to_hex()
-            base = note_engagement_base(engagement_by_note.get(note.id().to_hex(), []),
-                                        author, exclude_self=exclude_self)
+            # self-engagement is already excluded when the index was built
+            base = RANKING_PARAMS["base_floor"] + weights_by_note.get(note.id().to_hex(), 0.0)
             return score_note(base,
                               affinity(author, actions_by_author),
                               credibility(len(engagers_by_author.get(author, set()))),
@@ -303,8 +301,8 @@ class DiscoverContentForYou(DVMTaskInterface):
         oon = [note for note in notes
                if note.author().to_hex() in oon_author_set and passes_filters(note) and top_level(note)]
         oon.sort(key=lambda note: -(author_weights[note.author().to_hex()]
-                                    * note_engagement_base(engagement_by_note.get(note.id().to_hex(), []),
-                                                           note.author().to_hex(), exclude_self=exclude_self)))
+                                    * (RANKING_PARAMS["base_floor"]
+                                       + weights_by_note.get(note.id().to_hex(), 0.0))))
         oon = oon[:RANKING_PARAMS["oon_cap"]]
 
         candidates = self._unseen(user, in_network + oon, now_secs)
@@ -320,15 +318,13 @@ class DiscoverContentForYou(DVMTaskInterface):
         candidate_since = Timestamp.from_secs(now_secs - RANKING_PARAMS["candidate_age_hours"] * 3600)
         notes = await database.query(Filter().kind(definitions.EventDefinitions.KIND_NOTE).since(candidate_since))
         index = await self._get_engagement_index(database)
-        engagement_by_note = index["engagement_by_note"]
-        exclude_self = getattr(self.dvm_config, "EXCLUDE_SELF_ENGAGEMENT", True)
+        weights_by_note = index["weights_by_note"]
         scored = []
         for note in notes:
             if not top_level(note):
                 continue
-            author = note.author().to_hex()
-            scored.append((note, note_engagement_base(engagement_by_note.get(note.id().to_hex(), []),
-                                                      author, exclude_self=exclude_self)))
+            scored.append((note, RANKING_PARAMS["base_floor"]
+                           + weights_by_note.get(note.id().to_hex(), 0.0)))
         scored.sort(key=lambda pair: -pair[1])
         if user:
             unseen = [(event, score) for event, score in scored
