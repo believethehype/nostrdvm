@@ -1,5 +1,6 @@
 import json
 import os
+import pickle
 from datetime import timedelta
 
 from nostr_sdk import (
@@ -53,7 +54,9 @@ class DiscoverContentForYou(DVMTaskInterface):
     _engagement_index_built_at = 0
     index_ttl_seconds = 600  # rebuild the engagement index at most this often (matches the default sync rate)
     seen_ttl_seconds = 24 * 3600  # notes served to a user are excluded from their feed for this long
-    _seen_served = None  # {user_hex: {note_id: served_secs}}, in-memory only
+    _seen_served = None  # {user_hex: {note_id: served_secs}}, persisted to disk
+    _rotation_best = None  # {user_hex: best weighted score of the current rotation}
+    _seen_loaded = False
     profile_cache = None
 
     async def init_dvm(self, name, dvm_config: DVMConfig, nip89config: NIP89Config, nip88config: NIP88Config = None,
@@ -121,22 +124,100 @@ class DiscoverContentForYou(DVMTaskInterface):
         user, max_results = self._resolve_user(request_form)
         database = await NostrLmdb.open(self.db_name)
         try:
-            result = await self._personalized(database, user, max_results)
+            return await self._personalized(database, user, max_results)
         except Exception as error:
             print("[" + self.dvm_config.NIP89.NAME + "] Personalized ranking failed, "
                   "falling back to global ranking: " + str(error))
-            result = await self._global_fallback(database, max_results, user)
-        if user:
-            try:
-                self._mark_served(user, [entry[1] for entry in json.loads(result)],
-                                  Timestamp.now().as_secs())
-            except Exception:
-                pass
-        return result
+            return await self._global_fallback(database, max_results, user)
 
-    def _get_seen(self, user_hex: str, now_secs: float) -> dict:
+    def _select_rotation(self, user, ranked, max_results, now_secs):
+        """Serve unseen notes above the current rotation's quality bar; when the
+        remaining unseen notes fall short, start a new rotation from the top."""
+        if user is None:
+            return apply_author_diversity(ranked, max_results)
+        served = self._get_seen(user, now_secs)
+        best = self._rotation_best.get(user, 0.0)
+        threshold = best * RANKING_PARAMS["rotation_quality_ratio"] if best > 0 else 0.0
+        unseen = [(note, score) for note, score in ranked
+                  if note.id().to_hex() not in served and score >= threshold]
+        if len(unseen) < max_results:
+            # quality exhausted for this rotation: restart from the best notes
+            served.clear()
+            self._rotation_best[user] = 0.0
+            unseen = ranked
+            best = 0.0
+        selected = apply_author_diversity(unseen, max_results)
+        top_score = max((score for _, score in selected), default=0.0)
+        self._rotation_best[user] = max(best, top_score)
+        self._mark_served(user, [note.id().to_hex() for note, _ in selected], now_secs)
+        return selected
+
+    @property
+    def _index_path(self) -> str:
+        return self.db_name + ".index.pkl"
+
+    @property
+    def _seen_path(self) -> str:
+        return self.db_name + ".seen.json"
+
+    def _load_seen(self):
+        if self._seen_loaded:
+            return
+        self._seen_loaded = True
         if self._seen_served is None:
             self._seen_served = {}
+        if self._rotation_best is None:
+            self._rotation_best = {}
+        try:
+            with open(self._seen_path) as handle:
+                data = json.load(handle)
+            for user_hex, state in data.get("users", {}).items():
+                self._seen_served.setdefault(user_hex, {}).update(state.get("notes", {}))
+                if state.get("best"):
+                    self._rotation_best[user_hex] = state["best"]
+        except Exception:
+            pass
+
+    def _persist_seen(self):
+        try:
+            data = {"users": {user: {"notes": notes, "best": self._rotation_best.get(user, 0.0)}
+                              for user, notes in self._seen_served.items()}}
+            tmp = self._seen_path + ".tmp"
+            with open(tmp, "w") as handle:
+                json.dump(data, handle)
+            os.replace(tmp, self._seen_path)
+        except Exception as e:
+            print("[" + self.dvm_config.NIP89.NAME + "] Could not persist seen memory: " + str(e))
+
+    def _save_index(self):
+        try:
+            tmp = self._index_path + ".tmp"
+            with open(tmp, "wb") as handle:
+                pickle.dump({"index": self._engagement_index,
+                             "built_at": self._engagement_index_built_at}, handle)
+            os.replace(tmp, self._index_path)
+        except Exception as e:
+            print("[" + self.dvm_config.NIP89.NAME + "] Could not persist the engagement index: " + str(e))
+
+    def _load_index(self, now_secs: float) -> bool:
+        try:
+            with open(self._index_path, "rb") as handle:
+                data = pickle.load(handle)
+            built_at = data["built_at"]
+            if now_secs - built_at >= 1800:
+                return False  # too stale: rebuild fresh instead of merging across the gap
+            self._engagement_index = data["index"]
+            self._engagement_index_built_at = built_at
+            return True
+        except Exception:
+            return False
+
+    def _get_seen(self, user_hex: str, now_secs: float) -> dict:
+        self._load_seen()
+        if self._seen_served is None:
+            self._seen_served = {}
+        if self._rotation_best is None:
+            self._rotation_best = {}
         served = self._seen_served.setdefault(user_hex, {})
         for note_id, served_secs in list(served.items()):
             if now_secs - served_secs >= self.seen_ttl_seconds:
@@ -147,6 +228,7 @@ class DiscoverContentForYou(DVMTaskInterface):
         served = self._get_seen(user_hex, now_secs)
         for note_id in note_ids:
             served[note_id] = now_secs
+        self._persist_seen()
 
     def _unseen(self, user_hex: str, notes: list, now_secs: float) -> list:
         served = self._get_seen(user_hex, now_secs)
@@ -198,16 +280,20 @@ class DiscoverContentForYou(DVMTaskInterface):
     async def _get_engagement_index(self, database, now_secs=None):
         if now_secs is None:
             now_secs = Timestamp.now().as_secs()
+        if self._engagement_index is None and self._load_index(now_secs):
+            print("[" + self.dvm_config.NIP89.NAME + "] Loaded the engagement index from disk")
         if self._engagement_index is None:
             graph_since = Timestamp.from_secs(now_secs - self.db_since)
             self._engagement_index = await self._build_engagement_index(database, graph_since)
             self._engagement_index_built_at = now_secs
+            self._save_index()
         elif (now_secs - self._engagement_index_built_at) >= self.index_ttl_seconds:
             # incremental: merge only events newer than the last build (with overlap for
             # late arrivals) so a refresh never blocks request handling for ~90s
             merge_since = Timestamp.from_secs(self._engagement_index_built_at - 1800)
             await self._merge_engagement_index(database, merge_since, self._engagement_index)
             self._engagement_index_built_at = now_secs
+            self._save_index()
         return self._engagement_index
 
     async def _merge_engagement_index(self, database, merge_since, index):
@@ -305,12 +391,12 @@ class DiscoverContentForYou(DVMTaskInterface):
                                        + weights_by_note.get(note.id().to_hex(), 0.0))))
         oon = oon[:RANKING_PARAMS["oon_cap"]]
 
-        candidates = self._unseen(user, in_network + oon, now_secs)
+        candidates = in_network + oon
         if not candidates:
             return await self._global_fallback(database, max_results, user)
 
         ranked = sorted([(note, note_score(note)) for note in candidates], key=lambda pair: -pair[1])
-        selected = apply_author_diversity(ranked, max_results)
+        selected = self._select_rotation(user, ranked, max_results, now_secs)
         return json.dumps([["e", event.id().to_hex()] for event, score in selected])
 
     async def _global_fallback(self, database, max_results, user=None):
@@ -326,13 +412,8 @@ class DiscoverContentForYou(DVMTaskInterface):
             scored.append((note, RANKING_PARAMS["base_floor"]
                            + weights_by_note.get(note.id().to_hex(), 0.0)))
         scored.sort(key=lambda pair: -pair[1])
-        if user:
-            unseen = [(event, score) for event, score in scored
-                      if event.id().to_hex() not in self._get_seen(user, now_secs)]
-            if unseen:
-                scored = unseen
-            # everything already served: repeat the best notes rather than return an empty feed
-        return json.dumps([["e", event.id().to_hex()] for event, score in scored[:max_results]])
+        selected = self._select_rotation(user, scored, max_results, now_secs)
+        return json.dumps([["e", event.id().to_hex()] for event, score in selected])
 
     async def post_process(self, result, event):
         """Overwrite the interface function to return a social client readable format, if requested"""

@@ -311,6 +311,7 @@ class ForYouTaskTests(unittest.IsolatedAsyncioTestCase):
 
     def make_task(self, user):
         task = object.__new__(DiscoverContentForYou)
+        task.db_name = self.directory.name + "/foryou.db"
         task.options = {"db_name": "unused.db", "db_since": 7 * 24 * 3600}
         task.db_since = 7 * 24 * 3600
         task.profile_ttl_seconds = 3600
@@ -452,6 +453,7 @@ class EngagementIndexTests(unittest.IsolatedAsyncioTestCase):
     def make_task(self):
         from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
         task = object.__new__(DiscoverContentForYou)
+        task.db_name = self.directory.name + "/foryou.db"
         task.db_since = 7 * 24 * 3600
         task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
                                           NIP89=SimpleNamespace(NAME="For You"))
@@ -594,6 +596,7 @@ class SeenFilterTests(unittest.IsolatedAsyncioTestCase):
     async def make_task_with_author(self, author):
         from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
         task = object.__new__(DiscoverContentForYou)
+        task.db_name = self.directory.name + "/foryou.db"
         task.db_since = 7 * 24 * 3600
         task.seen_ttl_seconds = 24 * 3600
         task._seen_served = None
@@ -660,6 +663,111 @@ class SeenFilterTests(unittest.IsolatedAsyncioTestCase):
                 result = json.loads(await task.calculate_result(
                     {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 5})}))
                 self.assertEqual(len(result), expected)
+
+
+    async def test_rotation_resets_when_quality_drops(self):
+        author = Keys.generate()
+        hi = await self.save_global(1, author, age_secs=30)
+        for _ in range(10):
+            await self.save_global(7, Keys.generate(), tags=[["e", hi.id().to_hex()]], age_secs=20)
+        mid = await self.save_global(1, author, age_secs=40)
+        await self.save_global(7, Keys.generate(), tags=[["e", mid.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task = await self.make_task_with_author(author)
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            first = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
+            self.assertEqual(first, [["e", hi.id().to_hex()]])
+            # the only unseen note is far below the rotation's quality bar -> reset, serve the best again
+            second = json.loads(await task.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
+        self.assertEqual(second, [["e", hi.id().to_hex()]])
+
+
+class PersistenceTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.global_db = await init_db(self.directory.name, print_filesize=False)
+        self.now = Timestamp.now().as_secs()
+
+    async def save_global(self, kind, author_keys, tags=(), age_secs=60):
+        event = EventBuilder(Kind(kind), "c").tags([Tag.parse(t) for t in tags]).custom_created_at(
+            Timestamp.from_secs(self.now - age_secs)).finalize(author_keys)
+        await self.global_db.save_event(event)
+        return event
+
+    def fresh_task(self):
+        from nostr_dvm.tasks.content_discovery_for_you import DiscoverContentForYou
+        task = object.__new__(DiscoverContentForYou)
+        task.db_name = self.directory.name + "/foryou.db"
+        task.db_since = 7 * 24 * 3600
+        task.dvm_config = SimpleNamespace(EXCLUDE_SELF_ENGAGEMENT=True, LOGLEVEL=LogLevel.ERROR,
+                                          NIP89=SimpleNamespace(NAME="For You"))
+        return task
+
+    async def test_index_persists_across_restart(self):
+        from nostr_dvm.utils.engagement_profile_utils import ProfileCache
+        author = Keys.generate()
+        note = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=20)
+        author_hex = author.public_key().to_hex()
+
+        task1 = self.fresh_task()
+        index1 = await task1._get_engagement_index(self.global_db, now_secs=self.now)
+        self.assertAlmostEqual(index1["total_by_author"][author_hex], 0.5)
+
+        task2 = self.fresh_task()  # "restarted" process: same disk, empty memory
+        calls = {"n": 0}
+        original = type(task2)._build_engagement_index
+
+        async def counting(inner, database, graph_since):
+            calls["n"] += 1
+            return await original(inner, database, graph_since)
+
+        with patch.object(type(task2), "_build_engagement_index", counting):
+            index2 = await task2._get_engagement_index(self.global_db, now_secs=self.now + 60)
+        self.assertEqual(calls["n"], 0)  # loaded from disk, not rebuilt
+        self.assertAlmostEqual(index2["total_by_author"][author_hex], 0.5)
+
+        # new engagement after the restart flows in through the incremental merge
+        await self.save_global(7, Keys.generate(), tags=[["e", note.id().to_hex()]], age_secs=5)
+        index3 = await task2._get_engagement_index(self.global_db, now_secs=self.now + 700)
+        self.assertAlmostEqual(index3["total_by_author"][author_hex], 1.0)
+
+    async def test_seen_memory_persists_across_restart(self):
+        author = Keys.generate()
+        note_a = await self.save_global(1, author, age_secs=30)
+        await self.save_global(7, Keys.generate(), tags=[["e", note_a.id().to_hex()]], age_secs=20)
+        await self.save_global(7, Keys.generate(), tags=[["e", note_a.id().to_hex()]], age_secs=20)
+        note_b = await self.save_global(1, author, age_secs=40)
+        await self.save_global(7, Keys.generate(), tags=[["e", note_b.id().to_hex()]], age_secs=20)
+        user = Keys.generate().public_key().to_hex()
+
+        task1 = self.fresh_task()
+        cache = MagicMock()
+        cache.get_requester_context = AsyncMock(return_value={
+            "actions_by_author": {}, "liked_authors": set(),
+            "follows": {author_hex := author.public_key().to_hex()}, "muted": set(), "keywords": []})
+        task1.profile_cache = cache
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            first = json.loads(await task1.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
+        self.assertEqual(first, [["e", note_a.id().to_hex()]])
+
+        task2 = self.fresh_task()  # restarted: memory wiped, disk persists
+        task2.profile_cache = cache
+        with patch("nostr_dvm.tasks.content_discovery_for_you.NostrLmdb.open",
+                   new_callable=AsyncMock) as open_db:
+            open_db.return_value = self.global_db
+            second = json.loads(await task2.calculate_result(
+                {"jobID": "generic", "requester": user, "options": json.dumps({"max_results": 1})}))
+        self.assertEqual(second, [["e", note_b.id().to_hex()]])
 
 
 if __name__ == "__main__":
