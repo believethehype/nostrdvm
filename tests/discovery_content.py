@@ -32,9 +32,7 @@ RELAY_LIST = ["wss://nostr.mom",
 
 SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://purplerelay.com",
-                      "wss://nostr.bitcoiner.social",
-                      "wss://nostr.oxtr.dev",
-                      "wss://relay.nostr.net"]
+                      "wss://nostr.bitcoiner.social"]
 
 if use_logger:
     init_logger(log_level)

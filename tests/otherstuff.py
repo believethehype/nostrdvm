@@ -32,9 +32,7 @@ log_level = LogLevel.ERROR
 
 SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://purplerelay.com",
-                      "wss://nostr.bitcoiner.social",
-                      "wss://nostr.oxtr.dev",
-                      "wss://relay.nostr.net"]
+                      "wss://nostr.bitcoiner.social"]
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
               #"wss://relay.primal.net",
