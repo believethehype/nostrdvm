@@ -36,7 +36,6 @@ SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
               #"wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"
               ]
 

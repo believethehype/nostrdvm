@@ -27,7 +27,6 @@ max_sync_duration_in_h = 24
 
 RELAY_LIST = ["wss://nostr.mom",
               "wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
               ]
 
 SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",

@@ -26,7 +26,6 @@ if use_logger:
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
               #"wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"
               ]
 

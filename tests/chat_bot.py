@@ -29,7 +29,6 @@ def playground(announce = False):
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP65_RELAY_LIST = False
     admin_config.UPDATE_PROFILE = False
-    bot_config.RELAY_LIST = ["wss://relay.primal.net", "wss://relay.nostrdvm.com", "wss://nostr.oxtr.dev"]
     x = threading.Thread(target=Bot, args=([bot_config, admin_config]))
     x.start()
 

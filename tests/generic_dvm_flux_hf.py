@@ -15,14 +15,12 @@ from nostr_dvm.utils.output_utils import upload_media_to_hoster
 
 RELAY_LIST = ["wss://nostr.mom",
               #"wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"
               ]
 
 SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://purplerelay.com",
                       "wss://nostr.bitcoiner.social",
-                      "wss://nostr.oxtr.dev",
                       "wss://relay.nostr.net"]
 
 

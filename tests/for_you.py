@@ -22,7 +22,6 @@ use_logger = True
 log_level = LogLevel.ERROR
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
-              "wss://nostr.oxtr.dev",
               "wss://nostr.mom",
               "wss://nos.lol",
               "wss://nostr.bitcoiner.social"]

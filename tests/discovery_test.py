@@ -47,10 +47,8 @@ if use_logger:
 SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://purplerelay.com",
                       "wss://nostr.bitcoiner.social",
-                      "wss://nostr.oxtr.dev",
                       "wss://relay.nostr.net"]
 RELAY_LIST = ["wss://relay.primal.net",
-              "wss://nostr.mom", "wss://nostr.oxtr.dev",
               "wss://relay.nostr.net"
               ]
 
@@ -520,7 +518,6 @@ def build_example_mostr(name, identifier, admin_config, options, image, cost=0, 
     dvm_config.SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://purplerelay.com",
                       "wss://nostr.bitcoiner.social",
-                      "wss://nostr.oxtr.dev",
                       "wss://relay.nostr.net"]
 
     dvm_config.LOGLEVEL = LogLevel.DEBUG
@@ -564,7 +561,6 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     dvm_config.UPDATE_DATABASE = False
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
-    dvm_config.RELAY_LIST = ["wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.primal.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 

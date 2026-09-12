@@ -16,7 +16,6 @@ from nostr_dvm.utils.outbox_utils import AVOID_OUTBOX_RELAY_LIST
 
 RELAY_LIST = ["wss://nostr.mom",
               "wss://relay.nostrdvm.com",
-              "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"
               ]
 

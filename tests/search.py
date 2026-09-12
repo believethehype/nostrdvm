@@ -30,7 +30,6 @@ if use_logger:
 
 RELAY_LIST = ["wss://nostr.mom",
               #"wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
               #"wss://relay.nostr.net"
               ]
 

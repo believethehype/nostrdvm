@@ -33,7 +33,6 @@ def build_example_oneperfollow(name, identifier, admin_config, options, image, c
     dvm_config.UPDATE_DATABASE = False
     dvm_config.LOGLEVEL = LogLevel.DEBUG
     dvm_config.FIX_COST = cost
-    dvm_config.RELAY_LIST = ["wss://nostr.oxtr.dev", "wss://relay.nostr.bg", "wss://relay.primal.net"]
     dvm_config.CUSTOM_PROCESSING_MESSAGE = processing_msg
     admin_config.LUD16 = dvm_config.LN_ADDRESS
 

@@ -22,7 +22,6 @@ log_level = LogLevel.INFO
 
 RELAY_LIST = ["wss://nostr.mom",
               "wss://relay.primal.net",
-              "wss://nostr.oxtr.dev",
               "wss://relay.nostrdvm.com",
               ]
 
