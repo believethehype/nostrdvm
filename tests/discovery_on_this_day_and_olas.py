@@ -142,9 +142,9 @@ def playground():
 
 
     main_db = "db/nostr_on_this_day.db"
-    main_db_limit = 1024  # in mb
+    main_db_limit = 2048  # in mb
 
-    database = asyncio.run(init_db(main_db, wipe=False, limit=main_db_limit, print_filesize=True))
+    database = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
     last_year = datetime.date.today().year - 1
 
     if last_year % 4 == 0 and (last_year % 100 != 0 or last_year % 400 == 0) and datetime.date.today().month < 3:
@@ -185,9 +185,9 @@ def playground():
 
 
     olas_db = "db/nostr_olas.db"
-    olas_db_limit = 1024  # in mb
+    olas_db_limit = 2048  # in mb
 
-    olas_database = asyncio.run(init_db(olas_db, wipe=False, limit=olas_db_limit, print_filesize=True))
+    olas_database = asyncio.run(init_db(olas_db, wipe=True, limit=olas_db_limit, print_filesize=True))
 
     admin_config_global_gallery = AdminConfig()
     admin_config_global_gallery.REBROADCAST_NIP89 = rebroadcast_NIP89

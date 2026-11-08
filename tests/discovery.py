@@ -679,9 +679,9 @@ def playground():
 
 
     main_db = "db/nostr_recent_notes.db"
-    main_db_limit = 1024 # in mb
+    main_db_limit = 2048 # in mb
 
-    DATABASE = asyncio.run(init_db(main_db, wipe=False, limit=main_db_limit, print_filesize=True))
+    DATABASE = asyncio.run(init_db(main_db, wipe=True, limit=main_db_limit, print_filesize=True))
     # DB Scheduler, do not announce, just use it to update the DB for the other DVMs.
     admin_config_db_scheduler = AdminConfig()
     options_db = {

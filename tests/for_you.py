@@ -83,7 +83,7 @@ def build_for_you(name, identifier, admin_config, options, image, cost=0, update
 def playground():
     framework = DVMFramework()
     main_db = "db/nostr_foryou.db"
-    database = asyncio.run(init_db(main_db, wipe=False, limit=1024, print_filesize=True))
+    database = asyncio.run(init_db(main_db, wipe=True, limit=2048, print_filesize=True))
 
     admin_config = AdminConfig()
     admin_config.REBROADCAST_NIP89 = rebroadcast_NIP89
