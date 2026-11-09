@@ -59,7 +59,7 @@ class DVM:
         self.dvm_config = dvm_config
         self.admin_config = admin_config
         self.keys = Keys.parse(dvm_config.PRIVATE_KEY)
-        self.heartbeat_frequency = 300
+        self.heartbeat_frequency = 600  # 10 min: halves announce load; Amethyst tolerates up to 900s staleness
         relaylimits = RelayLimits.disable()
 
         #self.client = Client(self.keys)
