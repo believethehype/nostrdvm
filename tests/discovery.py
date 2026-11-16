@@ -44,8 +44,7 @@ log_level = LogLevel.INFO
 max_sync_duration_in_h = 24
 
 SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
-                      "wss://purplerelay.com",
-                      "wss://nostr.bitcoiner.social"]
+                      "wss://purplerelay.com"]
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
                   "ws://127.0.0.1:7777",

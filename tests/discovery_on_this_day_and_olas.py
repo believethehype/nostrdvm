@@ -40,7 +40,6 @@ RELAY_LIST = ["wss://relay.nostrdvm.com",
 
 SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://purplerelay.com",
-                      "wss://nostr.bitcoiner.social",
                       "wss://relay.nostr.net"]
 
 SYNC_DB_RELAY_LIST_OLAS = ["wss://relay.primal.net",
