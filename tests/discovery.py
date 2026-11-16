@@ -48,6 +48,7 @@ SYNC_DB_RELAY_LIST = ["wss://relay.ditto.pub",
                       "wss://nostr.bitcoiner.social"]
 
 RELAY_LIST = ["wss://relay.nostrdvm.com",
+                  "ws://127.0.0.1:7777",
               ]
 
 if use_logger:
