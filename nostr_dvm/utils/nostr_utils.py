@@ -241,15 +241,17 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
                                 " couldn't be added to outbox relays")
             break
 
-    # 3. If we couldn't find relays, we look in the receivers inbox
-    inbox_relays = []
-    if relays == dvm_config.RELAY_LIST:
-        print("[" + dvm_config.NIP89.NAME + "] No relay tags found, replying to inbox relays")
-        inbox_relays = [relay for relay in await get_inbox_relays(event, client, dvm_config)
-                        if is_valid_relay_url(relay)]
-        for relay in inbox_relays:
-            if relay.rstrip("/") not in relays and relay not in relays:
-                 relays = list(set(relays + [relay]))
+    # 3. Union with the receiver's NIP-65 inbox. Even when the request carries a
+    # relays tag, the client may have listed relays this DVM cannot reach
+    # (blocked IPs, flaky websockets, stale client configs), so always add the
+    # requester's announced inbox relays to maximize delivery.
+    inbox_relays = [relay for relay in await get_inbox_relays(event, client, dvm_config)
+                    if is_valid_relay_url(relay)]
+    if len(inbox_relays) == 0:
+        print("[" + dvm_config.NIP89.NAME + "] No inbox relays found for receiver")
+    for relay in inbox_relays:
+        if relay.rstrip("/") not in relays and relay not in relays:
+            relays = list(set(relays + [relay]))
 
    # print(relays)
     #print(dvm_config.RELAY_LIST)
