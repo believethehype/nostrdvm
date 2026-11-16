@@ -10,6 +10,8 @@ import requests
 import yt_dlp
 from tqdm import tqdm
 
+from nostr_dvm.utils.url_safety import filter_public_urls, is_public_url
+
 browser = "chrome"  # "firefox"
 usebrowser = False
 
@@ -124,6 +126,9 @@ def YTDownload(link, path, audio_only=True):
 
 def get_media_duration(url):
     try:
+        if not is_public_url(url):
+            print("[media] Blocked duration lookup of non-public URL: " + url)
+            return None
         # ℹ️ See help(yt_dlp.YoutubeDL) for a list of available options and public functions
         if usebrowser:
             ydl_opts = {
@@ -143,6 +148,9 @@ def get_media_duration(url):
 
 def get_media_info(url):
     try:
+        if not is_public_url(url):
+            print("[media] Blocked info lookup of non-public URL: " + url)
+            return None
         # ℹ️ See help(yt_dlp.YoutubeDL) for a list of available options and public functions
         if usebrowser:
             ydl_opts = {
@@ -161,6 +169,11 @@ def get_media_info(url):
 
 def get_audio(URLS):
     try:
+        URLS, blocked = filter_public_urls(URLS)
+        if blocked:
+            print("[media] Blocked fetch of non-public URL(s): " + ", ".join(blocked))
+        if not URLS:
+            return None
         if usebrowser:
             ydl_opts = {
                 'cookiesfrombrowser': (browser, None, None, None),
@@ -194,6 +207,11 @@ def get_audio(URLS):
 
 def get_video(URLS):
     try:
+        URLS, blocked = filter_public_urls(URLS)
+        if blocked:
+            print("[media] Blocked fetch of non-public URL(s): " + ", ".join(blocked))
+        if not URLS:
+            return None
 
         if usebrowser:
             ydl_opts = {

@@ -7,6 +7,7 @@ from threading import Lock
 from weakref import WeakKeyDictionary
 
 from nostr_dvm.utils.env_utils import load_env, set_env_key
+from nostr_dvm.utils.url_safety import is_valid_relay_url
 from datetime import timedelta
 from pathlib import Path
 from typing import List
@@ -225,20 +226,27 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
         if tag.to_vec()[0] == 'relays':
             for index, param in enumerate(tag.to_vec()):
                 if index != 0:
-                    if tag.to_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
+                    relay = tag.to_vec()[index]
+                    # Request events are untrusted input: skip non-websocket or
+                    # non-public values (probes use http URLs, internal hosts and
+                    # tunnel endpoints) so we never stall on them at send time.
+                    if not is_valid_relay_url(relay):
+                        continue
+                    if relay.rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                         try:
-                            if tag.to_vec()[index].rstrip("/")  not in relays and tag.to_vec()[index] not in relays:
-                                relays = list(set(relays + [tag.to_vec()[index]]))
+                            if relay.rstrip("/")  not in relays and relay not in relays:
+                                relays = list(set(relays + [relay]))
                         except:
-                            print("[" + dvm_config.NIP89.NAME + "] " + tag.to_vec()[
-                                index] + " couldn't be added to outbox relays")
+                            print("[" + dvm_config.NIP89.NAME + "] " + relay +
+                                " couldn't be added to outbox relays")
             break
 
     # 3. If we couldn't find relays, we look in the receivers inbox
     inbox_relays = []
     if relays == dvm_config.RELAY_LIST:
         print("[" + dvm_config.NIP89.NAME + "] No relay tags found, replying to inbox relays")
-        inbox_relays = await get_inbox_relays(event, client, dvm_config)
+        inbox_relays = [relay for relay in await get_inbox_relays(event, client, dvm_config)
+                        if is_valid_relay_url(relay)]
         for relay in inbox_relays:
             if relay.rstrip("/") not in relays and relay not in relays:
                  relays = list(set(relays + [relay]))
@@ -310,12 +318,17 @@ async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
             if tag.to_vec()[0] == 'relays':
                 for index, param in enumerate(tag.to_vec()):
                     if index != 0:
-                        if tag.to_vec()[index].rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
+                        relay = tag.to_vec()[index]
+                        # Event tags are untrusted input; skip garbage relay
+                        # values so a malformed request can't stall delivery.
+                        if not is_valid_relay_url(relay):
+                            continue
+                        if relay.rstrip("/") not in dvm_config.AVOID_OUTBOX_RELAY_LIST:
                             try:
-                                relays.append(tag.to_vec()[index])
+                                relays.append(relay)
                             except:
-                                print("[" + dvm_config.NIP89.NAME + "] " + tag.to_vec()[
-                                    index] + " couldn't be added to outbox relays")
+                                print("[" + dvm_config.NIP89.NAME + "] " + relay +
+                                    " couldn't be added to outbox relays")
                 break
 
         relay_list = dvm_config.RELAY_LIST
