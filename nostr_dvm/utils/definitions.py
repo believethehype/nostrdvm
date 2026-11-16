@@ -117,5 +117,5 @@ class InvoiceToWatch:
     expires: int
 
 
-relay_timeout = timedelta(seconds=30)
-relay_timeout_long = timedelta(seconds=60)
+relay_timeout = timedelta(seconds=10)
+relay_timeout_long = timedelta(seconds=30)

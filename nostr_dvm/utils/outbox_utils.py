@@ -8,6 +8,10 @@ AVOID_OUTBOX_RELAY_LIST = ["wss://nostr.fmt.wiz.biz", "wss://nostrelay.yeghro.si
                            "wss://brb.io", "wss://relay.nostr.ch", "wss://nostr.rock", "wss://nostr.sandwich.farm",
                            "wss://nostr.onsats.org", "wss://nostr-pub.semisol.dev", "wss://no.str.cr",
                            "wss://nostr.zebedee.cloud", "wss://blg.nostr.sx", "wss://relay.nostr.ai",
+                           # Block us at IP level, reject our pubkey (damus: web-of-trust
+                           # policy) or flap; delivery attempts only burn relay timeouts.
+                           "wss://nostr.mom", "wss://nos.lol", "wss://relay.damus.io",
+                           "wss://nostr.oxtr.dev", "wss://relay.nostr.band",
                            "wss://nostr.600.wtf", "ws://umbrel.local:4848", "wss://192.168.1.52:5051",
                            "wss://nostrvista.aaroniumii.com", "wss://https//nostr.einundzwanzig.space",
                            "wss://nostr.localhost.re", "wss://shopstr.store", "wss://th1.nostr.earnkrub.xyz",
