@@ -2,6 +2,7 @@ import asyncio
 import json
 import json
 import os
+import time
 from datetime import timedelta
 
 from nostr_sdk import (
@@ -38,6 +39,9 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
     last_schedule: int = 0
     min_reactions = 2
     db_since = 10 * 3600
+    # Skip the expensive startup catch-up sync if the previous process
+    # completed a full sync within this window (see sync_db checkpoint).
+    SYNC_CHECKPOINT_MIN_AGE = 6 * 3600
     db_name = "db/nostr_default_recent_notes.db"
     search_list = []
     avoid_list = []
@@ -134,6 +138,27 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 return 1
 
     async def sync_db(self):
+        # Startup-sync checkpoint. A full negentropy pass over all author
+        # batches takes minutes and runs on the first schedule() tick of every
+        # process. If the previous process already completed a full sync
+        # recently (checkpoint file), skip this startup's catch-up - the
+        # periodic schedule() calls below keep the DB fresh from there on.
+        if not getattr(self, "_startup_sync_done", False):
+            checkpoint_file = os.path.join(
+                "cache", "last_sync_" + self.dvm_config.IDENTIFIER.replace("/", "_"))
+            try:
+                if os.path.exists(checkpoint_file):
+                    age = time.time() - os.path.getmtime(checkpoint_file)
+                    if age < self.SYNC_CHECKPOINT_MIN_AGE:
+                        print(f"[{self.dvm_config.IDENTIFIER}] Last full DB sync was "
+                              f"{int(age / 60)} min ago (< "
+                              f"{self.SYNC_CHECKPOINT_MIN_AGE // 3600}h), skipping startup sync")
+                        self._startup_sync_done = True
+                        return
+            except OSError:
+                pass
+        self._startup_sync_done = True
+
         cli = None
         try:
             relaylimits = RelayLimits.disable()
@@ -204,6 +229,14 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                 print(
                     "[" + self.dvm_config.IDENTIFIER + "] Done Syncing Notes of the last " + str(
                         self.db_since) + " seconds..")
+            # Full sync succeeded: record it so a restart within the checkpoint
+            # window can skip the expensive startup catch-up.
+            try:
+                os.makedirs("cache", exist_ok=True)
+                with open("cache/last_sync_" + self.dvm_config.IDENTIFIER.replace("/", "_"), "w") as fh:
+                    fh.write(str(int(time.time())))
+            except OSError as e:
+                print(f"[{self.dvm_config.IDENTIFIER}] Could not write sync checkpoint: {e}")
         except Exception as e:
             print(f"[{self.dvm_config.IDENTIFIER}] Database update failed: {e}")
         finally:
