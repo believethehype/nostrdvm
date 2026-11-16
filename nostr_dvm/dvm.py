@@ -1,4 +1,5 @@
 import asyncio
+from datetime import timedelta
 from nostr_dvm.utils.database_utils import debit_user_balance
 import json
 import os
@@ -993,6 +994,13 @@ class DVM:
 
                 await asyncio.sleep(sleep)
                 heartbeatsignal += sleep
+                # Externally connected relays (Cloudflare fronts, nginx) drop idle
+                # websocket connections after a few minutes, and nostr-sdk does not
+                # always re-establish them, leaving the DVM deaf while heartbeats
+                # still report success. Re-trigger connect() every minute; it is
+                # idempotent for already-connected relays and re-dials lost ones.
+                if heartbeatsignal % 60 == 0:
+                    await self.client.connect(timedelta(seconds=10))
         except BaseException:
             print("end")
 
