@@ -176,13 +176,26 @@ class DicoverContentDBUpdateScheduler(DVMTaskInterface):
                     self.db_since) + " seconds.. this might take a while..")
             failed_batches = 0
             unsupported_relays = set()
-            for batch_index, event_filter in enumerate(filters, start=1):
+
+            async def sync_one(batch_index: int, event_filter) -> bool:
+                """Sync a single author batch. Returns True on success.
+
+                Batches are independent, so they run concurrently (bounded by
+                SYNC_CONCURRENCY) instead of paying the per-batch negentropy
+                handshake overhead 84 times in a row.
+                """
                 label = f"{self.dvm_config.IDENTIFIER} batch {batch_index}/{len(filters)}"
-                try:
-                    await sync_discovery_database(cli, event_filter, label, unsupported_relays)
-                except Exception as error:
-                    failed_batches += 1
-                    print(f"[{label}] {error}")
+                async with SYNC_CONCURRENCY:
+                    try:
+                        await sync_discovery_database(cli, event_filter, label, unsupported_relays)
+                        return True
+                    except Exception as error:
+                        print(f"[{label}] {error}")
+                        return False
+
+            SYNC_CONCURRENCY = asyncio.Semaphore(6)
+            results = await asyncio.gather(*(sync_one(i + 1, f) for i, f in enumerate(filters)))
+            failed_batches = results.count(False)
             if failed_batches:
                 raise RuntimeError(f"{failed_batches} database sync batches failed; skipping pruning")
             await cli.database().delete_events(Filter().until(Timestamp.from_secs(
