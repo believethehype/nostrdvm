@@ -741,7 +741,7 @@ def playground():
     # admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
     # admin_config_top_zaps.POW = True
     custom_processing_msg = ["Looking for latest Longform Articles", "Let's see what people recently wrote"]
-    update_db = True
+    update_db = True  # longform syncs its own database (nostr_recent_notes_longform.db)
 
     options_longform = {
         "db_name": "db/nostr_recent_notes_longform.db",
@@ -769,7 +769,7 @@ def playground():
     # admin_config_top_zaps.EVENTID = "05a6de88e15aa6c8b4c8ec54481f885f397a30761ff2799958e5c5ee9ad6917b"
     # admin_config_top_zaps.POW = True
     custom_processing_msg = ["Looking for latest Wiki entries", "Let's check Wiki entries.."]
-    update_db = True
+    update_db = False  # longform DVM above already syncs the shared longform database
 
     options_longform = {
         "db_name": "db/nostr_recent_notes_longform.db",
@@ -1155,7 +1155,7 @@ def playground():
     # admin_config_opf.EVENTID = ""
     # admin_config_opf.POW = True
     custom_processing_msg = ["Looking for latest content by people you follow.."]
-    update_db = True
+    update_db = False  # the DB scheduler above updates the shared database
 
     options_opf = {
         "db_name": "db/nostr_recent_notes.db",
