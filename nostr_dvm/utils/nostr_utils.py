@@ -7,7 +7,7 @@ from threading import Lock
 from weakref import WeakKeyDictionary
 
 from nostr_dvm.utils.env_utils import load_env, set_env_key
-from nostr_dvm.utils.url_safety import is_valid_relay_url
+from nostr_dvm.utils.url_safety import is_public_url, is_valid_relay_url
 from datetime import timedelta
 from pathlib import Path
 from typing import List
@@ -269,6 +269,11 @@ async def send_event_outbox(event: Event, client, dvm_config) -> SendEventOutput
     outboxclient = ClientBuilder().authenticator(SignerAuthenticator(keys)).relay_limits(relaylimits).proxy(Proxy.onion("127.0.0.1:9050")).build()
     #print("[" + dvm_config.NIP89.NAME + "] Receiver Inbox relays: " + str(relays))
 
+    # Loopback relays (the local strfry socket) are for subscriptions only;
+    # outbound delivery there duplicates the public nostrdvm.com send.
+    relays = [relay for relay in relays if is_public_url(
+        relay.replace("wss://", "https://", 1).replace("ws://", "http://", 1))]
+
     for relay in relays[:5]:
         try:
             if not relay.startswith("ws://") and not relay.startswith("wss://"):
@@ -339,6 +344,11 @@ async def send_event(event: Event, client: Client, dvm_config, broadcast=False):
 
         if len(relays) == 0:
             relays = relay_list
+
+        # Loopback relays (the local strfry socket) are for subscriptions only;
+        # outbound delivery there duplicates the public nostrdvm.com send.
+        relays = [relay for relay in relays if is_public_url(
+            relay.replace("wss://", "https://", 1).replace("ws://", "http://", 1))]
 
         for relay in relays:
             if relay not in dvm_config.RELAY_LIST:
